@@ -674,28 +674,30 @@
   /* guided breathwork overlay (first self-help module) */
   #breatheOv{position:fixed;inset:0;z-index:98;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#3a1b52,#180a2a 78%);animation:toolIn .34s cubic-bezier(.2,.9,.3,1.08) both;}/* tools OPEN with a gentle spring-in (David 2026-07-01 motion pass) */
   @keyframes toolIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
-  .vol-ov,.dur-ov{animation:toolIn .24s ease both;}
+  .dur-ov{animation:toolIn .24s ease both;}
   .bento-ov .bento-card{animation:sheetUp .3s cubic-bezier(.2,.9,.3,1.02) both;}
   @keyframes sheetUp{from{opacity:.4;transform:translateY(28px);}to{opacity:1;transform:translateY(0);}}
   #breatheOv .bw-orb{width:165px;height:165px;border-radius:50%;background:radial-gradient(circle,rgba(205,185,255,.92),rgba(150,120,255,.3) 58%,rgba(150,120,255,0) 74%);box-shadow:0 0 80px rgba(170,140,255,.55);transform:scale(.55);will-change:transform;}
   /* SINE-WAVE breath visual (David 2026-07-19): a live-drawn curve that rises on the inhale, holds flat at the top, glides gently down on the longer exhale — clear stage, always smooth (rAF-driven, no CSS transition to stutter) */
   #breatheOv .bw-wave{width:min(86vw,360px);height:190px;position:relative;}
   #breatheOv .bw-wave svg{width:100%;height:100%;overflow:visible;}
-  #breatheOv .bw-wmid{stroke:rgba(255,255,255,.12);stroke-width:1.5;stroke-dasharray:2 7;}
   #breatheOv .bw-wpath{stroke:rgba(200,180,255,.9);stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 8px rgba(170,140,255,.6));}
   #breatheOv .bw-wdot{fill:#f4efff;filter:drop-shadow(0 0 9px rgba(200,175,255,.95));}
   #breatheOv .bw-label{font-family:var(--bub);font-size:28px;font-weight:800;color:#efeaff;margin-top:34px;letter-spacing:.5px;}
   #breatheOv .bw-sub{font-size:13px;color:#bcb0e8;font-weight:600;margin-top:4px;}
   /* THE ORB STAYS PERFECTLY STILL (David 2026-07-12): the cue text lives in .bw-cap, pulled OUT of the centered flex flow and hung from a fixed line below the orb, so cue lines of any length grow DOWNWARD and can never push the orb up or down. The orb is now the only centered flow child. */
-  /* THE EXPLICIT PHASE INDICATOR (David 2026-08-15: "an explicit indicator of whether I should be inhaling, holding or exhaling"). Canonical word + seconds left + a line that empties over the phase. Same type family, same purple, sized well under .bw-label so it reads as a status line, not a second headline. The line is driven by transform:scaleX so it never reflows the cue above it. */
+  /* THE PHASE INDICATOR, SAID ONCE (David 2026-08-20: "the little thing on the bottom that shows you how much time is left is redundant... get rid of repeating the same thing twice — the text that says inhale and the numbers. And you can add the counter next to the big text above. And you can make the loading bar longer so it's easier to track"). The 2026-08-15 block's phase word is deleted, its seconds moved into .bw-lrow beside the headline, and the draining line is all that remains below — widened 96px -> min(70vw,288px) because it is now the only thing to track. The line is still driven by transform:scaleX so it never reflows the cue above it. */
+  /* STACKED, NOT SIDE BY SIDE (David 2026-08-20: "the number should be below text and above the loading", and earlier
+     "when it says 'breathe in 1' it looks like it's saying breathe in ONE SECOND"). Beside the word the count reads as
+     part of the sentence; under it, the word is a word and the number is a number. R25 frame: word, then the count on
+     its own line pulled up 6px, then the bar. */
+  #breatheOv .bw-lrow{display:flex;flex-direction:column;align-items:center;gap:0;position:relative;z-index:2;}
+  #breatheOv .bw-lrow > *:last-child{margin-top:-6px;}
+  #breatheOv .bw-phn{font-family:var(--bub);font-size:20px;font-weight:800;color:#f2ecff;font-variant-numeric:tabular-nums;letter-spacing:0;opacity:.88;}
   #breatheOv .bw-phase{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px;z-index:2;}
-  #breatheOv .bw-phrow{display:flex;align-items:baseline;gap:8px;font-family:var(--bub);}
-  #breatheOv .bw-phw{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#bda8ee;}
-  #breatheOv .bw-phn{font-size:15px;font-weight:800;color:#f2ecff;font-variant-numeric:tabular-nums;letter-spacing:0;}
-  #breatheOv .bw-phbar{width:96px;height:3px;border-radius:2px;background:rgba(255,255,255,.13);overflow:hidden;}
-  #breatheOv .bw-phbar i{display:block;height:100%;width:100%;border-radius:2px;background:#9a7cff;transform-origin:left center;}
-  #breatheOv.gp-ov .bw-phw{color:#e0c6ea;}
-  #breatheOv.gp-ov .bw-phn{color:#fff2f9;}
+  #breatheOv .bw-phbar{width:176px;height:6px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;}
+  #breatheOv .bw-phbar i{display:block;height:100%;width:100%;border-radius:4px;background:#9a7cff;transform-origin:left center;}
+  #breatheOv.gp-ov .bw-phn{font-family:"Jost",sans-serif;font-size:16px;color:#fff2f9;}
   #breatheOv.gp-ov .bw-phbar i{background:var(--gp-c,#9a7cff);}
   #breatheOv .bw-cap{position:absolute;left:0;right:0;top:calc(50% + 72px);z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 18px;pointer-events:none;}
   #breatheOv .bw-cap .bw-label{margin-top:0;}
@@ -716,7 +718,7 @@
   #breatheOv.gp-ov{overflow:hidden;}
   #breatheOv .gp-title{position:fixed;top:calc(env(safe-area-inset-top,0px) + 22px);left:0;right:0;text-align:center;font-family:var(--bub);font-size:12.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:rgba(240,230,239,.5);z-index:4;pointer-events:none;}
   #breatheOv .gp-cog{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:18px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);color:#efeaff;border-radius:14px;width:44px;height:40px;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;padding:0;}
-  #breatheOv .bw-orb,#breatheOv .bw-label,#breatheOv .bw-sub{position:relative;z-index:2;}
+  #breatheOv .bw-orb,#breatheOv .bw-label,#breatheOv .bw-sub,#breatheOv .bw-lrow{position:relative;z-index:2;}
   /* slow-drifting depth bands behind the orb — the Headspace "premium" motion, on berry palette (David 2026-07-01) */
   #breatheOv .gp-waves{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
   #breatheOv .gp-waves span{position:absolute;left:-30%;right:-30%;height:62%;border-radius:50%;filter:blur(8px);}
@@ -752,8 +754,10 @@
   #breatheOv.gp-ov .gp-knob{width:19px;height:19px;}
   #breatheOv.gp-ov .gp-ticks i{top:0;height:100%;width:3px;border-radius:0;transform:none;background:#170a15;} /* ref: the ticks are dark CELL GAPS cutting THROUGH the fill (battery cells), invisible on the empty track */
   #breatheOv.gp-ov .gp-play{width:92px;height:92px;font-size:34px;border:3px solid #160510;box-shadow:0 6px 0 #160510;color:#160510 !important;} /* ref: bigger disc, ink ring, INK pause glyph, chunky shadow */
-  #breatheOv.gp-ov .bw-label{font-family:"Jost",sans-serif;font-size:21px;line-height:1.3;color:#fff2f9;max-width:82vw;text-align:center;margin-top:40px;}
-  #breatheOv.gp-ov .bw-sub{max-width:82vw;text-align:center;font-size:21px;line-height:1.3;color:#e7d9f2;font-weight:600;margin-top:8px;} /* SAME size as the label — one uniform cue size, no big/small split (David 2026-07-13); hierarchy from color, not size */
+  /* ONE FORMATTING (David on device 2026-08-21: "the top line of the text is more bold while the bottom line is less bold, should be one formatting"). The cue's two halves were Jost 800 over Baloo 2 600 — a different FAMILY and a different WEIGHT, not just a tint. The 2026-07-13 pass unified the SIZE only and left the split in the type, which is why it still read as two different things. They now share ONE declaration, so neither half can drift from the other again; only the margins differ. */
+  #breatheOv.gp-ov .bw-label,#breatheOv.gp-ov .bw-sub{font-family:"Jost",sans-serif;font-size:21px;font-weight:800;line-height:1.3;color:#fff2f9;max-width:82vw;text-align:center;}
+  #breatheOv.gp-ov .bw-label{margin-top:40px;}
+  #breatheOv.gp-ov .bw-sub{margin-top:8px;}
   #breatheOv.gp-ov .bw-cap{top:calc(50% + 126px);} /* the composed player's orb is bigger — hang the cue line lower so it clears the resting orb (still never moves it) */
   #breatheOv.gp-ov .gp-knob{background:#ff5fa8;box-shadow:0 0 8px rgba(255,95,168,.8);}
   #breatheOv.gp-ov .gp-times{align-items:center;}
@@ -773,6 +777,51 @@
   .gpm-lab{flex:1;min-width:0;color:#fff2f9;font-family:"Jost",sans-serif;font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .gpm-pp{flex:none;width:42px;height:42px;border-radius:50%;background:var(--gp-c,#9a5cf0);border:2px solid #160510;box-shadow:0 3px 0 #160510;color:#160510;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
   .gpm-up{flex:none;width:34px;height:34px;border-radius:50%;background:none;border:none;color:rgba(240,230,239,.6);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  /* ===== THE PLAYER SETTINGS CARD (David 2026-08-20, Round 24 v2). Every value quoted from his prototype via
+     _specs/PLAYER-SETTINGS-PORT-2026-08-20.md; --ps-e is passed inline per card because E = the session's own hue.
+     The frame stacks scrim 38 / card 40; rebased to 118/120 because #breatheOv is z 98 and this drops over it. ===== */
+  .ps-ov{position:fixed;inset:0;z-index:118;background:rgba(18,8,24,.52);}
+  .ps-card{position:fixed;z-index:120;top:156px;right:14px;width:322px;max-height:calc(100vh - 178px);overflow-y:auto;box-sizing:border-box;background:#221126;border:3px solid #160510;border-radius:22px;box-shadow:0 6px 0 #160510,0 18px 40px rgba(0,0,0,.5);padding:13px 14px 15px;display:flex;flex-direction:column;gap:13px;font-family:var(--bub);color:#efeaff;transform-origin:calc(100% - 18px) -10px;animation:psCog .28s var(--ease-spring) both;}
+  @keyframes psCog{0%{transform:scale(.72);opacity:0;}60%{transform:scale(1.02);opacity:1;}100%{transform:scale(1);opacity:1;}}
+  .ps-notch{position:absolute;z-index:121;width:26px;height:13px;background:#160510;clip-path:polygon(50% 0,100% 100%,0 100%);pointer-events:none;}
+  /* A REAL TRIANGLE, not a rotated square (David device 2026-08-20, six rounds in: "the diamond thing broken").
+     A rotated square shows all four corners and can only LOOK like a tail where it overlaps a straight edge — over
+     the card's 22px corner radius its lower half hangs over nothing, which is the step he kept seeing. A triangle
+     has a FLAT BASE that sits on the card's top edge by construction, so there is no half to hide and no overlap to
+     get right. The ink shape is the outer triangle; ::after is the same triangle in the CARD'S OWN FILL, inset by
+     the 3px border and run 4px PAST the base so it covers the card's top border and the two become one shape. */
+  .ps-notch::after{content:"";position:absolute;left:3px;right:3px;top:4px;bottom:-4px;background:#221126;clip-path:polygon(50% 0,100% 100%,0 100%);}
+  .ps-title{font-family:var(--bub);font-weight:800;font-size:18px;line-height:1;color:#efeaff;margin-bottom:-4px;}
+  .ps-kick{font-size:10.5px;font-weight:800;letter-spacing:1.8px;color:#bcb0e8;margin-bottom:-3px;text-transform:uppercase;}
+  .ps-row{display:flex;align-items:flex-start;gap:10px;}
+  .ps-lab{flex:none;width:52px;padding-top:9px;font-size:11px;font-weight:700;color:#7d6d92;}
+  .ps-right{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
+  .ps-chips{display:flex;gap:6px;}
+  .ps-chip{display:flex;align-items:center;justify-content:center;gap:4px;flex:1;min-height:36px;padding:0 12px;border-radius:11px;font-family:var(--bub);font-weight:800;font-size:13.5px;white-space:nowrap;cursor:pointer;} /* nowrap: the bed field's rows are a fixed 30px, so a wrapping label ("Deep · 4 Hz") bleeds over its neighbours */
+  .ps-chip.sm{flex:none;min-height:30px;padding:0 8px;font-size:11.5px;}
+  .ps-chip:active{transform:translateY(2px);}
+  .ps-chip.sm:active{transform:translateY(1px);}
+  .ps-chip.sel:active{box-shadow:0 1px 0 #160510 !important;}
+  .ps-beds{position:relative;}
+  /* overflow-y:hidden + touch-action:pan-x = the v1313 dose-rail lesson: without them this three-row field scrolls VERTICALLY under a finger */
+  .ps-bedgrid{overflow-x:auto;overflow-y:hidden;touch-action:pan-x;scrollbar-width:none;display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,30px);gap:6px;justify-content:start;padding-right:20px;grid-auto-columns:107px;scroll-snap-type:x mandatory;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);}
+  .ps-bedgrid::-webkit-scrollbar{display:none;}
+  /* UNIFORM COLUMNS + SNAP (David 2026-08-20: "each button is the same size and they aren't cut off half way when you open settings").
+     Content-sized columns gave four different widths (60/51/68/76 measured) and left the last one sliced by the field edge.
+     107px makes every column identical AND puts the third column's left edge at exactly 226px — the field's own width — so
+     it is entirely out of view rather than sliced. 97px left 20px of a chip showing inside the fade, which David saw as a
+     button cut in half. Two full columns beat three with a severed one; the chevron and the snap say there is more. */
+  .ps-bedgrid > *{scroll-snap-align:start;}
+  .ps-more{position:absolute;right:-9px;top:50%;transform:translateY(-50%);font-size:14px;color:#7d6d92;pointer-events:none;}
+  .ps-vol{display:flex;align-items:center;gap:8px;margin:2px 4px 4px 0;}
+  .ps-vol > i{flex:none;font-size:15px;color:#7d6d92;line-height:1;}
+  .ps-track{position:relative;flex:1;height:9px;border-radius:6px;background:rgba(255,255,255,.09);cursor:pointer;touch-action:none;}
+  .ps-fill{height:100%;border-radius:6px;}
+  .ps-knob{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;border:2.5px solid #160510;box-shadow:0 2px 0 #160510;transform:translate(-50%,-50%);}
+  .ps-tog{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:rgba(255,255,255,.05);border:2px solid #4b3a56;border-radius:14px;padding:9px 12px;color:#cbb8d6;font-family:var(--bub);font-weight:800;font-size:12.5px;text-align:left;cursor:pointer;}
+  .ps-foot{display:flex;gap:9px;margin-top:3px;position:sticky;bottom:-15px;background:#221126;padding:5px 0 0;} /* sticky only bites when the card overflows — the SESSION scopes fit the frame exactly, but the off-session Sound scope carries every row plus the two app toggles, and a half-clipped primary is not a button */
+  .ps-done{flex:1;min-height:42px;border-radius:14px;border:2.5px solid #160510;box-shadow:0 4px 0 #160510;color:#160510;font-family:var(--bub);font-weight:800;font-size:14px;text-transform:lowercase;cursor:pointer;}
+  .ps-done:active{transform:translateY(3px);box-shadow:0 1px 0 #160510;}
   @keyframes gpWave1{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-8%) scale(1.09);}}
   @keyframes gpWave2{0%,100%{transform:translateY(0) scale(1.05);}50%{transform:translateY(7%) scale(1);}}
   @keyframes gpWave3{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(6%) scale(1.1);}}
@@ -1582,7 +1631,7 @@
   /* ===== §10f.7 HOME (David ✓ 2026-07-13, "Refined C2"): the idle cockpit AS the app's landing — story bars on top → greeting → the big pink Track CIRCLE (lower, near the tools) → Plan-my-day → a tinted tools side-scroll. Additive layer on st-idle; without .tf-home the idle frame is byte-identical. ===== */
   /* balanced full-height composition: header row (top) · greeting+circle (centered) · Plan+tools (bottom) — space-between fills the screen instead of clustering low */
   #trackerFull.tf-home.st-idle .tf-inner{ justify-content:flex-start; padding-top:calc(env(safe-area-inset-top,0px) + 54px); } /* FIDELITY FIX (David 2026-07-22 approved board): space-between blew a giant dead band between strip and circle. flex-start + measured margins (strip→air→circle) match the mockup rhythm; the circle sits centered-ish with breathing room, not floated to the middle by justify. */
-  #trackerFull.tf-home.st-idle #tfHomeBars{ margin-bottom:var(--tun-gap, 3vh); } /* NUMERIC PASS: strip→circle gap target ≈10% of viewport total (was rendering 13.7%); 6vh→3vh, tuner-var driven */
+  #trackerFull.tf-home.st-idle #tfHomeBars{ margin-bottom:var(--tun-gap, 26.2px); } /* NUMERIC PASS: strip→circle gap target ≈10% of viewport total (was rendering 13.7%); 6vh→3vh, tuner-var driven */
   #trackerFull.tf-home.st-idle .tf-stage{ flex:0 0 auto; }
   #trackerFull.tf-home.st-idle .tf-livemeta{ display:none; }
   /* bring the top back: clock (left), streak+today (right), settings gear + the close/PULL-DOWN chevron (center) — re-shown over the st-idle hide */
@@ -1611,7 +1660,7 @@
   .tf-hb-fill{ height:100%; border-radius:5px; }
   .tf-hb i{ font-size:18px; line-height:1; }
   /* Plan-my-day ghost + the tools side-scroll panel (built into #tfCtrls in home mode) */
-  #trackerFull.tf-home.st-idle .tf-ctrls{ margin-top:5vh; width:100%; } /* FIDELITY FIX (David 2026-07-22): air between the next-line and the grid (was 14px, part of the giant-dead-band problem now that the inner is flex-start) */
+  #trackerFull.tf-home.st-idle .tf-ctrls{ margin-top:43.7px; width:100%; } /* FIDELITY FIX (David 2026-07-22): air between the next-line and the grid (was 14px, part of the giant-dead-band problem now that the inner is flex-start) */
   .tf-planday{ width:100%; display:flex; align-items:center; justify-content:center; gap:8px; background:transparent; border:2px dashed #4a3358; border-radius:13px; color:#d2aae8; font-family:"Jost",sans-serif; font-weight:800; font-size:14.5px; padding:13px 14px; cursor:pointer; }
   .tf-planday i{ font-size:17px; }
   .tf-toolspanel{ margin-top:12px; background:#1c0a18; border:2px solid #160510; border-radius:16px; padding:12px 0 10px; }
@@ -1733,13 +1782,20 @@
   #trackerFull.tf-onepage.tf-onehome .tfw-sky{ width:100%; box-sizing:border-box; }
   /* the home zone carries the SAME balanced full-height composition the .tf-inner used to (space-between: story strip top · circle centered · controls+grid bottom); it always fills one viewport so the sky/ground peeks sit just off each edge. The fixed status row (clock/spark/gear) floats over its top via .tf-inner. */
   #trackerFull.tf-onepage.tf-onehome .tfw-home{ position:relative; width:100%; min-height:100dvh; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:calc(env(safe-area-inset-top,0px) + var(--tun-sky-gap, 54px)) 0 calc(env(safe-area-inset-bottom,0px) + 34px); } /* NUMERIC PASS (David 2026-07-22): space-between WAS the dead band — flex distributed the spare viewport as giant gaps between strip/circle/grid. flex-start + explicit rhythm below. --tun-sky-gap = the space above the strip = also the trail→circle gap when scrolled up (David 2026-07-22 video "the timeline should be closer to the circle, feel connected"): default 54 unchanged, tune DOWN on device to hug the journey to the circle. */
-  #trackerFull.tf-onepage.tf-onehome .tfw-home #tfHomeBars{ margin-top:0; margin-bottom:var(--tun-gap, 8vh); } /* FACE-UP (David 2026-07-27 device "the face rides too low; dead sky between the HUD and the strip"): the margin-top:auto is GONE — it was splitting the zone's spare height into a ~15%vh dead band ABOVE the strip. The strip now sits at the zone's padding-top = env(safe-area-inset-top) + --tun-sky-gap (54px) = the HUD's bottom edge (gear = env+11 + 30px) + 13px, on every safe-area. ALL the freed height falls BELOW the stack (.tf-ctrls keeps margin-bottom:auto), which is where the toolbox deck now rises into. SUPERSEDES the 2026-07-22 "centered stack" proportion; the strip→circle gap is still var(--tun-gap). */
-  #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-ctrls{ margin-top:var(--tun-tools-gap, 5vh); margin-bottom:auto; } /* the tools sit a small fixed gap UNDER the circle, then free space below → the stack centers (was margin-top:auto = grid pinned to the bottom with a big void above). Tunable gap. */
+  /* THE vh-IN-AN-ARTBOARD CONVERSION (2026-08-20). The one-page home column is a FIXED artboard that is transform-scaled to fill the phone, so a
+     `vh` spacing inside it resolves against the REAL screen and ignores the transform: it equals the designed pixel at the 874 artboard (which is
+     exactly why every gate passed) and inflates ~9% on a 440x956 phone while every fixed-px element beside it stays put. The three defaults below
+     are now the artboard px they resolved to at 874 (8vh=69.9 · 5vh=43.7 · -19vh=-166.1; and 3vh=26.2 / 5vh=43.7 on the older .tf-home face above).
+     The --tun-* vars are untouched so the Design tuner still writes real pixels. NOTE, measured: on the LIVE .tf-2c face all three of these are
+     already overridden by the 2026-08-14 RHYTHM pass below (strip margin-bottom:0 · .tf-ctrls margin-top:18px · .tfw-ground margin:-52px), so this
+     conversion changes nothing David can see — it removes the class from the fallback faces, and designAudit now gates it mechanically. */
+  #trackerFull.tf-onepage.tf-onehome .tfw-home #tfHomeBars{ margin-top:0; margin-bottom:var(--tun-gap, 69.9px); } /* FACE-UP (David 2026-07-27 device "the face rides too low; dead sky between the HUD and the strip"): the margin-top:auto is GONE — it was splitting the zone's spare height into a ~15%vh dead band ABOVE the strip. The strip now sits at the zone's padding-top = env(safe-area-inset-top) + --tun-sky-gap (54px) = the HUD's bottom edge (gear = env+11 + 30px) + 13px, on every safe-area. ALL the freed height falls BELOW the stack (.tf-ctrls keeps margin-bottom:auto), which is where the toolbox deck now rises into. SUPERSEDES the 2026-07-22 "centered stack" proportion; the strip→circle gap is still var(--tun-gap). */
+  #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-ctrls{ margin-top:var(--tun-tools-gap, 43.7px); margin-bottom:auto; } /* the tools sit a small fixed gap UNDER the circle, then free space below → the stack centers (was margin-top:auto = grid pinned to the bottom with a big void above). Tunable gap. */
   #trackerFull.tf-onepage.tf-onehome .tfw-home .tf-stage{ flex:0 0 auto; }
   /* ONE-PAGE (David 2026-07-22): the story strip is a normal in-flow part of the HOME zone — it must SCROLL NATURALLY with the content, never animate. Kill any transition on it so a re-render/scroll layout shift can't make it "slide up and disappear". */
   #trackerFull.tf-onepage.tf-onehome #tfHomeBars{ transition:none !important; }
   #trackerFull.tf-onepage.tf-onehome .tf-stage{ touch-action:pan-y !important; } /* SCROLL FIX (David 2026-07-22): the stage carries an inline touch-action:none for drag-to-close — a dead scroll zone dead-center on the one-page home. Force pan-y so the circle area scrolls the column like everything else (tfDrag also bails here). */
-  #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -19vh) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px + 32px); } /* GROUND BOTTOM AIR (David device 2026-08-01, "the tools on the bottom are too close to the bottom, gotta leave a little space below"): +32px on top of the existing 40 + safe-area. MEASURED at 375x812: the last folder-square row ended 60px above the viewport floor while the fixed #guardPuck occupies y 730-796 — the row sat inside the puck's band, which is what reads as "too close". The band is transparent (neither .tfw-ground nor .tbx paints a fill), so it shows the same night ground as behind the tiles — no dead colour stripe. designAudit's "ground bottom air" gate locks it at ≥32px. */ /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
+  #trackerFull.tf-onepage.tf-onehome .tfw-ground{ width:100%; box-sizing:border-box; margin-top:calc(var(--tun-ground-pull, -166.1px) - env(safe-area-inset-bottom, 0px)); padding-bottom:calc(env(safe-area-inset-bottom,0px) + 40px + 32px); } /* GROUND BOTTOM AIR (David device 2026-08-01, "the tools on the bottom are too close to the bottom, gotta leave a little space below"): +32px on top of the existing 40 + safe-area. MEASURED at 375x812: the last folder-square row ended 60px above the viewport floor while the fixed #guardPuck occupies y 730-796 — the row sat inside the puck's band, which is what reads as "too close". The band is transparent (neither .tfw-ground nor .tbx paints a fill), so it shows the same night ground as behind the tiles — no dead colour stripe. designAudit's "ground bottom air" gate locks it at ≥32px. */ /* DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the deck tile NAMES sit flush at 100vh — clipped, and fall under the home indicator"): two changes. (1) the pull deepens -12vh→-19vh — the face rose (see .tfw-home #tfHomeBars above), so the deck rises with it into the freed height instead of hanging at the fold. (2) the pull now SUBTRACTS env(safe-area-inset-bottom) so the first deck row's labels end a real gap above the iOS home indicator on device, not just above the CSS viewport edge (preview env=0 → exactly -17vh). designAudit's "deck row clears the home fold" gate locks it (≥12px above the home-zone bottom). --tun-ground-pull stays the knob. */ /* TOOLBOX-UP (David 2026-07-23 device "tool tiles start too low, dead space above them"): the home zone is min-height:100dvh with its board centered → the bottom half-gap was a long empty stretch before the tiles. Pull the ground up into that empty bottom band so the first tile row peeks near the fold / arrives almost immediately on scroll. vh-based so it scales with the viewport (taller phone = bigger dead band). --tun-ground-pull is the tuner knob (negative = up); board circle/strip/plan-button untouched. */
   /* FIX PASS 2 D (design 2026-07-28) "live mode hides the tool deck": the ground PULL is cancelled while tracking, so the deck starts exactly at the fold instead of rising into the live face. Reconciles the design law with David's 2026-07-22 device law ("when tracking you should still be able to scroll down and see the tools") — the deck is hidden on the live screen, one scroll away, not deleted. */
   #trackerFull.tf-onepage.tf-onehome.st-onplan .tfw-ground, #trackerFull.tf-onepage.tf-onehome.st-off .tfw-ground{ margin-top:0; }
   /* HOME 2c (David 2026-08-02): the -19vh pull is CANCELLED on the 2c face, by the same idiom the live face already uses. The pull existed to fill the home zone's empty bottom band with the peeking deck; on 2c that band is the HERO ROW + the TOOLS fold hint, and the artifact's chevron-down is an INVITATION — the toolbox is one scroll below, not half-visible on top of the hero row. CONFLICT FLAGGED to David: this retires the deck's above-the-fold peek on the home face (designAudit's fold gate now measures the TOOLS hint, same 26px threshold, same home-zone slab). */
@@ -1823,19 +1879,13 @@
   .tbx-step-tm{ flex:0 0 auto; font-size:10.5px; font-weight:800; color:#9a6a86; font-variant-numeric:tabular-nums; } /* 21e per-step time column — the duration this step actually runs at the chosen dose */
   .tbx-dose-chev{ margin-left:auto; flex:0 0 auto; width:26px; height:26px; border-radius:9px; border:none; background:#180a14; color:#9a6a86; display:flex; align-items:center; justify-content:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-dose-chev i{ font-size:13px; }
-  .tbx-dose-foot{ display:flex; align-items:center; gap:7px; margin-top:12px; }
-  .tbx-chips{ display:flex; gap:7px; }
-  .tbx-chip{ padding:8px 13px; border-radius:11px; border:1.5px solid transparent; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  /* THE DOSE ROW IS ONE SCROLLING LADDER (David 2026-08-20: "I just want a single row of time options that you can scroll"). The axis lock is the v1313 law, hoisted from the 2c override so BOTH dose cards obey it: overflow-x:auto alone leaves overflow-y computing to auto, which makes the ladder a vertical scroller too and rubber-bands the row under the finger on iOS. touch-action:pan-x is the app's own rail idiom (.sed-rail / .pk-rail declare it); overscroll-behavior-x:contain stops the ladder's end from chaining into whatever scrolls behind it. */
+  .tbx-dose-foot{ display:flex; align-items:center; gap:7px; margin-top:8px; margin-bottom:-4px; padding:4px 0; overflow-x:auto; overflow-y:hidden; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none; } /* LIP ROOM, the same idiom .pk-rail already carries: a scroller clips at its padding edge, and the chosen chip's lip is a box-shadow OUTSIDE its border box (0 4px 0 on the shelf card, 0 3px 0 on 2c) — with the row hugging the chips exactly, that lip was shaved off. 4px of interior room top and bottom, cancelled by the matching margins, so not one pixel of the row moves. */
+  .tbx-dose-foot::-webkit-scrollbar{ display:none; }
+  .tbx-chips{ display:flex; gap:7px; flex:0 0 auto; }
+  .tbx-chip{ flex:0 0 auto; white-space:nowrap; padding:8px 13px; border-radius:11px; border:1.5px solid transparent; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-chip.on{ color:#160510; }
   .tbx-chip:active{ transform:translateY(2px); }
-  .tbx-more{ margin-left:auto; display:flex; align-items:center; gap:5px; padding:8px 11px; border-radius:11px; border:none; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .tbx-more i{ font-size:13px; }
-  .tbx-more:active{ transform:translateY(2px); }
-  .tbx-mgrid{ margin-top:9px; background:#1d0e18; border-radius:13px; padding:10px; } /* 21a: "more" opens the minute grid in-card — tap, never type */
-  .tbx-mgrid-lbl{ font-size:9px; font-weight:800; letter-spacing:1.1px; color:#9a6a86; margin-bottom:8px; }
-  .tbx-mrow{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
-  .tbx-mchip{ padding:8px 0; border-radius:11px; border:1.5px solid transparent; background:#180a14; color:#c98ca6; font-family:"Jost",sans-serif; font-weight:800; font-size:12px; text-align:center; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .tbx-mchip:active{ transform:translateY(2px); }
   .tbx-start{ width:100%; display:flex; align-items:center; justify-content:center; gap:7px; margin-top:12px; padding:11px 0; border-radius:13px; border:none; background:#ff5fa8; box-shadow:0 4px 0 color-mix(in srgb,#ff5fa8 45%,#000); color:#2a1730; font-family:"Jost",sans-serif; font-weight:800; font-size:13.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-start i{ font-size:14px; }
   .tbx-start:active{ transform:translateY(2px); box-shadow:0 1px 0 color-mix(in srgb,#ff5fa8 45%,#000); }
@@ -1986,12 +2036,9 @@
   .tbx-dose-2c .tbx-stepcoin i{ font-size:16px; }
   .tbx-dose-2c .tbx-step-tx{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; }
   .tbx-dose-2c .tbx-step-tm{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#b596ad; }
-  .tbx-dose-2c .tbx-dose-foot{ margin-top:0; gap:8px; overflow-x:auto; overflow-y:hidden; touch-action:pan-x; overscroll-behavior-x:contain; scrollbar-width:none; } /* SIDEWAYS ONLY (David 2026-08-19 device: "you're also able to scroll downwards within those numbers"). `overflow-x:auto` alone leaves overflow-y computing to auto, which makes the dose ladder a VERTICAL scroll container too — on iOS that rubber-bands the row under the finger. overflow-y:hidden + the app's own rail idiom (touch-action:pan-x, as .sed-rail / .pk-rail already declare) pins the axis; overscroll-behavior-x:contain stops the ladder's own end from chaining into the world column behind it. */
-  .tbx-dose-2c .tbx-dose-foot::-webkit-scrollbar{ display:none; }
-  .tbx-dose-2c .tbx-chips{ flex:0 0 auto; gap:8px; }
+  .tbx-dose-2c .tbx-dose-foot{ margin-top:-4px; gap:8px; } /* the SIDEWAYS-ONLY axis lock (David 2026-08-19 device: "you're also able to scroll downwards within those numbers") now lives on the base .tbx-dose-foot, so the shelf card's ladder is pinned the same way; only the 2c spacing is left here, and the -4 cancels the base row's 4px lip padding so this foot still sits at its designed 0 offset. */
+  .tbx-dose-2c .tbx-chips{ gap:8px; }
   .tbx-dose-2c .tbx-chip{ flex:0 0 auto; padding:10px 17px; border-radius:15px; border:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; white-space:nowrap; }
-  .tbx-dose-2c .tbx-more{ flex:0 0 auto; margin-left:0; padding:10px 15px; border-radius:15px; background:#170a12; color:#e8c7d8; font-weight:800; font-size:14px; white-space:nowrap; }
-  .tbx-dose-2c .tbx-more i{ font-size:15px; }
   .tbx-dose-2c .tbx-start{ margin-top:0; padding:15px 0; border-radius:19px; background:#ff4fa0; box-shadow:0 5px 0 #a41d60; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:19px; color:#2a0d1c; }
   .tbx-dose-2c .tbx-start i{ font-size:16px; }
   .tbx-dose-2c .tbx-start:active{ transform:translateY(4px); box-shadow:0 1px 0 #a41d60; }
@@ -2141,7 +2188,7 @@
   .stk-face{ position:absolute; inset:0; z-index:3; border-radius:35%; display:flex; align-items:center; justify-content:center; }
   .stk-face i{ color:#fff2f9; filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.28)); } /* white glyph, soft drop — the ink glyph on a deck face is dead everywhere except an IGNITED card, which stkCard sets inline */
   .stk-lab{ font-family:"Baloo 2",sans-serif; font-weight:800; line-height:1.15; text-align:center; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; } /* the name under the card: the FACE hue (set in JS), centered, wrapping to two lines instead of the old one-line ellipsis */
-  /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-panel/.pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
+  /* ===== @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (design "Activity Picker" 18a). Every px/hex ported from the design markup; hues come from the app's DOM registry in JS. The wall footer and the folder-sheet footer share .pk-bar EXACTLY (David's contract: opening a folder must not shift the bottom by a pixel). ===== */
   .pk-ov{ position:fixed; inset:0; z-index:98; font-family:"Jost",sans-serif; background:radial-gradient(115% 65% at 50% 0%, #2f1026 0%, #1a0813 55%, #120509 100%); --move:#ff8a3a; --nourish:#34d39a; --focus:#36b3f0; --create:#b07aff; --connect:#ff5fa0; --restore:#2ab8c4; --upkeep:#7f9bc4; } /* the domain vars, mirrored from .tbx: a chain step carried out of the Session Editor stores its hue as var(--dom), and it must resolve here too (an unresolved var painted a transparent coin). --play is deliberately ABSENT: DOM.play.c is now #ffc83d itself, so the picker-scoped copy was the last trace of the old two-golds split. */
   .pk-ov *{ box-sizing:border-box; }
   .pk-ov ::-webkit-scrollbar{ width:0; height:0; }
@@ -2183,23 +2230,9 @@
   .pk-ftx{ flex:1; min-width:0; }
   .pk-ftl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16px; color:#fff2f9; line-height:1.05; }
   .pk-fts{ display:block; font-size:10.5px; font-weight:800; }
-  /* ---- the shared footer (wall + sheet render these IDENTICALLY) ---- */
-  .pk-tab{ flex:none; align-self:center; width:64px; height:24px; margin-bottom:-6px; border:none; background:none; color:#96637e; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; -webkit-tap-highlight-color:transparent; }
-  .pk-tab i{ font-size:17px; transition:transform .25s ease; }
-  .pk-panel{ flex:none; padding:4px 22px 0; display:flex; flex-direction:column; gap:10px; animation:edPop .16s ease both; } /* NO DIVIDER (David 2026-07-31): the 2px #24101c border-top under the chevron read as a berry rule cutting the footer off. Line gone, and the 13px it occupied (2 border + 11 pad) pulled back to 4 so the footer sits tighter under the tab. The chevron stays. */
-  /* the plate strip at the footer frame's size (David 2026-07-31 correction: 64 was an overshoot) — 48px face, ~20px glyph, 13px name. The top/left padding is load-bearing: a deck chip's shards fan up-LEFT by 0.14·S / 0.086·S (6.7px left, 4.1px up on a 48px card) and .pk-queue clips vertically (overflow-x:auto forces overflow-y). */
-  .pk-queue{ display:flex; gap:18px; padding:6px 4px 2px 9px; overflow-x:auto; touch-action:pan-x; }
-  .pk-q{ display:flex; flex-direction:column; align-items:center; gap:7px; background:none; border:none; padding:0; cursor:pointer; flex:none; -webkit-tap-highlight-color:transparent; }
-  .pk-q:active{ transform:translateY(2px); }
-  .pk-qc{ width:48px; height:48px; } /* the chip IS a stack card (.stk): shards, face and radius all come from the .stk block */
+  /* ---- the bottom bar (wall + sheet render these IDENTICALLY). The picked-activities tray that lived here — .pk-tab / .pk-panel / .pk-queue / .pk-q* / .pk-tune / .pk-fh* — is DELETED with it (David 2026-08-16). .pk-qx survives: the Arranger's sub-step rows still wear it. ---- */
   .pk-qx{ position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%; background:rgba(22,5,16,.85); color:#c9a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; padding:0; z-index:4; } /* z4: above the card's z3 face, which now stacks explicitly */
   .pk-qx i{ font-size:11px; }
-  .pk-ql{ font-size:13px; max-width:64px; } /* family/weight/wrap live in .stk-lab; the colour is the face hue (pink when focused), set in JS. 64px, not 78: the chip pitch is 48 + 18 = 66. */
-  .pk-tune{ display:flex; flex-direction:column; gap:10px; }
-  .pk-fh{ display:flex; align-items:center; gap:9px; }
-  .pk-fht{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; color:#fff2f9; line-height:1.05; }
-  .pk-fhs{ display:block; font-size:11px; font-weight:700; color:#8a5f76; }
-  .pk-fhm{ flex:none; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:22px; color:#fff2f9; }
   .pk-railw{ display:flex; gap:4px; align-items:stretch; }
   .pk-railb{ position:relative; flex:1; min-width:0; }
   .pk-rail{ display:flex; gap:6px; overflow-x:auto; touch-action:pan-x; padding:4px 0 4px 4px; margin:-4px 0 -4px -4px; } /* RING ROOM (David 2026-07-31, on device: "the ring is cut off"). The picked chip wears pkRing() = a 2.5px box-shadow, and a shadow lives OUTSIDE the border box — an overflow-x:auto scroller whose content box hugged the chip exactly clipped that ring on every straight edge (only the rounded-corner wedges survived), and the picked chip renders FIRST (current-first order), so its left edge clipped too. 4px of interior room (ring 2.5 + 1.5 slack) on top/bottom/left, cancelled by the matching -4px margins so not one pixel of the rail, the chips or the fade moves. The RIGHT stays flush on purpose: a scroller clips at its PADDING edge, so right padding would let a scrolled chip paint 4px past .pk-fade and print an unfaded sliver. Nothing is lost there — the picked chip always sits first, and the right edge is the fade's job. */
@@ -2230,15 +2263,11 @@
   .pk-addstep i{ font-size:15px; }
   .pk-bar{ flex:none; padding:10px 22px calc(env(safe-area-inset-bottom,0px) + 28px); display:flex; align-items:center; gap:9px; }
   .pk-bartx{ flex:1; min-width:0; }
-  .pk-bark{ display:block; font-size:10px; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* ONE LINE, always. The one-pick button carries its duration now, so the plate slot narrows; David's tiebreak is that the plate text gives way rather than the button wrapping — and a kicker that REFLOWS to two lines breaks the "same level" row exactly the way a wrapped button would. */
   .pk-barl{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; color:#fff2f9; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } /* DS: the populated label holds ONE line */
   .pk-barl.hint{ font-size:14px; color:#c98ca6; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; white-space:normal; line-height:1.15; } /* DS: the empty state is a HINT (14px #c98ca6), not a title. MEASURED at 375px: the label slot is 190px beside the 131px Arrange, and the sentence needs 220px at 14px — so nowrap clips it to "…you feel li". The DS's stated purpose is the WHOLE hint being readable, so only this state wraps, to two lines. The populated label above keeps its single nowrap line. */
   .pk-go{ flex:none; display:flex; align-items:center; gap:8px; min-height:48px; padding:14px 18px; border-radius:16px; border:3px solid #160510; background:#ff4fa0; box-shadow:0 5px 0 #662040; color:#2a1730; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:17px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* DS: under-shadow is HUE-derived — color-mix(in srgb, #ff4fa0 40%, #000) = #662040 — never plain ink; label is ink-on-fill #2a1730 */
   .pk-go i{ font-size:19px; }
   .pk-go:active{ transform:translateY(4px); box-shadow:0 1px 0 #662040; } /* press ladder: 5px sticker → 4px travel */
-  /* THE ONE-PICK PRIMARY (David's reference 2026-07-31, correction: SKIN ONLY). The bar keeps its row — kicker + item label left, the button bottom-right on the same level; it never takes the whole bottom. Only the button's material changes. n==0 (disabled) and n>1 (Arrange) keep their own skin untouched. */
-  .pk-go.one{ padding:14px 16px; border-radius:22px; border:none; background:#ff5fa0; box-shadow:0 6px 0 color-mix(in srgb, #ff5fa0 50%, black); color:#4a1126; font-size:17px; white-space:nowrap; } /* --alter-pink-soft #ff5fa0 (the harder #ff4fa0 stays the RING and the Arrange fill); ink is the plum #4a1126, not #160510 and not PK_INK; the lip is hue-derived at 50%, replacing this button's #662040. nowrap + .pk-go's flex:none is what makes the "· X min" suffix push the PLATE LABEL into its ellipsis instead of breaking the button onto two lines. MEASURED at 375px: at 18px/14-20 the button ate 239 of the bar's 331 and the fixed "ON YOUR PLATE" kicker (100px) clipped to "ON YOUR P…"; 17px/14-16 gives the plate slot the ~104px it needs, so the kicker reads whole and only the variable item label ever truncates. The glyph stays at .pk-go's 19px with the type back at 17. */
-  .pk-go.one:active{ transform:translateY(5px); box-shadow:0 1px 0 color-mix(in srgb, #ff5fa0 50%, black); } /* same press behaviour one step taller: 6px lip → 5px travel → 1px residual, and the pressed shadow is the hue-mix too, never ink */
   /* ---- the folder sheet ---- */
   .pk-sh-ov{ position:absolute; inset:0; }
   .pk-scrim{ position:absolute; inset:0; border:none; background:rgba(7,3,8,.6); cursor:pointer; padding:0; }
@@ -2299,6 +2328,9 @@
   .pk-guth{ display:block; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:24px; line-height:24px; color:#efd7e6; }
   .pk-gutd{ display:block; width:11px; height:4px; border-radius:2px; background:#6b4a5e; margin-top:10px; } /* canvas 603: rendered ONLY on a same-hour row (no numeral) — gutter pad-top 10 + 10 = the 20px optical seat */
   .pk-acol{ flex:1; min-width:0; position:relative; }
+  /* INSERTED TIME (David 2026-08-16, "you should be able to move it down… it will push everything below it down"): a pick that starts later than the one above it holds a real gap, and the gap is drawn as real height in the Arranger's own column. 2px per minute (PK_ARR_PXMIN), floored at 24 so a 5-minute nudge still reads, capped at 120 so a 3-hour wait doesn't push the list off the screen. */
+  .pk-agap{ margin-left:53px; border-left:2.5px dashed #4b2a44; display:flex; align-items:center; padding-left:11px; }
+  .pk-agaptx{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; color:#96637e; }
   .pk-apk2{ position:absolute; left:-8px; top:-8px; right:16px; height:54px; border-radius:15px; border:2px solid #160510; }
   .pk-apk1{ position:absolute; left:-4px; top:-4px; right:8px; height:58px; border-radius:16px; border:2.5px solid #160510; }
   .pk-abub{ position:relative; border-radius:19px; border:3px solid #160510; overflow:hidden; box-shadow:0 5px 0 #160510; transition:border-color .3s ease; }
@@ -2346,7 +2378,7 @@
   .tf-datekick{ display:none; font-family:"Jost",sans-serif; font:800 17px "Jost",sans-serif; letter-spacing:2.8px; color:#e8c7d8; text-align:center; }
   #trackerFull.tf-home.st-idle .tf-datekick{ display:block; order:-1; margin-bottom:14px; } /* §1: nothing else above the circle — .tf-say / .tf-sf are already display:none on .tf-onehome */
   #trackerFull.tf-onehome.tf-2c.st-night .tf-datekick{ display:block; order:-1; } /* THE NIGHT BOARD IS THE HOME BOARD (David 2026-08-19: "the home screen should look like the original home screen … even if the middle circle is purple"). Same strip → date → stone rhythm; without the kicker the whole night composition rendered 78px high against the frame ("the proportions are off on the top, the streaks thing is too close to the very top"). Margin stays the 2c rule's own 56px 0 0 (higher specificity, above). */
-  #trackerFull.tf-home.st-idle .tf-verdict{ display:block; max-width:78vw; margin:6px auto 0; text-align:center; font-size:15px; font-weight:600; line-height:1.35; color:#b98ba3; letter-spacing:0; text-transform:none; } /* the sub-line wraps to two lines in the PNG — inline-flex could not wrap */
+  #trackerFull.tf-home.st-idle .tf-verdict{ display:block; max-width:313.6px; /* 78vw at the 402 artboard — the sweep of 2026-08-20 found this and .tf-nextup as the two viewport-relative widths still LIVE inside the 402 column (the ring's three vw rules are all overridden to 180px on the 2c face, and .tf-inner/.tfw-home read the viewport deliberately, to derive the artboard). A vw max-width here let the sub-line wrap at 343px on a 440 phone and 314px on the artboard, which is a different line break for the same sentence. */ margin:6px auto 0; text-align:center; font-size:15px; font-weight:600; line-height:1.35; color:#b98ba3; letter-spacing:0; text-transform:none; } /* the sub-line wraps to two lines in the PNG — inline-flex could not wrap */
   .tf-earlypill{ display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:7px 13px; border-radius:12px; border:2.5px solid #4b2a44; background:rgba(255,242,249,.05); color:#e8c7d8; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; cursor:pointer; -webkit-tap-highlight-color:transparent; } /* §2a: the PNG's tiny ghost mini-pill — start the next block early. Ghost recipe, no fill, no bloom. */
   #trackerFull.tf-home.st-idle .tf-earlypill{ order:3; } /* the stage is order-driven on the idle home (ring 0 · title 1 · sub-line 2) — the pill must land AFTER the sub-line, not above the circle */
   .tf-earlypill i{ font-size:12px; }
@@ -2553,7 +2585,7 @@
   .tf-livemeta .tf-lm-spark i{ font-size:14px; }
   #trackerFull.st-onplan .tf-livemeta, #trackerFull.st-off .tf-livemeta{ display:flex; }
   #trackerFull.tf-morphing .tf-livemeta{ opacity:0; }
-  .tf-nextup{ display:none; margin-top:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; color:#8a6f84; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:82vw; }
+  .tf-nextup{ display:none; margin-top:9px; font-family:"Jost",sans-serif; font-weight:700; font-size:12.5px; color:#8a6f84; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:329.6px; } /* 82vw at the 402 artboard (see .tf-verdict above) */
   .tf-nextup i{ font-size:12px; }
   #trackerFull.st-onplan .tf-nextup, #trackerFull.st-off .tf-nextup{ display:inline-flex; align-items:center; justify-content:center; gap:10px; }
   .tf-nextup .tf-nu-lab{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:74vw; } /* A6 (David 2026-07-21): widened the "next: …" budget — it was needlessly ellipsizing "next: Make art · 17:31" while the row had room (was 60vw; the play button is only 30px, so 74vw fits comfortably) */
@@ -3115,6 +3147,56 @@
   .you-adv .you-advlbl{ flex:1 1 auto; }
   .you-adv .you-advchev{ font-size:18px; transition:transform .2s; }
   .you-adv.open .you-advchev{ transform:rotate(180deg); }
+  /* ===== THE YOU MENU (David's "Settings Menus" frame, ported 2026-08-20 — "get rid of that [The Vital] and make it the settings I
+     designed, at least the main menu"). ARTBOARD CONFLICT, flagged not silently resolved: the frame is authored at 390x893 while home
+     is pinned to 402x874. Two artboards. The column is therefore pinned at an ABSOLUTE 390px and centred, exactly as home pins 402,
+     and the 893 is simply "taller than the screen" so the list scrolls. Unlike home this column is NOT transform-scaled — scaling a
+     scrolling list would blow its type up on a wide phone; it centres in the extra width instead. Every value below is the frame's own.
+     The dashed edge on the Advanced row is the ONE dashed edge in the design and is deliberate: it marks the expandable dev drawer. */
+  .ym-ov{ position:fixed; inset:0; z-index:112; background:linear-gradient(180deg,#3a1630 0%,#32152e 22%,#251436 54%,#180b25 86%,#0d050f 100%); }
+  .ym-scroll{ position:absolute; inset:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+  .ym-col{ width:390px; margin:0 auto; box-sizing:border-box; display:flex; flex-direction:column; align-items:stretch; }
+  .ym-head{ margin:66px 25px 0; height:28px; display:flex; align-items:center; justify-content:space-between; }
+  .ym-x{ width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,242,249,.16); background:#2a1220; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; }
+  .ym-x i{ font-size:13px; color:#ff8fc0; }
+  .ym-gems{ display:flex; align-items:center; gap:9px; }
+  .ym-gems i{ font-size:21px; color:#ffc41f; }
+  .ym-gems b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:23px; line-height:1; color:#ffc41f; }
+  .ym-title{ margin:32px 25px 0; display:flex; align-items:center; gap:17px; }
+  .ym-h1{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:38px; line-height:1; color:#fff2f9; }
+  .ym-rank{ padding:10px 14px; border-radius:999px; background:rgba(226,74,140,.32); color:#fd58a2; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; line-height:1; }
+  .ym-card{ margin:29px 22px 0; height:95px; border-radius:20px; background:#241020; border:3px solid #160510; box-shadow:0 8px 0 #160510; padding:0 17px 0 20px; display:flex; box-sizing:border-box; }
+  .ym-cardic{ align-self:center; flex:none; width:45px; height:45px; border-radius:15px; background:#3a0822; display:flex; align-items:center; justify-content:center; }
+  .ym-cardic i{ font-size:26px; color:#f0559b; }
+  .ym-cardb{ margin-left:26px; margin-top:21px; flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:19px; }
+  .ym-cardr{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .ym-cardn{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:24px; line-height:1; color:#fff2f9; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ym-cardgo{ font-family:"Jost",sans-serif; font-weight:700; font-size:15px; line-height:1; color:#c79ab4; flex:none; }
+  .ym-bar{ height:11px; border-radius:999px; background:#190913; overflow:hidden; }
+  .ym-bar i{ display:block; height:100%; border-radius:999px; background:#ff5da8; }
+  .ym-row{ margin:0 22px; width:calc(100% - 44px); height:78px; border-radius:20px; border:3px solid #160510; box-shadow:0 8px 0 #160510; padding:0 22px 0 27px; display:flex; align-items:center; box-sizing:border-box; cursor:pointer; }
+  .ym-row:active{ transform:translateY(3px); box-shadow:0 5px 0 #160510; }
+  .ym-row > i.ym-rico{ font-size:38px; flex:none; line-height:1; }
+  .ym-rb{ margin-left:13px; flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:2px; text-align:left; }
+  .ym-rt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:23px; line-height:1.05; color:#fff2f9; }
+  .ym-rs{ font-family:"Jost",sans-serif; font-weight:600; font-size:15px; line-height:1.15; color:rgba(255,242,249,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ym-rchev{ font-size:24px; color:rgba(255,242,249,.66); flex:none; }
+  .ym-advrow{ margin:18px 22px 0; width:calc(100% - 44px); height:74px; border-radius:22px; background:transparent; border:3px dashed rgba(190,158,190,.5); padding:0 22px 0 28px; display:flex; align-items:center; box-sizing:border-box; cursor:pointer; }
+  .ym-advrow > i.ym-advic{ font-size:28px; color:#a97ff0; flex:none; line-height:1; }
+  .ym-advlbl{ margin-left:13px; flex:1 1 auto; text-align:left; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:19px; color:#c9b2c9; }
+  .ym-advchev{ font-size:24px; color:rgba(255,242,249,.66); flex:none; transition:transform .2s; }
+  .ym-advrow.open .ym-advchev{ transform:rotate(180deg); }
+  .ym-advbox{ display:none; flex-direction:column; margin-top:14px; }
+  .ym-advbox.on{ display:flex; }
+  .ym-advbox .ym-row{ height:62px; margin-top:10px; border-radius:16px; box-shadow:0 5px 0 #160510; background:#241020; padding:0 20px 0 22px; }
+  .ym-advbox .ym-row > i.ym-rico{ font-size:26px; }
+  .ym-advbox .ym-rt{ font-size:18px; }
+  .ym-advbox .ym-rs{ font-size:13px; }
+  .ym-tail{ height:124px; flex:none; }
+  .ym-fade{ position:absolute; left:2px; right:2px; bottom:0; height:150px; background:linear-gradient(to top, rgba(13,5,15,.94) 30%, transparent); pointer-events:none; }
+  .ym-home{ position:absolute; left:13px; bottom:25px; width:64px; height:64px; border-radius:50%; border:2.5px solid #160510; background:#241534; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; }
+  .ym-home i{ font-size:27px; color:#ff4fa0; }
+  .ym-home:active{ transform:translateY(2px); }
   /* === Apple-Music COLLAPSE (David 2026-06-26): scroll the timeline → Goals/You tuck behind the Today pill (bottom-left) and the live tracker drops beside it, freeing the space the floating dock used to cover === */
   body.nav-collapsed.tab-day #nav{ left:8px !important; right:auto !important; width:auto !important; bottom:max(6px,calc(env(safe-area-inset-bottom,0px) - 22px)) !important; justify-content:flex-start !important; padding:0 !important; border:3px solid #160510 !important; border-radius:16px !important; gap:0 !important; box-shadow:0 4px 0 #160510,0 8px 22px rgba(0,0,0,.5) !important; transition:left .26s cubic-bezier(.2,.85,.3,1),bottom .26s cubic-bezier(.2,.85,.3,1); }
   /* Goals/You smoothly collapse into / expand out of the Today pill (David 2026-06-28): animate width+opacity instead of a hard display:none cut, so the triple menu glides open/closed */
@@ -4100,6 +4182,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1315"></script>
+  <script src="app.js?v=1353"></script>
 </body>
 </html>

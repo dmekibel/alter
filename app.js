@@ -47,6 +47,13 @@
   function _audioCfg() { return (typeof S !== "undefined" && S && S.audio) ? S.audio : { voice: 1, bg: 1 }; }
   function sharedAudioCtx() {
     try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; if (!_sharedACtx) _sharedACtx = new AC(); if (_sharedACtx.state === "suspended") { try { _sharedACtx.resume(); } catch (e) {} }
+      // PLAY THROUGH THE RING/SILENT SWITCH (David on device 2026-08-20: "the app sound doesn't work unless the iPhone
+      // speaker is turned on, in other words vibrate is turned off — I want the sound to work regardless"). By default
+      // iOS files web audio under the "ambient" session, which the hardware mute switch silences: correct for a game,
+      // wrong for a guided session the user deliberately started. `navigator.audioSession.type = "playback"` is
+      // WebKit's own opt-out (iOS 16.4+) and is the ONLY supported way — there is no CSS or Web Audio flag for it.
+      // Set on every call because the session can be reset by an interruption (a phone call, another app taking audio).
+      try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) {}
       // TWO master buses (David 2026-07-01): every VOICE clip routes through _voiceBus, every ambient/drone through _bgBus → the volume sliders set these and affect ALL audio live, including a running tool.
       if (!_voiceBus) { _voiceBus = _sharedACtx.createGain(); _voiceBus.gain.value = _audioCfg().voice != null ? _audioCfg().voice : 1; _voiceBus.connect(_sharedACtx.destination); }
       if (!_bgBus) { _bgBus = _sharedACtx.createGain(); _bgBus.gain.value = _audioCfg().bg != null ? _audioCfg().bg : 1; _bgBus.connect(_sharedACtx.destination); }
@@ -56,6 +63,7 @@
   function bgBus() { sharedAudioCtx(); return _bgBus; }
   function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
   // PEACEFUL PAD (David 2026-07-01): the original meditation drone he liked best — an open A pad (A2·E3·A3) with a gentle breathing swell, that slowly + OCCASIONALLY drifts to a warm neighbour chord (F2·C3·A3, common A3 top) and back for a touch of nuance. Reused for the tool bed AND the whole-app music. Returns { stop }.
+  var _padLive = 0; // how many peaceful pads are actually sounding — the honest receipt DEV.beds() reads (a lit chip is not a running oscillator)
   function startPad(ctx, out, level) {
     if (!ctx || !out) return { stop: function () {} };
     var CHA = [110, 164.81, 220], CHB = [87.31, 130.81, 220]; // A(A2 E3 A3) ⟷ F(F2 C3 A3)
@@ -64,10 +72,10 @@
     for (var i = 0; i < 3; i++) { var o = ctx.createOscillator(); o.type = types[i]; o.frequency.value = CHA[i]; var og = ctx.createGain(); og.gain.value = vols[i]; o.connect(og); og.connect(g); o.start(); oscs.push(o); }
     var lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 0.07; var la = ctx.createGain(); la.gain.value = level * 0.32; lfo.connect(la); la.connect(g.gain); lfo.start(); // slow breathing swell
     g.gain.linearRampToValueAtTime(level, ctx.currentTime + 2.5);
-    var stopped = false, timers = [], atB = false;
+    var stopped = false, timers = [], atB = false; _padLive++;
     function glide() { if (stopped) return; var c = sharedAudioCtx(); if (!c) return; atB = !atB; var tgt = atB ? CHB : CHA, now = c.currentTime; oscs.forEach(function (o, i) { o.frequency.cancelScheduledValues(now); o.frequency.setValueAtTime(o.frequency.value, now); o.frequency.linearRampToValueAtTime(tgt[i], now + 4.5); }); timers.push(setTimeout(glide, atB ? 9000 : 22000)); } // mostly on A (~22s), a brief drift to F (~9s)
     timers.push(setTimeout(glide, 22000));
-    return { stop: function () { stopped = true; timers.forEach(clearTimeout); var c = sharedAudioCtx(); if (c) { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + 1.2); } catch (e) {} } setTimeout(function () { try { lfo.stop(); } catch (e) {} oscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, 1400); } };
+    return { stop: function (fade) { if (stopped) return; var FD = (fade == null ? 1.2 : Math.max(0.01, fade)); _padLive = Math.max(0, _padLive - 1); stopped = true; timers.forEach(clearTimeout); var c = sharedAudioCtx(); if (c) { try { g.gain.cancelScheduledValues(c.currentTime); g.gain.setValueAtTime(g.gain.value, c.currentTime); g.gain.linearRampToValueAtTime(0, c.currentTime + FD); } catch (e) {} } setTimeout(function () { try { lfo.stop(); } catch (e) {} oscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); try { g.disconnect(); } catch (e) {} }, FD * 1000 + 200); } }; // stop(fade) — the default 1.2s ramp is unchanged for every existing caller; a HARD stop (fade 0.01) exists only so quitting the app can never make a sound (David 2026-08-20)
   }
   // ===== BACKGROUND MUSIC — "Mysterious" (David 2026-07-01): the deep, hypnotic, spacious Mario-Paint-BGM-3 vibe. ~70 BPM, a slow 2-chord vamp — Ab min9 ⟷ Db dom9 — each swelling for 2 bars. Sub-bass root on the downbeat, a warm low-passed saw pad washing the upper extensions in and out, and sparse glassy pentatonic plucks drifting on top like stars. Big reverb. Routes into _bgBus. =====
   var BGM = (function () {
@@ -98,27 +106,58 @@
     function stop() { if (!running && !timer) return; running = false; if (timer) { clearInterval(timer); timer = null; } setTimeout(function () { [bassBus, padBus, pluckBus, revGain, conv].forEach(function (n) { try { if (n) n.disconnect(); } catch (e) {} }); bassBus = padBus = pluckBus = revGain = conv = null; }, 2600); }
     return { start: start, stop: stop, running: function () { return running; } };
   })();
-  function bedMode() { return (S.audio && S.audio.bed) || "pad"; } // 'pad' (peaceful drone, DEFAULT) · 'music' (Mysterious) · 'off' · or a BG_FILES key
-  // ===== FILE BACKGROUND BEDS (David 2026-07-10): real looping audio, categorized in the Sound panel. Nature + binaural loops in assets/bg/*.m4a (trimmed + crossfaded so they loop seamlessly). Decoded into the shared AudioContext + looped as a BufferSource routed to _bgBus (never an <audio> element — iOS blocks timer-driven audio, same reason as the voice engine). =====
-  var BG_FILES = { forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" };
+  // ===== THE BED SET (David 2026-08-20: "make it so you can select multiple, like 2 at a time, as long as they're different
+  // categories — one music and one nature. But you can't select 2 music."). S.audio.bed used to be ONE key; it is a LIST now
+  // (SCHEMA 9 / MIG 8→9 migrates the old string). The CATEGORY is the only rule: at most one bed per category, so the set can
+  // never hold two of a family. They stay in ONE visual list in the settings card — the category governs SELECTION, not layout.
+  // `floating` sits in binaural, not music: that is where the app's own Sound panel has filed it since 2026-07-10 (it ships
+  // beside the 4/6/13/33 Hz loops and carries the same headphones warning), and the shipped label is the only evidence I have
+  // about what the asset actually is. Flagged to David — if Floating is really an ambient pad, move one word here.
+  var BED_CAT = { pad: "music", music: "music", bowl: "music", forest: "nature", birds: "nature", rain: "nature", ocean: "nature", fireplace: "nature", stream: "nature", thunder: "nature", crickets: "nature", nightforest: "nature", darkforest: "nature", woods: "nature", woods2: "nature", floating: "binaural", focus13: "binaural", theta6: "binaural", deep4: "binaural", gamma33: "binaural", brownnoise: "binaural" }; // BROWN NOISE IS FILED BINAURAL, NOT NATURE (2026-08-20). It is not a binaural beat, but the category governs SELECTION: with only two slots and one per family, filing it under nature would make "rain + brown noise" illegal — and that is the pair people actually want. The bowl is a sustained drone, so it sits with the other music beds.
+  var BED_MAX = 2; // "select multiple, like 2 at a time" — two beds, never more. The app has THREE families (music · nature · binaural), so "one per category" alone would still have allowed three; the cap is its own rule.
+  var BED_DEFAULT = ["birds"]; // David 2026-08-20: the default background sound is birds (was the peaceful pad)
+  var BED_NAME = { pad: "Peaceful", music: "Mysterious", bowl: "Singing bowl", forest: "Forest", birds: "Birds", rain: "Rain", ocean: "Ocean", fireplace: "Fireplace", stream: "Stream", thunder: "Distant thunder", crickets: "Crickets", nightforest: "Night forest", darkforest: "Deep night", woods: "Woods", woods2: "Woods at dusk", brownnoise: "Brown noise", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" }; // the design's peaceful/mysterious/birdsong ARE the app's pad/music/birds — same beds, and the app's own shipped words win. The design's rain · ocean · fireplace · wind · stream · crickets · thunder have no audio and are not offered until they do.
+  var BED_ORDER = ["rain", "ocean", "fireplace", "stream", "thunder", "crickets", "woods", "woods2", "nightforest", "darkforest", "birds", "forest", "brownnoise", "bowl", "pad", "music", "floating", "deep4", "theta6", "focus13", "gamma33"]; // ONE visual list (David 2026-08-20: "for now let's keep one list") — the category governs SELECTION only
+  function bedKeys() { // THE selected set — always an array, always valid keys, always inside the rule (one per category, at most BED_MAX). Enforced on READ so an imported or hand-edited save can never sneak three beds past the toggle.
+    try {
+      var v = S.audio && S.audio.bed;
+      if (v == null) return BED_DEFAULT.slice();
+      if (typeof v === "string") return BED_CAT[v] ? [v] : [];
+      var seen = {}, out = [];
+      (v || []).filter(function (k) { return BED_CAT[k]; }).forEach(function (k) { if (seen[BED_CAT[k]] != null) out.splice(seen[BED_CAT[k]], 1); out.push(k); seen = {}; out.forEach(function (x, i) { seen[BED_CAT[x]] = i; }); }); // later pick wins its category
+      return out.slice(Math.max(0, out.length - BED_MAX));
+    } catch (e) { return []; }
+  }
+  function bedToggle(k) { // returns the NEW set — same key = deselect · same category = replace it · different category = add alongside, and a third pick pushes the OLDEST out
+    var cur = bedKeys();
+    if (k === "off" || !BED_CAT[k]) return [];
+    if (cur.indexOf(k) !== -1) return cur.filter(function (x) { return x !== k; });
+    var next = cur.filter(function (x) { return BED_CAT[x] !== BED_CAT[k]; }).concat([k]);
+    return next.slice(Math.max(0, next.length - BED_MAX));
+  }
+  function bedSet(keys) { S.audio = S.audio || { voice: 1, bg: 1 }; S.audio.bed = (keys || []).slice(); S.audioBedPick = 1; } // audioBedPick = "a human chose this", so no future default-change migration overwrites a real pick
+  // ===== FILE BACKGROUND BEDS (David 2026-07-10): real looping audio, categorized in the Sound panel. Nature + binaural loops in assets/bg/*.m4a (trimmed + crossfaded so they loop seamlessly). Decoded into the shared AudioContext + looped as a BufferSource routed to _bgBus (never an <audio> element — iOS blocks timer-driven audio, same reason as the voice engine). MULTI since 2026-08-20: `live` is a MAP, not one source, so a nature bed and a binaural bed can sound together. =====
+  var BG_FILES = { forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz", rain: "rain", ocean: "ocean", fireplace: "fireplace", stream: "stream", thunder: "thunder", crickets: "crickets", nightforest: "nightforest", darkforest: "darkforest", woods: "woods", woods2: "woods2", brownnoise: "brownnoise", bowl: "bowl" }; // the twelve David picked 2026-08-20 (CC0, verified per file), rendered to the same recipe as the originals: 90s body, a 3s equal-power tail-into-head crossfade so the loop point is inaudible, every bed soft-limited to -23 dBFS RMS.
   var BGBED = (function () {
-    var cache = {}, src = null, gain = null, wanted = null, lvl = 0.5;
+    var cache = {}, live = {}, lvl = 0.5; // live[key] = { src, gain }; src stays null while that key's buffer is still decoding (start() re-attaches when it lands)
+    function attach(key) { var ctx = sharedAudioCtx(), b = cache[key], e = live[key]; if (!ctx || !b || !e || e.src) return;
+      try { if (ctx.state === "suspended") ctx.resume(); var s = ctx.createBufferSource(); s.buffer = b; s.loop = true; var g = ctx.createGain(); g.gain.value = lvl; s.connect(g); g.connect(bgBus() || ctx.destination); s.start(); e.src = s; e.gain = g; } catch (er) {} }
     function load(key) { if (cache[key] || !BG_FILES[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return;
-      fetch("assets/bg/" + key + ".m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (b) { cache[key] = b; if (wanted === key) start(key, lvl); }).catch(function () {}); }
-    function start(key, level) { stop(); if (!BG_FILES[key]) { wanted = null; return; } wanted = key; if (level != null) lvl = level; var ctx = sharedAudioCtx(); if (!ctx) return;
-      var b = cache[key]; if (!b) { load(key); return; } // decode async, then auto-starts if still wanted
-      try { if (ctx.state === "suspended") ctx.resume(); src = ctx.createBufferSource(); src.buffer = b; src.loop = true; gain = ctx.createGain(); gain.gain.value = lvl; src.connect(gain); gain.connect(bgBus() || ctx.destination); src.start(); } catch (e) {} }
-    function stop() { wanted = null; try { if (src) { src.onended = null; src.stop(0); } } catch (e) {} src = null; gain = null; }
-    return { load: load, start: start, stop: stop };
+      fetch("assets/bg/" + key + ".m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (b) { cache[key] = b; attach(key); }).catch(function () {}); }
+    function start(key, level) { if (!BG_FILES[key] || live[key]) return; if (level != null) lvl = level; live[key] = { src: null, gain: null }; if (cache[key]) attach(key); else load(key); }
+    function stop(key) { if (key == null) { Object.keys(live).forEach(function (k) { stop(k); }); return; } var e = live[key]; if (!e) return; delete live[key]; try { if (e.src) { e.src.onended = null; e.src.stop(0); } } catch (er) {} } // stop() with no key = stop every bed (the old single-source signature, unchanged for its callers)
+    function running() { return Object.keys(live).filter(function (k) { return !!live[k].src; }); } // the honest receipt: which keys have a LIVE BufferSource, not which chips are lit
+    return { load: load, start: start, stop: stop, running: running };
   })();
-  var _activeBed = null; // the running timelinePlayer registers a (mode)=>switch fn here so the Sound panel can live-swap its bed
+  var _activeBed = null; // the running timelinePlayer registers a (keys[])=>switch fn here so the settings card can live-swap its bed SET
+  var _gpSettings = null; // …and a read-only "what is in this session" dump, so the settings card can COMPUTE its rows (hue · does it contain breathing · is it a stack) instead of being told. Cleared on both teardown paths, same as _activeBed.
   var _gpRevoice = null; // …and its "the voice just changed, re-cut your remaining lines" door, called straight from TTS.setVoice/setRuVoice. Same idiom as _activeBed, and for the same reason: a running session has to be told, not left to notice. (The player ALSO polls TTS.voiceGen() in its rAF loop as a safety net for changes that skip the setters — a language switch — but rAF is frozen whenever the page is hidden, so it can never be the primary trigger.)
   var _gpProbe = null;   // …and a read-only state dump here, for DEV.voice(). The preview cannot judge audio FEEL, but it CAN prove the buffers were genuinely re-decoded from the new bank and the transport did not jump — which is the whole 2026-08-15 voice-swap fix. Cleared on both teardown paths, same as _activeBed.
   // ===== APP BACKGROUND MUSIC (David 2026-07-01): the SAME peaceful pad, at a very low level, drifting under the whole app. Auto-pauses when a tool/player opens; routes into _bgBus; easy off in the Sound panel. =====
   var APPMUSIC = (function () {
     var ctl = null, running = false;
     function start() { if (running) return; var ctx = sharedAudioCtx(); if (!ctx) return; if (ctx.state === "suspended") { try { ctx.resume(); } catch (e) {} } ctl = startPad(ctx, bgBus() || ctx.destination, 0.05); running = true; }
-    function stop() { if (!running) return; running = false; if (ctl) { try { ctl.stop(); } catch (e) {} ctl = null; } }
+    function stop(hard) { if (!running) return; running = false; if (ctl) { try { ctl.stop(hard ? 0.01 : null); } catch (e) {} ctl = null; } } // hard = no 1.2s tail: leaving/backgrounding the app must be SILENT (David 2026-08-20: "get rid of ... that sound effect when you quit the app")
     return { start: start, stop: stop, running: function () { return running; } };
   })();
   // keep app music in sync: play only when enabled, past the start screen, and NO tool/player overlay is open (tool audio takes over). Idempotent + debounced.
@@ -128,7 +167,7 @@
       var want = !!(S.audio && S.audio.appMusic) && S.profile && S.profile.set
         && !(el("startScreen") && el("startScreen").classList.contains("on"))
         && !document.getElementById("breatheOv") && !document.hidden;
-      if (want) APPMUSIC.start(); else APPMUSIC.stop();
+      if (want) APPMUSIC.start(); else APPMUSIC.stop(document.hidden);
     } catch (e) {}
   }
   function appMusicPoke() { if (_amTO) clearTimeout(_amTO); _amTO = setTimeout(appMusicSync, 250); }
@@ -375,7 +414,7 @@
   }
   var el = function (id) { return document.getElementById(id); };
   // @SEC:TIME — KEY/SCHEMA constants + THE 4AM LAW: logicalK() rolls the day at 4am and EVERYTHING keys off it. SCHEMA's migrations live in load() (@SEC:STATE) — bump them TOGETHER.
-  var KEY = "alter_plan2", SCHEMA = 8, lastSaveErr = 0; // 8 = THE STATUES (S.goals[] EXTENDED in place — garden menu 3 of 4, frames R1b-R9a, engine _specs/GOAL-ENGINE-2026-08-11.md); 7 = THE VIRTUES (S.virtues.list — garden menu 2 of 4, frames 15A-16B); 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
+  var KEY = "alter_plan2", SCHEMA = 9, lastSaveErr = 0; // 9 = THE BED SET (S.audio.bed: one key → a LIST of at most one bed per BED_CAT category — David 2026-08-20 "select multiple, one music and one nature"); 8 = THE STATUES (S.goals[] EXTENDED in place — garden menu 3 of 4, frames R1b-R9a, engine _specs/GOAL-ENGINE-2026-08-11.md); 7 = THE VIRTUES (S.virtues.list — garden menu 2 of 4, frames 15A-16B); 6 = THE GROVE (S.grove plants/seen — the garden MVP, _specs/GARDEN-MVP-SPEC-2026-08-08.md); 5 = THE RANGE (S.range targets/arrows, SPEC-FIRST-RUN §4)
   var DAY_END = 24 * 60;
 
   function pad(n) { return n < 10 ? "0" + n : "" + n; }
@@ -1757,7 +1796,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -1796,7 +1835,7 @@
       if (!e.isPrimary) { multi = true; armed = false; if (on) cancelDrag(); return; }
       multi = false; on = false; cur = null;
       // CONTEXT-AWARE (David 2026-07-01): while ANY overlay/menu is open — a tool/player, a modal sheet, the expanded tracker (cockpit) or toolbox, the plan-a-day bento, a radial/duration/onboarding sheet — DON'T let a horizontal swipe switch app panes. The swipe belongs to that surface; close it to switch.
-      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
+      if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .ps-ov, .goal-ov, .mind-ov, .nb-ov") || (el("sheet") && el("sheet").classList.contains("on")) || (el("trackerFull") && el("trackerFull").classList.contains("on")) || (el("startScreen") && el("startScreen").classList.contains("on"))) { armed = false; return; }
       armed = !(e.target && e.target.closest && e.target.closest(PANE_GUARD));
       // THUMBSTICK MISTAKE ROOM (David 2026-07-15): in the game, don't let a swipe near either stick (bottom-left / bottom-right corners) steal to Journey. The sticks are canvas-drawn so a near-miss lands on the world; disarm the pane-swipe in those corner bands. Intentional pane swipes come from higher up / center.
       var _vh = window.innerHeight || 800, _vw = window.innerWidth || 390;
@@ -1899,6 +1938,15 @@
     { t: "The Fundamentals",   why: "Eat, move, sleep, breathe. The floor everything else stands on.", ic: "ti-heart-rate-monitor" },
     { t: "Soul Force",         why: "Live it. The record now shows who you actually are.", ic: "ti-star" }
   ];
+  Object.assign(I18N.ru, { // THE EIGHT WHY-LINES under the chapter titles. All eight TITLES were translated and all eight SUBTITLES were not, so the RU trail read a Russian heading over an English sentence. B4 law, in place; found by the registry sweep in DEV.ruAudit, not by David.
+    "See who you're becoming, then just show up. Showing up is the first proof.": "\u0423\u0432\u0438\u0434\u044c, \u043a\u0435\u043c \u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0448\u044c\u0441\u044f, \u0438 \u043f\u0440\u043e\u0441\u0442\u043e \u043f\u0440\u0438\u0445\u043e\u0434\u0438. \u0422\u043e, \u0447\u0442\u043e \u0442\u044b \u043f\u0440\u0438\u0448\u0451\u043b, \u0443\u0436\u0435 \u043f\u0435\u0440\u0432\u043e\u0435 \u0434\u043e\u043a\u0430\u0437\u0430\u0442\u0435\u043b\u044c\u0441\u0442\u0432\u043e.",
+    "Name who you are at your best. Every day you get to vote for him.": "\u041d\u0430\u0437\u043e\u0432\u0438 \u0441\u0435\u0431\u044f \u0432 \u043b\u0443\u0447\u0448\u0435\u0439 \u0444\u043e\u0440\u043c\u0435. \u041a\u0430\u0436\u0434\u044b\u0439 \u0434\u0435\u043d\u044c \u0442\u044b \u0433\u043e\u043b\u043e\u0441\u0443\u0435\u0448\u044c \u0437\u0430 \u043d\u0435\u0433\u043e.",
+    "What you're avoiding shrinks the second you name it and take one step.": "\u0422\u043e, \u0447\u0435\u0433\u043e \u0442\u044b \u0438\u0437\u0431\u0435\u0433\u0430\u0435\u0448\u044c, \u0443\u043c\u0435\u043d\u044c\u0448\u0430\u0435\u0442\u0441\u044f \u0432 \u0442\u0443 \u0441\u0435\u043a\u0443\u043d\u0434\u0443, \u043a\u043e\u0433\u0434\u0430 \u0442\u044b \u043d\u0430\u0437\u044b\u0432\u0430\u0435\u0448\u044c \u044d\u0442\u043e \u0438 \u0434\u0435\u043b\u0430\u0435\u0448\u044c \u0448\u0430\u0433.",
+    "Energy, work, love. One honest move in each and the day has a shape.": "\u042d\u043d\u0435\u0440\u0433\u0438\u044f, \u0440\u0430\u0431\u043e\u0442\u0430, \u043b\u044e\u0431\u043e\u0432\u044c. \u041f\u043e \u043e\u0434\u043d\u043e\u043c\u0443 \u0447\u0435\u0441\u0442\u043d\u043e\u043c\u0443 \u0448\u0430\u0433\u0443 \u0432 \u043a\u0430\u0436\u0434\u043e\u0439, \u0438 \u0443 \u0434\u043d\u044f \u043f\u043e\u044f\u0432\u043b\u044f\u0435\u0442\u0441\u044f \u0444\u043e\u0440\u043c\u0430.",
+    "A day worth repeating: aim it in the morning, close it at night.": "\u0414\u0435\u043d\u044c, \u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u0441\u0442\u043e\u0438\u0442 \u043f\u043e\u0432\u0442\u043e\u0440\u0438\u0442\u044c: \u043d\u0430\u0446\u0435\u043b\u044c \u0435\u0433\u043e \u0443\u0442\u0440\u043e\u043c, \u0437\u0430\u043a\u0440\u043e\u0439 \u0432\u0435\u0447\u0435\u0440\u043e\u043c.",
+    "Make the good things run on their own, especially on the boring days.": "\u0421\u0434\u0435\u043b\u0430\u0439 \u0442\u0430\u043a, \u0447\u0442\u043e\u0431\u044b \u0445\u043e\u0440\u043e\u0448\u0435\u0435 \u0448\u043b\u043e \u0441\u0430\u043c\u043e, \u043e\u0441\u043e\u0431\u0435\u043d\u043d\u043e \u0432 \u0441\u043a\u0443\u0447\u043d\u044b\u0435 \u0434\u043d\u0438.",
+    "Eat, move, sleep, breathe. The floor everything else stands on.": "\u0415\u0434\u0430, \u0434\u0432\u0438\u0436\u0435\u043d\u0438\u0435, \u0441\u043e\u043d, \u0434\u044b\u0445\u0430\u043d\u0438\u0435. \u041f\u043e\u043b, \u043d\u0430 \u043a\u043e\u0442\u043e\u0440\u043e\u043c \u0441\u0442\u043e\u0438\u0442 \u0432\u0441\u0451 \u043e\u0441\u0442\u0430\u043b\u044c\u043d\u043e\u0435.",
+    "Live it. The record now shows who you actually are.": "\u0416\u0438\u0432\u0438 \u044d\u0442\u043e. \u0417\u0430\u043f\u0438\u0441\u044c \u0442\u0435\u043f\u0435\u0440\u044c \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u043a\u0442\u043e \u0442\u044b \u043d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435." });
   var JP_WORLDS = [ // JOURNEY WORLDS (David 2026-07-03 epic: "colorful and exciting and mysterious"): each chapter is a BIOME with its own jewel hue — the future glows in color, never gray. Aligned 1:1 with JP_CHAPTERS.
     { c: "#ff8a3a", g: "#3a1a08" },  // I    Ember — why you're here
     { c: "#b07aff", g: "#241038" },  // II   Starlight — who you are
@@ -3140,7 +3188,7 @@
     item("", "ti-eraser", "Clear day", function () { pushUndo(); S.blocks[k] = []; reflow(k); save(); buildPull(); toast("cleared " + relLabel(k).toLowerCase() + " · Undo in ⋯"); });
     item("", "ti-arrow-back-up", "Undo", function () { popUndo(); });
     item("", "ti-book", "Journal", function () { journalSheet(); }); // JOURNAL-SURFACE: chronological feed + on-this-day + pattern mirror (browse/history → #sheet is OK here)
-    item("", "ti-settings", "Settings", function () { settingsSheet(); }); // David 2026-07-01: the giant menu was overwhelming — the config/rare items (Goals, Guidance, Brain, Away, Redo setup, Test day) now live behind one Settings door
+    item("", "ti-settings", "Settings", function () { youMenu(); }); // ONE menu since 2026-08-20 (the designed You list). The old settingsSheet() is PARKED behind DEV.oldSettings so nothing it held is lost while David designs the rooms. // David 2026-07-01: the giant menu was overwhelming — the config/rare items (Goals, Guidance, Brain, Away, Redo setup, Test day) now live behind one Settings door
     setTimeout(function () { function close(e) { if (!menu.contains(e.target) && e.target !== anchor) { try { menu.remove(); } catch (er) {} document.removeEventListener("pointerdown", close, true); } } document.addEventListener("pointerdown", close, true); }, 0);
   }
   // ===== SETTINGS SHEET (David 2026-07-01): one calm home for the config/rare items pulled out of the overwhelming ⋯ menu. Each row opens its own flow. =====
@@ -3207,6 +3255,90 @@
     adv.onclick = function () { var open = advBox.style.display !== "none"; advBox.style.display = open ? "none" : "flex"; adv.classList.toggle("open", !open); };
     add(B, "button", "done2", tr("Done")).onclick = closeSheet;
   }
+  // ===== THE YOU MENU (David's "Settings Menus" frame, ported 2026-08-20 — spec _specs/HOME-PROPORTIONS-AND-YOU-MENU-2026-08-20.md §2,
+  // every value quoted from his pull, none eyeballed). His words: "fix the settings, because right now when you click settings it opens
+  // some old menu I don't like where it says The Vital and it tells me the level of everything. Get rid of that and make it the settings
+  // I designed, at least the main menu. I can design the submenus later."
+  // THE LIST ONLY. The frame's own note says the six rooms behind these rows are still undesigned, so every row opens the app's EXISTING
+  // surface for its concern and nothing new is invented: Profile → langPicker, Sound → the settings card (openVolumePanel, whose own header
+  // already names "the menu's Sound row" as one of its three doors — it DROPS OVER this list rather than replacing it), Data → shareSnapshot,
+  // Guidance → guidanceSheet, Rest mode → the S.away toggle this app has always had (the one row that ACTS instead of navigating, because
+  // its "existing surface" is an inline switch), Advanced → the drawer that keeps every row the old settingsSheet held.
+  // THE VITAL IS PARKED, NOT RETIRED (DECISIONS.md 2026-08-20): characterCard() is unhooked from THIS door only and keeps its other two
+  // (the island's tree, the guardian mirror) plus DEV.vital — David is redesigning it and will attach it to a row later.
+  // ARTBOARD CONFLICT, flagged: the frame is 390x893 while home is pinned to 402x874. The column is pinned at an absolute 390 and centred.
+  // Built node by node and removed whole — no innerHTML wipe, and every sub-line is repainted in place.
+  function youMenu() {
+    if (!(S.profile && S.profile.set)) { onboard(); return; }
+    var old = el("youMenu"); if (old) { try { old.remove(); } catch (e) {} }
+    var ov = add(document.body, "div", "ym-ov"); ov.id = "youMenu";
+    var sc = add(ov, "div", "ym-scroll"), col = add(sc, "div", "ym-col");
+    function close() { try { ov.remove(); } catch (e) {} }
+    var hd = add(col, "div", "ym-head");
+    var xb = add(hd, "button", "ym-x"); add(xb, "i", "ti ti-x"); xb.setAttribute("aria-label", tr("Done")); xb.onclick = close;
+    var gm = add(hd, "div", "ym-gems"); add(gm, "i", "ti ti-diamond"); add(gm, "b", null, ((S.game && S.game.spark) || 0).toLocaleString());
+    var st = youStats();
+    var ti = add(col, "div", "ym-title");
+    add(ti, "div", "ym-h1", tr("You"));
+    add(ti, "div", "ym-rank", tr("rank") + " " + st.rank);
+    var cd = add(col, "div", "ym-card");
+    var ci = add(cd, "div", "ym-cardic"); add(ci, "i", "ti ti-compass");
+    var cb = add(cd, "div", "ym-cardb"), r1 = add(cb, "div", "ym-cardr");
+    add(r1, "div", "ym-cardn", tr("Explorer"));
+    add(r1, "div", "ym-cardgo", tr("another") + " " + st.leftH + " " + tr("h"));
+    var bar = add(cb, "div", "ym-bar"); add(bar, "i").style.width = st.pct + "%";
+    function row(host, mt, bg, ic, icCol, title, sub, fn) { // one 78px card. Returns its sub-line node so a row that acts in place can repaint just that node.
+      var b = add(host, "button", "ym-row"); if (mt != null) b.style.marginTop = mt + "px"; if (bg) b.style.background = bg;
+      var i = add(b, "i", "ti " + ic + " ym-rico"); i.style.color = icCol;
+      var tx = add(b, "span", "ym-rb"); add(tx, "span", "ym-rt", tr(title)); var sl = add(tx, "span", "ym-rs", sub);
+      add(b, "i", "ti ti-chevron-right ym-rchev");
+      b.onclick = function () { try { fn(sl, b); } catch (e) {} };
+      return sl;
+    }
+    function later(fn) { close(); setTimeout(fn, 60); } // let the overlay leave before the next surface draws (the settingsSheet idiom)
+    var _lang = (LANGS.filter(function (L) { return L.code === curLang(); })[0] || LANGS[0]).name;
+    row(col, 21, "#932b69", "ti-user", "#f75ba4", "Profile", tr("wake-up") + " " + ((S.profile && S.profile.wake) || "7:30") + " · " + _lang, function () { later(langPicker); });
+    row(col, 18, "#924f31", "ti-volume", "#ef912c", "Sound", tr("voice") + " · " + tr("beds") + " · " + tr("rewards"), function () { try { openVolumePanel(); } catch (e) {} }); // the card drops OVER the list (z 118/120 vs the menu's 112) — no close
+    var _snapAgo = S.lastSnapK ? daysSinceK(S.lastSnapK) : 12;
+    row(col, 18, "#2f7660", "ti-shield-check", "#3fd98e", "Data", tr("snapshot") + " · " + _snapAgo + " " + tr("days ago"), function (sl) { try { shareSnapshot(); } catch (e) {} S.lastSnapK = todayK(); save(); sl.textContent = tr("snapshot") + " · 0 " + tr("days ago"); });
+    function _gLbl() { var m = ((S.guide && S.guide.mode) || "off"); return tr(m === "guided" ? "Guided" : m === "light" ? "Light" : "Off"); }
+    row(col, 18, "#2c6392", "ti-compass", "#46b0ef", "Guidance", _gLbl(), function () { later(guidanceSheet); });
+    var _awaySub = function () { return S.away ? tr("paused · streaks are held") : tr("travel or off-days · streaks held"); };
+    var _awayRow = null;
+    _awayRow = row(col, 17, "#673999", "ti-moon", "#a86ff0", "Rest mode", _awaySub(), function (sl) {
+      S.away = !S.away; S.awaySince = S.away ? todayK() : null; save();
+      sl.textContent = _awaySub(); toast(S.away ? tr("Resting · your streaks are held") : tr("welcome back · let's ease in"));
+      try { if (document.body.classList.contains("journey-open")) drawJourney(true); } catch (e) {}
+    });
+    // THE ADVANCED DRAWER. Its dashed edge is the ONE dashed edge in the design and it is DELIBERATE (it marks the expandable dev drawer) —
+    // never "fixed" to a solid border. Everything the old settingsSheet kept behind Advanced lives on here, nothing lost.
+    var adv = add(col, "button", "ym-advrow");
+    add(adv, "i", "ti ti-flask ym-advic"); add(adv, "span", "ym-advlbl", tr("Advanced")); add(adv, "i", "ti ti-chevron-down ym-advchev");
+    var box = add(col, "div", "ym-advbox");
+    adv.onclick = function () { var on = box.classList.toggle("on"); adv.classList.toggle("open", on); };
+    row(box, 0, null, "ti-world", "#ff5fa0", "Language", tr("flat flags, all of them"), function () { later(langPicker); });
+    row(box, null, null, "ti-clock-hour-9", "#36b3f0", "Clock", tr(S.clock24 ? "24-hour" : "12-hour"), function (sl) { S.clock24 = !S.clock24; save(); sl.textContent = tr(S.clock24 ? "24-hour" : "12-hour"); try { renderToday(); } catch (e) {} });
+    var _stormRow = row(box, null, null, "ti-umbrella", "#7f9bc4", S.storm ? "Leave storm mode" : "Storm mode", tr(S.storm ? "bring the full path back" : "when it's too much, we hold the fort"), function (sl, b) {
+      S.storm = !S.storm; save(); toast(S.storm ? "✦ " + tr("We hold the fort. Nothing else.") : "✦ " + tr("welcome back · let's ease in"));
+      var t2 = b.querySelector(".ym-rt"); if (t2) t2.textContent = tr(S.storm ? "Leave storm mode" : "Storm mode");
+      sl.textContent = tr(S.storm ? "bring the full path back" : "when it's too much, we hold the fort");
+      try { drawJourney(true); } catch (e) {}
+    });
+    if (devOn() || (S.badges && Object.keys(S.badges.earned || {}).length)) row(box, null, null, "ti-cards", "#ffc83d", "Your marks", tr("the collection"), function () { later(binderSheet); });
+    if (devOn()) row(box, null, null, "ti-brain", "#36b3f0", "Brain", tr("AI tailoring · bring your own key"), function () { later(brainSheet); });
+    if (devOn()) row(box, null, null, "ti-sparkles", "#b07aff", "Redo setup", tr("re-run onboarding"), function () { later(onboard); });
+    if (devOn()) row(box, null, null, "ti-flask", "#2ab8c4", "Test day", tr("fill a demo day (dev)"), function () { later(fillTestDay); });
+    add(col, "div", "ym-tail");
+    add(ov, "div", "ym-fade");
+    var hp = add(ov, "button", "ym-home"); add(hp, "i", "ti ti-home"); hp.setAttribute("aria-label", tr("Home"));
+    hp.onclick = function () { close(); try { if (!TF_OPEN) openHomeInstant(); } catch (e) {} };
+    if (curLang() !== "en") { try { translateTree(col); } catch (e) {} }
+    return ov;
+  }
+  Object.assign(I18N.ru, { // B4 law: EN source + RU dict in the SAME edit. The You menu reuses the surface's existing lines wherever it can; these five had no RU entry (four are pre-existing gaps the old Advanced rows carried, now closed because this menu emits them).
+    "Home": "Домой", "the collection": "коллекция", "AI tailoring · bring your own key": "настройка ИИ · свой ключ",
+    "fill a demo day (dev)": "заполнить демо-день (dev)", "welcome back · let's ease in": "с возвращением · начнём мягко"
+  });
   // ===== GUIDANCE DIAL (JX-GUIDANCE-TOGGLE, David 2026-06-28): the autonomy knob — Guided / Light / Off. Clones the brainSheet engine-picker idiom (pchips). Default 'off' restores today's behavior + reveals everything; choosing less is framed as leveling up, never desertion. Off silences journey nudges but the engine keeps computing silently. =====
   function guidanceSheet() {
     var B = el("sheetBody"); B.innerHTML = ""; openSheet();
@@ -5218,7 +5350,7 @@
       var gc = document.createElement("button"); gc.id = "tfHudGarden"; gc.className = "tfh-garden"; gc.setAttribute("aria-label", "Garden"); gc.appendChild(tfhI("ti-leaf")); hud.appendChild(gc);
       var gm = document.createElement("div"); gm.id = "tfHudGems"; gm.className = "tfh-gems"; gm.appendChild(tfhI("ti-diamond-filled")); gm.appendChild(document.createElement("b")); hud.appendChild(gm);
       inner.appendChild(hud);
-      sp.onclick = function (e) { if (e) e.stopPropagation(); try { characterCard(); } catch (e2) {} };                                                              // the guardian mirror's own card (spec §1 — MY inference, David verdicts)
+      sp.onclick = function (e) { if (e) e.stopPropagation(); try { youMenu(); } catch (e2) {} }; // THE YOU MENU (David 2026-08-20: "when you click settings it opens some old menu I don't like where it says The Vital"). The Vital (characterCard) is PARKED, not retired — unhooked from THIS door only; its island-tree and guardian-mirror doors and DEV.vital still reach it, and David will attach it to a menu row once he has designed its room.
       hj.onclick = function (e) { if (e) e.stopPropagation(); tfhGoJourney(); };
       gc.onclick = function (e) { if (e) e.stopPropagation(); if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e2) {} } try { setPaneRest("game"); } catch (e2) {} }; // the app's OWN garden door path (it tears the cockpit down first); a bare openGame() would leave home layered over the world
     } else if (hud.parentNode !== inner) inner.appendChild(hud);
@@ -5243,7 +5375,7 @@
     return out;
   }
   var TFH_HEROES = ["firstLight", "breatheLadder", "mind", "shutdown"]; // 2c §5: Morning Stack · Breathe · Meditate · Night Stack (the artifact's gIdx 0/1/3/6 into the practice grid). Ids, not names — the registry owns the words and the hues.
-  var _tfhOpen = null, _tfhLadder = false;                              // the face card's single-open id + whether its chip row has swapped to the full ladder
+  var _tfhOpen = null;                                                  // the face card's single-open id (the _tfhLadder collapse latch died with the dose row's More button, David 2026-08-20)
   function tfhHeroRow(host) { // the four tiles + the inline dose host. COMPOSITION AMENDMENT (David 2026-08-02, "too high up, too close to plan my day, too far from tools"): the row is NOT a child of #tfCtrls — it is its own block in the HOME ZONE, placed AFTER the ctrls' margin-bottom:auto spacer, so the order reads Plan-my-day → spacer → hero row → dose card → TOOLS hint, and the row hugs the bottom band just above the fold invitation. NO selection chrome on any tile — no outline, no ring, no highlight; the open card below is the only selection signal.
     if (!tfh2c() || !host) return;
     var wrap = el("tfHeroWrap"); if (!wrap) { wrap = document.createElement("div"); wrap.id = "tfHeroWrap"; }
@@ -5268,17 +5400,19 @@
   }
   function tfhOpenDose(id) { // SINGLE-OPEN on the face: another tile swaps the content, the open one (or the card's close chevron) folds it away
     var was = _tfhOpen === id;
-    _tfhOpen = was ? null : id; _tfhLadder = false;
+    _tfhOpen = was ? null : id;
     tfhCardOpenClass(); // BEFORE the paint: opening fades the fixed HUD out as the world eases down, closing fades it back in as the world eases home
     tfhPaintDose(!was, true);
     if (was) { var w = el("tfWorld"); if (w && w.scrollTop > worldHomeTarget() + 40) tfhScrollTo(worldHomeTarget()); } // FOLD-AWAY RETURN (David 2026-08-11): closing the card used to strand the viewport mid-column with no way back to the calm face (the magnet band is only 56px) — ease back to the landing seam. Covers the card's own collapse chevron too (it calls this). The >40 guard keeps the designAudit's parked open/close probe from ever issuing a scroll.
   }
   function tfhPaintDose(scroll, animate) {
     var host = el("tfHeroDose"); if (!host) return;
+    var was = host.querySelector(".tbx-dose"), keep = (was && was.getAttribute("data-tbxdose") === _tfhOpen) ? tbxDoseScroll(was) : null; // the SAME stack's ladder keeps its place across a board re-render (the per-minute sweep rebuilds this card); a DIFFERENT stack must not inherit its neighbour's scroll
     while (host.firstChild) host.removeChild(host.firstChild); // child-drain, never an innerHTML wipe
     if (!_tfhOpen) return;
     var card = tbxBuildDose(_tfhOpen, true); if (!animate) card.classList.remove("tbx-open");
     host.appendChild(card);
+    if (!(keep && keep(card))) tbxDoseSee(card); // restore wins where there is something to restore; otherwise land on the selected chip
     if (scroll) setTimeout(tfhRevealCard, 20); // let the card lay out, then ease the world down until it is fully in view
   }
   function tfhRevealCard() { // TOP-ANCHOR (David's card-open frame 2026-08-11): the frame's first readable row is the HERO TILES, sitting at the very top with the HUD row scrolled away and the pink circle gone. Here the HUD is FIXED chrome, so it can't scroll off — it FADES instead (tfhCardOpenClass → .tfh-cardopen), and the tiles park on the SAFE-AREA LINE the faded HUD still marks: its own top edge is env(safe-area-inset-top)+11, so +1 lands the tiles at env+12. (Two earlier misses: bottom-anchoring the card left the circle half-cut; anchoring under the HUD's BOTTOM parked the Plan-my-day sticker inside the HUD band, painting over the JOURNEY label.)
@@ -5370,7 +5504,7 @@
     var tf = el("trackerFull"); if (!tf || !TF_OPEN) return false;
     if (!tf.classList.contains("tf-onehome") || tf.classList.contains("tf-staged")) return false; // only the calm home faces own the axis; a guided/staged cockpit does not
     if (_paneAnim || (typeof _dragLock !== "undefined" && _dragLock)) return false; // never while a pane settle or a timeline block-drag owns the DOM
-    if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .vol-ov, .goal-ov, .mind-ov, .nb-ov, .sed-ov, .pk-ov, #sheet.on")) return false; // an overlay above home owns touch
+    if (document.querySelector("#breatheOv, .radial, .bento-ov, .dur-ov, .ob-ov, .ps-ov, .goal-ov, .mind-ov, .nb-ov, .sed-ov, .pk-ov, #sheet.on")) return false; // an overlay above home owns touch
     if (e.target && e.target.closest && e.target.closest(PANE_GUARD)) return false; // buttons/inputs/the circle/doors keep their own taps (the disc = playFirst, doors = their handlers)
     return true;
   }
@@ -6079,7 +6213,7 @@
     if (d > 2 && d <= 180) wSpring(wHomeY(), true);
   }
   function teardownWorld() { // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
-    _tfhOpen = null; _tfhLadder = false; var _tfc = el("trackerFull"); if (_tfc) _tfc.classList.remove("tfh-cardopen"); // leaving home CLOSES the face card — a fresh home entry is always the calm face with its HUD (David's open-home frame). The per-minute sweep restore inside a visit is untouched: no teardown runs there.
+    _tfhOpen = null; var _tfc = el("trackerFull"); if (_tfc) _tfc.classList.remove("tfh-cardopen"); // leaving home CLOSES the face card — a fresh home entry is always the calm face with its HUD (David's open-home frame). The per-minute sweep restore inside a visit is untouched: no teardown runs there.
     var tf = el("trackerFull"); if (tf) tf.classList.remove("tf-onepage");
     releaseTrailFromSky();
     document.body.classList.remove("home-onepage"); // leaving the one-page home → the puck is a plain always-visible return again (panes keep it lit)
@@ -6262,8 +6396,6 @@
     { id: "wins",    name: "Wins",    dom: "play",    ti: "ti-trophy",          items: ["lockTheWin", "t_journal", "t_meditate"] }
   ];
   var _tbxOpenStack = null, _tbxOpenCat = null; // single-open transient state (module-level, cleared on every full render)
-  var _tbxMore = false;        // the dose card's "more" minute grid, open/closed. Module-level so an in-place repaint (dose change) keeps it open.
-  var TBX_MINS = [1, 3, 8, 10, 15, 20, 30, 45]; // the 21a minute grid (4-col × 2). The design's own ladder is unreadable (its data script is past the 256KB import cut) — this one brackets the 2/5 fast chips on both sides. Flagged in the handoff.
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, #fff) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
   // (The FP3 "deep muted" deck fill and its tbxHexOf helper are DELETED. They were least-squares fitted to home-idle-ref.jpeg, which is a photograph of a screen: the fit captured camera exposure + warm white balance, not the design. Fills are the tool's own colour, never sampled from photos — David 2026-07-28.)
@@ -6411,7 +6543,7 @@
     var sq = bento.querySelector('[data-tbxcat="' + catId + '"]'); if (!sq) return;
     var panel = tbxBuildPanel(cat); sq.parentNode.insertBefore(panel, sq.nextSibling); _tbxOpenCat = catId;
   }
-  var TBX_FACE_LADDER = [2, 5, 10, 15, 20, 30, 45]; // HOME 2c §5: the FACE card's "More" swaps the two fast chips for this full ladder and hides itself (the ground card keeps its shipped minute-grid panel until David rules — flagged in the report).
+  var TBX_FACE_LADDER = [2, 5, 10, 15, 20, 30, 45]; // THE DOSE LADDER — ONE horizontally scrolling row, on BOTH dose surfaces (David 2026-08-20: "I don't even want a More button. I just want a single row of time options that you can scroll"). The 2c card's [2,5]-then-More swap and the shelf card's 21a minute grid behind "more" are both deleted; two grammars for one choice was the bug.
   function tbxBuildDose(id, face) { // frame 21e: face + hue kicker + name, plain-word steps WITH their scaled times, 2/5 dose chips + "more" minute grid (21a) + pink Start, Plus row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
     // `face` = the HOME 2c placement (spec §5): the SAME card, the same dose / band / edit / Start / Adjust code path — only the placement (the home hero row instead of the toolbox grid), the .tbx-dose-2c skin and the chips-swap ladder differ. One builder, two surfaces; nothing is duplicated.
     var it = tbxItem(id); if (!it) return document.createElement("div"); var d = tbxVar(it.dom);
@@ -6427,31 +6559,15 @@
     var sc = add(card, "div", "tbx-dose-steps");
     steps.forEach(function (st, i) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); if (times && times[i]) add(row, "span", "tbx-step-tm", times[i]); });
     var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips");
-    if (face) { // 2c chip row: [2,5] by default, "More" SWAPS the row for the full ladder and disappears. Same tbxSetDose/tbxRepaintDose path as the shelf — only the shape of the picker differs.
-      var _lad = _tfhLadder || (cur !== 2 && cur !== 5); // a dose already chosen OFF the ladder (15, 45…) keeps the ladder OPEN: the collapsed [2,5] row would light nothing while Start silently ran 45 minutes. Same honesty the shelf card buys by tinting its More button when the minute grid is folded.
-      (_lad ? TBX_FACE_LADDER : [2, 5]).forEach(function (m) {
-        var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), _lad ? (m + tr("m")) : (m + " " + tr("min")));
-        if (m === cur) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, #fff) 13px 26px)"; chip.style.border = "2.5px solid #160510"; chip.style.color = "#160510"; chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
-        else { chip.style.border = "2px solid color-mix(in srgb, " + d + " 40%, #1c0b15)"; chip.style.background = "#1c0b15"; chip.style.color = "#d8a9bb"; }
-        chip.onclick = function () { tbxSetDose(id, m); tbxRepaintDose(id); }; // repaint (not re-skin): the per-step times above must move with the dose
-      });
-      if (!_lad) { var mf = add(foot, "button", "tbx-more"); add(mf, "i", "ti ti-adjustments-horizontal"); add(mf, "span", null, tr("More")); mf.onclick = function () { _tfhLadder = true; tbxRepaintDose(id); }; }
-    } else {
-    [2, 5].forEach(function (m) { // the two fast-path chips stay first (David's 2/5 grammar); anything else lives in the grid behind "more"
-      var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + " " + tr("min"));
-      if (m === cur) { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); } else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)";
+    TBX_FACE_LADDER.forEach(function (m) { // ONE ROW, ALL THE DOSES, scrolled sideways (David 2026-08-20). No More button, no collapse, no second picker underneath — and tbxRepaintDose puts the row back where you left it, so the chip you tap stays under your thumb instead of jumping to the left edge.
+      var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + tr("m"));
+      if (m === cur) {
+        if (face) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, #fff) 13px 26px)"; chip.style.border = "2.5px solid #160510"; chip.style.color = "#160510"; chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
+        else { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); }
+      } else if (face) { chip.style.border = "2px solid color-mix(in srgb, " + d + " 40%, #1c0b15)"; chip.style.background = "#1c0b15"; chip.style.color = "#d8a9bb"; }
+      else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)";
       chip.onclick = function () { tbxSetDose(id, m); tbxRepaintDose(id); }; // repaint (not re-skin): the per-step times above must move with the dose
     });
-    var more = add(foot, "button", "tbx-more"); add(more, "i", "ti ti-adjustments-horizontal"); add(more, "span", null, tr("More"));
-    if (_tbxMore) { more.style.background = tbxCandy(d); more.style.color = "#160510"; }
-    else if (cur !== 2 && cur !== 5) { more.style.background = "color-mix(in srgb, " + d + " 34%, #180a14)"; more.style.color = "#fff2f9"; } // a grid-chosen dose keeps the row honest when the grid is folded
-    more.onclick = function () { _tbxMore = !_tbxMore; tbxRepaintDose(id); };
-    if (_tbxMore) { // 21a minute grid: tap, never type — the steps above resize live
-      var mg = add(card, "div", "tbx-mgrid"); add(mg, "div", "tbx-mgrid-lbl", tr("YOUR MINUTES · THE STEPS RESIZE ABOVE"));
-      var mrow = add(mg, "div", "tbx-mrow");
-      TBX_MINS.forEach(function (v) { var c = add(mrow, "button", "tbx-mchip", v + tr("m")); if (v === cur) { c.style.background = tbxCandy(d); c.style.color = "#160510"; c.style.boxShadow = tbxLip(d); } else c.style.borderColor = "color-mix(in srgb, " + d + " 38%, #33192a)"; c.onclick = function () { tbxSetDose(id, v); tbxRepaintDose(id); }; });
-    }
-    }
     var start = add(card, "button", "tbx-start"); add(start, "i", "ti ti-player-play-filled"); add(start, "span", null, tr("Start")); // 21e: Start is the full-width row UNDER the dose row (was inline in the foot)
     start.onclick = function () { try { tbxLaunch(id, tbxDose(id)); } catch (e) {} };
     var gate = add(card, "button", "tbx-gate"); add(gate, "i", "ti " + (TBX_PLUS ? "ti-adjustments-horizontal" : "ti-lock")); add(gate, "span", "tbx-gate-tx", tr("Adjust steps & timing")); var gr = add(gate, "span", "tbx-gate-r"); add(gr, "span", "tbx-gate-badge", tr("PLUS")); if (TBX_PLUS) add(gr, "i", "ti ti-chevron-right tbx-gate-chev"); // 21f: with Plus the row is a live chevron row into the Session Editor; the PLUS badge stays (it signals the future paywall)
@@ -6467,21 +6583,34 @@
       onStart: function (t) { tbxSetEdit(id, t); try { tbxLaunch(id, tbxDose(id)); } catch (e) {} } // Start → run the edited track at the chosen dose (Landing Contract via tbxLaunch)
     });
   }
+  function tbxDoseScroll(old) { // THE DOSE ROW KEEPS ITS PLACE (David 2026-08-20: "if you select one, it doesn't magically jump to the left. It stays in the spot where you selected it"). The chips are built in ladder order, so nothing ever reorders — the apparent jump was this whole-card rebuild handing back a fresh scroller parked at 0. Read before, restore after.
+    var o = old && old.querySelector ? old.querySelector(".tbx-dose-foot") : null, sl = o ? o.scrollLeft : 0;
+    return function (fresh) { if (!sl || !fresh) return false; var n = fresh.querySelector(".tbx-dose-foot"); if (!n) return false; n.scrollLeft = sl; return true; }; // returns whether a REAL saved position was put back — restore always wins, and tbxDoseSee only runs when there was nothing to restore
+  }
+  function tbxDoseSee(card) { // FIRST OPEN LANDS ON THE PICK (David 2026-08-20, PICKER-PLANNER item J: "if you press the Morning Stack, it's selected at thirty minutes but you can't see it because it scrolled all the way to the right. If something is selected, make it visible"). tbxDoseScroll only PRESERVES a position; on a first open there is none, so the row started at 0 and a late dose (30m, 45m) sat past the right edge. Centre the lit chip where the row can, clamped at both ends so neither end shows dead space.
+    if (!card || !card.querySelector) return false;
+    var row = card.querySelector(".tbx-dose-foot"), chip = card.querySelector(".tbx-chip.on"); if (!row || !chip) return false;
+    var max = row.scrollWidth - row.clientWidth; if (max <= 0) return false; // the whole ladder already fits — there is nothing to scroll and nothing to hide
+    var x = 0, e = chip, guard = 8; while (e && e !== row && guard--) { x += e.offsetLeft; e = e.offsetParent; } // LAYOUT px, walked to the row: the card opens under a spring animation and the 2c face is transform-scaled, so a getBoundingClientRect diff would read scaled pixels and centre on the wrong chip
+    if (e !== row) x = chip.offsetLeft - row.offsetLeft; // fallback for the day .tbx-chips or the row itself becomes positioned
+    row.scrollLeft = Math.max(0, Math.min(max, x - (row.clientWidth - chip.offsetWidth) / 2));
+    return true;
+  }
   function tbxRepaintDose(id) { // swap the open dose card for a freshly-built one so an edit/reset shows immediately (single-open; the card carries data-tbxdose)
-    if (HOME2C && _tfhOpen === id) { var fh = el("tfHeroDose"); if (fh) { var old = fh.querySelector(".tbx-dose"), nf = tbxBuildDose(id, true); nf.classList.remove("tbx-open"); if (old) fh.replaceChild(nf, old); else fh.appendChild(nf); } } // the HOME 2c face card lives outside .tbx — repaint it on the same path (dose chips, band folding, edits and resets all land here)
+    if (HOME2C && _tfhOpen === id) { var fh = el("tfHeroDose"); if (fh) { var old = fh.querySelector(".tbx-dose"), keep = tbxDoseScroll(old), nf = tbxBuildDose(id, true); nf.classList.remove("tbx-open"); if (old) fh.replaceChild(nf, old); else fh.appendChild(nf); keep(nf); } } // the HOME 2c face card lives outside .tbx — repaint it on the same path (dose chips, band folding, edits and resets all land here)
     if (_tbxOpenStack !== id) return;
     var card = document.querySelector('.tbx .tbx-dose[data-tbxdose="' + id + '"]'); if (!card || !card.parentNode) return;
-    var fresh = tbxBuildDose(id); fresh.classList.remove("tbx-open"); // no re-animate on an in-place refresh
-    card.parentNode.replaceChild(fresh, card);
+    var keep2 = tbxDoseScroll(card), fresh = tbxBuildDose(id); fresh.classList.remove("tbx-open"); // no re-animate on an in-place refresh
+    card.parentNode.replaceChild(fresh, card); keep2(fresh);
   }
   function tbxOpenDose(id, cell) { // SINGLE-OPEN dose card, inserted right after the tapped tile's grid (full width in the flow). Toggle on re-tap.
     var root = cell.closest ? cell.closest(".tbx") : null; if (!root) return;
     var wasOpen = _tbxOpenStack === id;
     var existing = root.querySelector(".tbx-dose"); if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-    _tbxOpenStack = null; _tbxMore = false;
+    _tbxOpenStack = null;
     if (wasOpen) return;
     var grid = cell.closest ? cell.closest(".tbx-grid") : null; if (!grid) return;
-    var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id;
+    var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id; tbxDoseSee(card); // a first open has no saved scroll — land on the chosen dose instead of at 0
     try { var cr = cell.getBoundingClientRect(), pr = card.getBoundingClientRect(); card.style.transformOrigin = Math.round(cr.left + cr.width / 2 - pr.left) + "px 0"; } catch (e) {} // 21e: the panel springs open OUT OF the tapped tile's column
   }
   function tbxBuilderTile(host) { // the PINNED 8th tile: the same STACK CARD face in create-purple with ti-plus + label "Build", no shards (it holds no steps yet). Tap → build-a-custom-stack flow.
@@ -6610,7 +6739,7 @@
     { k: "rewire", lab: "Rewire", i: "ti-quote", d: "create", tools: [
       { i: "ti-bulb", t: "Mantra", m: 2, sk: "mantra" }, { i: "ti-rotate-2", t: "Visualisation", m: 3, sk: "reprogram" } ] } // t_mantra's + STACK_TOOLS reprogram's shipped labels
   ];
-  var SED_BEDS = [{ k: "off", n: "None", i: "ti-volume-off" }, { k: "pad", n: "Calm pad", i: "ti-wave-saw-tool" }, { k: "music", n: "Music", i: "ti-music" }, { k: "forest", n: "Forest", i: "ti-trees" }, { k: "birds", n: "Birds", i: "ti-feather" }, { k: "floating", n: "Floating", i: "ti-cloud" }]; // the REAL bed keys (bedMode/BG_FILES @SEC:AUDIO) — the design's rain/ocean/fire don't exist as assets, so they aren't offered
+  var SED_BEDS = [{ k: "off", n: "None", i: "ti-volume-off" }, { k: "pad", n: BED_NAME.pad, i: "ti-wave-saw-tool" }, { k: "music", n: BED_NAME.music, i: "ti-music" }, { k: "forest", n: BED_NAME.forest, i: "ti-trees" }, { k: "birds", n: BED_NAME.birds, i: "ti-feather" }, { k: "floating", n: BED_NAME.floating, i: "ti-cloud" }]; // names come from BED_NAME so this grid and the settings card can never call the same bed two things (it used to say "Calm pad"/"Music" while the Sound panel said "Peaceful"/"Mysterious"). The REAL bed keys (bedKeys/BG_FILES @SEC:AUDIO) — the design's rain/ocean/fire don't exist as assets, so they aren't offered
   var SED_VOLLAB = ["off", "faint", "quiet", "there", "up", "loud"];
   var _sed = null; // the live editor (null = closed). Transient; nothing here is state until Save/Start.
   function sedFmt(m) { return m < 1 ? Math.round(m * 60) + "s" : (m % 1 ? Math.floor(m) + ":" + pad(Math.round((m % 1) * 60)) : m + " " + tr("min")); }
@@ -6721,12 +6850,12 @@
     var vk = sedVoiceKey(), vlist = sedVoices(), vnow = vlist.filter(function (v) { return v.k === vk; })[0] || vlist[0];
     var vb = sedSetCard(wrap, "voice", "connect", "ti-microphone", "Voice", tr(vnow.n));
     if (vb) { var vr = add(vb, "div", "sed-vrow"); vlist.forEach(function (v) { var on = v.k === vk, c = add(vr, "button", "sed-vcard"); var vi = add(c, "i", "ti " + (v.k === "none" ? "ti-microphone-off" : "ti-user")); add(c, "span", "sed-vn", tr(v.n)); add(c, "span", "sed-vs", tr(v.s)); if (on) { c.style.background = tbxCandy(sedHue("connect")); c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("connect") + " 45%, #000)"; c.classList.add("on"); } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("connect") + " 34%, #33192a)"; vi.style.color = sedHue("connect"); } c.onclick = function () { sedSetVoiceKey(v.k); sedPaint(); }; }); }
-    var bed = (S.audio && S.audio.bed) || "pad", bnow = SED_BEDS.filter(function (x) { return x.k === bed; })[0] || SED_BEDS[1];
+    var bedsOn = bedKeys(), bedSum = bedsOn.length ? bedsOn.map(function (k) { return tr(BED_NAME[k] || k); }).join(" + ") : tr("None"); // MULTI (2026-08-20): the summary line names every bed in the set, not just one — and reads BED_NAME so a binaural bed picked in the settings card still shows here
     var vol = Math.max(0, Math.min(5, Math.round(((S.audio && S.audio.bg != null ? S.audio.bg : 1)) * 5)));
-    var sb = sedSetCard(wrap, "sound", "move", "ti-volume", "Sound", tr(bnow.n) + " · " + tr(SED_VOLLAB[vol]));
+    var sb = sedSetCard(wrap, "sound", "move", "ti-volume", "Sound", bedSum + " · " + tr(SED_VOLLAB[vol]));
     if (sb) {
       var g = add(sb, "div", "sed-sgrid");
-      SED_BEDS.forEach(function (x) { var on = x.k === bed, c = add(g, "button", "sed-scell"); var si = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.n)); if (on) { c.style.background = tbxCandy(sedHue("move")); c.style.color = "#160510"; c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("move") + " 45%, #000)"; } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("move") + " 34%, #33192a)"; si.style.color = sedHue("move"); } c.onclick = function () { S.audio = S.audio || { voice: 1, bg: 1 }; S.audio.bed = x.k; save(); sedPaint(); }; });
+      SED_BEDS.forEach(function (x) { var on = x.k === "off" ? !bedsOn.length : bedsOn.indexOf(x.k) !== -1, c = add(g, "button", "sed-scell"); var si = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.n)); if (on) { c.style.background = tbxCandy(sedHue("move")); c.style.color = "#160510"; c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("move") + " 45%, #000)"; } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("move") + " 34%, #33192a)"; si.style.color = sedHue("move"); } c.onclick = function () { bedSet(bedToggle(x.k)); save(); if (_activeBed) _activeBed(bedKeys()); sedPaint(); }; }); // same one-per-category toggle as the settings card, so the two doors can never disagree
       var vr2 = add(sb, "div", "sed-vol"); add(vr2, "i", "ti ti-volume");
       var bars = add(vr2, "span", "sed-bars");
       [1, 2, 3, 4, 5].forEach(function (v) { var bq = add(bars, "button", "sed-bar"); bq.style.height = (7 + v * 4) + "px"; bq.style.background = v <= vol ? sedHue("move") : "#2c1522"; bq.setAttribute("aria-label", tr(SED_VOLLAB[v])); bq.onclick = function () { setAudioVol("bg", v / 5); save(); sedPaint(); }; });
@@ -6794,11 +6923,11 @@
   var PK_LENS = [10, 15, 20, 30, 45, 60, 90, 120, 180];                                   // the length rail (minutes); a chain's rail scales ALL its steps proportionally
   var PK_PRIS = [{ v: 3, l: "Must" }, { v: 2, l: "Should" }, { v: 1, l: "Whenever" }];     // priority shows its VALUE once set; the word "Priority" only when unset (David 2026-07-27)
   var PK_TOPN = 11; // activities shown in a folder before the dashed "More" tile opens the grouped view
+  var PK_ARR_PXMIN = 2; // THE ARRANGER'S TIME SCALE (David 2026-08-16, "you should be able to move it down, like in the regular timeline"): 2px of drag = 1 minute, so one 66px row pitch reads as ~30 min and the 5-minute snap is a 10px pull. The arranger is a list, not a minute grid, so this is the one place the two spaces meet.
   var _pk = null;   // the live picker (null = closed). Nothing here is state until Start.
   var _pkUse = null; // pkActUse memo for one picker session (cleared in pkOpen) — the 30-day log walk is identical for every folder in a paint
   function pkDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
   function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60) : "")); } // UNPADDED per the artifact's plate bar ("3 things · 3h5"); the zero-pad was ours
-  function pkLong(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + " " + tr("min")) : pkShort(m); } // the one-pick button's duration: spelled out under an hour ("30 min"), and above it the plate bar's own compact token ("1h5") rather than a second padded form
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
   var PK_INK = "#2a1730"; // ink-on-a-fill: what a glyph or a label wears when it sits ON a saturated hue. #160510 is the BORDER/lip ink and never a glyph on a hue (DS source 2026-07-30).
   var PK_EDGE = "#34172d"; // THE RESTING FOLDER EDGE (David 2026-07-31, on his frame): ONE neutral plum for all eight cards, a hair lighter than the #241022 shell so the card has a rim without a colour. The per-domain color-mix(HUE 30%, #160510) edge that lived here made Play gold-rimmed and Nourish green-rimmed — the frame shows eight identical edges. Hue on a folder edge is now ONLY the pink pick ring.
@@ -6834,7 +6963,7 @@
       if (bs >= at && bs < end) end = bs;                                    // the next block closes the gap
       if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
     });
-    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], focus: null, priOpen: false, stepsOpen: false, wallMin: true, stepFor: null, aOpen: null, aPri: false, aSteps: false };
+    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], stepFor: null, aOpen: null, aPri: false, aSteps: false }; // focus/priOpen/stepsOpen/wallMin died with the picked-activities tray (David 2026-08-16, his THIRD cut of it) — a pick's length, priority and steps are set in the Arranger, which is the only surface that shows them now.
     var ov = add(document.body, "div", "pk-ov"); _pk.ov = ov;
     pkPaintShell();
   }
@@ -6849,13 +6978,13 @@
     if (gap >= 10) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone
     add(htx, "span", "pk-title", tr("What next?")); // the artifact says "What next?" — the apostrophe form was fix-pass invention
     _pk.wbody = add(wall, "div", "pk-body");
-    _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // the queue tab + panel + plate bar, byte-identical to the sheet's footer
+    _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // the bottom bar, byte-identical to the sheet's footer
     pkPaint();
   }
   function pkPaint() { // in-place repaint of everything that can change: the wall body, the shared footer, and (when open) the sheet's head + body
     if (!_pk || _pk.view !== "pick") return;
-    pkPaintWall(_pk.wbody); pkFoot(_pk.wfoot, "#130609");
-    if (_pk.sh) { pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17"); }
+    pkPaintWall(_pk.wbody); pkFoot(_pk.wfoot);
+    if (_pk.sh) { pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot); }
   }
   function pkFolder(host, dash) { var b = add(host, "button", "pk-folder" + (dash ? " dash" : "")); return b; }
   function pkPaintWall(host) {
@@ -6904,46 +7033,19 @@
         b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
       });
   }
-  // ===== THE SHARED FOOTER — the wall and the folder sheet BOTH call this, so their bottoms are byte-identical and opening a folder shifts nothing (David's contract). =====
-  function pkFoot(host, bg) {
+  // ===== THE BOTTOM BAR — the wall and the folder sheet BOTH call this, so their bottoms are byte-identical and opening a folder shifts nothing (David's contract). =====
+  // THE TRAY IS GONE (David 2026-08-16, his THIRD cut of this surface — "I wanna remove the whole footer… that's redundant because after that, there's an Arrange button anyway"; DECISIONS.md 2026-08-16 kills it by name). The chevron tab, the queue strip and the tune panel (length rail / Priority / Steps) are deleted, not shrunk: a picked tile is already ignited on the wall, and the Arranger is where order, length, priority and steps are actually set. The primary no longer MORPHS by count either (same decision: "a primary action must not change identity by count") — it is Arrange at every count, so one pick and five picks take the same door and both get to see the time they will land at.
+  function pkFoot(host) {
     pkDrain(host);
     var q = _pk.queue, n = q.length;
-    if (n) { var tab = add(host, "button", "pk-tab"); var ti = add(tab, "i", "ti ti-chevron-up"); ti.style.transform = _pk.wallMin ? "none" : "rotate(180deg)"; tab.setAttribute("aria-label", tr("Show picks")); tab.onclick = function () { _pk.wallMin = !_pk.wallMin; pkPaint(); }; } // "minimizes" default: up when minimized, down when expanded
-    if (n && !_pk.wallMin) pkPanel(add(host, "div", "pk-panel"), bg || "#130609");
     var bar = add(host, "div", "pk-bar"), tx = add(bar, "span", "pk-bartx");
-    var kick = add(tx, "span", "pk-bark"), lab = add(tx, "span", "pk-barl");
-    // FP4 5 — ONE ActionBar, three states. The kicker never changes WORDS (only its colour), so the bar reads as one instrument instead of three; the label carries the state in plain words; the right verb is disabled-Arrange / Add to today / Arrange.
-    kick.textContent = tr("ON YOUR PLATE"); kick.style.color = n ? "#ff8fc0" : "#96637e";
+    var lab = add(tx, "span", "pk-barl");
     if (!n) { lab.classList.add("hint"); lab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like"); } // DS: the populated label is 18px on ONE line; the empty-state hint drops to 14px/#c98ca6 so the whole sentence fits at 375px instead of being clipped
     else if (n === 1) lab.textContent = q[0].title + " · " + pkShort(q[0].mins || 0);
     else lab.textContent = n + " " + tr("things") + " · " + pkShort(pkTotal()); // never a name → name → name list (David 2026-07-27)
-    var go = add(bar, "button", "pk-go" + (n === 1 ? " one" : "")); add(go, "i", "ti " + (n === 1 ? "ti-plus" : "ti-arrows-sort")); add(go, "span", null, n === 1 ? (tr("Add to today") + " · " + pkLong(q[0].mins || 0)) : tr("Arrange")); // the artifact's Arrange glyph is the up-down sort arrows, not a list. The one-pick primary CARRIES ITS DURATION ("Add to today · 30 min") so the verb states the whole commitment.
+    var go = add(bar, "button", "pk-go"); add(go, "i", "ti ti-arrows-sort"); add(go, "span", null, tr("Arrange")); // the artifact's Arrange glyph is the up-down sort arrows, not a list
     if (!n) { go.style.background = "#2a0d1c"; go.style.color = "#9a6a86"; go.style.boxShadow = "0 5px 0 #160510"; go.style.opacity = ".7"; go.onclick = function () {}; } // ActionBar law: a disabled primary goes to the dead surface, never an opacity-washed pink
-    else go.onclick = function () { if (n > 1) { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); } else pkLand(false); };
-  }
-  function pkPanel(host, bg) { // queue strip + (when a pick is focused) the tune panel
-    var qrow = add(host, "div", "pk-queue");
-    _pk.queue.forEach(function (p, i) {
-      var b = add(qrow, "button", "pk-q"), hue = pkHue(p.dom), on = _pk.focus === i;
-      var deck = (p.kind === "chain" || (p.st0 && p.st0.length)); // ANYTHING MADE OF STEPS renders as a deck — THE STACK CARD with its two up-left shards. Stacks already arrive as kind "chain" (pkStackPick), so they deck today; the st0 test keeps that true if a stack ever gets its own kind. A plain activity is not a stack and keeps a bare card.
-      var C = stkCard(b, { s: PK_Q_S, glyph: PK_Q_GLYPH, hue: hue, ti: p.ti, shards: deck ? stkShards(hue, p.st0) : null, on: on, ignite: true, cls: "pk-qc" }); // the FOCUSED chip is the one that ignites (stripes + the ring ALONE, no lip under it); the rest stay flat hue on their hue lip
-      var x = add(C.wrap, "button", "pk-qx"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function (e) { e.stopPropagation(); _pk.queue.splice(i, 1); if (_pk.focus === i) _pk.focus = _pk.queue.length ? 0 : null; else if (_pk.focus > i) _pk.focus--; pkPaint(); };
-      var l = add(b, "span", "pk-ql stk-lab", p.title); l.style.color = on ? "#ff4fa0" : hue; // the NAME under the card, never the time: the FACE hue at rest, pink when this is the focused one
-      b.onclick = function () { _pk.focus = on ? null : i; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); };
-    });
-    var f = (_pk.focus != null) ? _pk.queue[_pk.focus] : null; if (!f) return;
-    var tune = add(host, "div", "pk-tune"), hue = pkHue(f.dom), isChain = f.kind === "chain";
-    var fh = add(tune, "div", "pk-fh"), ftx = add(fh, "span", "pk-bartx"); // header = name + hint + big time; NO icon coin (the ringed queue icon is the identifier)
-    add(ftx, "span", "pk-fht", f.title); add(ftx, "span", "pk-fhs", isChain ? tr("for how long? scales every step") : tr("for how long?"));
-    add(fh, "span", "pk-fhm", pkShort(f.mins)); // the frame's big value is COMPACT ("10m"), the same token the rail chips and the plate bar speak — the long "30 min" form was ours
-    pkRail(tune, f.mins, hue, function (v) { f.mins = v; pkPaint(); }, bg);
-    var btns = add(tune, "div", "pk-btns");
-    var pb = add(btns, "button", "pk-tbtn"); var pbi = add(pb, "i", "ti " + (f.prio ? "ti-flag-filled" : "ti-flag")); add(pb, "span", null, f.prio ? tr(pkPriLab(f.prio)) : tr("Priority"));
-    pkSkinTune(pb, pbi, hue, !!f.prio); pb.onclick = function () { _pk.priOpen = !_pk.priOpen; _pk.stepsOpen = false; pkPaint(); };
-    var sb = add(btns, "button", "pk-tbtn"); var sbi = add(sb, "i", "ti ti-list-details"); add(sb, "span", null, tr("Steps"));
-    pkSkinTune(sb, sbi, hue, _pk.stepsOpen); sb.onclick = function () { _pk.stepsOpen = !_pk.stepsOpen; _pk.priOpen = false; pkPaint(); }; // Priority + Steps ONLY (the frame): taking a pick back off the plate is the chip's own x badge, so a second delete affordance down here was ours, not David's
-    if (_pk.priOpen) pkPriRow(tune, f, hue);
-    if (_pk.stepsOpen) { if (isChain) pkStepList(add(tune, "div", "pk-steps"), pkSteps(f)); else pkActSteps(tune, f); }
+    else go.onclick = function () { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); };
   }
   function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
   function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; } else { el2.style.borderColor = mixHex(hue, "#33192a", 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
@@ -6962,16 +7064,7 @@
     var fade = add(box, "div", "pk-fade"); fade.style.background = "linear-gradient(90deg, " + hexA("#1b0b16", 0) + ", #1b0b16 88%)";
     var fwd = add(w, "button", "pk-fwd"); add(fwd, "i", "ti ti-chevron-right"); fwd.setAttribute("aria-label", tr("More lengths")); fwd.onclick = function () { try { rail.scrollBy({ left: 150, behavior: "smooth" }); } catch (e) { rail.scrollLeft += 150; } };
   }
-  function pkPriRow(host, p, hue) { var row = add(host, "div", "pk-pris");
-    PK_PRIS.forEach(function (P) { var b = add(row, "button", "pk-pri", tr(P.l)); pkSkin(b, null, hue, p.prio === P.v); b.onclick = function () { p.prio = (p.prio === P.v) ? 0 : P.v; _pk.priOpen = false; pkPaint(); }; }); }
   function pkStepList(host, steps) { steps.forEach(function (s) { var r = add(host, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = s.c; c.style.boxShadow = "0 2px 0 " + mixHex(s.c, "#160510", 0.45) + ", 0 0 0 2px #160510"; add(c, "i", "ti " + s.i); add(r, "span", "pk-stept", s.t); add(r, "span", "pk-stepm", pkShort(s.m)); }); } // read-only scaled readout — a chain's steps are set in the Session Editor, not here
-  function pkActSteps(host, p) { // an activity's steps ARE the block's own sub-steps (the existing b.subs model) — tap to add one from the same folder sheet, never a keyboard
-    var box = add(host, "div", "pk-steps");
-    (p.subs || []).forEach(function (s, i) { var r = add(box, "div", "pk-step"); var c = add(r, "span", "pk-stepc"); c.style.background = mixHex(pkHue(p.dom), "#160510", 0.35); add(c, "i", "ti ti-point").style.color = "#f0dceb"; add(r, "span", "pk-stept", s.t); // the sub-step dot rides a DARKENED hue coin, so it keeps a light glyph (the ink-on-hue law applies to full-hue fills)
-      var x = add(r, "button", "pk-qx"); x.style.position = "static"; add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Remove")); x.onclick = function () { p.subs.splice(i, 1); pkPaint(); }; });
-    var b = add(box, "button", "pk-addstep"); add(b, "i", "ti ti-plus"); add(b, "span", null, tr("Add a step"));
-    b.onclick = function () { _pk.stepFor = p.uid; _pk.sheet = { kind: "dom", dom: p.dom, more: false, naming: false, draft: "" }; pkBuildSheet(); };
-  }
   // ===== THE FOLDER SHEET =====
   function pkBuildSheet() {
     if (!_pk) return; if (_pk.sh && _pk.sh.parentNode) _pk.sh.parentNode.removeChild(_pk.sh);
@@ -6982,7 +7075,7 @@
     _pk.shhead = add(sheet, "div", "pk-shheadwrap"); _pk.shhead.style.cssText = "flex:none;display:flex;flex-direction:column;";
     _pk.shbody = add(sheet, "div", "pk-shbody");
     _pk.shfoot = add(sheet, "div", "pk-footwrap"); _pk.shfoot.style.cssText = "flex:none;display:flex;flex-direction:column;";
-    pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot, "#1c0a17");
+    pkPaintSheetHead(); pkPaintSheetBody(); pkFoot(_pk.shfoot);
   }
   function pkCloseSheet() { if (_pk.sh && _pk.sh.parentNode) _pk.sh.parentNode.removeChild(_pk.sh); _pk.sh = null; _pk.sheet = null; _pk.stepFor = null; pkPaint(); }
   function pkSheetMeta() { var s = _pk.sheet;
@@ -7010,11 +7103,11 @@
       s.naming = false; s.draft = ""; pkTake({ title: v, catK: null, domain: s.dom }); };
     setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
   }
-  function pkTake(a) { // one door for every pick: in step-mode it becomes a sub-step of the focused block, otherwise it joins the queue and takes focus
+  function pkTake(a) { // one door for every pick: in step-mode it becomes a sub-step of the focused block, otherwise it joins the queue and the expanded category folds back to the wall
     if (_pk.stepFor) { var f = null; _pk.queue.forEach(function (p) { if (p.uid === _pk.stepFor) f = p; }); if (f) { f.subs = f.subs || []; f.subs.push({ t: a.title }); } _pk.stepFor = null; pkCloseSheet(); return; }
-    _pk.queue.push(pkActPick(a)); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint();
+    _pk.queue.push(pkActPick(a)); pkCloseSheet(); // THE CATEGORY COLLAPSES ON A PICK (David 2026-08-16): the pick is pushed FIRST, so pkCloseSheet's repaint draws the wall with this folder's tile already ignited and its count moved — multi-select across categories still works, you just do it from the wall
   }
-  function pkTakePick(p) { _pk.queue.push(p); _pk.focus = _pk.queue.length - 1; _pk.wallMin = false; _pk.priOpen = false; _pk.stepsOpen = false; pkPaint(); }
+  function pkTakePick(p) { _pk.queue.push(p); pkCloseSheet(); } // same order for stacks / chains / the Just-<domain> timebox: register, then fold
   function pkActUse() { // THE RANKING SOURCE: the last 30 days of logs, the same signal actCount() reads for badges. (S.tools.use — what TBX_TOP/tbxOrder rank by — is keyed by TOOL id, not activity title, so it cannot rank this grid.)
     if (_pkUse) return _pkUse; // memo: one wall paint asks all 8 folders for the SAME 30-day walk. Nothing inside the picker writes a log, so it can't go stale before pkOpen clears it.
     var m = {}; try { lastDays(30).forEach(function (k) { (logs(k) || []).forEach(function (e) { var t = (e.title || "").toLowerCase(); if (t) m[t] = (m[t] || 0) + 1; }); }); } catch (e) {}
@@ -7081,7 +7174,7 @@
     pkDashCell(og, "ti-plus", tr("New")).onclick = function () { s.naming = true; pkPaintSheetHead(); };
   }
   // ===== THE ARRANGER (18a isArr) =====
-  function pkArrTimes() { var t = _pk.gapStart, out = []; _pk.queue.forEach(function (p) { out.push(t); t = Math.min(1439, t + (p.mins || 30)); }); return out; } // blocks lay end-to-end from the gap start — no overlaps, sequential recompute on every reorder
+  function pkArrTimes() { var t = _pk.gapStart, out = []; _pk.queue.forEach(function (p) { t = Math.min(1439, t + (p.gap || 0)); out.push(t); t = Math.min(1439, t + (p.mins || 30)); }); return out; } // blocks lay end-to-end from the gap start — no overlaps, sequential recompute on every reorder. `p.gap` (David 2026-08-16) is REAL EMPTY TIME held in front of a pick: pull a row down in the Arranger and every row under it walks later by the same amount, because this walk is sequential. The 1439 caps are the day-edge clamp and belong to the midnight pass, not here.
   function pkBuildArr() {
     var arr = add(_pk.ov, "div", "pk-arr");
     var head = add(arr, "div", "pk-arrhead");
@@ -7090,7 +7183,7 @@
     _pk.alist = add(arr, "div", "pk-arrlist");
     var foot = add(arr, "div", "pk-arrfoot");
     var sv = add(foot, "button", "pk-arrsave"); add(sv, "i", "ti ti-device-floppy"); sv.setAttribute("aria-label", tr("Save")); sv.onclick = pkSaveChain;
-    var go = add(foot, "button", "pk-arrgo"); add(go, "i", "ti ti-player-play-filled"); add(go, "span", null, tr("Start")); go.onclick = function () { pkLand(true); };
+    var go = add(foot, "button", "pk-arrgo"); add(go, "i", "ti ti-plus"); add(go, "span", null, tr("Add to planner")); go.onclick = function () { pkLand(); }; // David 2026-08-16: "the Start button doesn't make sense. It should be Add to the planner instead." The play glyph went with the word — this button no longer starts anything.
     pkPaintArr();
   }
   function pkPaintArr() {
@@ -7098,6 +7191,7 @@
     var host = _pk.alist; pkDrain(host); _pk.aTot.textContent = pkShort(pkTotal());
     var times = pkArrTimes(), prevH = -1;
     _pk.queue.forEach(function (p, i) {
+      if (p.gap > 0) { var gp = add(host, "div", "pk-agap"); gp.style.height = Math.max(24, Math.min(120, Math.round(p.gap * PK_ARR_PXMIN))) + "px"; add(gp, "span", "pk-agaptx", pkShort(p.gap)); } // the inserted time is VISIBLE time: a dashed stretch as tall as the gap it holds, carrying its own duration. The gutter prints hour numerals only (canvas 603), so without this the minutes you pushed in would be invisible.
       var row = add(host, "div", "pk-arow"); row.dataset.i = String(i);
       var h = Math.floor(times[i] / 60), same = h === prevH; prevH = h;
       var gut = add(row, "div", "pk-gut");
@@ -7121,7 +7215,7 @@
     });
     var addrow = add(host, "div", "pk-arradd"); add(addrow, "span");
     var ab = add(addrow, "button", "pk-arraddb"); add(ab, "i", "ti ti-plus"); add(ab, "span", null, tr("Add a block"));
-    ab.onclick = function () { _pk.view = "pick"; _pk.wallMin = false; pkPaintShell(); };
+    ab.onclick = function () { _pk.view = "pick"; pkPaintShell(); };
   }
   function pkArrBody(host, p, i, hue, isChain) {
     if (isChain) pkStepList(add(host, "div", "pk-steps"), pkSteps(p));
@@ -7152,31 +7246,45 @@
     onSave: function (t) { var tot = 0; t.forEach(function (x) { tot += (x.d || 0) / 60; });
       p.st0 = t.map(function (x) { return { t: x.t, i: x.i, c: pkHue(x.dom || p.dom), m: (x.d || 60) / 60 }; }); p.bm = Math.max(1, tot); p.mins = Math.max(1, Math.round(tot)); pkPaintArr(); },
     onStart: function () { pkPaintArr(); } }); }
-  function pkDragWire(hd, row, i) { // WHOLE bubble = the drag handle (David 2026-07-27): press + pull >6px reorders, a clean tap toggles the unfold, tapping B while A is open closes A and opens B in ONE tap. No grip line.
-    var y0 = 0, moved = false, mids = null, target = i, host = null;
+  function pkDragWire(hd, row, i) { // WHOLE bubble = the drag handle (David 2026-07-27): press + pull >6px, a clean tap toggles the unfold, tapping B while A is open closes A and opens B in ONE tap. No grip line.
+    // TWO THINGS FIXED HERE (David 2026-08-16).
+    // (a) THE TIME COLUMN STAYS PUT: the translate moves .pk-acol, never .pk-arow — the hour gutter is a row-level child, so translating the row dragged the numerals along with the bubble ("it's lagging, because when you move an activity, the time on the left moves with it as well"). Times re-resolve on drop, in one repaint.
+    // (b) PULL DOWN = LATER, timeline-style: a downward drop inserts real minutes in front of this pick (p.gap) and every row below walks down with it — order is untouched, and the rows below preview that push live. Pulling UP eats that gap first and only then reorders past the row you crossed. GESTURE-OWNS-THE-DOM: the row/column lists are cached at pointerdown so the move handler never queries or repaints.
+    var y0 = 0, moved = false, live = false, target = i, mids = null, rows = null, cols = null, below = null;
     hd.addEventListener("pointerdown", function (e) {
       if (e.button != null && e.button !== 0) return;
-      y0 = e.clientY; moved = false; target = i; host = _pk.alist;
-      mids = [].slice.call(host.querySelectorAll(".pk-arow")).map(function (r) { return r.offsetTop + r.offsetHeight / 2; });
+      y0 = e.clientY; moved = false; live = true; target = i;
+      rows = [].slice.call(_pk.alist.querySelectorAll(".pk-arow"));
+      cols = rows.map(function (r) { return r.querySelector(".pk-acol"); });
+      below = cols.slice(i + 1);
+      mids = rows.map(function (r) { return r.offsetTop + r.offsetHeight / 2; });
       try { hd.setPointerCapture(e.pointerId); } catch (er) {}
     });
     hd.addEventListener("pointermove", function (e) {
-      if (!mids) return; var dy = e.clientY - y0;
+      if (!live) return; var dy = e.clientY - y0;
       if (!moved && Math.abs(dy) > 6) { moved = true; row.classList.add("drag"); row.style.transition = "none"; }
       if (!moved) return;
-      row.style.transform = "translateY(" + dy + "px)";
-      var c = mids[i] + dy, best = 0, bd = 1e9;
-      mids.forEach(function (m, j) { var d2 = Math.abs(m - c); if (d2 < bd) { bd = d2; best = j; } });
+      if (cols[i]) cols[i].style.transform = "translateY(" + dy + "px)";
+      var push = dy > 0 ? ("translateY(" + dy + "px)") : "";
+      below.forEach(function (c) { if (c) c.style.transform = push; }); // pulling down pushes everything under it down, live — the whole point of the gesture
+      var best = i;
+      if (dy < 0) { var c0 = mids[i] + dy, bd = 1e9; mids.forEach(function (m, j) { var d2 = Math.abs(m - c0); if (d2 < bd) { bd = d2; best = j; } }); if (best > i) best = i; } // only an UPWARD pull can reorder; downward is displacement in time
       if (best !== target) { target = best;
-        [].slice.call(host.querySelectorAll(".pk-arow")).forEach(function (r, j) { r.style.outline = (j === target && j !== i) ? "2.5px dashed #ff4fa0" : ""; r.style.outlineOffset = "4px"; });
+        rows.forEach(function (r, j) { r.style.outline = (j === target && j !== i) ? "2.5px dashed #ff4fa0" : ""; r.style.outlineOffset = "4px"; });
       }
     });
-    function end() {
-      if (!mids) return; mids = null;
-      row.style.transform = ""; row.style.transition = ""; row.classList.remove("drag");
-      [].slice.call(_pk.alist.querySelectorAll(".pk-arow")).forEach(function (r) { r.style.outline = ""; });
+    function end(e) {
+      if (!live) return; live = false;
+      var dy = (moved && e && e.clientY != null) ? (e.clientY - y0) : 0;
+      if (cols[i]) cols[i].style.transform = "";
+      below.forEach(function (c) { if (c) c.style.transform = ""; });
+      row.style.transition = ""; row.classList.remove("drag");
+      rows.forEach(function (r) { r.style.outline = ""; });
       if (!moved) { _pk.aOpen = (_pk.aOpen === i) ? null : i; _pk.aPri = false; _pk.aSteps = false; pkPaintArr(); return; }
-      if (target !== i) { var q = _pk.queue; q.splice(target, 0, q.splice(i, 1)[0]); _pk.aOpen = null; }
+      var p = _pk.queue[i], step = Math.round(Math.abs(dy) / PK_ARR_PXMIN / 5) * 5;
+      if (dy > 0) p.gap = Math.max(0, (p.gap || 0) + step);                                        // later
+      else if (target < i) { var q = _pk.queue; p.gap = 0; q.splice(target, 0, q.splice(i, 1)[0]); _pk.aOpen = null; } // earlier, past a row: reorder and close the gap it was holding
+      else p.gap = Math.max(0, (p.gap || 0) - step);                                               // earlier, within its own slot: eat the gap
       pkPaintArr();
     }
     hd.addEventListener("pointerup", end); hd.addEventListener("pointercancel", end);
@@ -7190,7 +7298,8 @@
       save(); try { toast(tr("Saved as a chain.")); } catch (e) {}
     });
   }
-  function pkLand(fromArr) { // Start / Add to today: write EVERY pick into blocks(k) at the arranged times, then the app's existing behavior for a block that starts now
+  function pkLand() { // Add to planner: write EVERY pick into blocks(k) at the arranged times, and STOP.
+    // ADD-ONLY (David 2026-08-16). This used to call startPlanned() whenever the first block landed within 5 minutes of now, so the button silently began tracking a session. A button must not do something its label does not say — the same complaint that killed the primary which morphed into "Arrange". Starting is the timeline's own tap and the puck; nothing here.
     if (!_pk || !_pk.queue.length) return;
     var k = _pk.k, times = pkArrTimes(), made = [];
     _pk.queue.forEach(function (p, i) {
@@ -7201,15 +7310,13 @@
     reflow(k); save(); pkClose();
     try { renderToday(); } catch (e) {}
     try { renderTrackerFull(); } catch (e) {}
-    var first = made[0];
-    if (fromArr && first && k === todayK() && Math.abs(hm(first.time) - logicalNowMin()) <= 5) { try { startPlanned(first); } catch (e) {} } // a block that starts NOW starts tracking, exactly as everywhere else
-    else { try { toast((made.length > 1 ? (made.length + " " + tr("things")) : made[0].title) + " · " + fmt(times[0])); } catch (e) {} }
+    try { toast((made.length > 1 ? (made.length + " " + tr("things")) : made[0].title) + " · " + fmt(times[0])); } catch (e) {}
   }
   Object.assign(I18N.ru, { // ACTIVITY PICKER strings (B4 law: EN source + RU dict, same commit).
     "What next?": "Что дальше?", "open": "свободно", "after": "после", "SAVED & READY-MADE": "СОХРАНЁННОЕ И ГОТОВОЕ",
     "Chains": "Цепочки", "Stacks": "Стеки", "your arrangements": "твои связки", "on your shelf": "на твоей полке", "saved arrangements": "сохранённые связки", "saved": "сохранено",
     "Tap what you feel like": "Коснись того, чего хочется", "ONE THING": "ОДНО ДЕЛО", "ON YOUR PLATE": "НА СЕГОДНЯ", "things": "дела", "steps": "шага", "chain": "цепочка",
-    "Add to today": "Добавить в день", "Arrange": "Разложить", "Show picks": "Показать выбор", "Remove": "Убрать", "More lengths": "Ещё варианты",
+    "Add to today": "Добавить в день", "Add to planner": "Добавить в план", "Arrange": "Разложить", "Show picks": "Показать выбор", "Remove": "Убрать", "More lengths": "Ещё варианты",
     "for how long?": "на сколько?", "for how long? scales every step": "на сколько? подстроятся все шаги", "Priority": "Важность", "Must": "Обязательно", "Should": "Желательно", "Whenever": "Когда угодно",
     "Steps": "Шаги", "Add a step": "Добавить шаг", "pick a step": "выбери шаг", "More": "Ещё", "New": "Новое", "YOUR OWN": "СВОИ", "name it": "назови",
     "Arrange two things and Save keeps it here.": "Разложи два дела — и Сохранить оставит их здесь.", "Nothing here yet.": "Пока пусто.",
@@ -7897,10 +8004,11 @@
     S.audio = S.audio || { voice: 1, bg: 1 };
     if (S.audio.voice == null) S.audio.voice = 1;
     if (S.audio.bg == null) S.audio.bg = 1;
-    if (S.audio.bed == null) S.audio.bed = "pad";
-    if (!S.audioMigPad) { S.audioMigPad = 1; S.audio.bed = "pad"; } /* one-time: default everyone to the peaceful pad David preferred (David 2026-07-01) */
+    if (S.audio.bed == null) S.audio.bed = BED_DEFAULT.slice(); /* David 2026-08-20: the background sound default is BIRDS (was the peaceful pad) */
+    if (!S.audioMigPad) S.audioMigPad = 1; /* the 2026-07-01 "everyone gets the peaceful pad" one-time migration is SPENT. The flag stays stamped so no save can re-run it, but its WRITE is gone: birds is the default now, and MIG 8→9 turns that un-chosen pad into it. */
     if (S.audio.appMusic == null) S.audio.appMusic = false;
-    if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; } /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */
+    if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; }
+    if (!S.audioMigMusicOff2) { S.audioMigMusicOff2 = 1; S.audio.appMusic = false; } /* David 2026-08-20 device: "get rid of the background sound when using the regular app". The 2026-07-02 mute is SPENT (its flag is stamped on every save), so a save that opted back IN kept the pad forever. A second one-time flag re-mutes those saves once; the toggle in the settings card stays, and session backdrop beds are untouched. */ /* David 2026-07-02: NO background noise when the app opens — whole-app music is OFF by default (one-time migration turns it off for existing saves too); the Sound panel toggle stays for opting back in. Tool beds (the pad inside meditation/breath) are untouched. */
     /* COCKPIT (CKPT-4): additive top-level objects matching the S.mood/S.acts precedent — NO SCHEMA bump, rides export/import/undo. Default mode 'off' = inert until the dial is flipped. */
     TF_MODE = null; TF_MODE_USERSET = false; TF_BLOCKID = null; /* reset transient stage on every load so a crash never strands a half-built flow */
     S.timers.forEach(function (t) { if (!t.dayK) t.dayK = logicalK(new Date(t.start)); });
@@ -7995,6 +8103,18 @@
       if (typeof g.whyText !== "string") g.whyText = "";
       if (!g.size) g.size = (g.steps.length >= 6 ? "big" : g.steps.length >= 3 ? "medium" : "small");
     });
+    // MIG 8→9 — THE BED SET (David 2026-08-20). S.audio.bed was ONE key; it is a LIST now, holding at most one bed per BED_CAT
+    // category, so a music bed and a nature bed can sound together. The old string becomes a one-item list — EXCEPT "pad",
+    // which nobody chose: the 2026-07-01 audioMigPad wrote it into every save on the planet, so a stored "pad" is the un-chosen
+    // default and lands on the new default (birds). Every OTHER stored key is a real pick and survives untouched, and the two
+    // breath defaults that change with it (tone → ocean, cue → woodblock) are resolved from an UNSET pref in breathToneKey/
+    // breathCueKey rather than written here, so a real prior pick — including an explicit "off" — is never overwritten.
+    if (prevSchema < 9) {
+      var _b0 = S.audio && S.audio.bed;
+      if (typeof _b0 === "string") S.audio.bed = (_b0 === "pad" && !S.audioBedPick) ? BED_DEFAULT.slice() : (BED_CAT[_b0] ? [_b0] : []);
+      else if (!Array.isArray(_b0)) S.audio.bed = BED_DEFAULT.slice();
+    }
+    if (!Array.isArray(S.audio.bed)) S.audio.bed = (typeof S.audio.bed === "string" && BED_CAT[S.audio.bed]) ? [S.audio.bed] : []; // shape guard on EVERY load: a hand-edited or imported save can still carry the old string
     S.v = SCHEMA; // stamp current — the NEXT "MIG n→n+1" block goes right above this line (ratchet enforces the marker)
     } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged · backed up + started fresh"); } // NEVER let load() throw past here: damaged save → _bak + fresh() — David's data survives every crash
   }
@@ -11835,29 +11955,35 @@
     }
   }
   // THE REAL BREATH PROTOCOLS (David 2026-07-08 depth mandate — don't oversimplify the real counterpart): breathwork isn't one generic pace. Each is an evidence-based pattern matched to a goal, named with its mechanism. PH rows = [screenLabel, ms, kind, spokenKey?]; spokenKey lets the on-screen label differ from the reused voice clip (so new patterns need ZERO new audio — every cue reuses "Breathe in"/"Hold"/"Breathe out"). kind: in | in2 (top-up) | hold | out | rest(silent).
+  // THE PATTERN GLYPHS (Round 25 FORK 2, settled by David 2026-08-20). Every glyph is the SHAPE OF THE BREATH — never an
+  // organ, never a mood: wave-sine = even in, even out · chevrons-up = the sigh's two stacked inhales · wave-square = the
+  // box's four equal sides · wave-saw-tool = 4-7-8's short rise and longer fall (its seven-count hold cannot live in a glyph,
+  // so the hold stays in the count) · switch-horizontal = alternating sides · ripple = coherent's evenly spaced waves, the
+  // SYMMETRIC breath against resonance's gentle-in/longer-out · trending-down = the extended exhale's short rise and long
+  // descent · activity = Wim Hof's rapid jagged burst, with a flat minus for the retention that closes each round.
   var BREATH_PATTERNS = {
-    resonance: { name: "Calming breath", goal: "Just settle me", thinker: "Coherence", why: "A gentle in, a longer out. The extended exhale pulls the vagal brake and downshifts you in about ninety seconds.", cyc: 4,
+    resonance: { name: "Calming breath", ti: "ti-wave-sine", goal: "Just settle me", thinker: "Coherence", why: "A gentle in, a longer out. The extended exhale pulls the vagal brake and downshifts you in about ninety seconds.", cyc: 4,
       ph: [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 6000, "out"], ["Rest", 2000, "rest"]] },
-    sigh: { name: "Physiological sigh", goal: "Wired right now", thinker: "Huberman", why: "Two inhales stack air into collapsed sacs, then one long exhale offloads the CO2. The fastest way to drop stress in real time.", cyc: 5,
+    sigh: { name: "Physiological sigh", ti: "ti-chevrons-up", goal: "Wired right now", thinker: "Huberman", why: "Two inhales stack air into collapsed sacs, then one long exhale offloads the CO2. The fastest way to drop stress in real time.", cyc: 5,
       ph: [["Breathe in", 3200, "in"], ["and a little more", 900, "in2", "Breathe in"], ["Long exhale", 7000, "out", "Breathe out"]] },
-    box: { name: "Box breath", goal: "Need to focus", thinker: "Tactical breathing", why: "Four counts each, all equal. Steadies the nervous system without dulling your alertness. Used under real pressure.", cyc: 5,
+    box: { name: "Box breath", ti: "ti-wave-square", goal: "Need to focus", thinker: "Tactical breathing", why: "Four counts each, all equal. Steadies the nervous system without dulling your alertness. Used under real pressure.", cyc: 5,
       ph: [["Breathe in", 4000, "in"], ["Hold", 4000, "hold"], ["Breathe out", 4000, "out"], ["Hold empty", 4000, "rest"]] },
-    calm478: { name: "4-7-8 breath", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
+    calm478: { name: "4-7-8 breath", ti: "ti-wave-saw-tool", goal: "Winding down for sleep", thinker: "Dr Andrew Weil", why: "In for four, hold for seven, out for eight. The long hold and longer exhale swing you deep into rest. Built for sleep.", cyc: 4,
       ph: [["Breathe in", 4000, "in"], ["Hold", 7000, "hold"], ["Breathe out slowly", 8000, "out", "Breathe out"]] },
     // VARIANT LIBRARY (David 2026-07-23): more real breathing types, each driving the SAME per-phase pacing engine (ph rows = [label, ms, kind, spokenKey?]). Every cue reuses an existing recorded word (Breathe in / Hold / Breathe out) so ZERO new audio is needed; breath is voiceless-by-default anyway (the ph timings pace the orb).
-    coherent: { name: "Coherent breath", goal: "Even out the heart", thinker: "Heart-rate coherence", why: "Five and a half in, five and a half out, no holds. The even rhythm tunes the heart and the breath to one steady wave.", cyc: 6,
+    coherent: { name: "Coherent breath", ti: "ti-ripple", goal: "Even out the heart", thinker: "Heart-rate coherence", why: "Five and a half in, five and a half out, no holds. The even rhythm tunes the heart and the breath to one steady wave.", cyc: 6,
       ph: [["Breathe in", 5500, "in"], ["Breathe out", 5500, "out"]] },
-    exhale48: { name: "Extended exhale", goal: "Slow a racing system", thinker: "Vagal brake", why: "In for four, out for eight. The exhale runs twice the in-breath, and the longer it is, the harder it pulls the brake.", cyc: 5,
+    exhale48: { name: "Extended exhale", ti: "ti-trending-down", goal: "Slow a racing system", thinker: "Vagal brake", why: "In for four, out for eight. The exhale runs twice the in-breath, and the longer it is, the harder it pulls the brake.", cyc: 5,
       ph: [["Breathe in", 4000, "in"], ["Breathe out", 8000, "out"]] },
-    nostril: { name: "Alternate nostril", goal: "Balance and steady", thinker: "Nadi shodhana", why: "In one side, out the other, then swap. A slow, even paced round that steadies the mind. Use a finger to close each nostril.", cyc: 5,
+    nostril: { name: "Alternate nostril", ti: "ti-switch-horizontal", goal: "Balance and steady", thinker: "Nadi shodhana", why: "In one side, out the other, then swap. A slow, even paced round that steadies the mind. Use a finger to close each nostril.", cyc: 5,
       ph: [["Breathe in, left", 4000, "in", "Breathe in"], ["Breathe out, right", 4000, "out", "Breathe out"], ["Breathe in, right", 4000, "in", "Breathe in"], ["Breathe out, left", 4000, "out", "Breathe out"]] },
     // Wim Hof helper stages (internal — reached only via BREATH_FLOWS.wimhof, never shown in the picker directly)
-    wimPower: { name: "Power breaths", cyc: 20, ph: [["Breathe in", 1700, "in"], ["Let it go", 1700, "out", "Breathe out"]] },
-    wimHold:  { name: "Retention", cyc: 1, ph: [["Breathe out, hold empty", 30000, "hold", "Breathe out"], ["Big breath in, hold", 4000, "in", "Breathe in"], ["Hold", 15000, "hold"]] }
+    wimPower: { name: "Power breaths", ti: "ti-activity", cyc: 20, ph: [["Breathe in", 1700, "in"], ["Let it go", 1700, "out", "Breathe out"]] },
+    wimHold:  { name: "Retention", ti: "ti-minus", cyc: 1, ph: [["Breathe out, hold empty", 30000, "hold", "Breathe out"], ["Big breath in, hold", 4000, "in", "Breathe in"], ["Hold", 15000, "hold"]] }
   };
   // BREATH FLOWS (David 2026-07-23): multi-stage breathing built on the SAME stage engine the guided ladder uses (breathwork's `stages` array). A flow is a list of {k (a BREATH_PATTERNS key), cyc}; the engine concatenates them into one continuous `flow` exactly like the ladder. Wim Hof = rounds of fast power breaths, each closed by a long retention hold.
   var BREATH_FLOWS = {
-    wimhof: { name: "Wim Hof rounds", goal: "Charge the body up", why: "Rounds of fast, full breaths, each closed by a long hold on empty lungs. It fires the body up and sharpens you. Sit or lie down, and keep it away from water.",
+    wimhof: { name: "Wim Hof rounds", ti: "ti-activity", goal: "Charge the body up", why: "Rounds of fast, full breaths, each closed by a long hold on empty lungs. It fires the body up and sharpens you. Sit or lie down, and keep it away from water.",
       stages: [{ k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }, { k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }, { k: "wimPower", cyc: 20 }, { k: "wimHold", cyc: 1 }] }
   };
   // THE GUIDED LADDER (BUILD 2026-07-19): a beginner's on-ramp — three real patterns back to back, easing from the gentlest (a calming breath, no holds to speak of) up to the deepest (the long 4-7-8 holds). Runs as ONE continuous session via the flow engine below, so a first-timer learns the harder breaths only after the easy one has already settled them. Stages ordered easy → hard; cyc kept short so the whole ladder is ~2.5 min. (BREATH_PATTERNS keys.)
@@ -11866,6 +11992,10 @@
   // phases: [{ label, ms, kind, name?, si?, c?, cyc?, cycle? }] · kind ∈ in | in2 | hold | out | rest
   function breathLevelTo(kind, from) { return kind === "in" ? 1 : kind === "in2" ? 1.14 : kind === "out" ? 0 : from; } // hold/rest CARRY the level they arrived with — that carrying IS the hold
   var BREATH_PHASE_WORD = { in: "Inhale", in2: "Inhale", hold: "Hold", out: "Exhale", rest: "Rest" }; // THE EXPLICIT INDICATOR's canonical word. A pattern's own label reads "Long exhale" / "Breathe in, left" / "Hold empty"; this never varies, so the answer to "am I inhaling, holding or exhaling" is always in the same place in the same four words.
+  Object.assign(I18N.ru, { // THE PHASE WORDS a pattern prints under the visual (David on device 2026-08-21: the RU player was still saying "Long exhale" / "Hold empty" / "Breathe in, left"). Extended in place per the B4 law; the canonical four (Inhale/Exhale/Hold/Rest) were already in the dict, only the patterns' OWN labels were missing. Register matched to those four: a bare noun phrase, no pronoun.
+    "and a little more": "\u0438 \u0435\u0449\u0451 \u043d\u0435\u043c\u043d\u043e\u0433\u043e", "Long exhale": "\u0414\u043e\u043b\u0433\u0438\u0439 \u0432\u044b\u0434\u043e\u0445", "Hold empty": "\u0417\u0430\u0434\u0435\u0440\u0436\u0438 \u043d\u0430 \u0432\u044b\u0434\u043e\u0445\u0435", "Breathe out slowly": "\u041c\u0435\u0434\u043b\u0435\u043d\u043d\u044b\u0439 \u0432\u044b\u0434\u043e\u0445",
+    "Breathe in, left": "\u0412\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043b\u0435\u0432\u0443\u044e", "Breathe out, right": "\u0412\u044b\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043f\u0440\u0430\u0432\u0443\u044e", "Breathe in, right": "\u0412\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043f\u0440\u0430\u0432\u0443\u044e", "Breathe out, left": "\u0412\u044b\u0434\u043e\u0445 \u0447\u0435\u0440\u0435\u0437 \u043b\u0435\u0432\u0443\u044e",
+    "Let it go": "\u041e\u0442\u043f\u0443\u0441\u0442\u0438", "Breathe out, hold empty": "\u0412\u044b\u0434\u043e\u0445\u043d\u0438 \u0438 \u0437\u0430\u0434\u0435\u0440\u0436\u0438", "Big breath in, hold": "\u0413\u043b\u0443\u0431\u043e\u043a\u0438\u0439 \u0432\u0434\u043e\u0445, \u0437\u0430\u0434\u0435\u0440\u0436\u0438" });
   function makeBreathClock(phases) {
     var ph = [], i;
     for (i = 0; i < (phases || []).length; i++) if (phases[i] && phases[i].ms > 0) ph.push(phases[i]);
@@ -11889,6 +12019,19 @@
         return { phase: p.kind, phaseIdx: idx, word: BREATH_PHASE_WORD[p.kind] || "Rest", label: p.label || "", name: p.name || "", stage: p.si || 0,
           tInPhase: tIn, phaseDur: dur, remain: dur - tIn, progress: prog, cycle: cyc[idx],
           level: from[idx] + (to[idx] - from[idx]) * ez, elapsed: e, done: over };
+      },
+      // THE LEVEL, AS A FUNCTION OF TIME (2026-08-20, Round 25 wave port). `at()` allocates a whole sample object and
+      // walks the phase list linearly — fine once a frame, ruinous 1700 times a frame, which is what the canvas wave
+      // asks for (340 columns x a 5-tap smoothing kernel). This is the same arithmetic, binary-searched and scalar:
+      // one number in, one number out, no object. It is ALSO what lets the wave draw its own past and its ghosted
+      // future analytically instead of from a recorded buffer — the sample-spacing kink v1319 chased can no longer
+      // exist, because x is now the time axis itself rather than a list of frames that happened to be captured.
+      lvlAt: function (ms) {
+        if (!ph.length) return 0;
+        var e = ms < 0 ? 0 : (ms > total ? total : ms), lo = 0, hi = ph.length - 1, mid;
+        while (lo < hi) { mid = (lo + hi + 1) >> 1; if (e >= cum[mid]) lo = mid; else hi = mid - 1; }
+        var d = ph[lo].ms, pr = d > 0 ? (e - cum[lo]) / d : 1; if (pr > 1) pr = 1; if (pr < 0) pr = 0;
+        return from[lo] + (to[lo] - from[lo]) * (0.5 - 0.5 * Math.cos(Math.PI * pr));
       } };
   }
   // THE FLAT PHASE LIST across every stage — a single pattern is one stage repeated `cyc` times, the ladder is easy→hard stages concatenated. Each entry carries its stage's name + index + round so the sub-label, the spoken cues, the bars and the clock all read ONE list. `cycle` is explicit because alternate nostril has two in/out pairs per round and the clock's fallback heuristic would count them as two. Lifted out of breathwork 2026-08-15 so DEV.breathAgree can build the standalone tool's clock without opening a session.
@@ -12007,20 +12150,134 @@
     return { update: update, setPhase: function (kind) { update(_lv, kind); }, stop: stop, key: key, span: span,
       probe: function () { return { key: key, level: +_lv.toFixed(4), kind: curKind, cents: +(_lv * span).toFixed(2), gain: +master.gain.value.toFixed(5), cutoff: +lp.frequency.value.toFixed(1) }; } };
   } catch (e) { return null; } }
+  // ===== THE BREATHING PLAYER'S NUMBERS — Round 25 "Breathing Player" frame, extracted from David's RUNNING prototype
+  // (_specs/BREATHING-PLAYER-PORT-2026-08-20.md). Its header COMMENT disagrees with its own logic in five places
+  // (line width, dot colour, phase-bar width, grow duration, orb ring); LAW 8 says the running program outranks its own
+  // comments, David confirmed it in chat ("the comments in theory are wrong, cuz for example the dot correctly should be
+  // violet"), so the CODE values are the ones below. Do not "correct" them back toward the comment. =====
+  var BREATH_HUE = "#2ab8c4"; // the breathing session's element colour — DOM.restore.c, which is exactly the frame's teal
+  var WAVE_W = 340, WAVE_H = 280, WAVE_MIDX = 170, WAVE_BASEY = 280 * 0.78, WAVE_SPP = 0.033; // stage 340x280, live point dead centre, 0.033 SECONDS of breath per horizontal pixel
+  var WAVE_HEIGHT = 120;        // full amplitude, in stage px
+  var WAVE_REST = 0.06;         // AT REST the wave is 6% tall — only the dot visibly bobs. There is no morph to the orb; a wave session is a wave from its first frame (David settled this)
+  var WAVE_GROW_MS = 2200;      // play GROWS the wave out of the dot over 2200ms; pause FOLDS it back over the same span (the prototype's `(now - _tw)/2200`, not the comment's ~650)
+  var WAVE_GHOST_AHEAD = 0.3;   // THE GHOST — the upcoming half-cycle, drawn at ghostAhead * 0.55 alpha = 0.165. Explicitly a PROPOSAL: set this ONE number to 0 and the ghost is gone, no rebuild
+  var WAVE_FILL = 0;            // a knob, not a feature: >0 washes the area under the curve at that alpha
+  var WAVE_FADE = 56;           // the cosine ramp that dissolves each vertical edge (destination-out, 10 stops)
+  var WAVE_STROKE = "#a99bdc", WAVE_LINE = 5, WAVE_DOT_R = 10, WAVE_DOT = "#8a5cf0"; // dot fill is VIOLET, not the comment's white
+  var WAVE_SMOOTH = [[-0.40, 0.12], [-0.18, 0.24], [0, 0.28], [0.18, 0.24], [0.40, 0.12]]; // the 5-tap kernel over +/-0.4s, in [seconds, weight]
+  // THE ORB'S LIT FACE. The frame's sphere is a radial gradient from upper-left — #63dcd0 / #3cc4b6 / #2ab8c4 — and those
+  // three stops are NOT a mix toward white: measured in HSL they are the base hue lifted in lightness and nudged ~11 degrees
+  // toward green. mixHex cannot express that, so the relationship is stored as HSL deltas and applied to whichever hue the
+  // session is wearing. At #2ab8c4 (the breathing session, DOM.restore.c) this reproduces the frame's three hexes exactly;
+  // on any other act's colour it lights the same way instead of leaving the sphere flat.
+  var ORB_LIT = [[-10.6, -0.014, 0.159], [-10.9, -0.112, 0.035]]; // [dH degrees, dS, dL] for the 0% and 50% stops
+  var ORB_GLOW = [[-13.3, 0.072, 0.269], [-8.6, 0.023, 0.082]];   // the same treatment for the near-halo and the wide bloom
+  function hslShift(hex, d, a) {
+    hex = String(hex).replace("#", ""); if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    var r = parseInt(hex.substr(0, 2), 16) / 255, g = parseInt(hex.substr(2, 2), 16) / 255, b = parseInt(hex.substr(4, 2), 16) / 255;
+    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), dl = mx - mn, L = (mx + mn) / 2, S = 0, H = 0;
+    if (dl) { S = L > 0.5 ? dl / (2 - mx - mn) : dl / (mx + mn);
+      H = (mx === r) ? ((g - b) / dl + (g < b ? 6 : 0)) : (mx === g) ? ((b - r) / dl + 2) : ((r - g) / dl + 4); H *= 60; }
+    H = (H + d[0] + 360) % 360; S = Math.max(0, Math.min(1, S + d[1])); L = Math.max(0, Math.min(1, L + d[2]));
+    var q = L < 0.5 ? L * (1 + S) : L + S - L * S, p = 2 * L - q;
+    function ch(tt) { tt = (tt + 1) % 1; return Math.round(255 * (tt < 1 / 6 ? p + (q - p) * 6 * tt : tt < 0.5 ? q : tt < 2 / 3 ? p + (q - p) * (2 / 3 - tt) * 6 : p)); }
+    var hh = H / 360, R = ch(hh + 1 / 3), G = ch(hh), B = ch(hh - 1 / 3);
+    return a == null ? "rgb(" + R + "," + G + "," + B + ")" : "rgba(" + R + "," + G + "," + B + "," + a + ")";
+  }
+  function breathOrbGrad(c) { return "radial-gradient(circle at 42% 32%," + hslShift(c, ORB_LIT[0]) + " 0%," + hslShift(c, ORB_LIT[1]) + " 50%," + c + " 100%)"; }
+  function breathOrbGlow(c) { return "0 0 30px " + hslShift(c, ORB_GLOW[0], 0.5) + ", 0 0 100px 14px " + hslShift(c, ORB_GLOW[1], 0.28); } // the frame's LIT glow only — the dimmer bottom-of-exhale glow is the same shadow seen through the live brightness/saturate filter, which CSS applies to a box-shadow too
+  // THE ORB'S LIVE DRIVE (Round 25). scale runs 0.72 -> 1.00 across the breath and the brightness/saturation ride the SAME
+  // level, so the sphere dims as it empties instead of just shrinking. The tremble is EXHALE-WEIGHTED and that is the whole
+  // character of it: `wgt` is a third as strong while the level is rising, so it shakes on the way down and barely on the
+  // way up. Do NOT simplify this to a uniform wobble. `st` carries the previous [time, level] so the velocity is measured.
+  function breathOrbPaint(orbEl, level, tSec, st) {
+    if (!orbEl) return;
+    var vel = 0, dt = (st && st.t != null) ? (tSec - st.t) : 0;
+    if (dt > 0.0005) vel = (level - st.v) / dt;
+    if (st) { st.t = tSec; st.v = level; }
+    var wgt = Math.min(1, Math.abs(vel) * 2.2) * (vel < 0 ? 1 : 0.35);
+    var jit = (Math.sin(tSec * 13.7) * 0.5 + Math.sin(tSec * 23.3 + 1.7) * 0.35 + Math.sin(tSec * 8.1 + 0.6) * 0.15) * 0.008 * wgt;
+    orbEl.style.transform = "scale(" + (0.72 + 0.28 * level + jit).toFixed(4) + ")";
+    orbEl.style.filter = "brightness(" + (0.74 + 0.26 * level).toFixed(3) + ") saturate(" + (0.82 + 0.18 * level).toFixed(3) + ")";
+    return { vel: +vel.toFixed(4), wgt: +wgt.toFixed(4), jit: +jit.toFixed(6) };
+  }
   // ===== THE VISUAL REGISTRY (David 2026-08-15: "I want a switchable visual"). S.breathViz picks a renderer; a renderer is html + mount(root, cycleMs) + paint(nodes, sample) and knows nothing about the clock, the audio, or the pattern. Adding one is a data entry, not a fork of the engine. The two that ship are the two that already existed — the orb and the wave — so nothing was invented into David's design language on the way. =====
+  // THE SAMPLE grew two optional fields for the Round 25 port, both back-compatible: `lvl` = the clock's lvlAt (level as a
+  // pure function of time, so a renderer can draw the past AND the future analytically) and `run` = is the session actually
+  // playing (the grow/fold ramp). A sample without them still paints — flat history, permanently grown — which is what keeps
+  // every existing caller and every DEV probe honest.
   var BREATH_VIZ = {
     orb: { name: "Orb", html: '<div class="bw-orb"></div>',
-      mount: function (root) { return { orb: root.querySelector(".bw-orb") }; },
-      paint: function (n, s) { if (n.orb) n.orb.style.transform = "scale(" + (0.5 + s.level * 0.82).toFixed(3) + ")"; } },
-    wave: { name: "Wave", html: '<div class="bw-wave"><svg viewBox="0 0 300 180" preserveAspectRatio="none"><line class="bw-wmid" x1="0" y1="90" x2="300" y2="90"/><path class="bw-wpath" fill="none"/><circle class="bw-wdot" r="6.5" cx="290" cy="150"/></svg></div>',
-      mount: function (root, cycleMs) { var c = Math.max(1000, cycleMs || 16000), push = Math.max(55, c / 200); return { path: root.querySelector(".bw-wpath"), dot: root.querySelector(".bw-wdot"), pts: [], last: -1e9, push: push, cap: Math.round(c / push) + 6 }; }, // the window is sized to ONE WHOLE CYCLE (was a fixed 96 × 55ms ≈ 5.3s, so a 16s calming breath only ever showed a quarter of itself)
+      mount: function (root) { return { orb: root.querySelector(".bw-orb"), st: { t: null, v: 0 } }; },
+      paint: function (n, s) { if (n.orb) breathOrbPaint(n.orb, s.level, s.elapsed / 1000, n.st); } },
+    wave: { name: "Wave", html: '<div class="bw-wave"><canvas class="bw-cv"></canvas></div>',
+      // THE CANVAS (Round 25). The SVG path could carry the line but not the two things the frame is actually made of:
+      // the destination-out cosine edge fades and the ghosted upcoming half-cycle. Both are composite operations.
+      // WHAT SURVIVES FROM v1319, unchanged and now structural rather than patched: the live point is pinned at the
+      // centre, history runs to its LEFT, and x is measured by TIME (spp seconds per pixel) — never by sample index.
+      mount: function (root) {
+        var cv = root.querySelector(".bw-cv"); if (!cv) return { c: null };
+        var dpr = Math.min(3, (window.devicePixelRatio || 1)); // the backing store is DPR-scaled and the context pre-scaled, so every coordinate below stays in LAYOUT px while the line stops looking chewed on a 3x screen
+        // THE CANVAS MUST BE TOLD ITS CSS SIZE (David's device 2026-08-20: "it's broken and produces some random line
+        // on screen"). A canvas with no CSS width/height lays out at its ATTRIBUTE size, so a DPR-scaled backing store
+        // of 680x560 became a 680px-wide element inside a 288px box and spilled a flat band clean across the phone.
+        // Size the backing store from the HOST's real box, not the frame's 340x280: the renderer is already
+        // proportional (midX = w/2, baseY = h*0.78), so it adapts, and the drawing can never stretch against the host.
+        cv.style.width = "100%"; cv.style.height = "100%"; cv.style.display = "block";
+        var _r = root.getBoundingClientRect();
+        var _w = Math.round(_r.width) || WAVE_W, _h = Math.round(_r.height) || WAVE_H;
+        cv.width = Math.round(_w * dpr); cv.height = Math.round(_h * dpr);
+        var c = cv.getContext("2d"); if (c) c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // EVERY coordinate is derived from the host's REAL box, never from the frame's literal 340x280. The frame's
+        // own numbers are all proportional (midX = w/2, baseY = 0.78h, amplitude 120 of 280, fade 56 of 340), so they
+        // carry over exactly; only SPP is scaled the other way, by WAVE_W/w, so the visible TIME WINDOW stays the
+        // design's regardless of how wide the host is. Hardcoding 340x280 is what drew the band off the screen.
+        return { cv: cv, c: c, dpr: dpr, ext: 0, run: false, tw: 0, geom: null,
+                 w: _w, h: _h, midX: _w / 2, baseY: _h * 0.78,
+                 fade: WAVE_FADE * (_w / WAVE_W), ampBase: WAVE_HEIGHT * (_h / WAVE_H),
+                 spp: WAVE_SPP * (WAVE_W / _w) };
+      },
       paint: function (n, s) {
-        if (!n.path) return;
-        if (s.elapsed - n.last > n.push) { n.last = s.elapsed; n.pts.push(s.level); if (n.pts.length > n.cap) n.pts.shift(); }
-        var m = n.pts.length, den = Math.max(1, n.cap - 1), off = n.cap - m, d = "", i; // RIGHT-ALIGNED: the live dot sits at the right edge from the first frame and the history grows leftward behind it, which is what the authored SVG's cx="290" always meant. Left-anchoring made the opening of every session look like a different visual until the buffer filled — tolerable at the old 5.3s window, wrong now that the window is a whole cycle.
-        for (i = 0; i < m; i++) d += (i ? "L" : "M") + (((i + off) / den) * 300).toFixed(1) + " " + (160 - n.pts[i] * 132).toFixed(1) + " ";
-        n.path.setAttribute("d", d);
-        if (m && n.dot) { n.dot.setAttribute("cx", "300"); n.dot.setAttribute("cy", (160 - n.pts[m - 1] * 132).toFixed(1)); }
+        var c = n.c; if (!c) return;
+        var t = s.elapsed, now = (s.now != null ? s.now : Date.now()), run = (s.run !== false);
+        if (run !== n.run) { n.run = run; n.tw = now - (run ? n.ext : 1 - n.ext) * WAVE_GROW_MS; } // reverse the ramp FROM WHERE IT IS, so a pause 400ms into the grow folds back from 18%, not from full
+        var e = (now - n.tw) / WAVE_GROW_MS; e = e < 0 ? 0 : e > 1 ? 1 : e;
+        var ext = n.ext = run ? e : 1 - e;
+        var W = n.w || WAVE_W, H = n.h || WAVE_H, MX = n.midX != null ? n.midX : WAVE_MIDX, FADE = n.fade || WAVE_FADE, SPP = n.spp || WAVE_SPP;
+        var amp = (n.ampBase || WAVE_HEIGHT) * (WAVE_REST + (1 - WAVE_REST) * ext), baseY = n.baseY != null ? n.baseY : WAVE_BASEY;
+        var lvl = s.lvl, flat = s.level;
+        function sm(ms) { if (!lvl) return flat; var v = 0, i; for (i = 0; i < WAVE_SMOOTH.length; i++) v += WAVE_SMOOTH[i][1] * lvl(ms + WAVE_SMOOTH[i][0] * 1000); return v; } // the 5-tap smoothing the prototype applies before it draws anything
+        function yAt(x, dir) { return baseY - sm(t + dir * (x - MX) * SPP * 1000) * amp; }
+        c.clearRect(0, 0, W, H);
+        var x, y, x0 = MX - MX * ext, x1 = MX + (W - MX) * ext;
+        // HISTORY — left of centre, one column per pixel, each column's y read from the level the breath was AT that many pixel-seconds ago
+        c.beginPath(); c.moveTo(x0, yAt(x0, 1));
+        for (x = Math.ceil(x0); x < MX; x++) c.lineTo(x, yAt(x, 1));
+        c.lineTo(MX, yAt(MX, 1));
+        if (WAVE_FILL > 0) { c.save(); c.lineTo(MX, H); c.lineTo(x0, H); c.closePath(); c.fillStyle = "rgba(169,155,220," + WAVE_FILL + ")"; c.fill(); c.restore(); c.beginPath(); c.moveTo(x0, yAt(x0, 1)); for (x = Math.ceil(x0); x <= MX; x++) c.lineTo(x, yAt(x, 1)); }
+        c.lineWidth = WAVE_LINE; c.lineJoin = "round"; c.lineCap = "round"; c.strokeStyle = WAVE_STROKE; c.stroke();
+        // THE GHOST — the half-cycle that has not happened yet, on the empty right half
+        if (WAVE_GHOST_AHEAD > 0 && x1 > MX + 0.5) {
+          c.beginPath(); c.moveTo(MX, yAt(MX, 1));
+          for (x = MX + 1; x < x1; x++) c.lineTo(x, yAt(x, 1));
+          c.lineTo(x1, yAt(x1, 1));
+          c.strokeStyle = "rgba(169,155,220," + (WAVE_GHOST_AHEAD * 0.55).toFixed(4) + ")"; c.stroke();
+        }
+        // EDGE FADES — a 56px cosine ramp eats each vertical edge so the line arrives and leaves instead of being cut off
+        c.globalCompositeOperation = "destination-out";
+        [[0, FADE, 0], [W, W - FADE, W - FADE]].forEach(function (f) {
+          var g = c.createLinearGradient(f[0], 0, f[1], 0), i, u;
+          for (i = 0; i <= 9; i++) { u = i / 9; g.addColorStop(u, "rgba(0,0,0," + (0.5 + 0.5 * Math.cos(Math.PI * u)).toFixed(4) + ")"); }
+          c.fillStyle = g; c.fillRect(f[2], 0, FADE, H);
+        });
+        c.globalCompositeOperation = "source-over";
+        // THE LIVE DOT — pinned at the centre at every fill level, on the same smoothed curve so the line runs THROUGH it
+        var dotY = yAt(MX, 1);
+        c.save(); c.shadowColor = "rgba(138,92,240,.65)"; c.shadowBlur = 10;
+        c.beginPath(); c.arc(MX, dotY, WAVE_DOT_R, 0, Math.PI * 2); c.fillStyle = WAVE_DOT; c.fill();
+        c.restore();
+        c.lineWidth = 2.5; c.strokeStyle = "#160510"; c.stroke();
+        n.geom = { t: t, ext: +ext.toFixed(4), amp: +amp.toFixed(3), baseY: baseY, x0: +x0.toFixed(3), x1: +x1.toFixed(3), dotX: MX, dotY: +dotY.toFixed(3), ghost: +(WAVE_GHOST_AHEAD * 0.55).toFixed(4), run: run }; // the receipt DEV.waveGeom reads — the numbers the renderer actually drew at, not a re-derivation
       } }
   };
   var BREATH_VIZ_KEYS = ["orb", "wave"];
@@ -12038,9 +12295,9 @@
   // three sustain keys (flute / chord / ocean) land on the bell cue with the tone OFF, deliberately — those three WERE the
   // broken tone, and David has only ever heard the broken one. He opts into the new tone and judges it on its own.
   var BREATH_SOUND_MIGRATE = { silent: "off", bell: "bell", bells3: "bell", chime: "bell", harp: "bell", bowl: "gong", wood: "woodblock", flute: "bell", chord: "bell", ocean: "bell" };
-  function breathCueKey() { try { if (BREATH_CUES[S.breathCue]) return S.breathCue; var m = BREATH_SOUND_MIGRATE[S.breathSound]; return m || "bell"; } catch (e) { return "bell"; } } // default: cues ON, the bell set
-  function breathToneKey() { try { return BREATH_TONES[S.breathTone] ? S.breathTone : "off"; } catch (e) { return "off"; } } // default: tone OFF
-  function breathVizKey() { try { return BREATH_VIZ[S.breathViz] ? S.breathViz : "orb"; } catch (e) { return "orb"; } }
+  function breathCueKey() { try { if (BREATH_CUES[S.breathCue]) return S.breathCue; var m = BREATH_SOUND_MIGRATE[S.breathSound]; return m || "woodblock"; } catch (e) { return "woodblock"; } } // default: cues ON, the WOODBLOCK set (David 2026-08-20; was bell). A stored pick — including "off", a real cue set — still wins, and so does a legacy S.breathSound choice.
+  function breathToneKey() { try { if (S.breathTone == null) return "ocean"; return BREATH_TONES[S.breathTone] ? S.breathTone : "off"; } catch (e) { return "ocean"; } } // default: the OCEAN tone (David 2026-08-20; was off). An explicit stored "off" is a real choice and is honoured — only an unset pref gets the new default.
+  function breathVizKey() { try { if (S.breathViz == null) return "wave"; return BREATH_VIZ[S.breathViz] ? S.breathViz : "wave"; } catch (e) { return "wave"; } } // default: the WAVE (David 2026-08-20; was orb). Resolved here, the same shape as breathCueKey/breathToneKey a build earlier, so a user who actually TAPPED "Orb" keeps the orb and only an unset preference gets the new default.
   var _breathLive = null; // the running breath surface's "re-read the sound prefs" door, so a change in the settings applies to the session you are IN (the same shape as _activeBed). Cleared on teardown.
   // BREATH PREVIEW (BUILD 2026-07-19, David: "when you press on the sounds you can't hear them"): a short in / hold / out demo so you can choose BEFORE the session. It runs the SAME makeBreathClock, the SAME cue-set `hit` at each turn and the SAME tone the live session runs, so what you preview is byte-for-byte what you get. Routed through the bg bus (the Sound slider applies). Returns { stop }.
   function breathPreview(cueKey, toneKey) {
@@ -12138,11 +12395,11 @@
     var cycleMs = 0; for (var _q = 0; _q < PAT.ph.length; _q++) cycleMs += PAT.ph[_q][1]; // the headline pattern's own round — the wave sizes its window to it
     var vizKey = breathVizKey(), VIZ = BREATH_VIZ[vizKey];
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "bw-" + vizKey;
-    ov.innerHTML = '<button class="bw-x">skip</button>' + VIZ.html + '<div class="bw-cap"><div class="bw-label">Get comfy…</div><div class="bw-sub">' + (vizKey === "wave" ? "follow the wave" : "follow the orb") + '</div><div class="bw-phase"><div class="bw-phrow"><span class="bw-phw"></span><b class="bw-phn"></b></div><div class="bw-phbar"><i></i></div></div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the viz (David 2026-07-12). .bw-phase is THE EXPLICIT INDICATOR (David 2026-08-15): the canonical phase word + the seconds left in it + a line that empties over the phase — the pattern's own label can read "Long exhale", this always reads Inhale / Hold / Exhale / Rest.
+    ov.innerHTML = '<button class="bw-x">skip</button>' + VIZ.html + '<div class="bw-cap"><div class="bw-lrow"><div class="bw-label">Get comfy…</div><b class="bw-phn"></b></div><div class="bw-sub">' + (vizKey === "wave" ? "follow the wave" : "follow the orb") + '</div><div class="bw-phase"><div class="bw-phbar"><i></i></div></div></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the viz (David 2026-07-12). THE INDICATOR, SAID ONCE (David 2026-08-20: "get rid of repeating the same thing twice — the text that says inhale and the numbers. And you can add the counter next to the big text above"): the 2026-08-15 block printed its own phase WORD and seconds under a headline already reading "Breathe in". The word is gone, the seconds moved up beside the headline (.bw-lrow), and what is left below is the draining line alone — longer now, because it is the only thing left to track.
     document.body.appendChild(ov); var _bvBtn = addVoiceToggle(ov); var _bvPaint = function () { if (_bvBtn) _bvBtn.innerHTML = (S && S.breathVoice) ? '<i class="ti ti-volume"></i>' : '<i class="ti ti-volume-off"></i>'; }; _bvPaint(); if (_bvBtn) _bvBtn.onclick = function (e) { e.stopPropagation(); S.breathVoice = !(S && S.breathVoice); save(); _bvPaint(); if (!(S && S.breathVoice)) { try { TTS.stop(); } catch (_e) {} try { schedSrcs.forEach(function (s) { try { s.stop(); } catch (er) {} }); } catch (_e2) {} } }; // GUIDED BREATH = VOICELESS by default (David 2026-07-20): this toggle controls S.breathVoice (breath-only, default off), NOT global voice — breath never talks unless opted in; turning it off mid-session stops the scheduled clips.
     var lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub");
     var vnodes = VIZ.mount(ov, cycleMs);
-    var phEl = ov.querySelector(".bw-phase"), phW = ov.querySelector(".bw-phw"), phN = ov.querySelector(".bw-phn"), phB = ov.querySelector(".bw-phbar i");
+    var phEl = ov.querySelector(".bw-phase"), phN = ov.querySelector(".bw-phn"), phB = ov.querySelector(".bw-phbar i");
     // THE TWO AUDIO LAYERS, INDEPENDENT (David 2026-08-15). S.breathCue picks the per-phase cue set, S.breathTone picks the guiding tone; either, both or neither. The old single S.breathSound could only ever be one of them.
     var actx = null; try { actx = sharedAudioCtx(); } catch (e) { actx = null; }
     var CU = BREATH_CUES.off, tone = null, toneKey = "off";
@@ -12165,42 +12422,37 @@
       schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
       if (tone) { try { tone.stop(); } catch (e) {} tone = null; }
       if (_breathLive === readSound) _breathLive = null;
+      if (_gpSettings === _bwScope) _gpSettings = null; // only if it is still OURS (a composed player opened over this one owns it now) — same rule as the _breathLive hook above
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: "Breathe", mins: 2, catK: "energy", color: "#6a5cf0", habitId: "breathe" }); doneMap(todayK())["breathe"] = true; earn(6, { catK: "energy" }); tickTool("breathe"); save(); renderAll(); }
       if (onDone) onDone();
     }
     ov.querySelector(".bw-x").onclick = function () { finish(true); };
     // PLAYER CHROME (BUILD 2026-07-19, David: "combine it altogether into one player"): the same top story-bars + settings cog as the composed player. Bars = one per cycle (single pattern) or one per stage (the ladder), filling as you move through. The cog opens the breath settings + live volume, mid-session.
-    var barCol = "#9a7cff";
-    var bars = []; for (var bi = 0; bi < phases.length; bi++) { var bk = LADDER ? phases[bi].si : phases[bi].c; var _lb = bars[bars.length - 1]; if (!_lb || _lb.k !== bk) bars.push({ k: bk, s: cum[bi], e: cum[bi] + phases[bi].ms }); else _lb.e = cum[bi] + phases[bi].ms; }
-    var barFills = [];
-    var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:9px;z-index:6;pointer-events:none;";
-    bars.forEach(function () { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(barCol, "#160510", 0.62) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); barWrap.appendChild(colx); barFills.push(fl); });
+    var barCol = BREATH_HUE; // Round 25: a breathing session wears the frame's teal (DOM.restore.c), not the old generic violet
+    var bars = []; for (var bi = 0; bi < phases.length; bi++) { var bk = LADDER ? phases[bi].si : phases[bi].c; var _lb = bars[bars.length - 1]; if (!_lb || _lb.k !== bk) bars.push({ k: bk, s: cum[bi], e: cum[bi] + phases[bi].ms, ti: breathGlyph(stages[phases[bi].si || 0]) }); else _lb.e = cum[bi] + phases[bi].ms; }
+    var barFills = [], barTracks = [], barIcons = [];
+    var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:" + STORY_TOP + "px;left:" + STORY_SIDE + "px;right:" + STORY_SIDE + "px;display:flex;gap:" + STORY_GAP + "px;z-index:6;pointer-events:none;"; // ARTBOARD px, no safe-area added on top: the 402x874 frame draws its own status-bar space (DESIGN-PORT-CHECKLIST law 1)
+    bars.forEach(function (b) { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:" + STORY_COLGAP + "px;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:" + STORY_BAR_H + "px;border-radius:" + STORY_BAR_R + "px;background:" + storyUpcoming(barCol) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:" + STORY_BAR_R + "px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); var ic = document.createElement("i"); ic.className = "ti " + b.ti; ic.style.cssText = "font-size:" + STORY_ICON + "px;line-height:1;color:" + barCol + ";opacity:.34;"; colx.appendChild(ic); barWrap.appendChild(colx); barFills.push(fl); barTracks.push(bar); barIcons.push(ic); });
     ov.appendChild(barWrap);
     // drop the ✕ / voice-toggle below the new bars, and add the settings cog beside the voice toggle
-    var _topOff = "calc(env(safe-area-inset-top,0px) + 40px)";
+    var _topOff = CHROME_TOP + "px";
     var _xb = ov.querySelector(".bw-x"); if (_xb) _xb.style.top = _topOff;
     var _vb = ov.querySelector(".bw-voice"); if (_vb) _vb.style.top = _topOff;
-    function breathSettingsPopover() { // was volume-only (David 2026-08-15: the visual + sound switches lived ONLY in the picker, so every quick call and the whole toolbox path could never reach them)
-      var pov = document.createElement("div"); pov.style.cssText = "position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(10,4,14,.55);";
-      var card = document.createElement("div"); card.style.cssText = "width:84%;max-width:330px;max-height:86vh;overflow-y:auto;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;display:flex;flex-direction:column;";
-      var t = document.createElement("div"); t.textContent = tr("Breathing"); t.style.cssText = "font-size:17px;font-weight:800;margin-bottom:1px;"; card.appendChild(t);
-      var s2 = document.createElement("div"); s2.textContent = tr("adjust anytime, even while it plays"); s2.style.cssText = "font-size:11.5px;color:#b39ab0;margin-bottom:4px;"; card.appendChild(s2);
-      breathControls(card, { preview: false }); // the running session IS the preview — readSound() applies the pick on the next frame
-      var vh = document.createElement("div"); vh.textContent = tr("volume"); vh.style.cssText = "width:100%;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9a86c0;margin:12px 0 1px;"; card.appendChild(vh);
-      breathVolRows(card);
-      var dn = document.createElement("button"); dn.className = "done2"; dn.textContent = tr("Done"); dn.style.cssText = "margin-top:16px;"; dn.onclick = function () { pov.remove(); }; card.appendChild(dn);
-      pov.appendChild(card); pov.addEventListener("click", function (e) { if (e.target === pov) pov.remove(); }); ov.appendChild(pov);
-    }
-    var cog = document.createElement("button"); cog.className = "gp-cog"; cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.top = _topOff; cog.style.left = "70px"; cog.onclick = function (e) { e.stopPropagation(); breathSettingsPopover(); }; ov.appendChild(cog);
+    // THE THIRD DOOR, CLOSED (David 2026-08-20, "no separate settings screen"). This cog used to open its OWN popover —
+    // a bespoke card wrapping breathControls + breathVolRows, the last surface that could disagree with the settings card.
+    // It now registers what this session IS (a single breathing session, its own hue) and opens the ONE card, which computes
+    // the Breathing scope from it: guide · backdrop · cue · tone · visual. _breathLive still applies every pick on the next frame.
+    var _bwScope = function () { return { hue: barCol, breath: true, stack: false }; };
+    var cog = document.createElement("button"); cog.className = "gp-cog"; cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.top = _topOff; cog.style.left = "70px"; cog.onclick = function (e) { e.stopPropagation(); _gpSettings = _bwScope; openVolumePanel(); }; ov.appendChild(cog);
     function paintBars(elMs) { for (var bi2 = 0; bi2 < bars.length; bi2++) { var b = bars[bi2], f = b.e > b.s ? (elMs - b.s) / (b.e - b.s) : (elMs >= b.s ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (barFills[bi2]) barFills[bi2].style.width = (f * 100) + "%"; } }
-    var curIdx = -1, _lw = "", _ln = "";
-    function paintPhase(s) { // THE EXPLICIT INDICATOR — write only what changed (the bar is a transform, so it never reflows)
+    var curIdx = -1, _ln = "";
+    function paintPhase(s) { // THE INDICATOR — write only what changed (the bar is a transform, so it never reflows)
       if (!phEl) return;
-      if (!s) { phEl.style.visibility = "hidden"; return; }
+      if (!s) { phEl.style.visibility = "hidden"; if (phN) phN.style.display = "none"; return; } // display, not visibility, on the counter: it shares a centred row with the headline, and a reserved-but-blank slot would hold the headline off-centre
       phEl.style.visibility = "";
-      var w = tr(s.word); if (w !== _lw) { _lw = w; if (phW) phW.textContent = w; }
       var n = "" + Math.max(1, Math.ceil(s.remain / 1000)); if (n !== _ln) { _ln = n; if (phN) phN.textContent = n; }
+      if (phN) phN.style.display = "";
       if (phB) phB.style.transform = "scaleX(" + (1 - s.progress).toFixed(3) + ")";
     }
     function frame() {
@@ -12289,6 +12541,8 @@
       pool: ["Bring your attention back to the body. The weight, the contact, the sounds around you.", "And in your own time, gently open your eyes."] }
   };
   var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
+  Object.assign(I18N.ru, { // THE SECTION NAMES the player prints as its sub-line (the six that had no RU: the sit was Russian, its section label was not). B4 law, in place. Nouns, matching the ones already in the dict (Settle/Awareness/Rest).
+    "Stillness": "\u0422\u0438\u0448\u0438\u043d\u0430", "Count": "\u0421\u0447\u0451\u0442", "Note": "\u041e\u0442\u043c\u0435\u0447\u0430\u043d\u0438\u0435", "Sounds": "\u0417\u0432\u0443\u043a\u0438", "Feeling": "\u041e\u0449\u0443\u0449\u0435\u043d\u0438\u0435", "Look": "\u0412\u0437\u0433\u043b\u044f\u0434", "Open": "\u041e\u0442\u043a\u0440\u044b\u0442\u043e\u0441\u0442\u044c" });
   // SESSIONS (arcs): beginner/intermediate/advanced = ordered blocks with time weights. The engine allocates the chosen length across the blocks by weight, so a long sit stays ON the block's technique instead of looping the last 3 lines (the retired tail hack). Adding a new session or the missing heart/love block is a data edit, not an engine change.
   // MED LANES (David 2026-07-14, SPIRITUAL-PROGRESSION-CANON "MEDITATION LANE SYSTEM"): depth is a CONSCIOUS lane choice, never a length side-effect. The user picks the lane = their ceiling; length only deepens WITHIN the lane by walking its spine block's tiered pool further (one-shot authored-order fill). Each lane = settle -> brief breath anchor -> its heavily-weighted SPINE block (tiered along that lane's canon ladder) -> close. Keys are UI-facing lanes now (was anchor/explore/open/heart); `concentration` is the default. `gated:true` = Insight (opt-in + energy-door suppressed, see the picker).
   var MED_SESSIONS = {
@@ -14333,81 +14587,165 @@
       begin.onclick = function () { S.tools = S.tools || {}; S.tools.seen = S.tools.seen || {}; S.tools.seen[opts.id] = 1; save(); card.remove(); orb.style.display = ""; lab.style.display = ""; sub.style.display = ""; nextB.style.display = ""; setTimeout(paint, 250); };
     }
   }
-  // Sound panel — two live volume sliders (voice + background), for every audio tool (David 2026-07-01). Adjusts the master buses in real time.
+  // ===== THE PLAYER SETTINGS CARD (David 2026-08-20, Round 24 v2 — spec _specs/PLAYER-SETTINGS-PORT-2026-08-20.md, every
+  // number quoted from his prototype, never eyeballed). THE RULE, his words: "All player settings live in one place: the card
+  // that drops from the cog, top-right. What's inside the card follows what's inside the session — a single-type session gets
+  // only its own settings; a stack gets the whole-stack settings (guide, backdrop) plus a section per segment type that has
+  // its own sound, like breathing. No separate settings screen."
+  // So there is exactly ONE function and every door opens it: the player cog, the cockpit gear, the menu's Sound row. Its rows
+  // are COMPUTED from _gpSettings() — the session tells the card what it is holding. Off-session (the menu door) the card IS
+  // the app's sound settings, which is the only place the two app-level toggles live: they are not session settings and the
+  // frame has no home for them, so they sit in an APP block that a session never draws.
+  // NOT BUILT, on David's cut (2026-08-20): the frame's "save as default" button. Settings stay global and immediate.
+  // Z: the frame stacks scrim 38 / card 40; rebased to 118/120 here because #breatheOv is z 98 and the card drops over it.
+  var PS_INK = "#160510";
   function openVolumePanel() {
     S.audio = S.audio || { voice: 1, bg: 1 };
-    var ov = add(document.body, "div", "vol-ov"); ov.style.cssText = "position:fixed;inset:0;z-index:120;background:rgba(10,4,14,.55);display:flex;align-items:center;justify-content:center;";
-    var card = add(ov, "div"); card.style.cssText = "width:82%;max-width:340px;max-height:86vh;overflow-y:auto;background:#1c0f20;border:1.5px solid #3a1730;border-radius:18px;padding:20px;font-family:var(--bub);color:#f0e6ef;box-shadow:0 12px 40px #0a0008;";
-    add(card, "div", null, tr("Sound")).style.cssText = "font-size:19px;font-weight:800;";
-    add(card, "div", null, tr("adjust anytime, even while it plays")).style.cssText = "font-size:12px;color:#b39ab0;margin-bottom:8px;";
-    function slider(label, kind) {
-      var row = add(card, "div"); row.style.cssText = "margin:16px 0 4px;";
-      var lr = add(row, "div"); lr.style.cssText = "display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:7px;"; add(lr, "span", null, label); var pct = add(lr, "span", null, Math.round(S.audio[kind] * 100) + "%"); pct.style.color = "#ff8fc4";
-      var s = add(row, "input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round(S.audio[kind] * 100); s.style.cssText = "width:100%;accent-color:#9a7cff;height:26px;";
-      s.oninput = function () { var v = (+s.value) / 100; setAudioVol(kind, v); pct.textContent = s.value + "%"; }; s.onchange = function () { save(); };
+    var G = null; try { G = _gpSettings && _gpSettings(); } catch (e) { G = null; }
+    var inSession = !!G;
+    var E = ((G && G.hue) || "").trim() || "#9a7cff";          // E = the session's own hue; every chip, fill and knob is tinted by it
+    var hasBreath = G ? !!G.breath : true;                     // off-session the card owns the breath prefs too — there is no other door to them
+    var isStack = !!(G && G.stack);
+    var title = !inSession ? "Sound" : isStack ? "Full stack" : hasBreath ? "Breathing" : "Session";
+    var mixE = function (p) { return "color-mix(in oklab, " + E + " " + p + "%, transparent)"; };
+
+    var ov = add(document.body, "div", "ps-ov");
+    var card = add(ov, "div", "ps-card");
+    var _notch = add(ov, "div", "ps-notch");
+    // POSITION IT FROM THE CARD'S MEASURED BOX, never from arithmetic. Twice now this notch has been placed by
+    // computing where the card "should" be (top 156 / right 14) and twice it landed wrong — once clipped, once
+    // floating. The card's real rect is the only thing that knows where its corner is, so ask it. Re-measured after
+    // the entry animation settles, and again on resize/rotate.
+    function _psNotch() {
+      try {
+        var c = card.getBoundingClientRect(); if (!c || !c.width) return;
+        _notch.style.top = (c.top - 13 + 3) + "px";      // BASE on the card's top edge: the 13px triangle ends 3px inside it, so its fill covers the card's 3px border
+        var _rad = parseFloat(getComputedStyle(card).borderTopRightRadius) || 22;
+        _notch.style.left = (c.right - _rad - 2 - 26) + "px"; // right edge 2px clear of where the corner starts curving
+        // The cog sits ABOVE the card's rounded corner, so a tail that pointed exactly at it would have to stand on
+        // the curve. It goes as far right as a flat base allows and reads as coming from that corner regardless.
+        // THE CARD'S CORNER RADIUS IS 22px. At the frame's 13 the notch's right edge lands 9px INSIDE that curve,
+        // where the card's top edge has already fallen away — so its right flank overhangs nothing and reads as a
+        // step, the "line separating it" David kept seeing. 26 puts the whole square on the STRAIGHT part of the top
+        // edge with 4px to spare. The frame could use 13 because its own card is drawn at a different radius.
+        _notch.style.right = "auto";
+      } catch (e) {}
     }
-    // GUIDE'S VOICE on/off (BUILD 2026-07-19): a plain toggle for the spoken narration, separate from its volume — some sessions you want the bed and the orb without a voice talking. Reuses S.voice, which voiceOn()/say() already honor everywhere.
-    var vxRow = add(card, "button"); vxRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:6px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:11px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
-    function vxOn() { return typeof S === "undefined" || !S || S.voice !== false; }
-    function vxPaint() { vxRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("Guide's voice") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("the spoken guide during a session") + '</span></span><i class="ti ' + (vxOn() ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + (vxOn() ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
-    vxPaint();
-    vxRow.onclick = function () { S.voice = !vxOn(); save(); vxPaint(); if (!vxOn()) { try { TTS.stop(); } catch (e) {} } };
-    // GUARDIAN VOICE PICK — language-gated (David 2026-07-22): RU → izo (the only RU voice, no toggle); EN → Dave | Millie. Tap plays a sample. Persists as S.voicePick (EN only). The bank resolves live from curBank() so the chip and the audio always agree.
-    add(card, "div", null, tr("Guide")).style.cssText = "font-size:13.5px;font-weight:700;margin:16px 0 6px;";
-    if (curLang() === "ru") { // TWO RU voices (David 2026-07-22): izo | Aida — tap to switch, a sample plays. Persists as S.ruVoice.
-      var ruRow = add(card, "div"); ruRow.style.cssText = "display:flex;gap:8px;";
-      var ruChips = [];
-      var ruPaint = function () { var cur = (S.ruVoice === "aida") ? "aida" : "izo"; ruChips.forEach(function (c) { var on = c.dataset.v === cur; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; c.style.color = "#f0e6ef"; }); };
-      [["izo", "izo"], ["aida", "Aida"]].forEach(function (o) {
-        var b = add(ruRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
-        ruChips.push(b);
-        b.onclick = function () { S.ruVoice = o[0]; S.voice = true; save(); try { TTS.unlock(); TTS.setRuVoice(o[0]); TTS.stop(); } catch (e) {} ruPaint(); vxPaint(); // S.voice = true: picking a REAL voice must switch the guide back on. The session editor's "No voice" card writes S.voice=false (sedSetVoiceKey), and these chips never wrote it back — so after one "No voice" the chip lit up, the preview played (TTS.speak bypasses voiceOn()) and every session stayed silent forever. (David 2026-08-15 pass.)
-          if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } }; // confirm the pick unless a session is actually SOUNDING (that overlap was the "two voices at once"); a live session takes the new voice from its next line instead
-      });
-      ruPaint();
-    } else {
-      var gvRow = add(card, "div"); gvRow.style.cssText = "display:flex;gap:8px;";
-      var gvChips = [];
-      var gvPaint = function () { var cur = (S.voicePick === "millie") ? "millie" : "dave"; gvChips.forEach(function (c) { var on = c.dataset.v === cur; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; c.style.color = "#f0e6ef"; }); };
-      [["dave", tr("Dave")], ["millie", tr("Millie")]].forEach(function (o) {
-        var b = add(gvRow, "button", null, o[1]); b.dataset.v = o[0]; b.style.cssText = "flex:1;border:2px solid #6a4a6a;border-radius:12px;padding:11px 12px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:#f0e6ef;";
-        gvChips.push(b);
-        b.onclick = function () { S.voicePick = o[0]; S.voice = true; save(); try { TTS.unlock(); TTS.setVoice(o[0]); TTS.stop(); } catch (e) {} gvPaint(); vxPaint(); // NO warmAll (David 2026-07-19: decoding 500 clips on every tap janked/broke the app); the live curBank() resolve applies the switch, cold clips decode lazily. TTS.stop() cuts any prior preview. S.voice = true (2026-08-15): picking a REAL voice must switch the guide back on — the editor's "No voice" card sets S.voice=false and these chips never wrote it back, so after one "No voice" the chip lit, the preview played (TTS.speak bypasses voiceOn()) and every session stayed silent.
-          if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } }; // confirm the pick unless a session is actually SOUNDING; a minimized or paused player no longer swallows the confirmation, and a LIVE one takes the new voice from its next line (revoice)
-      });
-      gvPaint();
+    _psNotch();
+    requestAnimationFrame(function () { _psNotch(); setTimeout(_psNotch, 320); }); // again after the psCog spring settles
+    window.addEventListener("resize", _psNotch);
+    ov.addEventListener("psclose", function () { window.removeEventListener("resize", _psNotch); });                                  // points at the cog it dropped from. ON THE OVERLAY, NEVER THE CARD
+    // (David device 2026-08-20: "the diamond shape is in the wrong spot"). .ps-card carries the psCog entry TRANSFORM, and a
+    // transformed element becomes the containing block for its position:fixed CHILDREN — so a notch inside it measured its
+    // 145px from the CARD's top rather than the viewport and sat ~155px too low. As a child of the scrim it shares the
+    // card's own coordinate space again. (It cannot go back to position:absolute inside the card either: the card scrolls,
+    // and the notch lives above its top edge, so overflow clipped it away — that was the bug before this one.)
+    add(card, "div", "ps-title", tr(title));
+    add(card, "div", "ps-kick", tr("sound"));
+
+    function row(labelKey) { var r = add(card, "div", "ps-row"); add(r, "div", "ps-lab", tr(labelKey)); return add(r, "div", "ps-right"); }
+    function chip(host, text, small, checkPx, isOn, onTap) { // returns its OWN paint fn — every repaint is a targeted style write, never a wipe-and-rebuild
+      var b = add(host, "button", "ps-chip" + (small ? " sm" : ""));
+      // NO CHECKMARK (David 2026-08-20: "no need for [it] being redundant since selecting it already makes it visually
+      // selected"). It cost ~18px inside a fixed-width chip, so ONLY the selected chip truncated — "Distant thunde",
+      // "Gamma · 33 H" — while its unselected neighbours fitted. The striped ignite fill already carries selection.
+      var tx = add(b, "span", null, text);
+      function paint() {
+        var on = !!isOn();
+        b.classList.toggle("sel", on);
+        tx.style.color = on ? PS_INK : "color-mix(in oklab, #fff 68%, " + E + ")";
+        b.style.backgroundColor = on ? E : mixE(10);
+        b.style.backgroundImage = on ? "repeating-linear-gradient(115deg, rgba(255,255,255,.28) 0 13px, transparent 13px 26px)" : "none";
+        b.style.border = on ? ("2.5px solid " + PS_INK) : ("2px solid color-mix(in oklab, " + E + " 55%, transparent)");
+        b.style.boxShadow = on ? ("0 3px 0 " + PS_INK) : "none";
+      }
+      paint(); b.onclick = onTap;
+      return paint;
     }
-    slider(tr("Voice"), "voice"); slider(tr("Background"), "bg");
-    // BACKGROUND BED — categorized so a sound is quick to pick (David 2026-07-10). Selecting one live-swaps the running player's bed via _activeBed.
-    add(card, "div", null, tr("Background sound")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 4px;";
-    var bedChips = [];
-    function paintBed() { bedChips.forEach(function (c) { var on = bedMode() === c.dataset.bed; c.style.background = on ? "#9a7cff" : "rgba(255,255,255,.05)"; c.style.borderColor = on ? "#c8a8ff" : "#6a4a6a"; }); }
-    var previewPad = null;
-    function stopPreview() { try { BGBED.stop(); } catch (e) {} try { BGM.stop(); } catch (e) {} try { if (previewPad) { previewPad.stop(); previewPad = null; } } catch (e) {} } // David 2026-07-10: preview beds right in Settings, no player needed
-    function preview(key) { stopPreview(); var pctx = sharedAudioCtx(); if (!pctx) return;
-      if (key === "music") { BGM.start(); } else if (key === "pad") { previewPad = startPad(pctx, bgBus() || pctx.destination, 0.22); } else if (BG_FILES[key]) { BGBED.start(key, 0.5); } }
-    function setBed(key) { S.audio.bed = key; save(); paintBed(); if (_activeBed) _activeBed(key); preview(key); } // update the (paused) player's target bed AND preview the sound now
-    [ { n: tr("Ambient"), o: [["pad", tr("Peaceful")], ["music", tr("Mysterious")]] },
-      { n: tr("Nature"), o: [["forest", tr("Forest")], ["birds", tr("Birds")]] },
-      { n: tr("Binaural · headphones"), o: [["deep4", "Deep · 4 Hz"], ["theta6", "Theta · 6 Hz"], ["focus13", "Focus · 13 Hz"], ["gamma33", "Gamma · 33 Hz"], ["floating", tr("Floating")]] },
-      { n: "", o: [["off", tr("Off")]] }
-    ].forEach(function (cat) {
-      if (cat.n) add(card, "div", null, cat.n).style.cssText = "font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#b39ab0;margin:11px 0 5px;";
-      var rowc = add(card, "div"); rowc.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;";
-      cat.o.forEach(function (o) { var b = add(rowc, "button", null, o[1]); b.dataset.bed = o[0]; b.style.cssText = "border:2px solid #6a4a6a;border-radius:11px;padding:8px 12px;font-family:var(--bub);font-weight:800;font-size:12.5px;cursor:pointer;color:#f0e6ef;"; bedChips.push(b); b.onclick = function () { setBed(o[0]); }; });
+    function slider(host, get, set) { // the frame's own slider, not an <input type=range>: 9px track, gradient fill, 20px ink-ringed knob
+      var w = add(host, "div", "ps-vol"); add(w, "i", "ti ti-volume");
+      var tk = add(w, "div", "ps-track"), fl = add(tk, "div", "ps-fill"), kn = add(tk, "div", "ps-knob");
+      fl.style.background = "linear-gradient(90deg, color-mix(in oklab,#fff 35%," + E + "), " + E + ")"; kn.style.background = E;
+      function paint() { var p = Math.max(0, Math.min(1, get())); fl.style.width = (p * 100).toFixed(2) + "%"; kn.style.left = (p * 100).toFixed(2) + "%"; }
+      paint();
+      var dragging = false;
+      function at(e) { var r = tk.getBoundingClientRect(); set(Math.max(0, Math.min(1, (e.clientX - r.left) / Math.max(1, r.width)))); paint(); }
+      tk.addEventListener("pointerdown", function (e) { dragging = true; try { tk.setPointerCapture(e.pointerId); } catch (x) {} at(e); e.preventDefault(); e.stopPropagation(); });
+      tk.addEventListener("pointermove", function (e) { if (dragging) { at(e); e.preventDefault(); } });
+      tk.addEventListener("pointerup", function (e) { if (!dragging) return; dragging = false; try { tk.releasePointerCapture(e.pointerId); } catch (x) {} save(); });
+      tk.addEventListener("pointercancel", function () { dragging = false; save(); });
+      return paint;
+    }
+
+    // GUIDE — the EN banks (Dave / Millie) or the RU pair, plus the guide's own volume. A mid-session swap re-voices the line
+    // that is sounding (v1305), so the chip and the audio can never disagree.
+    var gr = row("guide"), gch = add(gr, "div", "ps-chips"), gPaints = [];
+    var VOICES = curLang() === "ru" ? [["izo", "izo"], ["aida", "Aida"]] : [["dave", tr("Dave")], ["millie", tr("Millie")]];
+    function curVoice() { return curLang() === "ru" ? ((S.ruVoice === "aida") ? "aida" : "izo") : ((S.voicePick === "millie") ? "millie" : "dave"); }
+    VOICES.forEach(function (o) {
+      gPaints.push(chip(gch, o[1], false, 13, function () { return curVoice() === o[0]; }, function () {
+        if (curLang() === "ru") S.ruVoice = o[0]; else S.voicePick = o[0];
+        S.voice = true; save(); // picking a REAL voice switches the guide back on — the editor's "No voice" card writes S.voice=false and these chips must write it back
+        try { TTS.unlock(); if (curLang() === "ru") TTS.setRuVoice(o[0]); else TTS.setVoice(o[0]); TTS.stop(); } catch (e) {}
+        gPaints.forEach(function (p) { p(); });
+        if (!voiceSessionAudible()) { try { setTimeout(function () { TTS.speak("Settle in", { volume: (S.audio && S.audio.voice != null) ? S.audio.voice : 1 }); }, 300); } catch (e) {} } // confirm the pick unless a session is actually SOUNDING (that overlap was the "two voices at once")
+      }));
     });
-    paintBed();
-    // BREATHING (David 2026-08-15). This panel is what the composed player's gear opens, and the composed player is the toolbox "Breathe" front door — so this is where the visual / cue set / guiding tone have to be reachable. Until now they lived only inside breathPicker, behind nine pattern chips, on the one path David rarely takes. Same block, same words as the picker and the in-session cog.
-    add(card, "div", null, tr("Breathing")).style.cssText = "font-size:13.5px;font-weight:700;margin:18px 0 0;";
-    breathControls(card, { preview: false }); // a live breath session applies the pick on its next frame (_breathLive); previewing over a running session would double the sound
-    // whole-app subtle background music toggle
-    var amRow = add(card, "button"); amRow.style.cssText = "display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:18px;background:rgba(255,255,255,.04);border:1.5px solid #3a1730;border-radius:12px;padding:12px 14px;cursor:pointer;color:#f0e6ef;font-family:var(--bub);";
-    function amPaint() { amRow.innerHTML = '<span style="display:flex;flex-direction:column;text-align:left;gap:1px;"><b style="font-size:14px;">' + tr("App background music") + '</b><span style="font-size:11px;color:#b39ab0;">' + tr("warm, slow chords while you browse") + '</span></span><i class="ti ' + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left") + '" style="font-size:30px;color:' + ((S.audio && S.audio.appMusic) ? "#9a7cff" : "#6a4a6a") + ';"></i>'; }
-    amPaint();
-    amRow.onclick = function () { S.audio.appMusic = !(S.audio && S.audio.appMusic); save(); amPaint(); appMusicSync(); };
-    var done = add(card, "button", "done2", "Done"); done.style.cssText = "margin-top:16px;"; done.onclick = function () { stopPreview(); ov.remove(); };
-    ov.addEventListener("click", function (e) { if (e.target === ov) { stopPreview(); ov.remove(); } });
+    slider(gr, function () { return S.audio.voice != null ? S.audio.voice : 1; }, function (v) { setAudioVol("voice", v); });
+
+    // BACKDROP — the real beds only (BED_ORDER @SEC:AUDIO), one scrolling three-row field, MULTI-SELECT by category:
+    // at most two lit, never two of a family. Tapping a second bed of the same family REPLACES it; a different family ADDS.
+    var previewPad = null;
+    function canPreview() { try { return !voiceSessionAudible(); } catch (e) { return true; } } // a SOUNDING session already plays the set through _activeBed — previewing over it would double every bed
+    function stopPreview() { try { BGBED.stop(); } catch (e) {} try { BGM.stop(); } catch (e) {} if (previewPad) { try { previewPad.stop(); } catch (e) {} previewPad = null; } }
+    function preview(keys) { stopPreview(); var pctx = sharedAudioCtx(); if (!pctx) return; keys.forEach(function (k) { if (k === "music") BGM.start(); else if (k === "pad") previewPad = startPad(pctx, bgBus() || pctx.destination, 0.22); else if (BG_FILES[k]) BGBED.start(k, 0.5); }); }
+    var bedPaints = [];
+    function setBed(k) { var next = bedToggle(k); bedSet(next); save(); bedPaints.forEach(function (p) { p(); }); if (_activeBed) _activeBed(next); if (canPreview()) preview(next); }
+    var br = row("backdrop"), bwrap = add(br, "div", "ps-beds"), bgrid = add(bwrap, "div", "ps-bedgrid");
+    bedPaints.push(chip(bgrid, tr("Off"), true, 11.5, function () { return !bedKeys().length; }, function () { setBed("off"); }));
+    BED_ORDER.forEach(function (k) { bedPaints.push(chip(bgrid, tr(BED_NAME[k]), true, 11.5, function () { return bedKeys().indexOf(k) !== -1; }, function () { setBed(k); })); });
+    add(bwrap, "i", "ti ti-chevron-right ps-more");
+    slider(br, function () { return S.audio.bg != null ? S.audio.bg : 1; }, function (v) { setAudioVol("bg", v); });
+
+    // BREATHING — drawn only when the session actually contains breath segments. In a STACK it is its own titled block with
+    // its own SOUND kicker (the frame's shape); in a single breathing session the cue/tone rows just continue the one block.
+    var bPaints = [];
+    function breathRow(labelKey, keys, nameOf, getCur, setCur) {
+      var r = row(labelKey), cw = add(r, "div", "ps-chips"); cw.style.flexWrap = "wrap";
+      keys.forEach(function (k) { bPaints.push(chip(cw, tr(nameOf(k)), true, 11, function () { return getCur() === k; }, function () { setCur(k); save(); bPaints.forEach(function (p) { p(); }); if (_breathLive) { try { _breathLive(); } catch (e) {} } })); }); // _breathLive = the running breath surface re-reads the prefs on its next frame
+    }
+    if (hasBreath) {
+      if (isStack) { add(card, "div", "ps-title", tr("Breathing")); add(card, "div", "ps-kick", tr("sound")); }
+      breathRow("cue", BREATH_CUE_KEYS, function (k) { return BREATH_CUES[k].name; }, breathCueKey, function (k) { S.breathCue = k; });
+      breathRow("tone", ["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; });
+      add(card, "div", "ps-kick", tr("visual"));
+      breathRow("visual", BREATH_VIZ_KEYS, function (k) { return BREATH_VIZ[k].name; }, breathVizKey, function (k) { S.breathViz = k; });
+    }
+
+    // APP — the two whole-app switches, off-session only. They are not session settings; a player's card never draws them.
+    if (!inSession) {
+      add(card, "div", "ps-kick", tr("app"));
+      var vxOn = function () { return typeof S === "undefined" || !S || S.voice !== false; };
+      var vxRow = add(card, "button", "ps-tog"); add(vxRow, "span", null, tr("Guide's voice")); var vxI = add(vxRow, "i", "ti");
+      var vxPaint = function () { vxI.className = "ti " + (vxOn() ? "ti-toggle-right" : "ti-toggle-left"); vxI.style.cssText = "font-size:26px;line-height:1;color:" + (vxOn() ? E : "#6a4a6a") + ";"; };
+      vxPaint();
+      vxRow.onclick = function () { S.voice = !vxOn(); save(); vxPaint(); if (!vxOn()) { try { TTS.stop(); } catch (e) {} } };
+      var amRow = add(card, "button", "ps-tog"); add(amRow, "span", null, tr("App background music")); var amI = add(amRow, "i", "ti");
+      var amPaint = function () { amI.className = "ti " + ((S.audio && S.audio.appMusic) ? "ti-toggle-right" : "ti-toggle-left"); amI.style.cssText = "font-size:26px;line-height:1;color:" + ((S.audio && S.audio.appMusic) ? E : "#6a4a6a") + ";"; };
+      amPaint();
+      amRow.onclick = function () { S.audio.appMusic = !(S.audio && S.audio.appMusic); save(); amPaint(); appMusicSync(); };
+    }
+
+    var foot = add(card, "div", "ps-foot");
+    var doneB = add(foot, "button", "ps-done", tr("Done")); doneB.style.backgroundColor = E;
+    function closePanel() { stopPreview(); if (ov.parentNode) ov.remove(); }
+    doneB.onclick = closePanel;
+    ov.addEventListener("click", function (e) { if (e.target === ov) closePanel(); });
+    window.__psProbe = function () { return { title: title, hue: E, inSession: inSession, breath: hasBreath, stack: isStack, rows: Array.prototype.map.call(card.querySelectorAll(".ps-lab"), function (n) { return n.textContent; }), kickers: Array.prototype.map.call(card.querySelectorAll(".ps-kick"), function (n) { return n.textContent; }), titles: Array.prototype.map.call(card.querySelectorAll(".ps-title"), function (n) { return n.textContent; }) }; }; // DEV.psPanel() reads this — what the card COMPUTED, without a finger
   }
+  Object.assign(I18N.ru, { // B4 law: EN source + RU dict in the SAME edit. The settings card's own chrome (its scope titles, kickers and row labels) — the bed names, Voice/Sound, Guide's voice and App background music already carry RU above.
+    "Session": "Сессия", "Full stack": "Вся связка", "sound": "звук", "backdrop": "фон", "cue": "сигнал", "tone": "тон", "app": "приложение", "Dave": "Дэйв", "Millie": "Милли"
+  });
   // ===== COMPOSED TIMELINE PLAYER (David 2026-07-01): the Headspace-style engine. A guided session = ONE fixed timeline of pre-recorded clips + silences. Every clip is SCHEDULED UP FRONT on the Web Audio context (start(at 0s), start(at 8s)…) inside the opening gesture — no per-cue timer plays (the thing iOS was blocking → the meditation/breathwork silence). That single scheduled timeline is what play/pause/rewind/scrub operate on. =====
   // opts: { id, title, color, catK, spark, logTitle, vol, drone(bool), cadenceSec, totalSec, segments:[{text,label,sub,gap?}], onFinish }
   var ORB_AMB_W = 0.5712; // 2π/11 → the calm ~11s resting breath the orb keeps under any non-breath segment, on the session clock (see ORB DRIVE below)
@@ -14427,17 +14765,16 @@
     TTS.unlock(); // gesture-bound: schedule while the context is awake
     var col = opts.color || "#9a5cf0", ctx = TTS.ctx();
     var ov = document.createElement("div"); ov.id = "breatheOv"; ov.className = "gp-ov";
-    var BW_PHASE_INNER = '<div class="bw-phrow"><span class="bw-phw"></span><b class="bw-phn"></b></div><div class="bw-phbar"><i></i></div>'; // THE EXPLICIT INDICATOR (David 2026-08-15: "an explicit indicator of whether I should be inhaling, holding or exhaling") — the canonical phase word, the seconds left in it, and a line that empties over the phase. Hidden on every non-breath segment.
-    ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-label">preparing…</div><div class="bw-sub"></div><div class="bw-phase">' + BW_PHASE_INNER + '</div>';
+    var BW_PHASE_INNER = '<div class="bw-phbar"><i></i></div>'; // THE INDICATOR (David 2026-08-20): the draining line ALONE. Its old phase word and seconds repeated the headline right above them; the seconds now ride beside that headline in .bw-lrow and the word is gone. Hidden on every non-breath segment.
+    ov.innerHTML = '<button class="bw-x">close</button><div class="bw-orb"></div><div class="bw-lrow"><div class="bw-label">preparing…</div><b class="bw-phn"></b></div><div class="bw-sub"></div><div class="bw-phase">' + BW_PHASE_INNER + '</div>';
     document.body.appendChild(ov);
-    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), phEl = ov.querySelector(".bw-phase");
-    function paintPhaseEl(s) { // targeted writes on three nodes; the emptying line is a transform, so it never reflows the cue text above it
+    var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), phEl = ov.querySelector(".bw-phase"), phN = ov.querySelector(".bw-phn");
+    function paintPhaseEl(s) { // targeted writes on two nodes; the emptying line is a transform, so it never reflows the cue text above it
       if (!phEl) return;
-      if (!s) { phEl.style.visibility = "hidden"; return; }
+      if (!s) { phEl.style.visibility = "hidden"; if (phN) phN.style.display = "none"; return; } // the counter shares the headline's centred row, so it LEAVES the row on a non-breath segment instead of holding a blank slot that would push the line off-centre
       phEl.style.visibility = "";
-      var _w = phEl.querySelector(".bw-phw"), _n = phEl.querySelector(".bw-phn"), _b = phEl.querySelector(".bw-phbar i");
-      if (_w) _w.textContent = tr(s.word);
-      if (_n) _n.textContent = "" + Math.max(1, Math.ceil(s.remain / 1000));
+      var _b = phEl.querySelector(".bw-phbar i");
+      if (phN) { phN.textContent = "" + Math.max(1, Math.ceil(s.remain / 1000)); phN.style.display = ""; }
       if (_b) _b.style.transform = "scaleX(" + (1 - s.progress).toFixed(3) + ")";
     }
     paintPhaseEl(null);
@@ -14466,11 +14803,11 @@
       var storyWrap = add(ov, "div", "gp-story"); storyWrap.style.cssText = "position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;right:14px;display:flex;gap:9px;z-index:6;pointer-events:none;"; // FULL-WIDTH story bars (David 2026-07-13): the ✕ / gear drop BELOW the bars (gp-ov CSS) so the bars span the whole screen, like the stack carousel
       acts.forEach(function (a) { var colx = add(storyWrap, "div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:9px;"; var bar = add(colx, "div"); bar.style.cssText = "width:100%;height:9px;border-radius:5px;background:" + mixHex(a.color || col, "#160510", 0.62) + ";overflow:hidden;"; var fl = add(bar, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:5px;background:" + (a.color || col) + ";transition:width .2s linear;"; actFills.push(fl); var ic = add(colx, "i", "ti " + (a.icon || "ti-circle-filled")); ic.style.cssText = "font-size:22px;line-height:1;color:" + (a.color || col) + ";opacity:.34;transition:opacity .3s;"; actLabels.push(ic); actResume.push(null); }); // the LINE on top, a bigger COLORED SYMBOL below it; brightens as you pass through (David 2026-07-08)
       // HORIZONTAL TRACK OF PER-ACTIVITY PAGES (David 2026-07-07): the WHOLE page slides sideways and the next identical page slides in, Instagram-story style — you see the slide. Each page has its own color-tinted orb. Top bars + bottom transport are the fixed frame.
-      orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; if (phEl) phEl.style.display = "none"; // the single template content is unused in acts mode
+      orb.style.display = "none"; lab.style.display = "none"; sub.style.display = "none"; if (phN) phN.style.display = "none"; if (phEl) phEl.style.display = "none"; if (lab.parentNode && lab.parentNode.className === "bw-lrow") lab.parentNode.style.display = "none"; // the single template content is unused in acts mode — the headline row goes too, so it can never sit in the centring flow as an empty flex item
       track = add(ov, "div", "gp-track"); track.style.cssText = "position:fixed;inset:0;display:flex;width:" + (acts.length * 100) + "vw;z-index:2;transition:transform .44s cubic-bezier(.4,0,.2,1);will-change:transform;pointer-events:none;";
       pages = [];
-      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var plab = add(pg, "div", "bw-label"); var psub = add(pg, "div", "bw-sub"); var pph = add(pg, "div", "bw-phase"); pph.innerHTML = BW_PHASE_INNER; pph.style.visibility = "hidden"; pages.push({ orb: porb, lab: plab, sub: psub, ph: pph }); }); // each page carries its own phase indicator, so it slides with its activity like the cue line does
-      orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; phEl = pages[0].ph; // live refs point at the current page
+      acts.forEach(function (a) { var pg = add(track, "div"); pg.style.cssText = "width:100vw;flex:0 0 100vw;display:flex;flex-direction:column;align-items:center;justify-content:center;"; var porb = add(pg, "div", "bw-orb"); var c = a.color || col; porb.style.animation = "none"; porb.style.willChange = "transform"; porb.style.background = "radial-gradient(circle at 38% 30%," + mixHex(c, "#ffffff", 0.26) + " 0%," + c + " 55%," + mixHex(c, "#160510", 0.26) + " 100%)"; porb.style.boxShadow = "0 0 60px " + mixHex(c, "#160510", 0.2) + ", 0 0 120px " + mixHex(c, "#160510", 0.5); var prow = add(pg, "div", "bw-lrow"); var plab = add(prow, "div", "bw-label"); var pn = add(prow, "b", "bw-phn"); pn.style.display = "none"; var psub = add(pg, "div", "bw-sub"); var pph = add(pg, "div", "bw-phase"); pph.innerHTML = BW_PHASE_INNER; pph.style.visibility = "hidden"; pages.push({ orb: porb, lab: plab, n: pn, sub: psub, ph: pph }); }); // each page carries its own phase indicator, so it slides with its activity like the cue line does
+      orb = pages[0].orb; lab = pages[0].lab; sub = pages[0].sub; phEl = pages[0].ph; phN = pages[0].n; // live refs point at the current page
     }
     // F5 · ACT-BARS (David 2026-07-13): a bars-ONLY sequence indicator (meditation blocks) — the same top story-bars as the stack, but with the single continuous orb below (no page-slide, no block-nav). Independent of `acts`, so it touches none of the acts/pages/nav machinery.
     var actBars = (!acts && opts.actBars && opts.actBars.length > 1) ? opts.actBars : null, abFills = [], abIcons = [];
@@ -14482,7 +14819,7 @@
     }
     function onActEnter(ai) { // SLIDE the whole page to activity ai (its page is pre-tinted) + point the live refs at that page + set its current line + tint the shared transport
       if (!acts || !pages || !pages[ai]) return;
-      orb = pages[ai].orb; lab = pages[ai].lab; sub = pages[ai].sub; phEl = pages[ai].ph;
+      orb = pages[ai].orb; lab = pages[ai].lab; sub = pages[ai].sub; phEl = pages[ai].ph; phN = pages[ai].n;
       if (track) track.style.transform = "translateX(" + (-ai * 100) + "vw)"; // THE SLIDE
       var c = acts[ai].color || col; try { ov.style.setProperty("--gp-c", c); if (bPlay) bPlay.style.background = c; if (fill) fill.style.background = "linear-gradient(90deg," + mixHex(c, "#ffffff", 0.4) + "," + c + ")"; } catch (e) {}
       var e2 = curElapsed(), seg = null; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e2) seg = segs[i]; else break; }
@@ -14520,11 +14857,12 @@
     var bFwd = add(btns, "button", "gp-b gp-side"); bFwd.innerHTML = '<i class="ti ti-rewind-forward-15"></i>';
     bar.style.visibility = "hidden";
     // background bed — the peaceful pad (default), the Mysterious music, or nothing (David 2026-07-01, Sound panel)
-    var padCtl = null, usedBGM = false, bedM = bedMode(), bedOn = false;
-    if (BG_FILES[bedM]) BGBED.load(bedM); // pre-decode the file bed so it is ready by play time
-    function bedStart() { if (bedOn || opts.drone === false) return; try { if (bedM === "music") { BGM.start(); usedBGM = true; bedOn = true; } else if (bedM === "pad" && ctx) { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); bedOn = true; } else if (BG_FILES[bedM] && ctx) { BGBED.start(bedM, 0.5); bedOn = true; } } catch (e) {} } // the background bed follows play/pause (David 2026-07-08: pausing should pause the music too)
-    function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} try { if (padCtl) padCtl.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} padCtl = null; bedOn = false; }
-    _activeBed = function (m) { bedM = m; if (BG_FILES[m]) BGBED.load(m); bedStop(); bedOn = false; if (playing) bedStart(); }; // Sound panel live-swap of the running bed (David 2026-07-10)
+    var padCtl = null, usedBGM = false, bedSel = bedKeys(), bedOn = false;
+    function bedPre() { bedSel.forEach(function (k) { if (BG_FILES[k]) BGBED.load(k); }); } // pre-decode every file bed in the set so they are ready by play time
+    bedPre();
+    function bedStart() { if (bedOn || opts.drone === false) return; bedOn = true; bedSel.forEach(function (k) { try { if (k === "music") { BGM.start(); usedBGM = true; } else if (k === "pad" && ctx) { padCtl = startPad(ctx, bgBus() || ctx.destination, 0.22); } else if (BG_FILES[k] && ctx) { BGBED.start(k, 0.5); } } catch (e) {} }); } // the background bed(s) follow play/pause (David 2026-07-08: pausing should pause the music too). Up to two run at once now — the category rule guarantees they come from different families, so BGM/startPad/BGBED never collide with themselves.
+    function bedStop() { try { if (usedBGM) BGM.stop(); } catch (e) {} usedBGM = false; try { if (padCtl) padCtl.stop(); } catch (e) {} try { BGBED.stop(); } catch (e) {} padCtl = null; bedOn = false; }
+    _activeBed = function (keys) { bedSel = (keys && keys.slice) ? keys.slice() : bedKeys(); bedPre(); bedStop(); if (playing) bedStart(); }; // settings-card live-swap of the running bed SET (David 2026-07-10, multi 2026-08-20)
     bedStart();
     _gpRevoice = function () { if (!done) revoice(TTS.voiceGen()); }; // the live door TTS.setVoice knocks on
     // ===== BREATH AUDIO ON THE FRONT DOOR (David 2026-08-15: "we kind of set that up somewhere in the app"). The toolbox
@@ -14566,12 +14904,23 @@
         var run = _bRun && _bRun.clock, cyc = (run && run.cycles) ? run.total / run.cycles : 16000; // the wave sizes its window to ONE WHOLE CYCLE; the run clock knows both numbers
         _vzEl = host; _vzK = k; _vzOrb = orb; _vzN = BREATH_VIZ[k].mount(host, cyc); orb.style.display = "none";
       }
+      // THE WAVE NEEDS A LEVEL FUNCTION, NOT A LEVEL (David on device 2026-08-20: "wave visualization is still broken,
+      // it's just a flat line"). It draws history to the left of centre and the ghost to the right, so it evaluates the
+      // breath at t +/- several seconds — that is what `s.lvl(ms)` is for. A clock sample only carries `s.level`, ONE
+      // number for right now, so the renderer's fallback returned that same constant for every x and drew a dead
+      // horizontal line. The run clock can already answer any instant, so hand its `at()` over.
+      if (!s.lvl && _bRun && _bRun.clock && _bRun.clock.at) { var _ck = _bRun.clock; s.lvl = function (ms) { try { var q = _ck.at(ms); return q ? q.level : s.level; } catch (e) { return s.level; } }; }
       BREATH_VIZ[k].paint(_vzN, s);
       return true;
     }
     _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, atPhase: _bPh, hits: _bHits.slice(), viz: { pick: breathVizKey(), mounted: _vzK, node: !!(_vzEl && _vzEl.parentNode), orbParked: !!(_vzOrb && _vzOrb.style.display === "none"), path: _vzN && _vzN.path ? (_vzN.path.getAttribute("d") || "").length : null, pts: _vzN && _vzN.pts ? _vzN.pts.length : null } },
       ready: ready, transport: bar ? (getComputedStyle(bar).visibility) : null, label: lab ? lab.textContent : null, decoded: segs.filter(function (sg) { return !!sg.buf; }).length, voiced: segs.filter(function (sg) { return !!sg.text; }).length, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, shift: sg._clipShift ? +sg._clipShift.toFixed(3) : 0, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording). `live` = the line in the air; `swap` = the last re-voice's receipt, including the mid-line splice numbers (t/Dold/Dnew/p/start) so the preview can prove the rewind arithmetic it cannot hear.
 
+    // WHAT IS IN THIS SESSION (David 2026-08-20, the settings-card rule): "a single-type session gets only its own settings;
+    // a stack gets the whole-stack settings plus a section per segment type that owns sound." So the card ASKS the player what
+    // it is holding instead of being handed a mode — hue from the live act tint, breathing from the segments themselves.
+    _gpSettings = function () { var hue = ""; try { hue = ov.style.getPropertyValue("--gp-c") || ""; } catch (e) {}
+      return { hue: (hue || col).trim(), breath: segs.some(function (sg) { return !!sg.breath; }), stack: !!((acts && acts.length > 1) || (actBars && actBars.length > 1)) }; };
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
     var _fitK = 1; // the dose re-fit factor (≤1), computed once at open in relayoutFrom(0) and held across a live voice swap so re-voicing a running session never re-negotiates its pacing mid-flight
@@ -14831,7 +15180,7 @@
       function navBy(dir) { if (!ready || done) return; // one tap = one STEP, meditation included (2026-08-15: the zoom used to eat the first taps as section-steps, then fall out of zoom permanently at the section edge)
         var j = curAct + dir;
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
-        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
+        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
         gotoAct(j); }
       // SIDE-CLICK NAV (David 2026-07-10): left third = back, right third = forward. Zones start BELOW the story bars / ✕ / gear and stop ABOVE the transport.
       var _tzTop = "top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);z-index:5;";
@@ -14868,7 +15217,7 @@
 
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop(); breathAudioOff(); vizDrop(); // the breath visual goes with the run — a session that ENDS on a breath phase must hand the closing "Done ✓" beat back to the orb it was hiding
-      _activeBed = null; _gpRevoice = null; _gpProbe = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
+      _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }
       if (opts.drift && !skip) { // LEARN from this session: drift-per-minute as an EMA → adapts next session's reminder density
@@ -15835,7 +16184,7 @@
     for (var k = out.length - 1; k > 0; k--) { if (out[k].split(/\s+/).length <= 1 && out[k].length <= 8) { out[k - 1] = out[k - 1] + " " + out[k]; out.splice(k, 1); } } // merge a lone tiny orphan ("love.") back into the previous caption
     return out.length ? out : [text];
   }
-  function medSeg(ln, gap, subName, act) { var caps = capSplit(ln); var s = { text: ln, label: caps[0], sub: subName || "", gap: gap }; if (caps.length > 1) s.caps = caps; if (act != null) s._act = act; return s; } // a meditation cue: full line = the voice clip; caps = the short display chunks the player cycles
+  function medSeg(ln, gap, subName, act) { var caps = capSplit(tr(ln)); var s = { text: ln, label: caps[0], sub: subName || "", gap: gap }; if (caps.length > 1) s.caps = caps; if (act != null) s._act = act; return s; } // a meditation cue: full line = the voice clip; caps = the short display chunks the player cycles. TRANSLATE-THEN-SPLIT (David on device 2026-08-21, "sometimes the text is English when it should be in Russian"): the caption is cut from the LOCALIZED line, never from the English one. translateTree can only translate a DICT KEY, and a chunk is not a key — splitting first meant every fully-translated long line still printed English on screen while the voice spoke Russian. `text` stays the EN line: it is the voice clip's key (TTS localizes it itself via vline).
   // STRETCH_MOVES (David 2026-07-13): a real, ORDERED head-to-toe mobility flow, not 3 fixed poses. The player takes as many moves as the chosen time needs (never loops, never stretches 3 over 2 min) — more time = more moves, each a held ~13s. Both gates passed. Add moves here to deepen (a data edit).
   var STRETCH_MOVES = [
     ["Reach for the ceiling", "stand tall, both arms long and slow"],
@@ -15853,6 +16202,32 @@
     ["And twist the other way", "easy, all the way around"],
     ["Clasp your hands behind you and lift your chest", "open the front of the shoulders"]
   ];
+  Object.assign(I18N.ru, { // THE STRETCH FLOW's own move lines (David on device 2026-08-21: the RU player printed all 14 moves in English). B4 law, in place. Register matched to the relax cues already in the dict: the move is an imperative to ты, its second half a lowercase continuation. These lines have NO RU voice clip either way (hasClip is false with or without this entry), so nothing that is audible today goes silent — the screen simply stops speaking English. They are now dict keys, so the next RU voice-gen pass picks them up.
+    "Reach for the ceiling": "\u041f\u043e\u0442\u044f\u043d\u0438\u0441\u044c \u043a \u043f\u043e\u0442\u043e\u043b\u043a\u0443",
+    "stand tall, both arms long and slow": "\u0432\u0441\u0442\u0430\u043d\u044c \u043f\u0440\u044f\u043c\u043e, \u043e\u0431\u0435 \u0440\u0443\u043a\u0438 \u0432\u044b\u0442\u044f\u043d\u0443\u0442\u044b, \u043c\u0435\u0434\u043b\u0435\u043d\u043d\u043e",
+    "hang heavy, let the neck and arms go": "\u043f\u043e\u0432\u0438\u0441\u043d\u0438 \u0442\u044f\u0436\u0435\u043b\u043e, \u043e\u0442\u043f\u0443\u0441\u0442\u0438 \u0448\u0435\u044e \u0438 \u0440\u0443\u043a\u0438",
+    "stack the spine, head comes up last": "\u0441\u043e\u0431\u0438\u0440\u0430\u0439 \u043f\u043e\u0437\u0432\u043e\u043d\u043e\u043a \u0437\u0430 \u043f\u043e\u0437\u0432\u043e\u043d\u043a\u043e\u043c, \u0433\u043e\u043b\u043e\u0432\u0430 \u043f\u043e\u0434\u043d\u0438\u043c\u0430\u0435\u0442\u0441\u044f \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u0435\u0439",
+    "big and slow, a few times around": "\u0448\u0438\u0440\u043e\u043a\u043e \u0438 \u043c\u0435\u0434\u043b\u0435\u043d\u043d\u043e, \u043d\u0435\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u043a\u0440\u0443\u0433\u043e\u0432",
+    "Drop one ear toward your shoulder": "\u041d\u0430\u043a\u043b\u043e\u043d\u0438 \u0443\u0445\u043e \u043a \u043f\u043b\u0435\u0447\u0443",
+    "let the weight of your head do the work": "\u043f\u0443\u0441\u0442\u044c \u0432\u0435\u0441 \u0433\u043e\u043b\u043e\u0432\u044b \u0441\u0434\u0435\u043b\u0430\u0435\u0442 \u0432\u0441\u0451 \u0441\u0430\u043c",
+    "Now the other side": "\u0422\u0435\u043f\u0435\u0440\u044c \u0434\u0440\u0443\u0433\u0430\u044f \u0441\u0442\u043e\u0440\u043e\u043d\u0430",
+    "just as slow": "\u0442\u0430\u043a \u0436\u0435 \u043c\u0435\u0434\u043b\u0435\u043d\u043d\u043e",
+    "Pull one arm across your chest": "\u041f\u043e\u0442\u044f\u043d\u0438 \u0440\u0443\u043a\u0443 \u043f\u043e\u043f\u0435\u0440\u0451\u043a \u0433\u0440\u0443\u0434\u0438",
+    "hold it, and feel the shoulder open": "\u0434\u0435\u0440\u0436\u0438 \u0438 \u043f\u043e\u0447\u0443\u0432\u0441\u0442\u0432\u0443\u0439, \u043a\u0430\u043a \u0440\u0430\u0441\u043a\u0440\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u043f\u043b\u0435\u0447\u043e",
+    "Switch arms": "\u0421\u043c\u0435\u043d\u0438 \u0440\u0443\u043a\u0443",
+    "same easy hold on the other side": "\u0442\u0430 \u0436\u0435 \u043b\u0451\u0433\u043a\u0430\u044f \u0437\u0430\u0434\u0435\u0440\u0436\u043a\u0430 \u0441 \u0434\u0440\u0443\u0433\u043e\u0439 \u0441\u0442\u043e\u0440\u043e\u043d\u044b",
+    "Press your palms forward and round your back": "\u0412\u044b\u0442\u044f\u043d\u0438 \u043b\u0430\u0434\u043e\u043d\u0438 \u0432\u043f\u0435\u0440\u0451\u0434 \u0438 \u043e\u043a\u0440\u0443\u0433\u043b\u0438 \u0441\u043f\u0438\u043d\u0443",
+    "open the space between the shoulder blades": "\u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u043f\u0440\u043e\u0441\u0442\u0440\u0430\u043d\u0441\u0442\u0432\u043e \u043c\u0435\u0436\u0434\u0443 \u043b\u043e\u043f\u0430\u0442\u043a\u0430\u043c\u0438",
+    "Reach up and lean to one side": "\u041f\u043e\u0442\u044f\u043d\u0438\u0441\u044c \u0432\u0432\u0435\u0440\u0445 \u0438 \u043d\u0430\u043a\u043b\u043e\u043d\u0438\u0441\u044c \u0432 \u0441\u0442\u043e\u0440\u043e\u043d\u0443",
+    "a long stretch down your ribs": "\u0434\u043b\u0438\u043d\u043d\u043e\u0435 \u0432\u044b\u0442\u044f\u0436\u0435\u043d\u0438\u0435 \u0432\u0434\u043e\u043b\u044c \u0440\u0451\u0431\u0435\u0440",
+    "And lean the other way": "\u0418 \u043d\u0430\u043a\u043b\u043e\u043d\u0438\u0441\u044c \u0432 \u0434\u0440\u0443\u0433\u0443\u044e \u0441\u0442\u043e\u0440\u043e\u043d\u0443",
+    "keep breathing into it": "\u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0430\u0439 \u0442\u0443\u0434\u0430 \u0434\u044b\u0448\u0430\u0442\u044c",
+    "Twist slowly to look behind you": "\u041c\u0435\u0434\u043b\u0435\u043d\u043d\u043e \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0438\u0441\u044c, \u043f\u043e\u0441\u043c\u043e\u0442\u0440\u0438 \u043d\u0430\u0437\u0430\u0434",
+    "let your eyes lead the turn": "\u043f\u0443\u0441\u0442\u044c \u0433\u043b\u0430\u0437\u0430 \u0432\u0435\u0434\u0443\u0442 \u043f\u043e\u0432\u043e\u0440\u043e\u0442",
+    "And twist the other way": "\u0418 \u0440\u0430\u0437\u0432\u0435\u0440\u043d\u0438\u0441\u044c \u0432 \u0434\u0440\u0443\u0433\u0443\u044e \u0441\u0442\u043e\u0440\u043e\u043d\u0443",
+    "easy, all the way around": "\u0441\u043f\u043e\u043a\u043e\u0439\u043d\u043e, \u0434\u043e \u043a\u043e\u043d\u0446\u0430",
+    "Clasp your hands behind you and lift your chest": "\u0421\u0446\u0435\u043f\u0438 \u0440\u0443\u043a\u0438 \u0437\u0430 \u0441\u043f\u0438\u043d\u043e\u0439 \u0438 \u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u0433\u0440\u0443\u0434\u044c",
+    "open the front of the shoulders": "\u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u043f\u0435\u0440\u0435\u0434\u043d\u044e\u044e \u043f\u043e\u0432\u0435\u0440\u0445\u043d\u043e\u0441\u0442\u044c \u043f\u043b\u0435\u0447" });
   function stretchMoveSegs(secs, tag) { // fill `secs` with as many DISTINCT moves as it needs (never looped); more time = more moves, each held; long time lengthens the holds rather than repeating. Returns timelinePlayer segments.
     secs = Math.max(30, secs || 75);
     var _per = PK.speechEst + PK.held;                        // one move = the spoken cue + its short hold
@@ -16624,7 +16999,7 @@
     var doneB = add(ov, "button", "done2", tr("Done ✓")); doneB.style.cssText = "margin-top:24px;max-width:240px;";
     function paint() { clk.textContent = Math.floor(left / 60) + ":" + pad(left % 60); }
     paint();
-    try { if (bedMode() !== "off") BGM.start(); } catch (e) {}
+    try { if (bedKeys().length) BGM.start(); } catch (e) {}
     iv = setInterval(function () { left--; if (left <= 0) { finish(); return; } paint(); }, 1000);
     function finish() { if (!ov.parentNode) return; clearInterval(iv); try { BGM.stop(); } catch (e) {} ov.remove(); onDone(); }
     doneB.onclick = finish;
@@ -18909,9 +19284,193 @@
   window.DEV.stack = function (id, secs, pat) { runStackCarousel([{ k: { id: id || "stretch", name: id || "stretch", ti: "ti-yoga", col: "#46e2a4" }, d: secs || 120, pat: pat }]); return "running " + (id || "stretch") + " for " + (secs || 120) + "s — read DEV.segs() once it is ready"; }; // DEV: launch ANY tool as a real one-act stack through the SAME carousel a real tap uses, so a pause can be measured where it actually plays (after relayoutFrom's dose re-fit and the real decoded clip lengths) rather than where the composer merely declared it. DEV.breathStack is this with id "breathe" pre-filled.
   window.DEV.segs = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player open"; var sg = p.segs || [], out = [], i; for (i = 0; i < sg.length; i++) { var nxt = sg[i + 1]; out.push({ t: (sg[i].t || "").slice(0, 26), start: sg[i].start, dur: sg[i].dur, gap: (nxt && sg[i].start != null && sg[i].dur != null) ? +(nxt.start - sg[i].start - sg[i].dur).toFixed(2) : null }); } return { n: out.length, elapsed: p.elapsed, total: p.total, segs: out }; }; // the REAL laid-out gap between consecutive segments = next.start - (this.start + this.dur). This is the number the ear hears; the composer's declared `gap` is only its input.
   window.DEV.breathStack = function (pat, secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#63d3c9" }, d: secs || 60, pat: pat || "resonance" }]); return "composed breath session (the toolbox front door's engine) · pat=" + (pat || "resonance"); }; // the same runStackCarousel → composeStackSegs → timelinePlayer path breatheLadder takes, without walking the toolbox
-  window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseWord: ov && ov.querySelector(".gp-track .bw-phase:not([style*='hidden']) .bw-phw") ? ov.querySelector(".gp-track .bw-phase .bw-phw").textContent : null, phaseLeft: ov && ov.querySelector(".gp-track .bw-phase .bw-phn") ? ov.querySelector(".gp-track .bw-phase .bw-phn").textContent : null, orb: ov && ov.querySelector(".gp-track .bw-orb") ? ov.querySelector(".gp-track .bw-orb").style.transform : null, label: ov && ov.querySelector(".gp-track .bw-label") ? ov.querySelector(".gp-track .bw-label").textContent : null }; }; // read the running composed player's breath surface without a finger
+  window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov");
+    function live(sel) { var ns = ov ? ov.querySelectorAll(".gp-track " + sel) : []; for (var i = 0; i < ns.length; i++) if (ns[i].offsetParent) return ns[i]; return null; } // the SHOWN one, across the carousel's pages — offsetParent is null on a display:none page or a hidden counter, so this can never report a stale page's text as live
+    var n = live(".bw-phn"), b = live(".bw-phbar i"), o = live(".bw-orb"), l = live(".bw-label");
+    return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseLeft: n ? n.textContent : null, phaseBar: b ? b.style.transform : null, orb: o ? o.style.transform : null, label: l ? l.textContent : null }; }; // read the running composed player's breath surface without a finger. The phase WORD is gone (David 2026-08-20 — it repeated the headline); `label` is that headline, `phaseLeft` the seconds now sitting beside it.
   window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
+  // ===== AUDIT ROBUSTNESS (David 2026-08-20: "can we make the design audit tool more robust?") =====
+  // Built from how it actually failed us this week, not from principle:
+  //   1. it reported 74/74 while the night face was broken  -> it only knew ONE surface
+  //   2. it reported 13 FAIL while everything was fine       -> it measured a board with no box
+  //   3. the notch passed 6/6 while visibly wrong            -> gates only encode what I already thought of
+  //   4. one gate failed when the GATE was wrong, not the code -> nothing proved a gate could fail
+  // (2) is handled by designAudit's bail. These three help with (1), (3) and (4).
+
+  window.DEV.auditAll = function () { // ONE entry point. Runs every surface's audit and says plainly which it could not reach.
+    var parts = [], tot = 0, bad = 0, skipped = [];
+    [["home board", window.DEV.designAudit], ["settings tail", window.DEV.notchAudit], ["language", function () { return window.DEV.ruAudit(600); }]].forEach(function (a) {
+      var r; try { r = a[1](); } catch (e) { r = "ERR " + e.message; }
+      var txt = String(r);
+      if (txt.indexOf("PASS") < 0 && txt.indexOf("FAIL") < 0) { skipped.push(a[0] + " — " + txt.slice(0, 90)); return; }
+      var lines = txt.split("\n"), p = 0, f = 0;
+      lines.forEach(function (l) { var t = l.trim(); if (/^PASS · /.test(t)) p++; else if (/^FAIL · /.test(t)) f++; }); // " · " is required: a gate line always has it, and the summary HEADER "FAILURES PRESENT" does not — without it the header counted itself as a ninth failing gate and every tail failure was reported as two.
+      tot += p + f; bad += f;
+      parts.push((f ? "FAIL " : "ok   ") + a[0] + " · " + p + " pass / " + f + " fail");
+    });
+    return (bad ? "FAILURES PRESENT" : "ALL PASS") + " · " + tot + " gates across " + parts.length + " surfaces\n" +
+      parts.join("\n") + (skipped.length ? "\nNOT REACHED (open the surface, then re-run):\n  " + skipped.join("\n  ") : "");
+  };
+
+  window.DEV.auditProve = function () { // CAN EACH GATE ACTUALLY FAIL? Perturb the thing a gate watches and demand it flips.
+    // A gate that cannot fail is decoration. The vh sentinel was proven this way by hand (injecting 2.06vh, which
+    // resolves to 18.0044px at the artboard and slips past every pixel gate); this automates the same idea for the
+    // tail, whose eight gates all passed while David was looking at something visibly wrong.
+    var n = document.querySelector(".ps-notch"), card = document.querySelector(".ps-card");
+    if (!n || !card) return "open the settings card first (DEV.psPanel())";
+    var base = String(window.DEV.notchAudit());
+    if (base.indexOf("FAIL") >= 0) return "fix the live failures before proving the gates:\n" + base;
+    var saved = n.getAttribute("style") || "";
+    var probes = [
+      ["tail paints ON TOP", function () { n.style.zIndex = "1"; }],
+      ["OUTER triangle is the card's INK", function () { n.style.background = "#ff0000"; }],
+      ["tail is a TRIANGLE", function () { n.style.clipPath = "none"; }],
+      ["BASE sits on the card's top edge", function () { n.style.top = (parseFloat(n.style.top) - 40) + "px"; }],
+      ["clears the corner radius", function () { n.style.left = (card.getBoundingClientRect().right - 20) + "px"; }]
+    ];
+    var out = [], blind = 0;
+    probes.forEach(function (pr) {
+      n.setAttribute("style", saved); pr[1]();
+      var got = String(window.DEV.notchAudit());
+      var caught = got.split("\n").some(function (l) { return /^FAIL/.test(l.trim()) && l.indexOf(pr[0]) >= 0; });
+      if (!caught) blind++;
+      out.push((caught ? "CATCHES" : "BLIND  ") + " · " + pr[0]);
+    });
+    n.setAttribute("style", saved);
+    return (blind ? blind + " GATE(S) CANNOT FAIL — they are decoration" : "every probed gate catches its own break") +
+      "\n" + out.join("\n");
+  };
+
+  window.DEV.tr = function (t) { return tr(t); };                 // what the dict answers for one exact string
+  window.DEV.dict = function () { return I18N[curLang()] || {}; }; // the live dictionary, for counting/searching
+  window.DEV.ruAudit = function (secs) { // WHAT WILL PRINT IN ENGLISH while the app runs in another language.
+    // The player prints `label` / `caps[]` / `sub`. translateTree can only translate a string that is a DICT KEY —
+    // and a caption CHUNK is not a key, because capSplit cut it out of a whole line. So a line that IS translated
+    // still printed English the moment it was long enough to be chunked (David on device 2026-08-21: "sometimes the
+    // text is English when it should be in Russian"). This composes every guided tool through the SHIPPING composer
+    // and reports every string that would reach the screen untranslated. A leak here = a leak on his phone.
+    if (curLang() === "en") return "ruAudit: English IS the source language, nothing to translate (switch to Русский and re-run)";
+    var d = secs || 120, out = [], seen = {}, ids = Object.keys(STACK_CONTENT), chunks = 0, lines = 0, checked = 0;
+    function look(kind, id, t) {
+      t = (t == null ? "" : "" + t).trim();
+      if (!t || !/[a-zA-Z]{3,}/.test(t)) return;      // nothing latin to leak
+      var k = kind + "|" + t; if (seen[k]) return; seen[k] = 1;
+      checked++;
+      if (tr(t) !== t) return;                        // the dict answers it → the observer translates it on paint
+      if (kind === "chunk") chunks++; else lines++;
+      out.push("   " + kind + " · " + id + " · " + t.slice(0, 78));
+    }
+    ids.forEach(function (id) {
+      var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }, { k: "aware" }, { k: "rest" }] : undefined;
+      var r; try { r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: d, med: med }]); } catch (e) { out.push("ERR   · " + id + " · " + e.message); return; }
+      (r.segs || []).forEach(function (s) {
+        if (s.caps && s.caps.length > 1) s.caps.forEach(function (c) { look("chunk", id, c); });
+        else look("line ", id, s.label);
+        look("line ", id, s.sub);
+      });
+      (r.acts || []).forEach(function (a) { if (a.name !== id) look("line ", id, a.name); }); // the synthetic nm we pass in is not a real act name
+    });
+    // THE REGISTRY SWEEP — composing at one dose only reaches the lines that dose happens to select. These are the
+    // pools themselves, so a line that only surfaces on a 40-minute sit is audited at the same time as the first cue.
+    try { STRETCH_MOVES.forEach(function (m) { look("line ", "stretch", m[0]); look("line ", "stretch", m[1]); }); } catch (e) {}
+    try { Object.keys(MED_SEC).forEach(function (k) { var d2 = MED_SEC[k]; if (!d2) return; look("line ", "medSec:" + k, d2.name); (d2.lines || []).forEach(function (l) { look("line ", "medSec:" + k, l); }); }); } catch (e) {}
+    try { Object.keys(MED_BLOCKS).forEach(function (k) { var b = MED_BLOCKS[k]; if (!b) return; look("line ", "medBlock:" + k, b.name); look("line ", "medBlock:" + k, b.entry); (b.pool || []).forEach(function (l) { look("line ", "medBlock:" + k, l); }); }); } catch (e) {}
+    try { Object.keys(BREATH_PATTERNS).forEach(function (k) { var P = BREATH_PATTERNS[k]; if (!P) return; look("line ", "breath:" + k, P.name); (P.ph || []).forEach(function (ph) { look("line ", "breath:" + k, ph[0]); }); }); } catch (e) {}
+    try { JP_CHAPTERS.forEach(function (c, i) { look("line ", "chapter:" + i, c.t); look("line ", "chapter:" + i, c.why); }); } catch (e) {} // not the player, but the same failure: eight translated titles over eight untranslated subtitles
+    // ONE gate line so DEV.auditAll can count this like every other surface; the leaks themselves are detail below it.
+    return (out.length
+      ? "FAIL · every player string resolves in " + curLang().toUpperCase() + " · got " + out.length + " still in English (" + chunks + " caption chunks, " + lines + " whole lines) of " + checked + " checked"
+      : "PASS · every player string resolves in " + curLang().toUpperCase() + " · " + checked + " strings checked across " + ids.length + " tools at " + d + "s · want zero Latin reaching the screen while the app is not in English") +
+      (out.length ? "\n" + out.join("\n") : "");
+  };
+
+  window.DEV.notchAudit = function () { // THE SETTINGS CARD'S TAIL — gated, because four rounds of eyeballing it failed.
+    var card = document.querySelector(".ps-card"), n = document.querySelector(".ps-notch");
+    if (!card || !n) return "open the settings card first (DEV.psPanel())";
+    var c = card.getBoundingClientRect(), r = n.getBoundingClientRect();
+    var cs = getComputedStyle(n), cc = getComputedStyle(card);
+    var rad = parseFloat(cc.borderTopRightRadius) || 0, out = [], pass = 0;
+    function chk(name, ok, got, want) { out.push((ok ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); if (ok) pass++; }
+    chk("tail paints ON TOP of the card", (+cs.zIndex) > (+cc.zIndex), cs.zIndex + " vs " + cc.zIndex,
+        "above, so its fill covers the card's top border and the two read as one shape");
+    chk("tail's OUTER triangle is the card's INK", cs.backgroundColor === cc.borderTopColor, cs.backgroundColor + " vs " + cc.borderTopColor,
+        "the card's own border colour — the outer triangle IS the tail's border, so it must match the card's edge, not its fill");
+    chk("tail is a TRIANGLE, not a rotated square", (cs.clipPath || "").indexOf("polygon") >= 0,
+        cs.clipPath || "none",
+        "a clip-path triangle — a rotated square shows all four corners and cannot merge with a curved edge");
+    var _in = getComputedStyle(n, "::after");
+    chk("tail's inner fill is the card's fill", _in.backgroundColor === cc.backgroundColor, _in.backgroundColor + " vs " + cc.backgroundColor,
+        "identical — the inner triangle is what covers the card's top border and joins the two shapes");
+    chk("inner fill runs PAST the base", parseFloat(_in.bottom) < 0, _in.bottom,
+        "a negative bottom, so the fill overshoots into the card and no border line survives between them");
+    chk("tail's BASE sits on the card's top edge", Math.abs(r.bottom - c.top - 3) <= 2, Math.round(r.bottom - c.top) + "px past the card's top",
+        "~3px, so the base is seated on the edge and its fill covers the 3px border");
+    chk("tail clears the corner radius", r.right <= c.right - rad + 0.5, Math.round(c.right - r.right) + "px in, radius " + rad,
+        ">= the " + rad + "px radius — inside it the top edge has curved away and the tail overhangs nothing");
+    chk("tail points at the cog", Math.abs((r.left + r.width / 2) - (c.right - rad - 8)) < 26, Math.round(r.left + r.width / 2 - c.left) + "px from the card's left",
+        "near the card's top-right, under the cog it dropped from");
+    return (pass === out.length ? "ALL PASS (" + pass + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
+  };
+  window.DEV.waveProbe = function (patKey, steps) { // HEADLESS: drive the SHIPPING wave renderer with a synthetic clock and measure what it actually draws.
+    // rAF freezes while the preview pane is hidden, so `ext` never grows there and the on-screen canvas is unmeasurable.
+    // This mounts the real registry entry on a detached, explicitly-sized host, runs the real paint with `now` pushed
+    // past the grow-in, and reads the pixels back. A FLAT result here is a real bug; a flat on-screen canvas is not.
+    try {
+      var pat = patKey || "box", N = steps || 1;
+      var host = document.createElement("div");
+      host.style.cssText = "position:fixed;left:-9999px;top:0;width:340px;height:280px;";
+      document.body.appendChild(host);
+      host.innerHTML = BREATH_VIZ.wave.html;
+      var n = BREATH_VIZ.wave.mount(host.firstChild || host, 16000);
+      var ck = makeBreathClock(breathPhaseList(breathStages(pat, 2)));
+      var t0 = Date.now(), out = [];
+      for (var k = 0; k < N; k++) {
+        var el = 4000 + k * 1000;
+        var cur = ck.at(el);
+        BREATH_VIZ.wave.paint(n, { elapsed: el, level: cur ? cur.level : 0,
+          lvl: function (ms) { var q = ck.at(ms); return q ? q.level : 0; },
+          now: t0 + 5000 + k * 1000, run: true });                       // +5s: past WAVE_GROW_MS, so ext is 1
+        var cv = n.cv, c2 = cv.getContext("2d"), d = c2.getImageData(0, 0, cv.width, cv.height).data, ys = [];
+        for (var x = 0; x < cv.width; x += Math.max(1, Math.floor(cv.width / 40))) {
+          for (var y = 0; y < cv.height; y++) { if (d[(y * cv.width + x) * 4 + 3] > 40) { ys.push(y); break; } }
+        }
+        var span = ys.length ? Math.max.apply(null, ys) - Math.min.apply(null, ys) : 0;
+        out.push({ elapsed: el, ext: n.geom && n.geom.ext, amp: n.geom && n.geom.amp, cols: ys.length,
+                   ySpan: span, verdict: span > 20 ? "WAVE" : "FLAT" });
+      }
+      host.remove();
+      return out;
+    } catch (e) { return "ERR " + e.message; }
+  };
   window.DEV.viz = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player"; var ov = document.querySelector(".gp-ov"); return { pick: p.breath.viz.pick, mounted: p.breath.viz.mounted, nodeInDom: p.breath.viz.node, orbParked: p.breath.viz.orbParked, pathLen: p.breath.viz.path, samples: p.breath.viz.pts, waveEls: ov ? ov.querySelectorAll(".bw-wave").length : 0, orbs: ov ? ov.querySelectorAll(".bw-orb").length : 0, breathRuns: p.breath.runs, elapsed: p.elapsed }; }; // does the PICKED breath visual actually exist and move in the composed player (the stack's player), not just in the standalone tool
+  window.DEV.waveGeom = function (fillPct, cycleMs) { // THE WAVE'S ARITHMETIC, headless. rAF is frozen whenever the preview pane is hidden, so the live wave can never be watched growing there — this runs the SHIPPING BREATH_VIZ.wave mount/paint over n synthetic samples on a detached node and reports where it actually draws. viewBox is 0 0 300 180, so 150 is the centre.
+    var cyc = cycleMs || 16000, host = document.createElement("div"); host.innerHTML = BREATH_VIZ.wave.html;
+    var n = BREATH_VIZ.wave.mount(host, cyc), want = Math.max(1, Math.round(n.cap * (fillPct == null ? 1 : fillPct)));
+    for (var i = 0; i < want; i++) BREATH_VIZ.wave.paint(n, { elapsed: i * (n.push + 1), level: 0.5 + 0.4 * Math.sin(i / 6) });
+    var d = n.path.getAttribute("d") || "", xs = (d.match(/[ML]([0-9.]+)/g) || []).map(function (s) { return +s.slice(1); });
+    var lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs), liveX = xs.length ? xs[xs.length - 1] : null;
+    return { cap: n.cap, pushMs: n.push, samples: n.pts.length, drawnFrom: +lo.toFixed(1), drawnTo: +hi.toFixed(1), liveX: liveX, dotCx: +n.dot.getAttribute("cx"), viewBoxCentre: 150, liveAtCentre: (liveX === 150 && +n.dot.getAttribute("cx") === 150) };
+  };
+  window.DEV.psPanel = function (openIt) { if (openIt !== false && !document.querySelector(".ps-ov")) openVolumePanel(); var c = document.querySelector(".ps-card"); if (!c) return "no settings card"; c.style.animation = "none"; /* the drop-in animation is CSS, and CSS animations FREEZE while the preview pane is hidden — measuring through it reads the psCog 0% keyframe (scale .72) as the card geometry. Clearing it measures the settled card, which is what the frame specifies. */ try { window.dispatchEvent(new Event("resize")); } catch (e) {} /* clearing the animation MOVED the card, and the tail is positioned by a measurer that already ran. Without this the audit reports a failure IT caused: the tail measured against the frozen 0% keyframe (the preview pane freezes CSS animations) and was never re-measured against the settled card. The measurer listens on resize, so this is its own re-run door, not a second implementation. */ var p = window.__psProbe ? window.__psProbe() : {}; var r = c.getBoundingClientRect(), cs = getComputedStyle(c), n = c.querySelector(".ps-notch"), nr = n ? n.getBoundingClientRect() : null, ns = n ? getComputedStyle(n) : null, gd = c.querySelector(".ps-bedgrid"); var big = c.querySelector(".ps-chip:not(.sm)"), sm = c.querySelector(".ps-chip.sm"), tk = c.querySelector(".ps-track"), kn = c.querySelector(".ps-knob"); function box(e) { if (!e) return null; var b = e.getBoundingClientRect(), s = getComputedStyle(e); return { w: +b.width.toFixed(1), h: +b.height.toFixed(1), pad: s.padding, radius: s.borderRadius, border: s.borderTopWidth, shadow: s.boxShadow, font: s.fontSize + "/" + s.fontWeight }; }
+    return { scope: p, card: { top: +r.top.toFixed(1), right: +(window.innerWidth - r.right).toFixed(1), w: +r.width.toFixed(1), radius: cs.borderRadius, border: cs.borderTopWidth, pad: cs.padding, gap: cs.gap, bg: cs.backgroundColor, shadow: cs.boxShadow, origin: cs.transformOrigin, z: cs.zIndex }, notch: nr ? { right: +(r.right - nr.right).toFixed(1), topFromCard: +(nr.top - r.top).toFixed(1), w: +nr.width.toFixed(1), h: +nr.height.toFixed(1), radius: ns.borderRadius, border: ns.borderLeftWidth } : null, chipBig: box(big), chipSmall: box(sm), track: tk ? { h: +tk.getBoundingClientRect().height.toFixed(1), radius: getComputedStyle(tk).borderRadius } : null, knob: box(kn), bedGrid: gd ? { rows: getComputedStyle(gd).gridTemplateRows, gap: getComputedStyle(gd).gap, overflowY: getComputedStyle(gd).overflowY, touch: getComputedStyle(gd).touchAction, mask: (getComputedStyle(gd).webkitMaskImage || getComputedStyle(gd).maskImage || "").slice(0, 60), chips: gd.children.length } : null, beds: bedKeys(), sliders: Array.prototype.map.call(c.querySelectorAll(".ps-fill"), function (f) { return f.style.width; }) }; }; // the card measured against the frame's quoted numbers, without a finger
+  window.DEV.beds = function () { return { selected: bedKeys(), cats: bedKeys().map(function (k) { return BED_CAT[k]; }), stored: S.audio && S.audio.bed, filesLive: BGBED.running(), bgmRunning: BGM.running(), padsLive: _padLive, appMusic: !!(S.audio && S.audio.appMusic), order: BED_ORDER }; }; // filesLive = keys with a LIVE BufferSource; bgmRunning = the Mysterious sequencer. Two beds AUDIBLE is these two numbers, not two lit chips.
+  window.DEV.waveSmooth = function (cycleMs, jankMs, jankEvery) { // THE JAGGED-LINE PROBE (David 2026-08-20: "sometimes it randomly becomes jagged, which doesn't make sense"). Drives the SHIPPING wave renderer over a real 60fps frame train with periodic jank gaps (a dropped frame, a GC pause, an audio-decode hitch) and asks ONE question of the drawn path: is each segment as wide as the time it covers? distortion = the true horizontal width of a segment / the width it was actually drawn at. 1.00 = the line is the breath. >1 = that segment was squeezed, and a squeezed segment IS the kink — the same rise over less run.
+    var c = cycleMs || 10000, jank = jankMs == null ? 350 : jankMs, every = jankEvery || 37;
+    var host = document.createElement("div"); host.innerHTML = BREATH_VIZ.wave.html;
+    var n = BREATH_VIZ.wave.mount(host, c), inMs = c * 0.4, t = 0, f = 0, times = [], seen = n.last;
+    function lvl(e) { var p = e % c, prog = p < inMs ? p / inMs : (p - inMs) / (c - inMs), ez = 0.5 - 0.5 * Math.cos(Math.PI * prog); return p < inMs ? ez : 1 - ez; } // easeInOutSine, the clock's own curve
+    while (t < c * 2.2) { BREATH_VIZ.wave.paint(n, { elapsed: t, level: lvl(t) }); if (n.last !== seen) { seen = n.last; times.push(t); } f++; t += (f % every === 0) ? jank : 16.7; }
+    var d = n.path.getAttribute("d") || "", pts = (d.match(/[ML][-0-9.]+ [-0-9.]+/g) || []).map(function (s) { var a = s.slice(1).split(" "); return { x: +a[0], y: +a[1] }; });
+    var buf = n.pts.length, ts = times.slice(Math.max(0, times.length - buf));
+    if (pts.length === ts.length + 1) ts.push(t - ((f % every === 0) ? jank : 16.7)); // the live point, drawn at the frame's own elapsed
+    var pxms = 300 / c, worst = 1, worstAt = null, maxDrawn = 0, maxTrue = 0, i, dxd, dxt, dy;
+    for (i = 1; i < Math.min(pts.length, ts.length); i++) {
+      dxd = pts[i].x - pts[i - 1].x; dxt = (ts[i] - ts[i - 1]) * pxms; dy = Math.abs(pts[i].y - pts[i - 1].y);
+      if (dxd > 0.001) { if (dxt / dxd > worst) { worst = dxt / dxd; worstAt = +ts[i].toFixed(0); } maxDrawn = Math.max(maxDrawn, dy / dxd); }
+      if (dxt > 0.001) maxTrue = Math.max(maxTrue, dy / dxt);
+    }
+    return { frames: f, jankGaps: Math.floor(f / every), jankMs: jank, drawnPts: pts.length, maxDistortion: +worst.toFixed(3), worstAtMs: worstAt, maxDrawnSlope: +maxDrawn.toFixed(3), maxTrueSlope: +maxTrue.toFixed(3), slopeBlowup: +(maxDrawn / (maxTrue || 1)).toFixed(3) };
+  };
   window.DEV.breathPrefs = function () { return { stored: { breathCue: S.breathCue, breathTone: S.breathTone, breathViz: S.breathViz, legacyBreathSound: S.breathSound }, resolved: { cue: breathCueKey(), tone: breathToneKey(), viz: breathVizKey() }, cueSets: BREATH_CUE_KEYS, tones: BREATH_TONE_KEYS, visuals: BREATH_VIZ_KEYS }; };
   window.DEV.grove = function (act, pid, n) { // DEV: drive THE GROVE without waiting 66 days — plant / set days / witness a stage-up / open any of the three sheet modes.
     pid = pid || "meditation";
@@ -19027,6 +19586,9 @@
     var b = el("tfHomeBars");
     return { blocks: HC_IDS.map(function (id) { return id + ":" + nm(el(id)); }), cols: b ? [].slice.call(b.children).map(function (c) { return nm(c); }) : [], rows: tcEls().slice(0, 4).map(nm) };
   };
+  window.DEV.you = function () { youMenu(); return "you menu"; };
+  window.DEV.vital = function () { characterCard(); return "the vital (PARKED 2026-08-20 — unhooked from the gear, not deleted; David is redesigning it)"; };
+  window.DEV.oldSettings = function () { settingsSheet(); return "the pre-2026-08-20 settings sheet (PARKED)"; };
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.
     var W = innerWidth, H = innerHeight, out = [], ok = true;
     function chk(name, pass, got, want) { ok = ok && !!pass; out.push((pass ? "PASS" : "FAIL") + " · " + name + " · got " + got + " · want " + want); }
@@ -19037,12 +19599,42 @@
     var tfaces = [].slice.call(document.querySelectorAll("#tbxGridTop .tbx-face")); // the practice grid's tile faces, in FIXED design order (the arc, never tbxOrder'd). DECK-ANCHORED 2026-08-14: on the 2c face the four deck stacks are FILTERED OUT of this grid (they ride up as row one of the tools screen), so the sequence is Body · Heart · Vision · Build there and the full seven + Build everywhere else — which is why the hue gates below read each cell's own id instead of naming a fixed position
     function _rgbOf(hex) { hex = String(hex).replace("#", ""); return "rgb(" + parseInt(hex.slice(0, 2), 16) + ", " + parseInt(hex.slice(2, 4), 16) + ", " + parseInt(hex.slice(4, 6), 16) + ")"; } // expected face colours are READ FROM THE REGISTRY (TBX_HEX, the same table that paints them) — never a hex typed into the audit, which is how a gate drifts away from the app it guards
     if (!ring || !bars) return "designAudit: not on the idle home (open home first)";
+    // REFUSE TO REPORT ON A BOARD THAT IS NOT LAID OUT (David's on-device run 2026-08-20: 13 FAIL, and nearly all of
+    // them read "0px", "renders 0px", "unmeasurable" or a wild negative offset — he had run it from inside the player,
+    // where the home column exists in the DOM but has no box. Every position gate then measured against zero and
+    // invented a failure. An audit that cries wolf is worse than none: he has already been told 74/74 while things
+    // were wrong, and now 13 FAIL while they were right. Bail with the reason instead.
+    var _hz0 = el("tfWorldHome"), _hzr = _hz0 ? _hz0.getBoundingClientRect() : null;
+    if (ONEPAGE && (!_hzr || _hzr.height < 100 || !ring.getBoundingClientRect().width))
+      return "designAudit: the home board is in the DOM but has NO BOX (height " + (_hzr ? Math.round(_hzr.height) : "none") +
+             "). You are almost certainly inside a tool, the player or a sheet. Close back to home and run it again — " +
+             "every position gate would measure against zero and report a failure that is not real.";
+    if (tfh2c() && !el("trackerFull").classList.contains("tf-2c"))
+      return "designAudit: the 2c home is not the live face — its px rules are not applying, so the gates would read defaults.";
     // THE ARTBOARD SCALE NORMALIZER. Every locked number in this audit is a LAYOUT px off David's 402x874 frame, but on a wider phone the
     // face is transform-scaled to fill the screen, so getBoundingClientRect answers in VISUAL px. _nr() divides a rect back into frame px,
     // which is what makes the SAME gates pass at 402x874 (scale 1) and at 440x956 (scale 1.0945) — the alternative was 8 gates that only
     // held on one phone. offsetWidth/offsetTop/clientHeight reads need no help: the transform never touches layout.
     var _AS = tfScale();
     function _nr(n) { var b = n.getBoundingClientRect(); return { top: b.top / _AS, bottom: b.bottom / _AS, left: b.left / _AS, right: b.right / _AS, width: b.width / _AS, height: b.height / _AS }; }
+    // THE VIEWPORT-UNIT SENTINEL (David 2026-08-20 "the proportions on my phone are a little off"). Every number in this audit is an
+    // ARTBOARD px and the board is ONE uniform transform-scale, so a gate that passes at 402x874 passes at 440x956 BY CONSTRUCTION —
+    // but only while nothing in the column is viewport-relative. `vh` ignores the transform and resolves against the REAL screen, so a
+    // single vh margin equals the designed pixel at the 874 artboard (where every gate runs, so every gate passes) and inflates ~9% on a
+    // 440x956 phone while every fixed-px element beside it stays put. A gate that can only ever pass is not a gate. _winDecl reads the
+    // CASCADE-WINNING declaration for a property (an OVERRIDDEN vh rule is correctly ignored — the .tf-2c face overrides all three of the
+    // historical ones), which makes this catchable at ANY viewport, with no resize.
+    function _specOf(sel) { var a = (sel.match(/#[\w-]+/g) || []).length, b = (sel.match(/\.[\w-]+|\[[^\]]*\]|:(?!:)[\w-]+/g) || []).length, c = (sel.replace(/[#.][\w-]+|\[[^\]]*\]|::?[\w-]+(\([^)]*\))?/g, " ").match(/[a-zA-Z][\w-]*/g) || []).length; return a * 10000 + b * 100 + c; }
+    function _winDecl(node, prop) { var best = null, bestSp = -1;
+      function walk(rules) { if (!rules) return; for (var j = 0; j < rules.length; j++) { var r = rules[j]; if (!r) continue;
+          if (r.cssRules && !r.selectorText) { walk(r.cssRules); continue; } // @media / @supports — recurse, the nested rules are live too
+          if (!r.selectorText || !r.style) continue; var v = r.style.getPropertyValue(prop); if (!v) continue;
+          var sels = r.selectorText.split(","); for (var q = 0; q < sels.length; q++) { var sel = sels[q].trim(), hit = false; try { hit = node.matches(sel); } catch (e) { hit = false; }
+            if (!hit) continue; var sp = _specOf(sel) + (r.style.getPropertyPriority(prop) ? 1e6 : 0); if (sp >= bestSp) { bestSp = sp; best = { sel: sel, val: v.trim() }; } } } }
+      for (var i = 0; i < document.styleSheets.length; i++) { var rs = null; try { rs = document.styleSheets[i].cssRules; } catch (e) { rs = null; } walk(rs); }
+      var inl = node.style ? node.style.getPropertyValue(prop) : ""; if (inl) best = { sel: "inline", val: inl.trim() };
+      return best; }
+    var _VPUNIT = /[-+]?[\d.]+\s*(vh|vw|dvh|dvw|svh|svw|lvh|lvw)\b/i;
     var rr = _nr(ring), br = _nr(bars);
     var _dkE = el("tfDateKick"), _dkOn = !!(_dkE && _dkE.offsetParent !== null && _dkE.textContent); // FP3 §1 (2026-07-28): the date kicker now legitimately LIVES in this band — the v2 idle PNG reads strip → date line → circle. The 7-12% window predates it, so it only applies when the kicker is absent; with the kicker rendered the band is 7-16%. Kept as ONE gate (not two segments) so it stays cheap and cannot drift out of sync with the kicker being show/hidden.
     // THE 402 BOARD PIN (David's device frames 2026-08-14). On the 2c face the board is now the design's ABSOLUTE pixels inside a 402px
@@ -19282,6 +19874,19 @@
     var _fi = _gf && _gf.querySelector("i"), _fcol = _fi ? getComputedStyle(_fi).color : "missing";
     chk("flower glyph + purple", !!_fi && _fi.classList.contains("ti-flower") && _fcol === "rgb(169, 93, 255)", (_fi ? _fi.className : "missing") + " · " + _fcol, "ti ti-flower · rgb(169, 93, 255)");
     chk("flower 64px (the coins read as its children)", !!_gf && getComputedStyle(_gf).width === "64px", _gf ? getComputedStyle(_gf).width : "missing", "64px");
+    // ===== GEOMETRY GATES (2026-08-20). The four spacings that set the home column's rhythm, as ABSOLUTE artboard px, plus the sentinel
+    // that proves they stay that way. Together these are what make one run at 402x874 a statement about 440x956 too.
+    if (_2c) {
+      var _ctrls = document.querySelector("#trackerFull .tf-ctrls"), _grnd = document.querySelector("#trackerFull .tfw-ground");
+      var _lock = [[bars, "margin-top", 40], [bars, "margin-bottom", 0], [ring, "margin-top", 72], [_ctrls, "margin-top", 18], [_grnd, "margin-top", -52]];
+      var _lockBad = [];
+      _lock.forEach(function (t) { if (!t[0]) { _lockBad.push(t[1] + " (node missing)"); return; } var got = parseFloat(getComputedStyle(t[0])[t[1].replace(/-(\w)/g, function (m, c) { return c.toUpperCase(); })]) || 0; if (Math.abs(got - t[2]) > 0.6) _lockBad.push((t[0].id || t[0].className) + " " + t[1] + " " + Math.round(got * 10) / 10 + " (want " + t[2] + ")"); });
+      chk("home column rhythm is absolute artboard px", !_lockBad.length, _lockBad.length ? _lockBad.join(" · ") : "strip 40/0 · stone 72 · tools 18 · ground -52", "strip margin 40 above / 0 below · stone margin-top 72 · .tf-ctrls margin-top 18 · .tfw-ground margin-top -52 — the 2026-08-14 RHYTHM numbers, identical on every viewport");
+      var _vpBad = [];
+      [[bars, "margin-top"], [bars, "margin-bottom"], [ring, "margin-top"], [ring, "width"], [ring, "height"], [_ctrls, "margin-top"], [_grnd, "margin-top"], [document.querySelector("#trackerFull .tf-verdict"), "max-width"], [document.querySelector("#trackerFull .tf-nextup"), "max-width"]].forEach(function (t) {
+        if (!t[0]) return; var d = _winDecl(t[0], t[1]); if (d && _VPUNIT.test(d.val)) _vpBad.push(t[1] + ": " + d.val + "  {" + d.sel + "}"); });
+      chk("NO viewport units in the home column (the 440x956 drift class)", !_vpBad.length, _vpBad.length ? _vpBad.join(" · ") : "every winning declaration is absolute px", "no vh/vw/dvh in the cascade-winning strip/stone/tools/ground declarations — a vh here reads the phone, not the artboard, and passes at 402x874 by construction");
+    }
     var _sheets = ["groveSheet", "virtueSheet", "goalSheet", "storeSheet"], _alpha = [], _snap = [];
     _sheets.forEach(function (id) { var s = el(id); if (!s) { _alpha.push(id + ":missing"); _snap.push(id + ":missing"); return; }
       var bg = getComputedStyle(s).backgroundColor; if (bg.indexOf("rgba") >= 0) _alpha.push(id + ":" + bg);
@@ -19293,7 +19898,12 @@
     });
     chk("garden sheets OPAQUE (no alpha)", !_alpha.length, _alpha.length ? _alpha.join(" ") : "all rgb()", "rgb(22, 7, 20) on all four, never rgba");
     chk("garden sheets rest at the PARTIAL snap", !_snap.length, _snap.length ? _snap.join(" ") : "all " + Math.round(window.innerHeight * 0.38) + "px", "38% of viewport (" + Math.round(window.innerHeight * 0.38) + "px), gv-exp off");
-    return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + "\n" + out.join("\n");
+    // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The
+    // board is one uniform scale of a 402x874 artboard, so with the sentinel above passing, every artboard px in this report renders at
+    // x(scale) on the other phone and the PROPORTIONS are identical — that projection is what the two runs verify empirically.
+    var _other = (Math.abs(W - 440) < 1 && Math.abs(H - 956) < 1) ? { w: 402, h: 874 } : { w: 440, h: 956 };
+    var _geo = "GEOMETRY " + W + "x" + H + " · artboard 402x874 · scale " + _AS.toFixed(4) + " · board " + Math.round(402 * _AS) + "px · the other phone (" + _other.w + "x" + _other.h + ") renders these same artboard px at scale " + (Math.min(1.15, Math.max(1, _other.w / 402))).toFixed(4);
+    return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + " · " + _geo + "\n" + out.join("\n");
   };
   window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
   window.DEV.isleSize = function (r2) { var S = new Set(); var R = r2 || 13; for (var i = -8; i <= 8; i++) for (var j = -8; j <= 8; j++) if (i * i + j * j <= R) S.add(tkey(i, j)); ISLE = { tiles: S, house: [0, -1], objects: [], _stamp: (ISLE && ISLE._stamp || 0) + 1 }; window._isleBakeCache = null; window._sanctSceneCache = null; return "island set to " + S.size + " tiles (r2=" + R + ")"; }; // DEV: set island to a radius^2 for proportion checks (small/med/large)
@@ -19779,7 +20389,7 @@
   var TUNER_FIELDS = [
     { k: "ringVw", lbl: "Circle size", min: 45, max: 90, step: 1, def: 52, unit: "vw", vars: function (v) { return { "--tun-ring-vw": v + "vw" }; } }, // THE HERO CIRCLE size — tuner starts at the current default (52vw; David 2026-07-23 "circle way too giant even at 64"). Drag on real pixels, then send me the value to lock.
     { k: "gridW", lbl: "Tools size", min: 38, max: 90, step: 1, def: 56, unit: "vw", vars: function (v) { return { "--tun-grid-w": v + "vw" }; } }, // the tool row width — narrower = smaller tiles (David "buttons below smaller")
-    { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 16, step: 1, def: 5, unit: "vh", vars: function (v) { return { "--tun-tools-gap": v + "vh" }; } }, // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
+    { k: "toolsGap", lbl: "Circle→tools gap", min: 0, max: 140, step: 2, def: 44, unit: "px", vars: function (v) { return { "--tun-tools-gap": v + "px" }; } }, // ARTBOARD px, not vh (2026-08-20). The def MUST track the CSS fallback (the doorCY law two rows down) — the fallback is now 43.7px, so a vh here would have let tunerApply silently re-plant the viewport-relative value on every dev boot // how far the tools sit below the circle (the stack auto-centers, so this also nudges the circle's vertical feel)
     { k: "doorW", lbl: "Door width", min: 8, max: 40, step: 1, def: 18, unit: "px", vars: function (v) { return { "--tun-door-w": v + "px" }; } },
     { k: "doorH", lbl: "Door height", min: 56, max: 160, step: 2, def: 80, unit: "px", vars: function (v) { return { "--tun-door-h": v + "px" }; } },
     { k: "doorCY", lbl: "Door center Y", min: 10, max: 40, step: 1, def: 23, unit: "dvh", vars: function (v) { return { "--tun-door-cy": v + "dvh" }; } }, // DOORS-TRACK-THE-STRIP (David 2026-07-27): CSS default moved 32→23dvh when the face rose — the def must track the CSS fallback or tunerApply un-fixes it for dev users (v1225's lesson). Was 23→32 on 2026-07-23 (DOORS-DOWN) while the strip still sat low.
