@@ -1667,7 +1667,23 @@
     var L = curLang(); if (L === "en" || !I18N[L] || !root || !root.nodeType) return;
     var dict = I18N[L], pats = I18N_PATTERNS[L] || [];
     function tn(n) { var raw = n.nodeValue; if (!raw) return; var k = raw.trim(); if (!k) return; var v = dict[k]; if (v != null && v !== k) { n.nodeValue = raw.replace(k, v); return; }
-      var seps = [", ", ". "]; for (var si = 0; si < seps.length; si++) { var ix = k.indexOf(seps[si]); if (ix > 0) { var a = k.slice(0, ix), b = k.slice(ix + seps[si].length); if (dict[a] && dict[b]) { n.nodeValue = raw.replace(k, dict[a] + seps[si] + dict[b]); return; } } } // BY-HALVES resolution, mirroring TTS vline() (B3-fix, David on device v800: composed lines like "Settle in…, let your eyes soften" spoke Russian but DISPLAYED English — the dict holds the halves, not the composite)
+      // PART-WISE resolution (David on device 2026-08-22: the RU home read "далее: Run · 21:30" — a Russian sentence with
+      // an English activity name sitting inside it). A composed line is ONE text node, so the whole-string lookup misses.
+      // The old rule here only split "a, b" / "a. b" and only fired when BOTH halves were dict keys, which a half-built
+      // line can never be: "далее: " was translated when the string was assembled, the title never was. This splits on
+      // every separator the app actually composes with and translates each part the dict knows, leaving the rest alone —
+      // strictly more Russian than before, never less, and it then falls THROUGH to the pattern pass instead of
+      // swallowing it (the old rule returned early, which is why a composite never reached I18N_PATTERNS).
+      var parts = k.split(/(, |\. |: | \u00b7 )/);
+      if (parts.length > 1) {
+        var phit = false, pout = parts.map(function (pt, pi2) {
+          if (pi2 % 2) return pt;                                   // odd indices are the captured separators
+          var t2 = pt.trim(); if (!t2) return pt;
+          var v2 = dict[t2]; if (v2 != null && v2 !== t2) { phit = true; return pt.replace(t2, v2); }
+          return pt;
+        });
+        if (phit) { raw = raw.replace(k, pout.join("")); n.nodeValue = raw; }
+      }
       var nv = raw, hit = false; for (var pi = 0; pi < pats.length; pi++) { pats[pi][0].lastIndex = 0; if (pats[pi][0].test(nv)) { pats[pi][0].lastIndex = 0; nv = nv.replace(pats[pi][0], pats[pi][1]); hit = true; } } if (hit) n.nodeValue = nv; } // lastIndex reset: a /g regex's test() advances its cursor — without the reset every OTHER node skipped that pattern (latent since the first /g pattern)
     try {
       if (root.nodeType === 3) { tn(root); return; }
@@ -5178,7 +5194,7 @@
     var p = el("tfEarlyPill");
     if (!nb) { if (p) p.style.display = "none"; return; }
     if (!p) { p = document.createElement("button"); p.id = "tfEarlyPill"; p.className = "tf-earlypill"; p.innerHTML = '<i class="ti ti-player-play-filled"></i><span></span>'; var vd = el("tfVerdict"); if (vd && vd.nextSibling) stage.insertBefore(p, vd.nextSibling); else stage.appendChild(p); }
-    p.style.display = ""; p.querySelector("span").textContent = tr("or start") + " " + nb.title + " " + tr("early");
+    p.style.display = ""; p.querySelector("span").textContent = tr("or start") + " " + tr(nb.title) + " " + tr("early"); // tr() ON THE TITLE (2026-08-22): a block name spliced between two translated words is a single text node with no separator, so the part-wise resolver in translateTree cannot reach it. Every site that embeds a title mid-sentence has to ask for it.
     p.onclick = (function (b) { return function (ev) { if (ev) ev.stopPropagation(); try { startPlanned(b); renderTrackerFull(); } catch (e) {} }; })(nb); // the EXISTING start path, untouched
   }
   // FP3 §3 — THE CATCH-UP RE-HOUSING. The welcome-back trio (Track now · Did it already · Not mine) used to REPLACE the home idle face with a whole
@@ -6495,7 +6511,7 @@
     var out = [];
     if (h >= 1 && h < 5) out.push(night); else if (h >= 20) out.push(shut); else out.push(morning); // slot 1 = the moment (1-5am / evening / else morning-default)
     var nb = null; try { nb = nextUpBlock(nowMin); } catch (e) {} // slot 2 = a planned block within 90 min → Before Deep Work variant with the block name + time in the kicker
-    if (nb && (hm(nb.time) - nowMin) >= 0 && (hm(nb.time) - nowMin) <= 90) { var d2 = { stackId: deep.stackId, name: deep.name, kcol: deep.kcol, playBg: deep.playBg, playInk: deep.playInk, coins: deep.coins, kicker: tr("NEXT BLOCK") + " · " + String(nb.title || "").toUpperCase() + " " + nb.time }; out.push(d2); }
+    if (nb && (hm(nb.time) - nowMin) >= 0 && (hm(nb.time) - nowMin) <= 90) { var d2 = { stackId: deep.stackId, name: deep.name, kcol: deep.kcol, playBg: deep.playBg, playInk: deep.playInk, coins: deep.coins, kicker: tr("NEXT BLOCK") + " · " + tr(String(nb.title || "")).toUpperCase() + " " + nb.time }; out.push(d2); }
     else out.push(out[0] === morning ? deep : morning);
     if (out[1] === out[0]) out[1] = (out[0] === morning ? deep : morning);
     return out;
@@ -6932,7 +6948,7 @@
   var _pk = null;   // the live picker (null = closed). Nothing here is state until Start.
   var _pkUse = null; // pkActUse memo for one picker session (cleared in pkOpen) — the 30-day log walk is identical for every folder in a paint
   function pkDrain(n) { while (n && n.firstChild) n.removeChild(n.firstChild); }
-  function pkShort(m) { m = Math.max(1, Math.round(m)); return m < 60 ? (m + "m") : (Math.floor(m / 60) + "h" + (m % 60 ? String(m % 60) : "")); } // UNPADDED per the artifact's plate bar ("3 things · 3h5"); the zero-pad was ours
+  function pkShort(m) { m = Math.max(1, Math.round(m)); var _h = "h", _m = "m"; try { if (curLang() === "ru") { _h = "\u0447"; _m = "\u043c"; } } catch (e) {} return m < 60 ? (m + _m) : (Math.floor(m / 60) + _h + (m % 60 ? String(m % 60) : "")); } // UNITS FOLLOW THE LANGUAGE (2026-08-22), the same way durLoc() already does it for the cockpit countdown — "41m" was Latin sitting inside a Russian sentence on the home face. // UNPADDED per the artifact's plate bar ("3 things · 3h5"); the zero-pad was ours
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
   var PK_INK = "#2a1730"; // ink-on-a-fill: what a glyph or a label wears when it sits ON a saturated hue. #160510 is the BORDER/lip ink and never a glyph on a hue (DS source 2026-07-30).
   var PK_EDGE = "#34172d"; // THE RESTING FOLDER EDGE (David 2026-07-31, on his frame): ONE neutral plum for all eight cards, a hair lighter than the #241022 shell so the card has a rim without a colour. The per-domain color-mix(HUE 30%, #160510) edge that lived here made Play gold-rimmed and Nourish green-rimmed — the frame shows eight identical edges. Hue on a folder edge is now ONLY the pink pick ring.
@@ -6976,7 +6992,7 @@
       if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
     });
     _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], stepFor: null, aOpen: null, aPri: false, aSteps: false, // focus/priOpen/stepsOpen/wallMin died with the picked-activities tray (David 2026-08-16, his THIRD cut of it) — a pick's length, priority and steps are set in the Arranger, which is the only surface that shows them now.
-      pick: cfg.pick || null, title: cfg.title || null, doms: (cfg.doms && cfg.doms.length) ? cfg.doms : null, head: cfg.head || null, foot: cfg.foot || null, hot: cfg.hot || null };
+      pick: cfg.pick || null, title: cfg.title || null, doms: (cfg.doms && cfg.doms.length) ? cfg.doms : null, head: cfg.head || null, foot: cfg.foot || null, hot: cfg.hot || null, all: !!cfg.all };
     if (cfg.seed && cfg.seed.length) cfg.seed.forEach(function (a) { _pk.queue.push(pkActPick(a)); }); // BEAT mode's Back: the picks already made come back lit
     var ov = add(document.body, "div", "pk-ov"); _pk.ov = ov;
     pkPaintShell();
@@ -7025,8 +7041,9 @@
       var nrow = add(tile, "span", "pk-fnrow"); // the name row lives INSIDE the tile bottom (artifact): domain glyph in the hue · name · count
       var ni = add(nrow, "i", "ti " + (D.ti || "ti-circle")); ni.style.color = hue;
       add(nrow, "span", "pk-fnm", tr(D.l));
-      var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + acts.length) : String(acts.length)); ct.style.color = nq ? "#ff4fa0" : mixHex(hue, "#160510", 0.45); // COUNTS ARE IN THE ARTIFACT ("1 / 9" on Move): plain dimmed total until this folder has given something, then picked-of-total in PINK — the count belongs to the selection, so it speaks the selection's colour, not the domain's.
-      tile.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
+      var _tot = _pk.all ? sh.all.length : acts.length; // in `all` mode the card opens the WHOLE domain, so it must count the whole domain
+      var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + _tot) : String(_tot)); ct.style.color = nq ? "#ff4fa0" : mixHex(hue, "#160510", 0.45); // COUNTS ARE IN THE ARTIFACT ("1 / 9" on Move): plain dimmed total until this folder has given something, then picked-of-total in PINK — the count belongs to the selection, so it speaks the selection's colour, not the domain's.
+      tile.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: !!_pk.all, naming: false, draft: "" }; pkBuildSheet(); }; // `all` lands on the FULL grouped view: picking your habits is a library job, not a shortlist job, so the top-eleven teaser and its More round-trip are skipped
     });
     if (!_pk.pick && !_pk.foot) pkPaintSaved(host); // …and the saved shelf closes the scroll, right under the eight cards.
     // Neither of the other two modes shows it, for different reasons: a stack is not an answer to "what is this block?",
@@ -7066,7 +7083,9 @@
       else if (n === 1) flab.textContent = q[0].title; // the wall's own rule: one pick NAMES itself, several are counted. "1 things" is not a sentence. (No duration here — a beat gathers what, the Arranger sets how long.)
       else flab.textContent = n + " " + tr("things");
       if (F.onBack) { var fb = add(fbar, "button", "pk-go"); fb.style.cssText = "background:#2a0d1c;color:#e7c7d8;box-shadow:0 5px 0 #160510;"; add(fb, "i", "ti ti-chevron-left"); fb.onclick = function () { var picks = pkQueueActs(); pkClose(); F.onBack(picks); }; }
-      var fg = add(fbar, "button", "pk-go"); add(fg, "i", "ti " + (F.icon || "ti-arrow-right")); add(fg, "span", null, tr(F.label || "Next"));
+      var _fl = (typeof F.label === "function") ? F.label(n) : (F.label || "Next"); // a label that counts ("Add 3 habits") has to be recomputed on every repaint, not frozen at open
+      var fg = add(fbar, "button", "pk-go"); add(fg, "i", "ti " + (F.icon || "ti-arrow-right")); add(fg, "span", null, tr(_fl));
+      if (F.needsPick && !n) { fg.style.background = "#2a0d1c"; fg.style.color = "#9a6a86"; fg.style.boxShadow = "0 5px 0 #160510"; fg.style.opacity = ".7"; fg.onclick = function () {}; return; } // ActionBar law, same as the wall's own disabled primary
       fg.onclick = function () { var picks = pkQueueActs(); pkClose(); F.onGo(picks); };
       return;
     }
@@ -7222,6 +7241,15 @@
       return;
     }
     var groups = {}, order = []; acts.forEach(function (a) { var gn = a.group || tr("More"); if (!groups[gn]) { groups[gn] = []; order.push(gn); } groups[gn].push(a); });
+    // FULL ROWS, NOT A LADDER OF ONES (2026-08-22). A folder is a DOMAIN and the sub-groups belong to the library's own
+    // categories, so opening Move gave FITNESS (11) and then BODY, SLEEP and SPACE holding one activity each — three
+    // headers and three near-empty side-scrollers eating the screen. Anything under three joins one trailing MORE row,
+    // which is what "more activities in each category" actually looks like.
+    var GMIN = 3, rest = [], keep = [];
+    order.forEach(function (gn) { if (groups[gn].length >= GMIN) keep.push(gn); else rest = rest.concat(groups[gn]); });
+    if (!keep.length && rest.length) { keep = order; rest = []; }                    // a domain whose every group is small keeps its own headings rather than becoming one anonymous heap
+    else if (rest.length) { var MK = tr("More"); groups[MK] = (groups[MK] || []).concat(rest); if (keep.indexOf(MK) < 0) keep.push(MK); }
+    order = keep;
     var wrap = add(host, "div", "pk-groups");
     order.forEach(function (gn) { var G = add(wrap, "div", "pk-group"); add(G, "span", "pk-seclbl", String(gn).toUpperCase());
       var gg = add(G, "div", "pk-ggrid");
@@ -7380,6 +7408,9 @@
     "Arrange two things and Save keeps it here.": "Разложи два дела — и Сохранить оставит их здесь.", "Nothing here yet.": "Пока пусто.",
     "Adjust steps & timing": "Настрой шаги и время", "Saved as a chain.": "Сохранено как цепочка."
   });
+  Object.assign(I18N.ru, { "Singing bowl": "\u041f\u043e\u044e\u0449\u0430\u044f \u0447\u0430\u0448\u0430", "Rain": "\u0414\u043e\u0436\u0434\u044c", "Fireplace": "\u041a\u0430\u043c\u0438\u043d", "Stream": "\u0420\u0443\u0447\u0435\u0439", "Distant thunder": "\u0414\u0430\u043b\u044c\u043d\u0438\u0439 \u0433\u0440\u043e\u043c", "Crickets": "\u0421\u0432\u0435\u0440\u0447\u043a\u0438", "Night forest": "\u041d\u043e\u0447\u043d\u043e\u0439 \u043b\u0435\u0441", "Deep night": "\u0413\u043b\u0443\u0431\u043e\u043a\u0430\u044f \u043d\u043e\u0447\u044c", "Woods": "\u0427\u0430\u0449\u0430", "Woods at dusk": "\u0427\u0430\u0449\u0430 \u0432 \u0441\u0443\u043c\u0435\u0440\u043a\u0430\u0445", "Brown noise": "\u041a\u043e\u0440\u0438\u0447\u043d\u0435\u0432\u044b\u0439 \u0448\u0443\u043c", "Focus · 13 Hz": "\u0424\u043e\u043a\u0443\u0441 \u00b7 13 \u0413\u0446", "Theta · 6 Hz": "\u0422\u0435\u0442\u0430 \u00b7 6 \u0413\u0446", "Deep · 4 Hz": "\u0413\u043b\u0443\u0431\u0438\u043d\u0430 \u00b7 4 \u0413\u0446", "Gamma · 33 Hz": "\u0413\u0430\u043c\u043c\u0430 \u00b7 33 \u0413\u0446" }); // THE BACKGROUND BEDS (the twelve added 2026-08-21 shipped with no RU at all, so the
+  // Sound panel read as an English list under a Russian header). B4 law, in place. The four binaural rows keep their
+  // frequency and only localise the unit: "Hz" is "\u0413\u0446" in Russian, the number is a number in every language.
   Object.assign(I18N.ru, { "Add to your day": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0432 \u0441\u0432\u043e\u0439 \u0434\u0435\u043d\u044c", "Swap for…": "\u0417\u0430\u043c\u0435\u043d\u0438\u0442\u044c \u043d\u0430\u2026", "Everything else": "\u0412\u0441\u0451 \u043e\u0441\u0442\u0430\u043b\u044c\u043d\u043e\u0435", "BEEN MEANING TO": "\u0412\u0421\u0401 \u0415\u0429\u0401 \u0416\u0414\u0401\u0422", "what?": "\u0447\u0442\u043e?", "Add to": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0432" }); // the titles the bento used to print RAW — it never called tr(), so every one of its fifteen headers was English in RU mode. They pass through the picker now, so they are finally translated; these six had no entry yet. B4 law, in place.
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
@@ -12838,7 +12869,6 @@
     ov.onclick = function () { ov.remove(); if (onCancel) onCancel(); };
     document.body.appendChild(ov);
   }
-  function pickOne(cb) { pickerSheet({ title: function () { return "What is it?"; }, frequent: true, custom: true, onTask: function (t) { closeSheet(); cb(t); } }); }
   function assignBlock(b, m, k) { pushUndo(); b.title = m.title; b.color = m.color || b.color; b.catK = m.catK || b.catK; save(); reflow(k); renderToday(); }
   function assignTimer(t, m) { t.title = m.title; t.catK = m.catK; t.color = m.color || t.color; t.emoji = emojiFor(m); t.habitId = m.habitId || null; if (m.domain) t.domain = m.domain; save(); renderToday(); renderNow(); } // carry the block's domain onto the timer so on-plan detection (domainOf(timer)===domainOf(block)) actually matches — else non-focus plans (workouts, meals, art) resolved to "focus" and read OFF-plan (David device, 2026-07-03)
   function assignTimerMulti(t, metas) { if (!metas || !metas.length) return; t.title = metas.map(function (m) { return m.title; }).join(" + "); t.emoji = metas.map(function (m) { return emojiFor(m); }).join(""); t.catK = metas[0].catK; t.color = metas[0].color || t.color; t.habitId = metas[0].habitId || null; t.tags = metas.map(function (m) { return m.title; }); save(); renderToday(); renderNow(); }
@@ -13796,47 +13826,10 @@
   // and are not this component. allActivities / bentoByDomain / isPinned / togglePin stay too: they are the activity
   // LIBRARY, and the new picker reads from exactly the same pool, which is why every rewired door still finds its things.
 
-  // ---- picker (shared) ---------------------------------------------------
-  function pickerSheet(opts) {
-    var B = el("sheetBody"); B.innerHTML = ""; openSheet();
-    var picked = {}, view = { cat: null, group: null }, CT = activeCats();
-    function count() { return Object.keys(picked).length; }
-    var titleEl = null, footEl = null;
-    function syncFoot() { if (titleEl) titleEl.textContent = opts.title(count()); if (footEl) { footEl.innerHTML = ""; if (opts.foot) opts.foot(footEl, picked, count()); } }
-    // tile click toggles selection IN PLACE for multi-select (no full re-render — kills the flicker/scroll-loss);
-    // single-pick callers act + may redraw once.
-    function mkTile(parent, meta) {
-      var ky = meta.catK + "|" + meta.title;
-      var x = taskTile(parent, meta, !!picked[ky], function () {
-        if (opts.multi) {
-          if (picked[ky]) delete picked[ky]; else picked[ky] = meta;
-          var sel = !!picked[ky]; x.classList.toggle("on", sel); x.style.background = sel ? meta.color : "";
-          if (opts.onTask) opts.onTask(meta, picked);
-          syncFoot();
-        } else if (opts.onTask) opts.onTask(meta, picked, drawPicker);
-      });
-      return x;
-    }
-    function drawPicker() {
-      B.innerHTML = "";
-      titleEl = add(B, "div", "sttl", opts.title(count())); if (opts.head) opts.head(B, drawPicker);
-      if (view.cat == null) {
-        var ph2 = phase(), ctx = (CONTEXT[ph2] || []).map(function (t) { return TITLE2META[t.toLowerCase()]; }).filter(Boolean);
-        if (ctx.length) { var xlbl = add(B, "div", "lbl"); xlbl.innerHTML = '<i class="ti ' + (ph2 === "morning" ? "ti-sunrise" : ph2 === "evening" ? "ti-sunset-2" : ph2 === "night" ? "ti-moon" : "ti-sun") + '"></i> good right now'; var xg = add(B, "div", "tilegrid"); ctx.forEach(function (t) { mkTile(xg, t); }); }
-        if (opts.priority && opts.priority.length) { var plbl = add(B, "div", "lbl"); plbl.innerHTML = '<i class="ti ti-clock"></i> you\'ve been meaning to…'; var pg2 = add(B, "div", "tilegrid"); opts.priority.forEach(function (t) { mkTile(pg2, t); }); } // the inferred procrastination list, surfaced first (David 2026-06-28)
-        if (opts.frequent) { var fr = frequent(6); if (fr.length) { var flbl = add(B, "div", "lbl"); flbl.innerHTML = '<i class="ti ti-star"></i> frequent'; var fg = add(B, "div", "tilegrid"); fr.forEach(function (t) { mkTile(fg, t); }); } }
-        add(B, "div", "lbl", "pick a category"); var cg = add(B, "div", "catgrid"); CT.forEach(function (c) { var card = bigCat(c); card.onclick = function () { view.cat = c; view.group = null; drawPicker(); }; cg.appendChild(card); });
-        if (opts.custom) { var cf = add(B, "div", "frm"); var ct = document.createElement("input"); ct.type = "text"; ct.placeholder = "…or type a task"; cf.appendChild(ct); var go = add(cf, "button", "go", "+"); go.onclick = function () { var v = ct.value.trim(); if (!v) return; var m = { title: v, catK: "work", emoji: "", color: "#8a5cf0", habitId: null }; if (opts.multi) { picked[m.catK + "|" + m.title] = m; ct.value = ""; syncFoot(); } else if (opts.onTask) opts.onTask(m, picked, drawPicker); }; }
-      } else if (view.group == null) {
-        var bk = add(B, "button", "add", "← categories"); bk.style.marginBottom = "10px"; bk.onclick = function () { view.cat = null; drawPicker(); }; var catlbl = add(B, "div", "lbl"); catlbl.innerHTML = tiIcon({ title: view.cat.label, catK: view.cat.k }) + " " + esc(view.cat.label); var sg = add(B, "div", "catgrid"); view.cat.groups.forEach(function (gr) { var card = subCard(view.cat, gr); card.onclick = function () { view.group = gr; drawPicker(); }; sg.appendChild(card); });
-      } else {
-        var bk2 = add(B, "button", "add", "← " + view.cat.label); bk2.style.marginBottom = "10px"; bk2.onclick = function () { view.group = null; drawPicker(); }; add(B, "div", "lbl", view.group.g); var tg = add(B, "div", "tilegrid"); view.group.tasks.forEach(function (t) { mkTile(tg, { title: t.l, catK: view.cat.k, emoji: t.e, color: view.cat.color, habitId: t.id || null }); });
-      }
-      footEl = add(B, "div", "pickfoot"); syncFoot();
-    }
-    drawPicker();
-  }
-  function nowSheet() { startOrSwitch(); } // C8 (David 2026-07-02): the ONE track-now door = the bento standard (Tabler icons, single-tap, clean switch). The old white pickerSheet (emojis + multi-timer stacking) is retired from the track path — one activity at a time is the locked model.
+  // ===== pickerSheet IS DELETED (David 2026-08-22). The last of the app's three pickers: an emoji-titled white
+  // sheet that predated both the bento and the picker, and by the end it answered only two doors — Plan tomorrow
+  // and Pick your habits. Both are on @SEC:PICKER now, so there is exactly ONE activity picker in the app.
+  function nowSheet() { startOrSwitch(); } // C8 (David 2026-07-02): the ONE track-now door. One activity at a time is the locked model; since 2026-08-22 it opens @SEC:PICKER in PICK-ONE mode like every other pick door in the app.
   // ===== THE DAILY ELICITOR (David 2026-06-28): the app's first move on open is to get today's activities OUT of you — especially the ones you keep avoiding — and keep an always-ready, startable, editable plan. Not "type a list" you maintain; it DERIVES what you're procrastinating from your last few days + asks, one-tap. =====
   function avoidedActs() { // inferred procrastination: activities planned in the last 3 days that didn't get done + aren't already in/done today
     var out = [], seen = {}, tk = todayK(), have = {}, dm = {};
@@ -17829,19 +17822,17 @@
     }
     drawRecommit();
   }
-  function planSheet(k, label, atTime) {
-    var cfg = { mins: 60, prio: 2 }; if (atTime) { cfg.time = atTime; } else { var d = new Date(); d.setMinutes(d.getMinutes() > 30 ? 60 : 30, 0, 0); cfg.time = pad(d.getHours()) + ":" + pad(d.getMinutes()); }
-    function advance() { var m = hm(cfg.time) + cfg.mins; if (m >= 1439) m = 1439; cfg.time = pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
-    pickerSheet({ title: function () { return "Plan " + label; }, frequent: true, custom: true,
-      head: function (B, draw) {
-        var sg = add(B, "button", "done2", "✨ What should I do next?"); sg.style.marginBottom = "10px"; sg.onclick = function () { closeSheet(); suggestSheet(k); };
-        var frm = add(B, "div", "frm"); var time = document.createElement("input"); time.type = "time"; time.value = cfg.time; time.onchange = function () { cfg.time = time.value; }; frm.appendChild(time); var dl = document.createElement("span"); dl.style.cssText = "align-self:center;font-weight:800;font-family:var(--bub);"; dl.textContent = "• " + dur(cfg.mins); frm.appendChild(dl);
-        add(B, "div", "lbl", "duration"); var c2 = add(B, "div", "pchips"); DURS.forEach(function (m) { var x = add(c2, "div", "pchip" + (m === cfg.mins ? " on" : ""), m < 60 ? m + "m" : (m / 60) + "h"); x.onclick = function () { cfg.mins = m; draw(); }; });
-        add(B, "div", "lbl", "priority: lowest gets dropped if you run out of time"); var c3 = add(B, "div", "pchips"); PRIOS.forEach(function (p) { var x = add(c3, "div", "pchip" + (p.v === cfg.prio ? " on" : ""), p.l); x.onclick = function () { cfg.prio = p.v; draw(); }; });
-        add(B, "div", "lbl", "tap to drop it at " + fmt(hm(cfg.time)) + " · they stack back-to-back");
-      },
-      onTask: function (t, picked, draw) { blocks(k).push(markFutureBlock({ id: uid(), time: cfg.time, mins: cfg.mins, title: t.title, prio: cfg.prio, color: t.color || prioC(cfg.prio), done: false }, k)); advance(); reflow(k); save(); draw(); },
-      foot: function (B) { var list = add(B, "div"); list.style.marginTop = "10px"; blocks(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }).forEach(function (b) { var r = add(list, "div", "blk"); add(r, "div", "tm", fmt(hm(b.time)) + "-" + fmt(hm(b.time) + b.mins)); var ti = add(r, "div", "ti"); ti.style.cssText = "display:flex;align-items:center;gap:7px;"; ti.appendChild(dot(prioC(b.prio))); add(ti, "span", null, b.title); var del = add(r, "div", "del", "✕"); del.onclick = function () { var a = blocks(k); a.splice(a.indexOf(b), 1); save(); planSheet(k, label); }; }); add(B, "button", "done2", "Done").onclick = function () { closeSheet(); renderAll(); }; } });
+  function planSheet(k, label, atTime) { // PLAN A DAY — the picker, on that day's key.
+    // David 2026-08-22: "plan tomorrow bring up the same bento as the rest". It was the last surface still on
+    // pickerSheet: an emoji-titled white sheet with a time input, a duration chip row, a priority chip row and a
+    // drop-one-at-a-time loop that advanced a clock. Every one of those is a thing the picker's Arranger already does
+    // better — order by drag, length on the rail, priority per block, and all of it visible at once instead of guessed
+    // before the pick. So the whole flow is one call now, and "Plan tomorrow" looks like everything else in the app.
+    var at;
+    if (atTime) at = hm(atTime);
+    else if (k === todayK()) at = logicalNowMin();
+    else { var b0 = blocks(k).filter(function (b) { return b.title; }).map(function (b) { return hm(b.time); }).sort(function (x, y) { return x - y; }); at = b0.length ? b0[b0.length - 1] : 540; } // a future day starts at its last plan, or 9am on an empty one — never "now", which means nothing on tomorrow
+    pkOpen({ k: k, at: Math.max(0, Math.min(1410, Math.round(at / 5) * 5)) });
   }
 
   // ---- timers ------------------------------------------------------------
@@ -18092,31 +18083,34 @@
     if (doneH.length) { add(B, "div", "lbl", "✅ habits kept"); doneH.forEach(function (h) { var r = add(B, "div", "hab"); var he = document.createElement("div"); he.className = "he"; he.innerHTML = habIconHTML(h); r.appendChild(he); add(r, "div", "hn", h.l); }); }
     if (lg.length) { var tot = 0; add(B, "div", "lbl", "⏱️ what you did"); lg.forEach(function (e) { tot += e.mins || 0; var r = add(B, "div", "logi"); add(r, "div", "lt", e.time || ""); add(r, "div", "ln", e.title || ""); add(r, "div", "lm", dur(e.mins || 0)); }); add(B, "div", "lbl", "total tracked: " + dur(tot)); }
   }
-  function habitSheet() {
-    // No typing: pick habits straight from the activity library (category → group → emoji tiles),
-    // multi-select, one frequency for the batch, build/quit inferred (vices → quit).
+  Object.assign(I18N.ru, { "Pick your habits": "\u0412\u044b\u0431\u0435\u0440\u0438 \u0441\u0432\u043e\u0438 \u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0438", "HOW OFTEN": "\u041a\u0410\u041a \u0427\u0410\u0421\u0422\u041e" }); // the habits picker's own strings (B4 law, in place). "\u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0443"/"\u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0438" are the ACCUSATIVE forms the "Add N ..." button needs; Russian would want a third form at five and above, which this two-way split does not carry \u2014 flagged for David's RU pass.
+  function habitSheet() { // PICK YOUR HABITS — the picker, with the whole library open and one frequency for the batch.
+    // David 2026-08-22: "pick your habits can also be the same bento box except with more activities in each category
+    // and u can add side scroll to reveal more activities in each category." Choosing habits is a LIBRARY job, so this
+    // is the one caller that passes `all`: every folder opens straight onto its sub-groups (Fitness · Body · Sleep ·
+    // Food · Space), each a side-scrolling row, instead of a shortlist behind a More tile. The frequency chips ride in
+    // the picker's head node, exactly where the old sheet kept them; build-vs-quit is still inferred from the domain.
     var cfg = { per: 0 };
-    pickerSheet({
-      title: function (n) { return n ? "Add " + n + (n === 1 ? " habit" : " habits") + " ✨" : "Pick your habits ✨"; },
-      frequent: true, custom: false, multi: true,
-      head: function (B) {
-        add(B, "div", "lbl", "how often");
-        var c2 = add(B, "div", "pchips");
-        [["Daily", 0], ["2× wk", 2], ["3× wk", 3], ["4× wk", 4], ["5× wk", 5], ["6× wk", 6]].forEach(function (t) {
-          var x = add(c2, "div", "pchip" + (cfg.per === t[1] ? " on" : ""), t[0]);
-          x.onclick = function () { cfg.per = t[1]; Array.prototype.forEach.call(c2.children, function (n) { n.classList.remove("on"); }); x.classList.add("on"); };
-        });
-      },
-      foot: function (B, picked, n) {
-        if (!n) return;
-        add(B, "button", "done2", "Add " + n + (n === 1 ? " habit" : " habits") + " ✨").onclick = function () {
-          Object.keys(picked).forEach(function (k) {
-            var t = picked[k];
+    var head = document.createElement("div"); head.className = "pk-habfreq";
+    add(head, "span", "pk-seclbl", tr("HOW OFTEN"));
+    var chips = add(head, "div", "pk-freqrow");
+    [["Daily", 0], ["2× wk", 2], ["3× wk", 3], ["4× wk", 4], ["5× wk", 5], ["6× wk", 6]].forEach(function (t) {
+      var x = add(chips, "button", "pk-lchip", tr(t[0]));
+      pkSkinChip(x, "#ff4fa0", cfg.per === t[1]);
+      x.onclick = function () { cfg.per = t[1]; Array.prototype.forEach.call(chips.children, function (c) { pkSkinChip(c, "#ff4fa0", false); }); pkSkinChip(x, "#ff4fa0", true); }; // the length rail's own skin, so the one control this surface adds is not a fifth kind of chip
+    });
+    pkOpen({
+      title: "Pick your habits", all: true, head: head,
+      foot: {
+        icon: "ti-check", needsPick: true,
+        label: function (n) { return n ? (tr("Add") + " " + n + " " + tr(n === 1 ? "habit" : "habits")) : (tr("Add") + " " + tr("habits")); }, // "Add 0 habits" is not a sentence; at zero the button names the job and the bar beside it already says nothing is picked
+        onGo: function (picks) {
+          (picks || []).forEach(function (t) {
             if (S.habits.some(function (h) { return h.l === t.title; })) return;
-            S.habits.push({ id: uid(), e: tiClass(t), l: t.title, cat: t.catK, type: (t.catK === "vice" ? "quit" : "build"), per: cfg.per, color: t.color || "#ff8a1e" }); // W2 emoji-sweep: store a ti-class (matches the @SEC:DEV persona seeds), never a raw emoji glyph — habIconHTML()/the h.e.indexOf("ti-") guards render both shapes, old saved habits keep working
+            S.habits.push({ id: uid(), e: tiClass(t), l: t.title, cat: t.catK, type: (t.catK === "vice" ? "quit" : "build"), per: cfg.per, color: t.color || "#ff8a1e" }); // W2 emoji-sweep: store a ti-class (matches the @SEC:DEV persona seeds), never a raw emoji glyph
           });
-          save(); closeSheet(); renderHabits();
-        };
+          save(); renderHabits();
+        }
       }
     });
   }
@@ -19216,6 +19210,8 @@
 
   window.DEV.tr = function (t) { return tr(t); };                 // what the dict answers for one exact string
   window.DEV.dict = function () { return I18N[curLang()] || {}; }; // the live dictionary, for counting/searching
+  window.DEV.habits = function () { habitSheet(); return "pick-your-habits (picker, all=true: every folder opens on its side-scrolling sub-groups)"; };
+  window.DEV.planDay = function (k) { planSheet(k || tomK(), k === todayK() ? "today" : "tomorrow"); return "plan a day (picker on that day's key)"; };
   window.DEV.pick = function (title) { window.__picked = null; pkOpen({ title: title || "What is it?", pick: function (x) { window.__picked = x; } }); return "PICK-ONE open — tap a thing, then read DEV.picked()"; }; // the mode the twelve ex-bento doors run on; __picked is the payload they receive
   window.DEV.picked = function () { return window.__picked || "nothing picked yet"; };
   window.DEV.plan = function (k) { shapeFlow(k || todayK()); return "Plan-my-day (BEAT mode: Energy → Work → Love → everything else)"; };
