@@ -2310,8 +2310,18 @@
   .pk-cellt{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12.5px; line-height:1.1; text-align:center; } /* the frame's tile labels: 12.5px CREAM (#f0dceb, set by pkCell) — the Just-<domain> timebox keeps the domain hue and More stays muted */
   .pk-cbadge{ position:absolute; top:-6px; right:-6px; min-width:26px; height:22px; padding:0 5px; border-radius:11px; background:#160510; display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:11px; color:#ff8fc0; z-index:4; } /* z4: above a stack card's z3 face (the activity coins have no stacking context, so this is inert there) */
   .pk-groups{ display:flex; flex-direction:column; gap:16px; animation:edPop .16s ease both; }
+  /* the habits picker's one extra control: the batch frequency, in the picker's own head slot */
+  .pk-habfreq{ display:flex; flex-direction:column; gap:9px; margin-top:13px; }
+  .pk-freqrow{ display:flex; flex-wrap:wrap; gap:7px; }
   .pk-group{ display:flex; flex-direction:column; gap:10px; }
-  .pk-ggrid{ display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:11px 8px; }
+  /* SIDE-SCROLL PER CATEGORY (David 2026-08-22: "more activities in each category and u can add side scroll to reveal
+     more activities in each category"). Each sub-group is now ONE row that scrolls sideways instead of a 5-wide block
+     that wrapped and pushed every other group off the screen. The column width is the same cell the 5-up grid drew, so
+     a row still reads as five and the sixth peeks — the peek IS the affordance, which is why the track is padded rather
+     than clipped flush. proximity snapping, not mandatory: a half-scrolled row must be allowed to stay where you left it. */
+  .pk-ggrid{ display:grid; grid-auto-flow:column; grid-auto-columns:calc((100% - 32px)/5); gap:8px; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; padding-bottom:2px; scrollbar-width:none; }
+  .pk-ggrid::-webkit-scrollbar{ display:none; }
+  .pk-ggrid > *{ scroll-snap-align:start; }
   .pk-ggrid .pk-cellf i{ font-size:17px; }
   .pk-ggrid .pk-cellt{ font-size:10px; }
   /* ---- the arranger ---- */
@@ -4182,6 +4192,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1363"></script>
+  <script src="app.js?v=1370"></script>
 </body>
 </html>
