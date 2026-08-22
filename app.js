@@ -13764,6 +13764,11 @@
     var htl = add(head, "div"); add(htl, "div", "hp-title", tr("Привычки")); add(htl, "div", "hp-sub", done + " " + tr("из") + " " + S.habits.length + " " + tr("сегодня"));
     var hr = add(head, "div"); hr.style.cssText = "display:flex;align-items:center;gap:8px;";
     var spk = add(hr, "span", "hp-sparkpill"); spk.innerHTML = '<i class="ti ti-bolt"></i> ' + ((S.game && S.game.spark) || 0);
+    // THE ADD DOOR (David 2026-08-22: "i dont know how to find the vertical scroll" — he could not find it because there
+    // was no way IN). habitSheet's only wire was `el("addHabit").onclick`, and no element with that id exists anywhere in
+    // the app, so the whole pick-your-habits surface has been unreachable by finger. It lives here, beside the pencil,
+    // on the one screen that lists your habits. The dead `addHabit` lookup at @SEC:BOOT stays harmless and guarded.
+    var addb = add(hr, "button", "hp-edit"); addb.innerHTML = '<i class="ti ti-plus"></i>'; addb.setAttribute("aria-label", tr("Pick your habits")); addb.onclick = function () { ov.remove(); habitSheet(); };
     var edit = add(hr, "button", "hp-edit"); edit.innerHTML = '<i class="ti ti-pencil"></i>'; edit.onclick = function () { ov.remove(); habitsSheet(); };
     var xb = add(hr, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.onclick = function () { ov.remove(); };
     var pw = add(card, "div", "hp-headwrap"), pr = add(pw, "div", "hp-progwrap"), bar = add(pr, "div", "hp-prog"), fill = add(bar, "i"); fill.style.width = (S.habits.length ? Math.round(done / S.habits.length * 100) : 0) + "%";
