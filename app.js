@@ -2533,16 +2533,17 @@
     save(); startPlanned(nb); renderTrackerFull();
   }
   // PLAN A BREAK (§23): consciously declare what you're about to do — pick ANY activity + a duration → it inserts as a PINNED block at NOW, the plan reflows around it, and tracking starts. Conscious = streak-safe (the key distinction is planned-vs-drift, not work-vs-leisure).
-  function playFirst() { // G11 (flows run; David's locked picks): play -> pick activity -> pick TIME = plan+track (full points); skipping the timer stays legal — one gentle line, never a wall
-    bentoPicker({ title: "What are you doing?", onPick: function (x) {
-      durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x);
-        blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); }); // the new plan owns now->future (replan semantics)
-        var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || (DOM[dom] || DOM.focus).c, catK: x.catK || null, domain: dom, done: false, pin: true };
-        blocks(k).push(nb); reflow(k); save();
-        var t = startTrackerNow(); assignTimer(t, { title: x.title, color: nb.color, catK: x.catK, domain: dom }); if (t) { t.commit = mins; } maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull();
-      }, null, { icon: "ti-player-play", label: "No timer · just track", fn: function () {
-        var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); toast("tracking · with a plan it earns more"); } }); // the gentle line, said once, never blocks
-    } });
+  function playFirst() { // THE HOME DISC'S PICK DOOR — opens the ONE activity picker (@SEC:PICKER, design 18a) at the current minute.
+    // David 2026-08-22, on device: "if you press the big pink play button, it opens up an old menu, the old activity
+    // picker. Get rid of that. That never should appear. Instead, the new activity picker should appear."
+    // What used to be here was bentoPicker → durationSheet → block-at-now + auto-start. BOTH halves are retired by
+    // David's own later verdicts: the bento wall is the old menu (and still carried the RECENT row he cut on 2026-08-20),
+    // and a pick no longer starts a session by itself (2026-08-16, pkLand: "a button must not do something its label
+    // does not say"). The pick lands on the day AT NOW, which flips this same disc to its "play begins it now" face —
+    // so starting is one more deliberate tap on the same button, not a hidden side effect of picking.
+    // Every "play" door in the app now funnels here, so the old wall cannot come back through a second one.
+    var now = logicalNowMin();
+    pkOpen({ k: todayK(), at: Math.max(0, Math.min(1410, Math.round(now / 5) * 5)) }); // the 5-minute snap the timeline's own tap-an-empty-slot uses (makeBlock), so a block born here sits on the same grid
   }
   function planBreak(title) { bentoPicker({ title: title || "Replan from now: what, for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x);
         // REPLAN (David 2026-06-25): the new plan owns NOW → the future. Any block the present line is currently splitting gets its future half ERASED (truncated to end at now → it stays as the past ghost half).
@@ -3966,7 +3967,11 @@
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
       el("tfSpark").innerHTML = '<i class="ti ti-diamond-filled" style="color:#ffd24a"></i> <b>' + ((S.game && S.game.spark) || 0).toLocaleString() + '</b>'; // H-D3 (David 2026-07-20): idle header right = the gem count with a diamond, matching the What-now mockup (was streak + tracked-mins)
-      if (tile) { tile.style.filter = ""; tile.style.cursor = "pointer"; tile.onclick = playFirst;
+      if (tile) { tile.style.filter = ""; tile.style.cursor = "pointer";
+        // THE DISC DOES WHAT ITS OWN SUB-LINE SAYS (David 2026-08-22). It was wired to playFirst in BOTH variants, so
+        // (b) opened a picker while the line under it promised "play begins it now", and (a) opened the retired bento
+        // wall instead of the picker the line names. Variant (b) now STARTS the block; variant (a) opens the picker.
+        tile.onclick = _upn ? function () { startPlanned(nb); renderTrackerFull(); } : playFirst;
         // setProperty(…,"important") because the tf-home.st-idle rule paints the pink !important; removeProperty hands it straight back for variant (a).
         if (_upn) { tile.innerHTML = tiIcon(nb); tile.style.setProperty("background", "repeating-linear-gradient(115deg, rgba(255,255,255,.26) 0 16px, transparent 16px 34px), " + ND.c, "important"); tile.style.setProperty("color", "#2a1730", "important"); }
         else { tile.innerHTML = '<i class="ti ti-player-play-filled"></i>'; tile.style.removeProperty("background"); tile.style.removeProperty("color"); } }
@@ -19609,8 +19614,22 @@
       return "designAudit: the home board is in the DOM but has NO BOX (height " + (_hzr ? Math.round(_hzr.height) : "none") +
              "). You are almost certainly inside a tool, the player or a sheet. Close back to home and run it again — " +
              "every position gate would measure against zero and report a failure that is not real.";
-    if (tfh2c() && !el("trackerFull").classList.contains("tf-2c"))
+    // THE FACE GUARD, twice over. Both halves were found on 2026-08-22, when a run against a board that was TRACKING
+    // returned 28 invented failures ("circle width 60% want 52%", "plan button missing", "HUD missing") — the same
+    // cry-wolf the bail above exists to stop, one layer up: the board had a box, it was simply not this board.
+    // (a) the 2c check below used to read `tfh2c() && !contains("tf-2c")`, and tfh2c() ITSELF requires tf-2c — so the
+    //     condition was `X && !X` and could never fire. A guard that cannot fire is decoration, exactly what
+    //     DEV.auditProve exists to hunt. It reads the FLAG now, which is what it always meant to say.
+    // (b) every gate here describes the CALM home composition. On a tracking / break / stage / claim face those
+    //     elements are legitimately different or absent, so measuring them is not a test, it is a category error.
+    var _fc = el("trackerFull").classList;
+    if (HOME2C && !_fc.contains("tf-2c"))
       return "designAudit: the 2c home is not the live face — its px rules are not applying, so the gates would read defaults.";
+    if (!_fc.contains("st-idle") && !_fc.contains("st-night")) {
+      var _sn = (el("trackerFull").className.match(/st-[a-z]+/) || ["some other state"])[0];
+      return "designAudit: the board is showing " + _sn + ", not the calm home face. These gates only describe the idle " +
+             "(or night) composition, so every one of them would report a failure that is not real. Close back to home and run it again.";
+    }
     // THE ARTBOARD SCALE NORMALIZER. Every locked number in this audit is a LAYOUT px off David's 402x874 frame, but on a wider phone the
     // face is transform-scaled to fill the screen, so getBoundingClientRect answers in VISUAL px. _nr() divides a rect back into frame px,
     // which is what makes the SAME gates pass at 402x874 (scale 1) and at 440x956 (scale 1.0945) — the alternative was 8 gates that only
