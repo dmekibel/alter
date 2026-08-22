@@ -2513,7 +2513,7 @@
       var row = add(SB, "div", "sugrow");
       sug.forEach(function (s, i) { var D = DOM[s.domain] || DOM.focus, c = add(row, "div", "sugchip" + (i === 0 ? " hero" : "")); c.style.background = D.c; c.style.color = D.ink; if (i === 0) c.style.boxShadow = "0 0 13px " + D.c; c.innerHTML = '<i class="ti ' + tiClass({ title: s.title, domain: s.domain }) + '"></i> ' + esc(s.title) + ' · ' + dur(s.mins) + '<div class="sugwhy">' + esc(s.why) + '</div>'; c.onclick = function () { addSuggested(k, s); }; });
       var door = add(SB, "button", "sugdoor"); door.innerHTML = '<i class="ti ti-layout-grid"></i> all my activities';
-      door.onclick = function () { bentoPicker({ title: "Plan what?", onPick: function (x) { addSuggested(k, { title: x.title, domain: x.domain || domainOf(x), mins: 30, catK: x.catK }); } }); };
+      door.onclick = function () { pkOpen({ title: "Plan what?", pick: function (x) { addSuggested(k, { title: x.title, domain: x.domain || domainOf(x), mins: 30, catK: x.catK }); } }); };
     } catch (err) { console.error("SUGERR", err && err.message, JSON.stringify(sug)); }
   }
   // ---- HOME: top live-tracker strip + pull-down plan|real (mockups 005/006/007, §13) ----
@@ -2521,7 +2521,7 @@
   function liveSpan(t) { return '<span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span>'; } // ticks every second via the 1s loop (elapsedStr = m:ss)
   function activeTimers() { return (S.timers || []).filter(function (t) { return (t.dayK || key(new Date(t.start))) === todayK(); }); }
   // SWITCH task = stop the current one (logs it) then start the new one — single current activity (David: switching is a real function)
-  function startOrSwitch() { var run = activeTimers(), pr = []; try { pr = avoidedActs(); } catch (e) {} bentoPicker({ title: run.length ? "Switch to?" : "What are you doing?", priority: pr, onPick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } }); } // single-tap: tap an activity = start it (one activity at a time; no multi-select confirm step) — David 2026-06-27. C8/D3 (2026-07-02): + the "been meaning to…" row, + redraw the journey when picked from there so the now-node becomes the cockpit. G4 (David on device, v801): NO auto-scroll on that redraw — picking must not yank the trail to the next node.
+  function startOrSwitch() { var run = activeTimers(), pr = []; try { pr = avoidedActs(); } catch (e) {} pkOpen({ title: run.length ? "Switch to?" : "What are you doing?", hot: pr, pick: function (x) { run.forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } }); } // single-tap: tap an activity = start it (one activity at a time; no multi-select confirm step) — David 2026-06-27. C8/D3 (2026-07-02): + the "been meaning to…" row, + redraw the journey when picked from there so the now-node becomes the cockpit. G4 (David on device, v801): NO auto-scroll on that redraw — picking must not yank the trail to the next node.
   // ALWAYS OFFER NEXT (§23/§15): the earliest still-open planned block (upcoming or in-progress, not done/missed) — getting "back on plan" is one tap
   function nextPlannedBlock(k) { var best = null; blocks(k).forEach(function (b) { if (!b.title || blockStatus(k, b) !== "plan") return; if (best === null || hm(b.time) < hm(best.time)) best = b; }); return best; } // skip empty (unchosen) placeholder bubbles
   function startPlanned(b) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, { title: b.title, color: b.color, catK: b.catK, domain: b.domain || domainOf(b) }); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); } // 1-tap on-plan: carry the block's domain so it MATCHES → gold + streak + green ring
@@ -2545,7 +2545,7 @@
     var now = logicalNowMin();
     pkOpen({ k: todayK(), at: Math.max(0, Math.min(1410, Math.round(now / 5) * 5)) }); // the 5-minute snap the timeline's own tap-an-empty-slot uses (makeBlock), so a block born here sits on the same grid
   }
-  function planBreak(title) { bentoPicker({ title: title || "Replan from now: what, for how long?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x);
+  function planBreak(title) { pkOpen({ title: title || "Replan from now: what, for how long?", pick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x);
         // REPLAN (David 2026-06-25): the new plan owns NOW → the future. Any block the present line is currently splitting gets its future half ERASED (truncated to end at now → it stays as the past ghost half).
         blocks(k).forEach(function (b) { if (b.done) return; var bs = hm(b.time), be = bs + (b.mins || 30); if (bs < now && be > now) b.mins = Math.max(5, now - bs); });
         var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || DOM[dom].c, catK: x.catK || null, domain: dom, done: false, pin: true };
@@ -2781,7 +2781,7 @@
       var sz = 44 + (maxInv ? (inv[d] / maxInv) : 0) * 34;
       var node = add(stage, "div", "mind-node" + (d === "drift" ? " drift" : "")); node.style.left = x2 + "%"; node.style.top = y2 + "%"; node.style.width = sz + "px"; node.style.height = sz + "px"; node.style.background = d === "drift" ? mixDark(D.c) : "radial-gradient(circle at 35% 30%," + D.light + "," + D.c + ")"; node.style.color = D.ink; node.style.fontSize = Math.round(sz * 0.42) + "px";
       node.innerHTML = '<i class="ti ' + D.ti + '"></i>'; add(node, "span", "mind-lab", D.l);
-      node.onclick = function () { ov.remove(); bentoPicker({ title: D.l + " · what?", multi: true, onPickMulti: function (sel) { var tt = startTrackerNow(); assignTimerMulti(tt, sel); maybeCelebrateTrack(tt); renderLiveTracker(); renderToday(); }, onPick: function (xx) { var tt = startTrackerNow(); assignTimer(tt, xx); maybeCelebrateTrack(tt); renderLiveTracker(); renderToday(); } }); };
+      node.onclick = function () { ov.remove(); pkOpen({ title: tr(D.l) + " · " + tr("what?"), pick: function (xx) { var tt = startTrackerNow(); assignTimer(tt, xx); maybeCelebrateTrack(tt); renderLiveTracker(); renderToday(); } }); };
       // SUB-BRANCHES: any custom activity in this domain that owns sub-habits branches outward from its planet — "see a life through its habits" (David 2026-06-27)
       var subs = (S.acts || []).filter(function (s) { return s.domain === d && s.children && s.children.length; });
       subs.forEach(function (sa, si) {
@@ -2826,7 +2826,7 @@
         if (custom) { var del = add(row, "button", "gs-del"); del.innerHTML = '<i class="ti ti-x"></i>'; del.onclick = function () { var i = arr.indexOf(bl); if (i >= 0) arr.splice(i, 1); save(); drawStackDetail(); }; }
       });
       if (!arr.length) add(body, "div", "goal-empty", custom ? "empty stack · add your activities below" : "no activities");
-      if (custom) { var addb = add(body, "button", "goal-breakdown"); addb.style.background = "#36b3f0"; addb.style.color = "#08283c"; addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = function () { bentoPicker({ title: "Add to " + stack.name, onPick: function (a) { var sorted = arr.slice().sort(function (x, y) { return hm(x.h) - hm(y.h); }), last = sorted[sorted.length - 1], st = last ? hm(last.h) + (last.m || 30) : 480; st = Math.min(1410, st); arr.push({ h: pad(Math.floor(st / 60)) + ":" + pad(st % 60), m: 30, t: a.title, d: a.domain }); save(); drawStackDetail(); } }); }; }
+      if (custom) { var addb = add(body, "button", "goal-breakdown"); addb.style.background = "#36b3f0"; addb.style.color = "#08283c"; addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = function () { pkOpen({ title: tr("Add to") + " " + stack.name, pick: function (a) { var sorted = arr.slice().sort(function (x, y) { return hm(x.h) - hm(y.h); }), last = sorted[sorted.length - 1], st = last ? hm(last.h) + (last.m || 30) : 480; st = Math.min(1410, st); arr.push({ h: pad(Math.floor(st / 60)) + ":" + pad(st % 60), m: 30, t: a.title, d: a.domain }); save(); drawStackDetail(); } }); }; }
       var ap = add(body, "button", "goal-breakdown"); ap.style.background = "#34d39a"; ap.style.color = "#0c3d29"; ap.style.marginTop = "12px"; ap.innerHTML = '<i class="ti ti-calendar-plus"></i> apply to ' + esc(relLabel(k).toLowerCase()); ap.disabled = !arr.length;
       ap.onclick = function () { if (!arr.length) return; applyDayPreset(k, arr); ov.remove(); if (el("pullSheet")) buildPull(); renderToday(); toast("✨ " + stack.name + " · " + relLabel(k).toLowerCase() + " planned"); };
       if (custom) {
@@ -3422,7 +3422,7 @@
     function drawFundamentals() {
       list.innerHTML = ""; var arr = getFund();
       arr.forEach(function (f, i) { var row = add(list, "div", "fund-row"); var sw = add(row, "span", "fund-sw"); sw.style.background = (DOM[f.d] || DOM.focus).c; add(row, "span", "fund-n", f.t + " · " + f.m + "m"); var rm = add(row, "button", "fund-x"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { var a = getFund().slice(); a.splice(i, 1); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); drawFundamentals(); }; });
-      var ab = add(list, "button", "add2"); ab.innerHTML = '<i class="ti ti-plus"></i> add a fundamental'; ab.style.margin = "6px 0 0"; ab.onclick = function () { bentoPicker({ title: "Add a daily fundamental", onPick: function (x) { if (!x) return; var a = getFund().slice(); a.push({ t: x.title, d: domainOf(x), m: 30, slot: 720 }); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); drawFundamentals(); } }); };
+      var ab = add(list, "button", "add2"); ab.innerHTML = '<i class="ti ti-plus"></i> add a fundamental'; ab.style.margin = "6px 0 0"; ab.onclick = function () { pkOpen({ title: "Add a daily fundamental", pick: function (x) { if (!x) return; var a = getFund().slice(); a.push({ t: x.title, d: domainOf(x), m: 30, slot: 720 }); S.profile = S.profile || {}; S.profile.fundamentals = a; save(); drawFundamentals(); } }); };
     }
     drawFundamentals();
     if (S.profile && S.profile.fundamentals) { var rs = add(B, "button", "add2"); rs.innerHTML = '<i class="ti ti-rotate"></i> reset to defaults'; rs.style.margin = "8px 0 0"; rs.onclick = function () { delete S.profile.fundamentals; save(); fundamentalsMenu(); }; }
@@ -5077,8 +5077,8 @@
   function tfBreakPlus(m) { if (S.brk) { S.brk.mins += m; save(); renderTrackerFull(); } }
   function tfHasPlan() { return (blocks(todayK()) || []).some(function (b) { return b.title; }); } // is there a plan today at all?
   function tfReplan() { planBreak(tfHasPlan() ? "Replan from now: what, for how long?" : "Plan now: what, for how long?"); } // pick an activity (single tap) → pick minutes → it owns now→future + starts tracking
-  function tfPickTrack(title) { bentoPicker({ title: title || "Switch to?", onPick: function (x) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); } }); } // single-tap: tap an activity = start tracking it now (no second Play tap, no plan change)
-  function tfCreatePlan() { bentoPicker({ title: "Plan what?", onPick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || (DOM[dom] || DOM.focus).c, catK: x.catK || null, domain: dom, done: false }; blocks(k).push(nb); reflow(k); save(); renderToday(); renderTrackerFull(); toast("📅 planned " + esc(x.title) + " · " + dur(mins)); }); } }); } // NO-PLAN "Create plan": pick activity → choose minutes → a FUTURE plan block (does NOT start tracking; you tap Start when ready) — David 2026-06-27
+  function tfPickTrack(title) { pkOpen({ title: title || "Switch to?", pick: function (x) { activeTimers().forEach(function (rt) { stopTimer(rt.id); }); var t = startTrackerNow(); assignTimer(t, x); maybeCelebrateTrack(t); renderLiveTracker(); renderToday(); renderTrackerFull(); } }); } // single-tap: tap an activity = start tracking it now (no second Play tap, no plan change)
+  function tfCreatePlan() { pkOpen({ title: "Plan what?", pick: function (x) { durationSheet(x.title, function (mins) { var k = todayK(), now = logicalNowMin(), dom = domainOf(x); var nb = { id: uid(), time: pad(Math.floor(now / 60)) + ":" + pad(now % 60), mins: mins, title: x.title, prio: 2, color: x.color || (DOM[dom] || DOM.focus).c, catK: x.catK || null, domain: dom, done: false }; blocks(k).push(nb); reflow(k); save(); renderToday(); renderTrackerFull(); toast("📅 planned " + esc(x.title) + " · " + dur(mins)); }); } }); } // NO-PLAN "Create plan": pick activity → choose minutes → a FUTURE plan block (does NOT start tracking; you tap Start when ready) — David 2026-06-27
   function tfKeepGoing() { // C7 TRACK→PLAN FUSION (David on device, v785): while tracking unplanned, one easy tap — "I'll keep doing this N more minutes" — and reality becomes a plan INSTANTLY: a block owning now→now+N with the live timer's identity. The straddle render then fuses live track + plan into the WIDE matched bar as the line advances. "The second you decide how long, it becomes a plan."
     var run = activeTimers(), t = run[run.length - 1]; if (!t) return;
     durationSheet(t.title || "Keep going", function (mins) {
@@ -6923,7 +6923,7 @@
     "Look about twenty feet past the screen and let your eyes rest there.": "Посмотри метров на шесть вдаль, мимо экрана, и дай глазам отдохнуть.",
     "A single line about where you are now. Tap when it's down.": "Одна строка о том, где ты сейчас. Коснись, когда записал."
   });
-  // @SEC:PICKER — the ACTIVITY PICKER + ARRANGER (Claude-Design "Activity Picker" frame 18a, Opus-built 2026-07-27). Replaces bentoPicker at the timeline tap-empty-slot entry ONLY (every other bentoPicker caller is a track/relabel/step flow the arranger's semantics don't fit — left on the old bento, flagged in the handoff). Flow: folders wall → folder sheet → tune panel → Arranger → the blocks land on the day. Design px/hex live in .pk-* (index.html); hues come from the app's own DOM registry so a picked block reads the same color it will wear on the timeline. Two overlay layers only (wall + sheet) — no third menu system. Child-drain everywhere (ratchet). ZERO timeline listeners added or changed: this is an overlay, the regression contract is untouched.
+  // @SEC:PICKER — THE ACTIVITY PICKER + ARRANGER (Claude-Design "Activity Picker" frame 18a, Opus-built 2026-07-27). Since 2026-08-22 it is the app's ONLY activity picker: the bento it once replaced at the timeline entry alone is deleted, and its other fifteen doors come through here now (PICK-ONE mode for the twelve relabel/track/step flows whose semantics the arranger never fit, BEAT mode for Plan-my-day's four scoped beats). Flow: folders wall → folder sheet → tune panel → Arranger → the blocks land on the day. Design px/hex live in .pk-* (index.html); hues come from the app's own DOM registry so a picked block reads the same color it will wear on the timeline. Two overlay layers only (wall + sheet) — no third menu system. Child-drain everywhere (ratchet). ZERO timeline listeners added or changed: this is an overlay, the regression contract is untouched.
   // @CONTRACT: the wall footer and the sheet footer are ONE painter (pkFoot) — opening a folder must not shift the bottom by a pixel (David 2026-07-27).
   var PK_LENS = [10, 15, 20, 30, 45, 60, 90, 120, 180];                                   // the length rail (minutes); a chain's rail scales ALL its steps proportionally
   var PK_PRIS = [{ v: 3, l: "Must" }, { v: 2, l: "Should" }, { v: 1, l: "Whenever" }];     // priority shows its VALUE once set; the word "Priority" only when unset (David 2026-07-27)
@@ -6957,7 +6957,14 @@
   function pkSteps(p) { if (p.kind !== "chain") return []; var f = (p.mins || 1) / (p.bm || 1); return (p.st0 || []).map(function (s) { return { t: s.t, i: s.i, c: s.c, m: Math.max(0.5, s.m * f) }; }); } // ONE scaling rule: the rail sets the chain's total, every step rides the same factor
   function pkQCount(title) { var n = 0; (_pk ? _pk.queue : []).forEach(function (p) { if (p.title === title) n++; }); return n; }
   function pkClose() { if (_pk && _pk.ov && _pk.ov.parentNode) _pk.ov.parentNode.removeChild(_pk.ov); _pk = null; }
-  function pkOpen(cfg) { // THE ENTRY. cfg = { k, at } — the day key + the tapped minute. Nothing is written until Start (so a back-out leaves zero litter, no stub to clean up).
+  function pkOpen(cfg) { // THE ENTRY, and since 2026-08-22 the app's ONLY activity picker (David: "old bento should never exist").
+    // cfg = { k, at }                  — the planner job: queue → Arrange → Add to planner. Nothing is written until then.
+    // cfg = { pick: fn, title }        — PICK-ONE mode: the first activity tap closes and hands `fn` the activity, in the
+    //                                    exact shape bentoPicker's onPick used to. No queue, no footer, no arranger. This is
+    //                                    what the twelve relabel / track-now / add-a-step doors needed and never had.
+    // cfg = { doms, seed, foot, head } — BEAT mode: scope the wall to some domains, start from picks already made, and swap
+    //                                    the footer for the caller's own Next/Back/Skip. This is what carries Plan-my-day's
+    //                                    Big-3 beats, so they survive the bento instead of dying with it.
     cfg = cfg || {}; pkClose(); _pkUse = null; // fresh session → re-walk the logs once
     var k = cfg.k || todayK(), at = Math.max(0, Math.min(1410, cfg.at || 0)), end = 1440, prev = null;
     for (var _sg = 0; _sg < 48; _sg++) { // SNAP OUT OF AN OCCUPIED MINUTE (David's video 2026-08-16). Tapping a slot that an existing block already covers gave gapStart == that block's start AND gapEnd == the same minute, so the pick landed a second block directly on top of the first — the pile-up of five blocks on one minute in his recording. Walk forward to the first minute nothing covers; 48 hops is a guard, the day cannot hold more.
@@ -6968,7 +6975,9 @@
       if (bs >= at && bs < end) end = bs;                                    // the next block closes the gap
       if (be <= at && (!prev || be > hm(prev.time) + (prev.mins || 30))) prev = b; // the latest thing that ended before the tap
     });
-    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], stepFor: null, aOpen: null, aPri: false, aSteps: false }; // focus/priOpen/stepsOpen/wallMin died with the picked-activities tray (David 2026-08-16, his THIRD cut of it) — a pick's length, priority and steps are set in the Arranger, which is the only surface that shows them now.
+    _pk = { k: k, gapStart: at, gapEnd: end, prevTitle: prev ? prev.title : null, view: "pick", sheet: null, queue: [], stepFor: null, aOpen: null, aPri: false, aSteps: false, // focus/priOpen/stepsOpen/wallMin died with the picked-activities tray (David 2026-08-16, his THIRD cut of it) — a pick's length, priority and steps are set in the Arranger, which is the only surface that shows them now.
+      pick: cfg.pick || null, title: cfg.title || null, doms: (cfg.doms && cfg.doms.length) ? cfg.doms : null, head: cfg.head || null, foot: cfg.foot || null, hot: cfg.hot || null };
+    if (cfg.seed && cfg.seed.length) cfg.seed.forEach(function (a) { _pk.queue.push(pkActPick(a)); }); // BEAT mode's Back: the picks already made come back lit
     var ov = add(document.body, "div", "pk-ov"); _pk.ov = ov;
     pkPaintShell();
   }
@@ -6980,8 +6989,9 @@
     var bk = add(head, "button", "pk-back"); add(bk, "i", "ti ti-chevron-left"); bk.setAttribute("aria-label", tr("Back")); bk.onclick = function () { pkClose(); }; // nothing was written, so backing out is literally free — zero litter by construction
     var htx = add(head, "span", "pk-headtx");
     var gap = _pk.gapEnd - _pk.gapStart;
-    if (gap >= 10) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone
-    add(htx, "span", "pk-title", tr("What next?")); // the artifact says "What next?" — the apostrophe form was fix-pass invention
+    if (gap >= 10 && !_pk.pick && !_pk.foot) { var kick = dur(gap) + " " + tr("open") + (_pk.prevTitle ? (" · " + tr("after") + " " + _pk.prevTitle) : ""); add(htx, "span", "pk-kick", kick.toUpperCase()); } // the real gap, in the design's tiny-kicker caps; no gap info → the title stands alone. PICK-ONE mode has no gap semantics — it is renaming a block or choosing what to track, not filling a hole in the day — so the kicker would be a number about nothing.
+    add(htx, "span", "pk-title", tr(_pk.title || "What next?")); // the artifact says "What next?" — the apostrophe form was fix-pass invention. A caller that asks a different question ("What is it?", "Add a step to X") says so here, exactly as it used to say it in the bento's header.
+    if (_pk.head) { try { htx.appendChild(_pk.head); } catch (e) {} } // BEAT mode's virtue card rides under the title, where big3HeadNode always sat
     _pk.wbody = add(wall, "div", "pk-body");
     _pk.wfoot = add(wall, "div", "pk-footwrap"); _pk.wfoot.style.cssText = "flex:none;display:flex;flex-direction:column;"; // the bottom bar, byte-identical to the sheet's footer
     pkPaint();
@@ -6994,9 +7004,11 @@
   function pkFolder(host, dash) { var b = add(host, "button", "pk-folder" + (dash ? " dash" : "")); return b; }
   function pkPaintWall(host) {
     pkDrain(host);
+    pkPaintHot(host); // "been meaning to" rides ABOVE the folders — it is the one thing the bento's beats had that the wall did not
     var grid = add(host, "div", "pk-fgrid");
     DOM_ORDER.forEach(function (d) {
       if (d === "drift") return; // the artifact enumerates EXACTLY 8 folders. Drift is tracked honestly when it happens; it is never something you PLAN, so it has no card here.
+      if (_pk.doms && _pk.doms.indexOf(d) < 0) return; // BEAT mode: this beat's domains only
       var sh = pkDomShown(d), acts = sh.list; if (!acts.length) return; var D = DOM[d], hue = D.c; // the folder shows the same padded list the sheet opens with, so its count and its coins can never disagree with what's behind the card
       var took = {}, nq = 0; // what this folder has already given the queue — plain ACT picks only, so a stack that merely shares a hue never lights a folder it didn't come from
       (_pk.queue || []).forEach(function (p) { if (p.kind === "act" && p.dom === d) { nq++; took[p.title] = 1; } });
@@ -7016,7 +7028,10 @@
       var ct = add(nrow, "span", "pk-fct", nq ? (nq + " / " + acts.length) : String(acts.length)); ct.style.color = nq ? "#ff4fa0" : mixHex(hue, "#160510", 0.45); // COUNTS ARE IN THE ARTIFACT ("1 / 9" on Move): plain dimmed total until this folder has given something, then picked-of-total in PINK — the count belongs to the selection, so it speaks the selection's colour, not the domain's.
       tile.onclick = function () { _pk.sheet = { kind: "dom", dom: d, more: false, naming: false, draft: "" }; pkBuildSheet(); };
     });
-    pkPaintSaved(host); // …and the saved shelf closes the scroll, right under the eight cards
+    if (!_pk.pick && !_pk.foot) pkPaintSaved(host); // …and the saved shelf closes the scroll, right under the eight cards.
+    // Neither of the other two modes shows it, for different reasons: a stack is not an answer to "what is this block?",
+    // and inside a scoped BEAT a stack would light up, then be dropped by pkQueueActs (which hands back activities only) —
+    // a control that appears to work and silently loses your pick is worse than one that is not there.
   }
   // ===== SAVED & READY-MADE — the last row of the WALL, scrolling with it (David 2026-07-31: it is not a drawer, it never was; the peek/collapse/pin machinery is gone). Always rendered, right under the eight domain cards. =====
   function pkSavedFolders() {
@@ -7042,7 +7057,19 @@
   // THE TRAY IS GONE (David 2026-08-16, his THIRD cut of this surface — "I wanna remove the whole footer… that's redundant because after that, there's an Arrange button anyway"; DECISIONS.md 2026-08-16 kills it by name). The chevron tab, the queue strip and the tune panel (length rail / Priority / Steps) are deleted, not shrunk: a picked tile is already ignited on the wall, and the Arranger is where order, length, priority and steps are actually set. The primary no longer MORPHS by count either (same decision: "a primary action must not change identity by count") — it is Arrange at every count, so one pick and five picks take the same door and both get to see the time they will land at.
   function pkFoot(host) {
     pkDrain(host);
+    if (_pk.pick) { host.style.display = "none"; return; } // PICK-ONE mode: the tap IS the commit, so there is nothing for a bottom bar to say
+    host.style.display = "";
     var q = _pk.queue, n = q.length;
+    if (_pk.foot) { // BEAT mode: the caller owns the primary. Same bar, same geometry — only the word, the glyph and where it goes belong to the flow.
+      var F = _pk.foot, fbar = add(host, "div", "pk-bar"), ftx = add(fbar, "span", "pk-bartx"), flab = add(ftx, "span", "pk-barl");
+      if (!n) { flab.classList.add("hint"); flab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like"); }
+      else if (n === 1) flab.textContent = q[0].title; // the wall's own rule: one pick NAMES itself, several are counted. "1 things" is not a sentence. (No duration here — a beat gathers what, the Arranger sets how long.)
+      else flab.textContent = n + " " + tr("things");
+      if (F.onBack) { var fb = add(fbar, "button", "pk-go"); fb.style.cssText = "background:#2a0d1c;color:#e7c7d8;box-shadow:0 5px 0 #160510;"; add(fb, "i", "ti ti-chevron-left"); fb.onclick = function () { var picks = pkQueueActs(); pkClose(); F.onBack(picks); }; }
+      var fg = add(fbar, "button", "pk-go"); add(fg, "i", "ti " + (F.icon || "ti-arrow-right")); add(fg, "span", null, tr(F.label || "Next"));
+      fg.onclick = function () { var picks = pkQueueActs(); pkClose(); F.onGo(picks); };
+      return;
+    }
     var bar = add(host, "div", "pk-bar"), tx = add(bar, "span", "pk-bartx");
     var lab = add(tx, "span", "pk-barl");
     if (!n) { lab.classList.add("hint"); lab.textContent = tr("nothing yet") + " · " + tr("tap what you feel like"); } // DS: the populated label is 18px on ONE line; the empty-state hint drops to 14px/#c98ca6 so the whole sentence fits at 375px instead of being clipped
@@ -7052,6 +7079,7 @@
     if (!n) { go.style.background = "#2a0d1c"; go.style.color = "#9a6a86"; go.style.boxShadow = "0 5px 0 #160510"; go.style.opacity = ".7"; go.onclick = function () {}; } // ActionBar law: a disabled primary goes to the dead surface, never an opacity-washed pink
     else go.onclick = function () { _pk.view = "arr"; _pk.sheet = null; pkPaintShell(); };
   }
+  function pkQueueActs() { return (_pk && _pk.queue ? _pk.queue : []).filter(function (p) { return p.kind === "act"; }).map(pkHandBack); } // BEAT mode reads its picks back out as plain activities — the same list shapeFlow's accumulator has always held
   function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
   function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = "#160510"; el2.style.borderColor = hue; if (ico) ico.style.color = "#160510"; } else { el2.style.borderColor = mixHex(hue, "#33192a", 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
   function pkSkinChip(c, hue, on) { // the LENGTH rail's own skin (borderless) — deliberately NOT pkSkin, which dresses the Priority/Steps buttons
@@ -7108,11 +7136,36 @@
       s.naming = false; s.draft = ""; pkTake({ title: v, catK: null, domain: s.dom }); };
     setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
   }
+  // ===== "BEEN MEANING TO" — activities planned in the last few days that never happened (avoidedActs). It was a row inside
+  // the bento and it is the ONE thing the bento had that this wall did not, so it came across rather than dying with it.
+  // Rendered only when the caller passes a list AND that list is non-empty: no permanent empty shelf, no nagging. =====
+  function pkPaintHot(host) {
+    if (!host || !_pk || !_pk.hot || !_pk.hot.length) return;
+    var sec = add(host, "div", "pk-sec");
+    add(sec, "span", "pk-seclbl", tr("BEEN MEANING TO"));
+    var row = add(sec, "div", "pk-hotrow"); row.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;";
+    _pk.hot.slice(0, 8).forEach(function (a) {
+      var hue = pkHue(a.domain || domainOf(a)), took = (_pk.queue || []).some(function (q) { return q.title === a.title; });
+      var b = add(row, "button", "pk-hot" + (took ? " on" : ""));
+      b.style.cssText = "display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:13px;border:2.5px solid " + (took ? "#ff4fa0" : mixHex(hue, "#160510", 0.42)) + ";background:" + (took ? pkIgnite(hue) : mixHex(hue, "#160510", 0.84)) + ";color:" + (took ? PK_INK : "#f0dcea") + ";font-family:var(--bub);font-weight:800;font-size:14px;";
+      var i = add(b, "i", "ti " + tiClass(a)); i.style.color = took ? PK_INK : hue;
+      add(b, "span", null, a.title);
+      b.onclick = function () { pkTake(a); };
+    });
+  }
+  function pkHandBack(a) { // PICK-ONE mode's payload — byte-for-byte the object bentoPicker's onPick handed over, so every
+    // caller that reads x.title / x.domain / x.catK / x.color keeps working without being touched.
+    var dom = a.domain || a.dom || domainOf(a);
+    return { title: a.title, catK: a.catK || null, habitId: a.habitId || null, domain: dom, color: a.color || pkHue(dom), group: a.group || null };
+  }
   function pkTake(a) { // one door for every pick: in step-mode it becomes a sub-step of the focused block, otherwise it joins the queue and the expanded category folds back to the wall
+    if (_pk.pick) { var fn = _pk.pick, out = pkHandBack(a); pkClose(); fn(out); return; } // PICK-ONE: answer and get out of the way
     if (_pk.stepFor) { var f = null; _pk.queue.forEach(function (p) { if (p.uid === _pk.stepFor) f = p; }); if (f) { f.subs = f.subs || []; f.subs.push({ t: a.title }); } _pk.stepFor = null; pkCloseSheet(); return; }
+    var _dup = -1; _pk.queue.forEach(function (q, qi) { if (q.kind === "act" && q.title === a.title) _dup = qi; });
+    if (_pk.doms && _dup >= 0) { _pk.queue.splice(_dup, 1); pkCloseSheet(); return; } // BEAT mode is a multi-select you step back into: tapping a lit thing takes it OUT, the way the bento's chips did
     _pk.queue.push(pkActPick(a)); pkCloseSheet(); // THE CATEGORY COLLAPSES ON A PICK (David 2026-08-16): the pick is pushed FIRST, so pkCloseSheet's repaint draws the wall with this folder's tile already ignited and its count moved — multi-select across categories still works, you just do it from the wall
   }
-  function pkTakePick(p) { _pk.queue.push(p); pkCloseSheet(); } // same order for stacks / chains / the Just-<domain> timebox: register, then fold
+  function pkTakePick(p) { if (_pk.pick) { var fn = _pk.pick, out = pkHandBack(p); pkClose(); fn(out); return; } _pk.queue.push(p); pkCloseSheet(); } // same order for stacks / chains / the Just-<domain> timebox: register, then fold
   function pkActUse() { // THE RANKING SOURCE: the last 30 days of logs, the same signal actCount() reads for badges. (S.tools.use — what TBX_TOP/tbxOrder rank by — is keyed by TOOL id, not activity title, so it cannot rank this grid.)
     if (_pkUse) return _pkUse; // memo: one wall paint asks all 8 folders for the SAME 30-day walk. Nothing inside the picker writes a log, so it can't go stale before pkOpen clears it.
     var m = {}; try { lastDays(30).forEach(function (k) { (logs(k) || []).forEach(function (e) { var t = (e.title || "").toLowerCase(); if (t) m[t] = (m[t] || 0) + 1; }); }); } catch (e) {}
@@ -7327,6 +7380,7 @@
     "Arrange two things and Save keeps it here.": "Разложи два дела — и Сохранить оставит их здесь.", "Nothing here yet.": "Пока пусто.",
     "Adjust steps & timing": "Настрой шаги и время", "Saved as a chain.": "Сохранено как цепочка."
   });
+  Object.assign(I18N.ru, { "Add to your day": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0432 \u0441\u0432\u043e\u0439 \u0434\u0435\u043d\u044c", "Swap for…": "\u0417\u0430\u043c\u0435\u043d\u0438\u0442\u044c \u043d\u0430\u2026", "Everything else": "\u0412\u0441\u0451 \u043e\u0441\u0442\u0430\u043b\u044c\u043d\u043e\u0435", "BEEN MEANING TO": "\u0412\u0421\u0401 \u0415\u0429\u0401 \u0416\u0414\u0401\u0422", "what?": "\u0447\u0442\u043e?", "Add to": "\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0432" }); // the titles the bento used to print RAW — it never called tr(), so every one of its fifteen headers was English in RU mode. They pass through the picker now, so they are finally translated; these six had no entry yet. B4 law, in place.
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
@@ -13095,7 +13149,7 @@
           var touch = ev.pointerType === "touch", scE = (card.closest && card.closest(".day-cardscroll")) || el("pullBody"); if (!touch) ev.preventDefault();
           var sy = ev.clientY, sx = ev.clientX, lastY = ev.clientY, sm0 = it.s, dur = e.mins || 15, moved = false, picked = !touch && card.dataset.gate !== "menu", scrolling = false, holdT = null, cur2 = sm0, snapped = false, _freeDrag = showNow, _ga = null; function overPlan(cx) { var r = cal.getBoundingClientRect(); return cx < r.left + r.width * 0.5; } // a real item can cross LEFT into the plan lane
           if (touch) holdT = setTimeout(function () { if (scrolling || card.dataset.gate === "menu" || _pinching) return; picked = true; holdT = null; dragLockOn(); card.classList.add("lift"); card.classList.add("dragging"); card._dragBlock = function (ev) { ev.preventDefault(); }; document.addEventListener("touchmove", card._dragBlock, { passive: false }); try { if (navigator.vibrate) navigator.vibrate(9); } catch (e2) {} }, 280); // long-press → DRAG mode: block native scroll so the drag moves the bubble (David 2026-06-27)
-          function relabel() { bentoPicker({ title: "What is it?", onPick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
+          function relabel() { pkOpen({ title: "What is it?", pick: function (x) { e.title = x.title; e.color = x.color; e.catK = x.catK; save(); renderToday(); } }); }
           function clean() { dragLockOff(); if (holdT) { clearTimeout(holdT); holdT = null; } if (card._dragBlock) { document.removeEventListener("touchmove", card._dragBlock, { passive: false }); card._dragBlock = null; } document.removeEventListener("pointermove", mv2); document.removeEventListener("pointerup", up2); document.removeEventListener("pointercancel", cancel); card.classList.remove("lift"); card.classList.remove("dragging"); hideTrash(); } // clean() runs at the top of up2/cancel — the latch drops HERE, then up2's single renderToday() below is the one commit render (order: unlock, then the sole rebuild)
           function mv2(ev2) {
             if (_pinching) { dragLockOff(); if (holdT) { clearTimeout(holdT); holdT = null; } moved = false; picked = false; card.classList.remove("lift", "dragging"); card.style.transform = ""; card.style.zIndex = ""; hideTrash(); return; } // pinch wins — drop the bubble drag/scroll + the latch so the pinch commit isn't blocked (David 2026-06-26 / Parcel B)
@@ -13136,7 +13190,7 @@
         if (g === _bigGap) add(slot, "div", "bf-say", durLoc(g[1] - g[0]) + " " + tr("untracked · tap to tell it")); // ONE faint line on the biggest gap; every other gap is a silent target (design 3A). durLoc not dur, so the units go ч/м in RU instead of leaking latin. REGISTER-ONLY placeholder wording — David's copy gates own the final line.
         slot.addEventListener("click", function () {
           // WHOLE-STRETCH FILL (design R21, David 2026-08-16). SUPERSEDES the rule that stood here — "STUB, not the whole gap: seed ~20 min at the tapped time, then grow it with the grips/stepper" (David 2026-06-27) — because the seed left crumbs of untracked time around itself, which is also what made one 2h hole read as three sub-gaps. The design's own words: "a pick from the empty-space picker fills the WHOLE untracked stretch; (Alt considered: fill only the empty slivers — rejected: leaves crumbs.)" The tapped Y therefore no longer matters.
-          bentoPicker({ title: "What were you doing?", onPick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(g[0] / 60)) + ":" + pad(g[0] % 60), mins: (g[1] - g[0]), title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } });
+          pkOpen({ title: "What were you doing?", pick: function (x) { logs(k).push({ id: uid(), time: pad(Math.floor(g[0] / 60)) + ":" + pad(g[0] % 60), mins: (g[1] - g[0]), title: x.title, color: x.color, catK: x.catK }); save(); renderToday(); } });
         });
       });
     }
@@ -13152,7 +13206,7 @@
       var planSide = isFuture || lx0 <= rect0.width * 0.5;
       var moved = false, done = false, holdT = null;
       function makeBlock() { pkOpen({ k: k, at: Math.max(0, Math.min(1410, Math.round(downM / 5) * 5)) }); } // tap an empty slot → the ACTIVITY PICKER (@SEC:PICKER, design 18a): pick one thing → "Add to today" lands it at the tapped minute; pick several → Arrange orders them end-to-end from the gap and Start lands the set. Replaced the bento + empty-stub dance 2026-07-27: NOTHING is written until the picker commits, so backing out leaves zero litter by construction (the old onCancel stub-removal contract is now structural).
-      function fireCreate() { if (rightTrack) bentoPicker({ title: "What are you doing?", multi: true, onPickMulti: function (sel) { var _t = startTrackerNow(); assignTimerMulti(_t, sel); maybeCelebrateTrack(_t); }, onPick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } }); else makeBlock(); }
+      function fireCreate() { if (rightTrack) pkOpen({ title: "What are you doing?", pick: function (x) { var _t = startTrackerNow(); assignTimer(_t, x); maybeCelebrateTrack(_t); } }); else makeBlock(); }
       // ADD an activity = a deliberate LONG-PRESS now (a quick tap is reserved for DOUBLE-TAP-to-zoom) — David 2026-07-02
       holdT = setTimeout(function () { if (moved || _pinching) return; holdT = null; done = true; try { if (navigator.vibrate) navigator.vibrate(11); } catch (e) {} fireCreate(); }, 360);
       function mv(e) { if (!moved && (Math.abs(e.clientY - dy) > 6 || Math.abs(e.clientX - dx) > 6)) { moved = true; if (holdT) { clearTimeout(holdT); holdT = null; } } } // any slide = scrolling → cancel the create-hold; scroll stays smooth
@@ -13581,7 +13635,7 @@
     var hero = add(B, "button", "ed-hero");
     function paintHero() { if (!o.title) { hero.classList.add("ed-hero-empty"); hero.style.removeProperty("background"); hero.style.removeProperty("color"); hero.style.removeProperty("border-color"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ti-plus"></i> choose activity</span><i class="ti ti-chevron-right ed-swap"></i>'; return; } hero.classList.remove("ed-hero-empty"); var d = D(); hero.style.setProperty("background", d.c, "important"); hero.style.setProperty("color", d.ink, "important"); hero.style.setProperty("border-color", "#160510", "important"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ' + tiClass(o) + '"></i> ' + esc(o.title) + '</span><i class="ti ti-switch-horizontal ed-swap"></i>'; } // empty bubble → a dashed "choose activity" prompt; filled → the activity in its own colour (David 2026-06-26)
     paintHero();
-    hero.onclick = function () { bentoPicker({ title: "Switch to…", onPick: function (x) { o.title = x.title; o.catK = x.catK || null; o.color = x.color || o.color; if (x.domain) o.domain = x.domain; paintHero(); commit(); } }); };
+    hero.onclick = function () { pkOpen({ title: "Switch to…", pick: function (x) { o.title = x.title; o.catK = x.catK || null; o.color = x.color || o.color; if (x.domain) o.domain = x.domain; paintHero(); commit(); } }); };
     // SCRUBBER — drag the segment to move, pull the right edge to resize
     // LENGTH — one simple slider, 30s → 12h (log-scaled so tiny lengths are easy to land) — David 2026-06-25
     var MINM = 0.5, MAXM = 720;
@@ -13629,7 +13683,7 @@
           var dn = add(r, "button", "step-mv"); dn.innerHTML = '<i class="ti ti-chevron-down"></i>'; dn.disabled = i === o.subs.length - 1; dn.onclick = function () { var x = o.subs.splice(i, 1)[0]; o.subs.splice(i + 1, 0, x); save(); drawSteps(); };
           var rm = add(r, "button", "step-rm"); rm.innerHTML = '<i class="ti ti-x"></i>'; rm.onclick = function () { o.subs.splice(i, 1); save(); drawSteps(); stHeadTxt(); };
         });
-        var ab = add(stBody, "button", "step-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a step'; ab.onclick = function () { bentoPicker({ title: "Add a step to " + o.title, onPick: function (x) { o.subs.push({ t: x.title, done: false }); save(); drawSteps(); stHeadTxt(); } }); };
+        var ab = add(stBody, "button", "step-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a step'; ab.onclick = function () { pkOpen({ title: tr("Add a step to") + " " + o.title, pick: function (x) { o.subs.push({ t: x.title, done: false }); save(); drawSteps(); stHeadTxt(); } }); };
       })();
       // CHAIN — "this has a part 2" (ORGAN C, DEPTH WAVE 1): a two-part chore (laundry→dryer, dough→bake). The app carries the second half + plants it at +N min so you don't have to remember.
       var chExp = add(B, "div", "ed-steps"); var chHead = add(chExp, "button", "ed-stephead"); var chBody = add(chExp, "div", "ed-stepbody"); chBody.style.display = o.chain ? "block" : "none";
@@ -13719,7 +13773,8 @@
   // @SEC:RENDER — renderAll fan-out: the god-dispatcher over every per-surface renderer. Adding a surface = add its renderer HERE, and make it idempotent (the master tick re-enters, see @SEC:BOOT).
   function renderAll() { try { badgeTick(); } catch (e) {} renderHeader(); renderNow(); renderChar(); renderGame(); renderHero(); renderMood(); renderQuick(); renderToday(); renderHabits(); renderStats(); renderLiveTracker(); try { renderGrove(); } catch (e) {} try { renderVirtues(); } catch (e) {} try { renderGoals2(); } catch (e) {} try { renderStore(); } catch (e) {} try { if (document.body.classList.contains("journey-open")) drawJourney(false); } catch (e) {} } // D3: a stop/switch that lands while the journey is showing must refresh the trail + the live pill (no autoScroll — don't yank the view)
 
-  // ---- BENTO picker (1:1 from mockup 019) — domain-clustered, expand-in-place, type-once add ----
+  // ---- THE ACTIVITY LIBRARY — every activity the app knows, clustered by domain. It outlived the bento that used to
+  // render it (deleted 2026-08-22) because it was never the menu; @SEC:PICKER reads from these exact three functions.
   var DOM_ORDER = ["move", "nourish", "focus", "create", "connect", "play", "restore", "upkeep", "drift"];
   function allActivities() {
     var out = [], seen = {};
@@ -13732,203 +13787,14 @@
   function bentoByDomain() { var by = {}; DOM_ORDER.forEach(function (d) { by[d] = []; }); allActivities().forEach(function (a) { (by[a.domain] = by[a.domain] || []).push(a); }); return by; }
   function isPinned(a) { return (S.pinned || []).indexOf((a.title || "").toLowerCase()) >= 0; } // pin any activity → it floats to the top + front (David 2026-06-24)
   function togglePin(a) { S.pinned = S.pinned || []; var t = (a.title || "").toLowerCase(), i = S.pinned.indexOf(t); if (i >= 0) S.pinned.splice(i, 1); else S.pinned.push(t); save(); }
-  function bentoPicker(opts) {
-    opts = opts || {};
-    var multi = !!opts.multi, sel = [], by = bentoByDomain(), view = { cat: null, grp: null }, foot = null, searchQ = "";
-    // DOM scope: when opts.domains is set (Big-3 staged flow), only show those domains' categories (David 2026-06-28)
-    var ORDER = (opts.domains && opts.domains.length) ? DOM_ORDER.filter(function (d) { return opts.domains.indexOf(d) >= 0; }) : DOM_ORDER;
-    // preselect: titles already picked (e.g. stepping Back into a beat) → seed sel from the matching activity objects so chips show as on (David 2026-06-28)
-    if (multi && opts.preselect && opts.preselect.length) { var pset = {}; opts.preselect.forEach(function (t) { pset[(t || "").toLowerCase()] = 1; }); ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (pset[(a.title || "").toLowerCase()] && sel.indexOf(a) < 0) sel.push(a); }); }); }
-    var fq = {}; try { frequent(16).forEach(function (m) { fq[(m.title || "").toLowerCase()] = 1; }); } catch (e) {}
-    var _isPlan = !!(opts.domains && opts.domains.length); // scoped plan sheet → chips get the pd-lit striped selected-fill (canon)
-    var ov = add(document.body, "div", "bento-ov bento-sheet");
-    var card = add(ov, "div", "bento-card bento-sheet" + (_isPlan ? " bento-plan" : "")); // Batch 4: the plan-day flow gets a FIXED-height sheet so switching Energy/Work/Love (different activity counts) never bounces the frame
-    var head = add(card, "div", "bento-head");
-    if (opts.onBack) { var bb0 = add(head, "button", "bento-x"); bb0.innerHTML = '<i class="ti ti-chevron-left"></i>'; bb0.style.marginRight = "8px"; bb0.onclick = function () { close(); opts.onBack(); }; }
-    add(head, "div", "bento-q", opts.title || "What are you doing?");
-    var xb = add(head, "button", "bento-x"); xb.innerHTML = '<i class="ti ti-x"></i>';
-    var body = add(card, "div", "bento-body");
-    function close() { ov.remove(); }
-    xb.onclick = function () { close(); if (opts.onCancel) opts.onCancel(); }; // G2 (David on device, v801): the X must fire onCancel too — closing via X after tap-empty-slot was leaving the empty "tap to choose" stub behind (only the backdrop tap cleaned it)
-    ov.addEventListener("click", function (e) { if (e.target === ov) { close(); if (opts.onCancel) opts.onCancel(); } });
-    function commit(a) { if (multi) { var i = sel.indexOf(a); if (i >= 0) sel.splice(i, 1); else sel.push(a); renderBento(); renderFoot(); pdSyncStrip(); } else { close(); opts.onPick(a); } }
-    function actChip(a, container, big, soft) {
-      var D = DOM[a.domain], on = sel.indexOf(a) >= 0, pin = isPinned(a);
-      var s = add(container, "span", "bchip" + (big ? " big" : "") + (soft ? " soft" : "") + (on ? " sel" : "") + (a.domain === "drift" ? " vice" : "") + (pin ? " pinned" : "") + (_isPlan ? " pd-lit" : ""));
-      // SOFT = welcoming muted tile (colored ICON accent + light text on a dark-tinted bg) — kills the "wall of solid orange" in a category list (David 2026-07-02). Solid fill stays for short varied rows (Recent/Pinned/search) and the selected state.
-      var iconStyle = "";
-      if (a.domain !== "drift") {
-        if (soft && !on) { s.style.background = mixHex(D.c, "#1c0a17", 0.85); s.style.color = "#f7e9f1"; s.style.borderColor = "#34132a"; iconStyle = ' style="color:' + D.c + '"'; }
-        else { s.style.background = D.c; s.style.color = D.ink; }
-      }
-      s.innerHTML = ((pin && !big) ? '<i class="ti ti-pin" style="opacity:.5;font-size:.85em"></i> ' : '') + '<i class="ti ' + tiClass(a) + '"' + iconStyle + '></i> ' + esc(a.title) + (on ? ' <i class="ti ti-check"></i>' : ''); // ✓ when picked, 📌 when pinned — no yellow (David 2026-06-24)
-      var holdT = null, held = false; // press & hold any chip → pin / unpin it (tap-only, no keyboard) — David 2026-06-24
-      s.addEventListener("pointerdown", function () { held = false; holdT = setTimeout(function () { held = true; holdT = null; togglePin(a); toast(isPinned(a) ? "pinned to the top" : "unpinned"); renderBento(); }, 450); });
-      function cancelHold() { if (holdT) { clearTimeout(holdT); holdT = null; } }
-      s.addEventListener("pointermove", cancelHold); s.addEventListener("pointerup", cancelHold); s.addEventListener("pointercancel", cancelHold);
-      s.onclick = function (e) { e.stopPropagation(); if (held) { held = false; return; } commit(a); };
-      return s;
-    }
-    function actOf(m) { var t = (m.title || "").toLowerCase(); for (var d = 0; d < DOM_ORDER.length; d++) { var arr = by[DOM_ORDER[d]] || []; for (var i = 0; i < arr.length; i++) if ((arr[i].title || "").toLowerCase() === t) return arr[i]; } var dm = m.domain || domainOf(m); return { title: m.title, catK: m.catK || null, habitId: m.habitId || null, domain: dm, color: (DOM[dm] || DOM.focus).c }; } // frequent()/search → a real activity obj with a domain so the chip colors right (David 2026-06-24)
-    function renderScoped() {
-      if (opts.headNode) body.appendChild(opts.headNode); // CANON plan-day: beat-pips + identity hero pinned at the top of the scoped picker
-      // reminder card removed (no redundant "second energy text" / emoji) + search moved BELOW the categories (David 2026-07-01). Build search detached; append after the grid.
-      var sb = document.createElement("div"); sb.className = "bento-search"; var _sic = add(sb, "span", "bento-sicon"); _sic.innerHTML = '<i class="ti ti-search"></i>';
-      var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
-      var pinList = []; ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (isPinned(a)) pinList.push(a); }); }); // grouped by domain so the colours cluster
-      var pinned = add(body, "div", "bento-pinned");
-      if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
-      else { pinned.className = "bento-pinhint"; pinned.innerHTML = '<i class="ti ti-pin"></i> press &amp; hold any activity to pin your favourites up here'; }
-      // "you've been meaning to…" — the inferred procrastination list, surfaced prominently right under the pins (David 2026-06-28). actOf() maps each to a real activity obj so chips colour by domain + toggle-select like any other.
-      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); var _bmt = add(pr, "span", "bento-qlbl pd-ember-lbl"); _bmt.innerHTML = '<i class="ti ti-flame"></i> ' + tr("been meaning to"); opts.priority.forEach(function (m) { var _c = actChip(actOf(m), pr, true); _c.classList.add("pd-ember"); }); } // CANON: ember courage row
-      var results = document.createElement("div"); results.className = "bento-results"; results.style.display = "none";
-      var gridWrap = add(body, "div", "bento-gridwrap");
-      ORDER.forEach(function (d) {
-        var acts = (by[d] || []).slice(); if (!acts.length) return;
-        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); }); // pinned → the front (David 2026-06-24)
-        var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
-        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light; lab.onclick = function () { view.cat = d; view.grp = null; renderBento(); };
-        var wrap = add(mc, "div", "bento-chips"); wrap.style.cssText = "display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;-webkit-overflow-scrolling:touch;padding-bottom:3px;touch-action:pan-x;"; // FULL list per category, scroll SIDEWAYS — no +N truncation, no per-item + (David 2026-07-01)
-        acts.forEach(function (a) { var c = actChip(a, wrap, false); c.style.flex = "0 0 auto"; c.style.whiteSpace = "nowrap"; });
-      });
-      var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
-      body.appendChild(results); body.appendChild(sb); // results + search BELOW the categories (David 2026-07-01)
-      function drawResults(q) {
-        if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; pinned.style.display = ""; addb.style.display = ""; return; }
-        gridWrap.style.display = "none"; pinned.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
-        var ql = q.toLowerCase(), hits = [], seen2 = {};
-        ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
-        hits.sort(function (a, b) { return a.title.toLowerCase().indexOf(ql) - b.title.toLowerCase().indexOf(ql); });
-        hits.slice(0, 60).forEach(function (a) { actChip(a, results, false); });
-        var ab = add(results, "span", "bchip addc"); ab.innerHTML = '<i class="ti ti-plus"></i> "' + esc(q) + '"'; ab.onclick = function () { S.acts = S.acts || []; S.acts.push({ title: q, catK: null, domain: "focus" }); save(); by = bentoByDomain(); commit({ title: q, catK: null, habitId: null, domain: "focus", color: DOM.focus.c }); };
-      }
-      si.oninput = function () { searchQ = si.value; drawResults(searchQ.trim()); };
-      si.onkeydown = function (e) { if (e.key === "Enter") { var first = results.querySelector(".bchip:not(.addc)"); if (first && searchQ.trim()) first.click(); } };
-      drawResults(searchQ.trim());
-    }
-    function groupsOf(d) { var groups = {}, order = []; (by[d] || []).forEach(function (a) { var gn = a.group || "More"; if (!groups[gn]) { groups[gn] = []; order.push(gn); } groups[gn].push(a); }); return { groups: groups, order: order }; }
-    function renderExpanded(d) {
-      var D = DOM[d], gd = groupsOf(d);
-      // top strip: back (steps up ONE level) + a breadcrumb + lateral domain tabs
-      var strip = add(body, "div", "bento-strip");
-      var back = add(strip, "span", "bento-back"); back.innerHTML = '<i class="ti ti-chevron-left"></i>'; back.onclick = function () { if (view.grp) { view.grp = null; } else { view.cat = null; } renderBento(); };
-      var crumb = add(strip, "span", "bento-crumb"); crumb.style.color = D.light;
-      crumb.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + esc(D.l) + (view.grp ? ' <i class="ti ti-chevron-right" style="opacity:.55;font-size:.85em"></i> ' + esc(view.grp) : '');
-      if (view.grp) { crumb.style.cursor = "pointer"; crumb.onclick = function () { view.grp = null; renderBento(); }; } // tap the breadcrumb domain → back to its sub-groups
-      ORDER.forEach(function (dd) { if (!by[dd] || !by[dd].length) return; var t = add(strip, "span", "bento-tab" + (dd === d ? " on" : ""), DOM[dd].l.toLowerCase()); t.style.color = DOM[dd].light; if (dd === d) { t.style.background = mixDark(DOM[dd].c); } t.onclick = function () { view.cat = dd; view.grp = null; renderBento(); }; });
-      var pane = add(body, "div", "bento-pane"); pane.style.borderColor = D.c;
-      // LEVEL 2: more than one sub-group AND none chosen yet → show the sub-category list (drill down one more) — David 2026-06-27
-      if (gd.order.length > 1 && !view.grp) {
-        var h = add(pane, "div", "bento-paneh"); h.style.color = D.light; h.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
-        var gl = add(pane, "div", "bento-tiles");
-        gd.order.forEach(function (gn) { var t = add(gl, "span", "bchip big grp"); t.style.background = mixHex(D.c, "#160510", 0.55); t.style.color = D.light; t.style.borderColor = mixHex(D.c, "#160510", 0.2); t.innerHTML = '<i class="ti ti-folder"></i> ' + esc(gn) + ' <span class="grp-n">' + gd.groups[gn].length + '</span>'; t.onclick = function () { view.grp = gn; renderBento(); }; });
-        var addt0 = add(gl, "span", "bchip big addt"); addt0.innerHTML = '<i class="ti ti-plus"></i> add'; addt0.onclick = addNew;
-        return;
-      }
-      // LEVEL 3 (or a single-group domain): the activities. Single tap = pick (commit).
-      var gn = view.grp || gd.order[0], acts = gd.groups[gn] || by[d] || [];
-      if (view.grp) { var h2 = add(pane, "div", "bento-paneh"); h2.style.color = D.light; h2.innerHTML = '<i class="ti ti-folder"></i> ' + esc(gn); } // only when in a real sub-group; the breadcrumb already names the domain (kills the "energy / energy" repeat — David 2026-07-01)
-      var g = add(pane, "div", "bento-tiles"); acts.forEach(function (a) { actChip(a, g, true); });
-      // type-in fallback: add a niche activity right here → goes into this domain (reuses S.acts) — David 2026-06-27
-      var tin = add(pane, "div", "bento-typein");
-      var ti = document.createElement("input"); ti.type = "text"; ti.className = "bento-tinput"; ti.placeholder = "add your own…"; tin.appendChild(ti);
-      var tgo = add(tin, "button", "bento-tadd"); tgo.innerHTML = '<i class="ti ti-plus"></i>';
-      function addTyped() { var nm = ti.value.trim(); if (!nm) { ti.focus(); return; } S.acts = S.acts || []; if (!S.acts.filter(function (x) { return (x.title || "").toLowerCase() === nm.toLowerCase(); })[0]) S.acts.push({ title: nm, catK: null, domain: d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: d, color: DOM[d].c }; if (multi) { if (sel.indexOf(a) < 0) sel.push(a); ti.value = ""; renderBento(); renderFoot(); } else { close(); opts.onPick(a); } }
-      tgo.onclick = addTyped; ti.onkeydown = function (e) { if (e.key === "Enter") addTyped(); };
-    }
-    function addNew() {
-      view.cat = null; view.grp = null; body.innerHTML = ""; if (foot) { foot.remove(); foot = null; }
-      add(body, "div", "bento-newh", "New activity");
-      var inp = document.createElement("input"); inp.type = "text"; inp.className = "bento-input"; inp.placeholder = "name it once…"; body.appendChild(inp);
-      add(body, "div", "bento-hint2", "type the name (once) → it becomes a bubble you tap forever");
-      add(body, "div", "bento-lbl", "category");
-      var crow = add(body, "div", "bento-cats"), chosen = { d: (ORDER.indexOf("focus") >= 0 ? "focus" : ORDER[0]) };
-      ORDER.forEach(function (d) { var D = DOM[d], c = add(crow, "span", "bento-pick" + (d === chosen.d ? " on" : ""), D.l); c.style.background = D.c; c.style.color = D.ink; c.onclick = function () { chosen.d = d; Array.prototype.forEach.call(crow.children, function (n) { n.classList.remove("on"); }); c.classList.add("on"); }; });
-      var go = add(body, "button", "bento-save"); go.innerHTML = 'add <i class="ti ti-check"></i>';
-      go.onclick = function () { var nm = inp.value.trim(); if (!nm) { inp.focus(); return; } S.acts = S.acts || []; S.acts.push({ title: nm, catK: null, domain: chosen.d }); save(); by = bentoByDomain(); var a = { title: nm, catK: null, habitId: null, domain: chosen.d, color: DOM[chosen.d].c }; if (multi) { sel.push(a); renderBento(); renderFoot(); } else { close(); opts.onPick(a); } };
-      setTimeout(function () { try { inp.focus(); } catch (e) {} }, 60);
-    }
-    function renderFoot() {
-      if (!multi) return;
-      if (!foot) foot = add(card, "div", "bento-foot");
-      foot.innerHTML = "";
-      if (opts.onSkip) { var sk = add(foot, "button", "bento-skip"); sk.innerHTML = 'Skip <i class="ti ti-player-skip-forward"></i>'; sk.onclick = function () { close(); opts.onSkip(); }; }
-      var b = add(foot, "button", "bento-go"); b.innerHTML = opts.goLabel ? (opts.goIcon || '<i class="ti ti-arrow-right"></i>') + ' ' + opts.goLabel + (sel.length ? ' (' + sel.length + ')' : '') : ('<i class="ti ti-player-play-filled"></i> Start ' + (sel.length ? sel.length : "")); b.disabled = !sel.length && !opts.allowEmptyGo;
-      if (opts.domains && opts.domains.length) { b.style.background = "#36b3f0"; b.style.color = "#08283c"; } // CANON plan-day: beat-advance door is BLUE (plan), green stays for tracking-start
-      b.onclick = function () { if (!sel.length && !opts.allowEmptyGo) return; close(); if (opts.onPickMulti) opts.onPickMulti(sel.slice()); else sel.forEach(opts.onPick); };
-    }
-    // PLAN-DAY LIVE MINI-TIMELINE STRIP («ДЕНЬ СОБИРАЕТСЯ», canon): a matte dry-run of distributePlan's gap-fill over the current picks + the day's committed blocks — the day visibly takes shape as you tap. Scoped plan sheets only; never lies (same slot logic).
-    // v1117 list-and-restyle (David 2026-07-17): + a READABLE chosen-list above the rail — every pick so far (this beat + earlier beats via opts.accPicks) as a mini game-piece chip; tap a current-beat chip to unpick, earlier beats ride dimmed (Back edits them). The abstract cells stay as the placement dry-run.
-    var pdStripEl = null;
-    function pdSyncStrip() {
-      if (!(opts.domains && opts.domains.length)) return;
-      if (!pdStripEl) { pdStripEl = document.createElement("div"); pdStripEl.className = "pd-strip"; add(pdStripEl, "div", "pd-strip-lbl", tr("Day taking shape")); pdStripEl._list = add(pdStripEl, "div", "pd-list"); pdStripEl._rail = add(pdStripEl, "div", "pd-rail"); var ax = add(pdStripEl, "div", "pd-axis"); ["08", "12", "16", "20", "24"].forEach(function (h) { add(ax, "span", "", h); }); if (foot && foot.parentNode === card) card.insertBefore(pdStripEl, foot); else card.appendChild(pdStripEl); }
-      var rail = pdStripEl._rail; rail.innerHTML = "";
-      var listEl = pdStripEl._list; while (listEl.firstChild) listEl.removeChild(listEl.firstChild); // targeted clear (ratchet: no new innerHTML wipe)
-      var pk = opts.planK || todayK(), DAY0 = 8 * 60, DAY1 = 24 * 60, span = DAY1 - DAY0;
-      function x(m) { return Math.max(0, Math.min(100, (m - DAY0) / span * 100)); }
-      var occ = [];
-      try { blocks(pk).forEach(function (b) { var bs = hm(b.time), d = DOM[domainOf(b)] || DOM.focus; occ.push({ s: bs, e: bs + (b.mins || 30) }); var c = add(rail, "div", "pd-cell"); c.style.left = x(bs) + "%"; c.style.width = Math.max(1.5, ((b.mins || 30) / span * 100)) + "%"; c.style.background = mixHex(d.c, "#160510", 0.8); c.style.opacity = ".5"; }); } catch (e) {}
-      occ.sort(function (a, b) { return a.s - b.s; });
-      var cursor = (pk === todayK()) ? Math.max(DAY0, logicalNowMin()) : DAY0;
-      function slot(from, dur) { var t = from, g = 0; while (g++ < 200) { var ok = true; for (var i = 0; i < occ.length; i++) { if (t < occ[i].e && t + dur > occ[i].s) { t = occ[i].e; ok = false; break; } } if (ok) return t; } return t; }
-      var picks = (opts.accPicks || []).map(function (a) { return { a: a, cur: false }; }).concat(sel.map(function (a) { return { a: a, cur: true }; })); // earlier-beat order first, then this beat = distributePlan's eventual acc order
-      picks.forEach(function (p) { var a = p.a, dom = domainOf(a), d = DOM[dom] || DOM.focus, mins = a.mins || 30; var st = Math.min(1410, slot(cursor, mins)); occ.push({ s: st, e: st + mins }); occ.sort(function (q, r) { return q.s - r.s; }); cursor = st + mins;
-        var c = add(rail, "div", "pd-cell" + (p.cur ? " land" : "")); c.style.left = x(st) + "%"; c.style.width = Math.max(3.5, (mins / span * 100)) + "%"; c.style.background = mixHex(d.c, "#160510", p.cur ? 0.42 : 0.62); if (mins / span * 100 > 6) c.innerHTML = tiIcon(a);
-        var pc = add(listEl, "span", "pd-pick" + (p.cur ? "" : " prev")); pc.style.background = (dom === "drift") ? "#5a2a3c" : d.c; pc.style.color = (dom === "drift") ? "#c98ca6" : (d.ink || "#160510"); pc.innerHTML = tiIcon(a) + " " + esc(a.title);
-        if (p.cur) pc.onclick = function () { commit(a); }; });
-      listEl.scrollLeft = listEl.scrollWidth; // newest pick stays in view
-      if (pk === todayK()) { var nt = add(rail, "div", "pd-nowtick"); nt.style.left = x(logicalNowMin()) + "%"; }
-    }
-    // OVERVIEW (David v647): the ORIGINAL beautiful striped bento cards — but SPLIT INTO 4 TABS (Energy/Work/Love/Other) so you only ever see one category's cards at a time (not overwhelming, still the bento box we designed). Each card's chips SCROLL. Recent + search on top. (Plan beats still use renderScoped.)
-    function renderOverview() {
-      if (opts.headNode) body.appendChild(opts.headNode);
-      var sb = add(body, "div", "bento-search"); add(sb, "span", "bento-sicon").innerHTML = '<i class="ti ti-search"></i>';
-      var si = document.createElement("input"); si.type = "text"; si.className = "bento-sinput"; si.placeholder = "search activities…"; si.value = searchQ; sb.appendChild(si);
-      var pinList = []; ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { if (isPinned(a)) pinList.push(a); }); });
-      var pinned = add(body, "div", "bento-pinned");
-      if (pinList.length) { add(pinned, "span", "bento-qlbl", "★ Pinned"); pinList.forEach(function (a) { actChip(a, pinned, true).classList.add("fav"); }); }
-      var recent = add(body, "div", "bento-pinned");
-      try { var fr = frequent(8); if (fr.length) { add(recent, "span", "bento-qlbl", "Recent"); fr.forEach(function (m) { actChip(actOf(m), recent, true); }); } } catch (e) {}
-      if (opts.priority && opts.priority.length) { var pr = add(body, "div", "bento-pinned"); add(pr, "span", "bento-qlbl", "Been meaning to"); opts.priority.forEach(function (m) { actChip(actOf(m), pr, true); }); }
-      // THE 4 TABS — only the active supercategory's striped cards render
-      if (!view.tab) view.tab = "energy";
-      var tabsEl = add(body, "div", "bento-tabrow");
-      SUPERCAT.forEach(function (sc) { var t = add(tabsEl, "span", "bento-tab" + (sc.k === view.tab ? " on" : ""), sc.l); t.style.color = (sc.k === view.tab ? "#fff" : sc.c); if (sc.k === view.tab) { t.style.background = mixDark(sc.c); t.style.borderColor = mixHex(sc.c, "#160510", 0.25); } t.onclick = function () { view.tab = sc.k; renderBento(); }; });
-      var results = add(body, "div", "bento-results"); results.style.display = "none";
-      var gridWrap = add(body, "div", "bento-gridwrap");
-      var activeSc = SUPERCAT.filter(function (s) { return s.k === view.tab; })[0] || SUPERCAT[0];
-      activeSc.domains.forEach(function (d) {
-        var acts = (by[d] || []).slice(); if (!acts.length) return;
-        acts.sort(function (x, y) { return (isPinned(y) ? 1 : 0) - (isPinned(x) ? 1 : 0); });
-        var D = DOM[d], mc = add(gridWrap, "div", "bento-cat"); mc.style.background = mixHex(D.c, "#160510", 0.72); mc.style.borderColor = mixHex(D.c, "#160510", 0.4);
-        var lab = add(mc, "div", "bento-catl", D.l.toUpperCase()); lab.style.color = D.light;
-        var wrap = add(mc, "div", "bento-chips"); acts.forEach(function (a) { actChip(a, wrap, false); }); // ALL chips — the strip scrolls (David v647)
-        var adc = add(wrap, "span", "bchip addc"); adc.innerHTML = '<i class="ti ti-plus"></i>'; adc.onclick = addNew;
-      });
-      cascadeIn(gridWrap.children); // the striped cards spring in, staggered (v648)
-      var addb = add(body, "div", "bento-add"); addb.innerHTML = '<i class="ti ti-plus"></i> add activity'; addb.onclick = addNew;
-      function drawResults(q) {
-        if (!q) { results.style.display = "none"; results.innerHTML = ""; gridWrap.style.display = ""; tabsEl.style.display = ""; pinned.style.display = ""; recent.style.display = ""; addb.style.display = ""; return; }
-        gridWrap.style.display = "none"; tabsEl.style.display = "none"; pinned.style.display = "none"; recent.style.display = "none"; addb.style.display = "none"; results.style.display = ""; results.innerHTML = "";
-        var ql = q.toLowerCase(), hits = [], seen2 = {};
-        ORDER.forEach(function (d) { (by[d] || []).forEach(function (a) { var t = (a.title || "").toLowerCase(); if (t.indexOf(ql) >= 0 && !seen2[t]) { seen2[t] = 1; hits.push(a); } }); });
-        hits.sort(function (a, b) { return a.title.toLowerCase().indexOf(ql) - b.title.toLowerCase().indexOf(ql); });
-        hits.slice(0, 60).forEach(function (a) { actChip(a, results, false); });
-        var ab = add(results, "span", "bchip addc"); ab.innerHTML = '<i class="ti ti-plus"></i> "' + esc(q) + '"'; ab.onclick = function () { S.acts = S.acts || []; S.acts.push({ title: q, catK: null, domain: "focus" }); save(); by = bentoByDomain(); commit({ title: q, catK: null, habitId: null, domain: "focus", color: DOM.focus.c }); };
-      }
-      si.oninput = function () { searchQ = si.value; drawResults(searchQ.trim()); };
-      si.onkeydown = function (e) { if (e.key === "Enter") { var first = results.querySelector(".bchip:not(.addc)"); if (first && searchQ.trim()) first.click(); } };
-      drawResults(searchQ.trim());
-    }
-    function renderBento() {
-      body.innerHTML = "";
-      if (view.cat) { renderExpanded(view.cat); return; }            // deep per-domain view (still reachable)
-      if (opts.domains && opts.domains.length) { renderScoped(); return; } // plan beats: scoped to specific domains → direct list
-      renderOverview();                                              // the tabbed striped bento box
-    }
-    renderBento(); renderFoot(); pdSyncStrip();
-  }
+  // ===== THE BENTO IS DELETED (David 2026-08-22: "old bento should never exist"). 197 lines, the "What are you doing?"
+  // wall with the RECENT row, the search box, the striped overview and the plan-day strip. It answered fifteen doors and
+  // every one of them now opens @SEC:PICKER instead — twelve through its PICK-ONE mode, Plan-my-day's four beats through
+  // its BEAT mode. Nothing was left pointing here, so the function is gone rather than merely unreachable: an orphaned
+  // menu is a menu that comes back the next time someone needs a picker in a hurry.
+  // The .bento-* CSS STAYS — the duration sheet, the habits sheet and the goal sheet are built out of those same classes
+  // and are not this component. allActivities / bentoByDomain / isPinned / togglePin stay too: they are the activity
+  // LIBRARY, and the new picker reads from exactly the same pool, which is why every rewired door still finds its things.
 
   // ---- picker (shared) ---------------------------------------------------
   function pickerSheet(opts) {
@@ -14024,33 +13890,35 @@
     function accTitlesFor(domains) { return acc.filter(function (a) { return domains.indexOf(domainOf(a)) >= 0; }).map(function (a) { return a.title; }); }
     // commit a beat: drop this beat's old domain contributions, then append the fresh picks (so removing-on-Back actually removes; order preserved)
     function commitBeat(domains, picks) { acc = acc.filter(function (a) { return domains.indexOf(domainOf(a)) < 0; }); (picks || []).forEach(function (p) { if (p && !acc.some(function (a) { return (a.title || "").toLowerCase() === (p.title || "").toLowerCase(); })) acc.push(p); }); }
+    // THE BEATS SURVIVE THE BENTO (David 2026-08-22, "old bento should never exist"). Plan-my-day was the last flow still
+    // standing on it, and it is the ONE caller that needed more than a picker: four scoped beats, a virtue head, picks that
+    // accumulate across steps, Back, and a "been meaning to" row. All four moved into @SEC:PICKER's BEAT mode rather than
+    // being thrown away with the surface that used to host them — the Big Three is a chapter of the journey, not a menu.
+    // The ONE affordance that did not survive: the separate Skip button. Next now walks forward with an empty queue, which
+    // is what allowEmptyGo already meant, so nothing is forced and there is one less word on the bar.
+    function beatSeed(domains) { return acc.filter(function (a) { return domains.indexOf(domainOf(a)) >= 0; }); }
     function runBeat(i) {
       if (i >= BIG3.length) { runElse(); return; }
       var beat = BIG3[i];
-      bentoPicker({
-        title: beat.label,
-        multi: true, planK: k, domains: beat.domains, headNode: big3HeadNode(beat, i), preselect: accTitlesFor(beat.domains),
-        accPicks: acc.filter(function (a) { return beat.domains.indexOf(domainOf(a)) < 0; }), // earlier beats' picks ride into the strip (readable + dry-run) so the shape never lies across beats
-        // surface the "been meaning to…" items that belong to THIS beat's domains
-        priority: avoided.filter(function (m) { return beat.domains.indexOf(domainOf(m)) >= 0; }),
-        goLabel: (i < BIG3.length - 1 ? "Next: " + BIG3[i + 1].label : "Next: everything else"), goIcon: '<i class="ti ti-arrow-right"></i>',
-        allowEmptyGo: true, // can step forward with nothing picked (never force)
-        onBack: i > 0 ? function () { runBeat(i - 1); } : null,
-        onPickMulti: function (sel) { commitBeat(beat.domains, sel); runBeat(i + 1); },
-        onSkip: function () { runBeat(i + 1); }
+      pkOpen({
+        k: k, title: beat.label, doms: beat.domains, head: big3HeadNode(beat, i), seed: beatSeed(beat.domains),
+        hot: avoided.filter(function (m) { return beat.domains.indexOf(domainOf(m)) >= 0; }), // the "been meaning to…" items that belong to THIS beat's domains
+        foot: {
+          label: tr("Next:") + " " + (i < BIG3.length - 1 ? tr(BIG3[i + 1].label) : tr("Everything else").toLowerCase()), icon: "ti-arrow-right", // composed from halves: "Next: Work" can never be a dict key, its two words can
+          onGo: function (picks) { commitBeat(beat.domains, picks); runBeat(i + 1); },
+          onBack: i > 0 ? function (picks) { commitBeat(beat.domains, picks); runBeat(i - 1); } : null // stepping back KEEPS what this beat gathered, so Back is never a punishment
+        }
       });
     }
     function runElse() {
-      bentoPicker({
-        title: "Everything else",
-        multi: true, planK: k, domains: ELSE_DOMAINS, preselect: accTitlesFor(ELSE_DOMAINS), headNode: big3HeadNode({ emoji: "ti-sparkles", virtue: "zest" }, 3),
-        accPicks: acc.filter(function (a) { return ELSE_DOMAINS.indexOf(domainOf(a)) < 0; }),
-        priority: avoided.filter(function (m) { var d = domainOf(m); return BIG3.every(function (b) { return b.domains.indexOf(d) < 0; }); }),
-        goLabel: "Arrange them", goIcon: '<i class="ti ti-adjustments-horizontal"></i>',
-        allowEmptyGo: true,
-        onBack: function () { runBeat(BIG3.length - 1); },
-        onPickMulti: function (sel) { commitBeat(ELSE_DOMAINS, sel); if (!acc.length) { toast("Nothing picked · plan whenever you're ready."); return; } orderStep(k, acc); },
-        onSkip: function () { if (!acc.length) { toast("Nothing picked · plan whenever you're ready."); return; } orderStep(k, acc); }
+      pkOpen({
+        k: k, title: "Everything else", doms: ELSE_DOMAINS, head: big3HeadNode({ emoji: "ti-sparkles", virtue: "zest" }, 3), seed: beatSeed(ELSE_DOMAINS),
+        hot: avoided.filter(function (m) { var d = domainOf(m); return BIG3.every(function (b) { return b.domains.indexOf(d) < 0; }); }),
+        foot: {
+          label: "Arrange them", icon: "ti-adjustments-horizontal",
+          onGo: function (picks) { commitBeat(ELSE_DOMAINS, picks); if (!acc.length) { toast(tr("Nothing picked · plan whenever you're ready.")); return; } orderStep(k, acc); },
+          onBack: function (picks) { commitBeat(ELSE_DOMAINS, picks); runBeat(BIG3.length - 1); }
+        }
       });
     }
     runBeat(0);
@@ -14068,8 +13936,8 @@
       title: (k === todayK() ? "Arrange your day" : "Arrange " + rel),
       track: track, unit: "min", lookup: actLook, pick: true,
       playLabel: "Add {n} to " + rel, showPrio: true, customLength: true, addDur: 30,
-      onAdd: function (cb) { bentoPicker({ title: "Add to your day", onPick: function (x) { cb(actItem(x)); } }); },
-      onSwap: function (item, cb) { bentoPicker({ title: "Swap for…", onPick: function (x) { cb(actItem(x, item)); } }); },
+      onAdd: function (cb) { pkOpen({ title: "Add to your day", pick: function (x) { cb(actItem(x)); } }); },
+      onSwap: function (item, cb) { pkOpen({ title: "Swap for…", pick: function (x) { cb(actItem(x, item)); } }); },
       onPick: function (items) { var out = (items || []).map(function (it) { var a = it.act || {}; a.mins = it.d; a.prio = it.prio || 2; return a; }); if (out.length) distributePlan(k, out); }
     });
   }
@@ -16062,8 +15930,8 @@
       if (isPick && typeof use !== "undefined" && use && /\{n\}/.test(cfg.playLabel || "")) use.innerHTML = '<i class="ti ti-check"></i> ' + esc(tr(cfg.playLabel.replace("{n}", track.length))); // keep the "Add N to today" count live
     }
     function openTray(replaceIdx) { // pick a block: append (replaceIdx<0) or swap into replaceIdx
-      if (cfg.onAdd && replaceIdx < 0) { cfg.onAdd(function (item) { track.push(item); sel = track.length - 1; persist(); render(); }); return; } // DAY-PLAN: add via bentoPicker
-      if (cfg.onSwap && replaceIdx >= 0) { cfg.onSwap(track[replaceIdx], function (item) { track[replaceIdx] = item; sel = replaceIdx; persist(); render(); }); return; } // DAY-PLAN: swap via bentoPicker
+      if (cfg.onAdd && replaceIdx < 0) { cfg.onAdd(function (item) { track.push(item); sel = track.length - 1; persist(); render(); }); return; } // DAY-PLAN: add via the picker (PICK-ONE mode)
+      if (cfg.onSwap && replaceIdx >= 0) { cfg.onSwap(track[replaceIdx], function (item) { track[replaceIdx] = item; sel = replaceIdx; persist(); render(); }); return; } // DAY-PLAN: swap via the picker (PICK-ONE mode)
       var t2 = add(document.body, "div"); t2.style.cssText = "position:fixed;inset:0;z-index:60;background:rgba(8,4,12,.66);display:flex;align-items:flex-end;";
       t2.onclick = function (e) { if (e.target === t2) t2.remove(); };
       var sheet = add(t2, "div"); sheet.style.cssText = "width:100%;max-height:74vh;overflow-y:auto;background:#1c0e30;border-top-left-radius:20px;border-top-right-radius:20px;border-top:2.5px solid #160510;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 16px);font-family:'Jost',var(--bub),sans-serif;";
@@ -19348,6 +19216,9 @@
 
   window.DEV.tr = function (t) { return tr(t); };                 // what the dict answers for one exact string
   window.DEV.dict = function () { return I18N[curLang()] || {}; }; // the live dictionary, for counting/searching
+  window.DEV.pick = function (title) { window.__picked = null; pkOpen({ title: title || "What is it?", pick: function (x) { window.__picked = x; } }); return "PICK-ONE open — tap a thing, then read DEV.picked()"; }; // the mode the twelve ex-bento doors run on; __picked is the payload they receive
+  window.DEV.picked = function () { return window.__picked || "nothing picked yet"; };
+  window.DEV.plan = function (k) { shapeFlow(k || todayK()); return "Plan-my-day (BEAT mode: Energy → Work → Love → everything else)"; };
   window.DEV.ruAudit = function (secs) { // WHAT WILL PRINT IN ENGLISH while the app runs in another language.
     // The player prints `label` / `caps[]` / `sub`. translateTree can only translate a string that is a DICT KEY —
     // and a caption CHUNK is not a key, because capSplit cut it out of a whole line. So a line that IS translated
