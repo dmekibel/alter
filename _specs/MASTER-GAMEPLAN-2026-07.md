@@ -184,6 +184,56 @@ Not a 17th planning doc that re-derives. It is the consolidation layer: given fo
 
 ---
 
+## REVISION 2026-08-22 — THE MVP IS FOUR THINGS (David, this session) · **SUPERSEDES the phase order below**
+
+David redefined the MVP in his own words. It is narrower than the 2026-08-15 roadmap and it re-ranks it: the garden and
+the five-way world (PHASE 2 below) are **out of the MVP**, and the launch gates in `/launch-gates` do not open until
+these four are done. Everything under REVISION 2026-08-15 stays as the INVESTIGATION RECORD (root causes, sizes,
+evidence) — read it for how, not for what-next. **This block is what-next.**
+
+> *"old goals — i have a new idea of MVP."*
+
+### M1 — THE JOURNEY, BASIC AND NOT SILLY
+*"finish a basic version of journey without it being silly. there's a lot of old journey stuff that i haven't designed."*
+The trail carries content and mechanics from before the design system existed. The job is not to deepen the journey; it
+is to get a BASIC one that is his, and to cut what is not. **First move is a CUT LIST, not a build:** enumerate every
+node type, lesson, sheet and copy source the journey renders today, mark each `DAVID-DESIGNED` / `NOT DESIGNED`, and get
+his verdict per row. Do not design in his place — the DESIGN AUTHORITY LAW applies to the journey exactly as it applied
+to the home. Carries forward from 2026-08-15: the never-land-at-the-top bug (root cause found, `adoptTrailToSky`) is
+part of this, not a separate errand.
+
+### M2 — A TUTORIAL, BECAUSE PEOPLE FIND IT OVERWHELMING
+*"i need a tutorial to make any user be able to use the app. people complain it's too complex and overwhelming and they
+value simplicity."*
+EVIDENCE: real users, more than one, unprompted — the strongest evidence class under the Dad Law, and it outranks every
+internal opinion in this document. Note the tension it creates with the depth work: the answer is a teaching layer over
+the app, and probably also SUBTRACTION. The FIRST-RUN LITURGY and the day-one micro-loop already exist (v905-v937) —
+this is not a green field, and the first question is whether they teach or merely perform.
+
+### M3 — THE OBVIOUS DUMB BUGS
+*"remove obvious dumb bugs that make the app not usable. i can find them."*
+**David is the bug source.** He finds them on the device; I fix them same-session and ship. This line exists so the
+standup stops proposing a bug hunt as if it were a project — it is a standing lane, fed by him.
+
+### M4 — BREATHING WITH A PROGRESSION
+*"the breathing to be more nuanced… a progression for breathing so it's easier to go from easy breathing to more
+difficult. maybe even a single breathing exercise can go from easy to hard during a single session so the breathing can
+evolve without changing activities. we can study the science of breathing to design it."*
+Two ideas, and the second is the new one: **intra-session evolution.** One exercise that ramps — the same pattern
+lengthening, the exhale extending, a hold appearing — so depth arrives without switching tools. That is a change to the
+phase clock's contract (today a pattern is a fixed cycle repeated), not a content edit.
+**OWED BY DAVID: his notes for the tools and the player.** He says he has them; nothing is designed against a
+paraphrase of them.
+**OWED BY CLAUDE: the science pass** — a real read of the respiratory literature (CO2 tolerance, exhale-biased
+vagal braking, the tempo ladders used in pranayama and in Wim Hof / Buteyko / resonance training) before anyone picks a
+number, so the ramp is physiology and not vibes. The 2026-08-15 record already establishes the engine facts: two
+independent breathing engines, a defective tone, cue-set and tone mutually exclusive by data shape. That work is
+prerequisite plumbing for this.
+
+### WHAT THIS COSTS
+The launch calendar in §5/§6 and the gates in `/launch-gates` were written against the OLD MVP. They are now behind
+these four and should not be reported as if they were on track. `/standup` reads THIS block first.
+
 ## REVISION 2026-08-15 — THE USABILITY & DEPTH ROADMAP (David's four phases, spoken this session)
 
 The 2c home surface is finally 1:1 with his Claude Design frame and device-confirmed (see `DECISIONS.md` 2026-08-15).
