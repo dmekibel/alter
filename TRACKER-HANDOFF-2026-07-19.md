@@ -1057,3 +1057,61 @@ Verified: landscape 874x402 and 956x440 → guard covers the screen; portrait 44
 returns scale 1.0945, board 440 full-bleed, audit 75/75, zero console errors, ratchets clean.
 DEVICE-UNTESTED: the guard on real iOS rotation (incl. the standalone home-screen PWA, where iOS may still rotate the
 chrome), and whether 520px is the right height bound for his phone's landscape.
+
+## BUG + FIX SPEC — voice dies on screen lock (David 2026-08-23, M3 lane; NOT built, Fable session)
+SYMPTOM: screen off mid-session: music/beds keep playing, the VOICEOVER stops. David wants
+the player to keep running completely with the screen off.
+ROOT CAUSE (read, not guessed): @SEC:TTS installs
+  document.addEventListener("visibilitychange", function(){ if (document.hidden) stop(); })
+  (+ pagehide -> stop). Locking the phone fires visibilitychange(hidden) -> TTS.stop() kills
+  every scheduled voice source. The bg beds (@SEC:AUDIO bed loops) have no such handler, so
+  they keep playing. The player ALREADY pre-schedules all remaining clips on the shared
+  AudioContext (startFrom: "schedule every remaining clip up front"), so the voice would
+  survive lock if TTS.stop() did not execute-kill it.
+THE FIX (small, targeted; Opus build):
+1. Session-audible guard: on hidden, stop() ONLY when no session is running. The flag half-
+   exists: voiceSessionAudible() reads gp-playing. Extend it to also cover breathwork()'s
+   engine (its clips ride the ctx clock too). pagehide keeps stop (real exit).
+2. Audit the breath CUE/TONE schedulers (@ ~12156): if any per-phase hit() is fired from the
+   rAF loop, move it to schedule-ahead on ctx time (a whole act ahead, topped up while
+   visible). rAF is frozen when locked; anything it triggers dies with the screen.
+3. Keep-alive: while gp-playing with NO bed selected, run a silent looping source on the
+   shared ctx so iOS keeps the audio process alive.
+4. Resync on unlock is already inherent (curElapsed = offset + ctx.currentTime - baseCtx);
+   verify finish()/points fire correctly when the end passed while locked.
+VERIFICATION IS DEVICE-ONLY: preview cannot lock a screen. Protocol: start a 5-min stack,
+lock at 0:30, unlock at 3:00 — voice continued through an act boundary, transport shows
+~3:00, session completes and logs. Anything less is DEVICE-UNTESTED.
+
+## PART 2 of the lock-screen build (David 2026-08-23): the iOS now-playing card
+SYMPTOM: with the screen off / player closed, the lock-screen media card shows
+"dmekibel.github" (the domain) as the title, with no useful controls.
+WHY: the page plays audio but never sets Media Session metadata, so iOS falls back to
+the site domain.
+THE FIX (same build as the voice-survives-lock fix, they are one feature):
+1. navigator.mediaSession.metadata = MediaMetadata({ title: the running stack/session
+   name (e.g. "Morning Stack" / the tool name), artist: "ALTER", artwork: the app icon
+   192/512 from the manifest }). Update on act change if the act name is the better title.
+2. Action handlers wired to the REAL transport (timelinePlayer's startFrom/curElapsed):
+   play/pause -> the player's own pause/resume; seekbackward -> startFrom(curElapsed-15);
+   seekforward -> startFrom(curElapsed+15); 15s explicitly via seekOffset. Seeks must
+   re-schedule the voice tail exactly like the in-app scrub does.
+3. iOS quirk: lock-screen controls attach reliably when a media element exists — if the
+   silent keep-alive (fix #3 in Part 1) ships as an <audio> loop instead of a Web Audio
+   loop, it doubles as the Media Session carrier. Decide in-build which carrier works on
+   David's iOS version; verify on device.
+4. RU: the title passes through tr() like every other user-facing string.
+VERIFY (device-only): play a stack, lock: card shows the stack name + working pause and
+both 15s buttons; pause from the lock screen pauses the in-app transport too (state
+stays consistent on unlock).
+
+## PART 2 ADDENDA (David 2026-08-23, sent to the build in-flight)
+- Lock-screen progress = WHOLE STACK time (setPositionState duration = full transport
+  total, position keeps climbing across acts, never per-act; guard NaN).
+- App-switch/backgrounding keeps playing, same guard as screen lock; audited other
+  hidden-listeners (appMusicSync) so nothing else kills a live bed.
+- Artwork = the stack's own designed emblem per the locked stack-card grammar
+  (stkCard() + the .stk CSS block): hue face on own-hue lip, white glyph, two shards
+  fanned up-left, running stack's real tool colors, 512px canvas on #14060f; re-rendered
+  at act boundaries with the current act's hue as the face. Dynamic Island itself is
+  native-only; we feed artwork to the lock card + expanded now-playing (device-tested).
