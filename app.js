@@ -152,6 +152,7 @@
   var _activeBed = null; // the running timelinePlayer registers a (keys[])=>switch fn here so the settings card can live-swap its bed SET
   var _gpSettings = null; // …and a read-only "what is in this session" dump, so the settings card can COMPUTE its rows (hue · does it contain breathing · is it a stack) instead of being told. Cleared on both teardown paths, same as _activeBed.
   var _gpRevoice = null; // …and its "the voice just changed, re-cut your remaining lines" door, called straight from TTS.setVoice/setRuVoice. Same idiom as _activeBed, and for the same reason: a running session has to be told, not left to notice. (The player ALSO polls TTS.voiceGen() in its rAF loop as a safety net for changes that skip the setters — a language switch — but rAF is frozen whenever the page is hidden, so it can never be the primary trigger.)
+  var _breathSession = 0; // how many standalone breathwork() runs are open. Its spoken cues are scheduled straight onto the shared context too, so it is the SECOND surface that is genuinely audible with the screen off — the hide-guard at @SEC:TTS reads this alongside .gp-playing.
   var _gpProbe = null;   // …and a read-only state dump here, for DEV.voice(). The preview cannot judge audio FEEL, but it CAN prove the buffers were genuinely re-decoded from the new bank and the transport did not jump — which is the whole 2026-08-15 voice-swap fix. Cleared on both teardown paths, same as _activeBed.
   // ===== APP BACKGROUND MUSIC (David 2026-07-01): the SAME peaceful pad, at a very low level, drifting under the whole app. Auto-pauses when a tool/player opens; routes into _bgBus; easy off in the Sound panel. =====
   var APPMUSIC = (function () {
@@ -172,6 +173,52 @@
   }
   function appMusicPoke() { if (_amTO) clearTimeout(_amTO); _amTO = setTimeout(appMusicSync, 250); }
   try { if (typeof document !== "undefined" && document.body) { new MutationObserver(appMusicPoke).observe(document.body, { childList: true }); document.addEventListener("visibilitychange", appMusicSync); } } catch (e) {} // watch overlay open/close → pause/resume app music
+  // …and this handler is SAFE for a live session (checked 2026-08-23, the screen-lock lane): `want` is already false while
+  // any #breatheOv is on screen, so APPMUSIC is not running during a session and stop(hidden) has nothing of the session's
+  // to take. It never touches BGBED / BGM / startPad, which is what a player's bed actually runs on.
+  // ===== THE LOCK-SCREEN CARRIER (David 2026-08-23: the session must survive the screen locking AND the lock screen must
+  // become a real remote). ONE silent looping <audio> element does two jobs no Web Audio node can do. (1) KEEP-ALIVE: a
+  // locked or backgrounded page is a HIDDEN page — iOS freezes its JS and is free to tear the audio process down under a
+  // Web-Audio-ONLY page, taking the already-scheduled voice with it. A playing media element is what keeps that process
+  // alive. (2) CARRIER: iOS attaches the now-playing card and its transport buttons to a MEDIA ELEMENT; with none, the
+  // card falls back to the site domain ("dmekibel.github") with no working controls — exactly what David saw.
+  // The element is NEVER in the DOM, never routed into the shared graph, and sits at volume 0.0001, so it can neither
+  // colour the mix nor read as a second audio route. play() MUST run inside the gesture chain that starts the session; a
+  // deferred play() is blocked like any other autoplay, which is why every start path calls start() synchronously.
+  function _silentWav(sec) { // built here rather than pasted as a 10KB base64 literal: 8 kHz, 8-bit, mono. 8-bit PCM silence is 128, not 0.
+    try {
+      var n = Math.max(1, Math.round(8000 * (sec || 1))), b = 44 + n, a = new Uint8Array(b), v = new DataView(a.buffer), i;
+      function w4(o, t) { for (var q = 0; q < t.length; q++) a[o + q] = t.charCodeAt(q); }
+      w4(0, "RIFF"); v.setUint32(4, b - 8, true); w4(8, "WAVEfmt "); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w4(36, "data"); v.setUint32(40, n, true);
+      for (i = 0; i < n; i++) a[44 + i] = 128;
+      var s = ""; for (i = 0; i < b; i++) s += String.fromCharCode(a[i]);
+      return "data:audio/wav;base64," + btoa(s);
+    } catch (e) { return ""; }
+  }
+  var KEEPALIVE = (function () {
+    var el = null, own = null;
+    function node() { if (el) return el; try { var u = _silentWav(1); if (!u) return null; el = document.createElement("audio"); el.src = u; el.loop = true; el.volume = 0.0001; el.preload = "auto"; el.setAttribute("playsinline", ""); } catch (e) { el = null; } return el; }
+    function start(who) { var a = node(); if (!a) return; own = who || 1; try { var p = a.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
+    function stop(who) { if (who != null && own != null && own !== who) return; own = null; try { if (el) { el.pause(); el.currentTime = 0; } } catch (e) {} } // a breathwork opened OVER a player owns the carrier now; the player's own pause must not pull it out from under it
+    return { start: start, stop: stop, live: function () { return !!el && !el.paused; } };
+  })();
+  // ===== THE NOW-PLAYING CARD (David 2026-08-23). Every call is guarded: Media Session is absent on plenty of engines and
+  // a throw here would take the running session down with it. THE PROGRESS IS THE WHOLE STACK'S — duration is the player's
+  // own `total` across every act and position is curElapsed() on that same transport, so crossing an act boundary moves
+  // the title and never resets the clock (David: the card must show the session's time, not the current step's).
+  var MS_ART = [{ src: "icon-192.png?v=2", sizes: "192x192", type: "image/png" }, { src: "icon-512.png?v=2", sizes: "512x512", type: "image/png" }]; // manifest.json's own icons, verbatim — the fallback whenever the drawn emblem fails
+  var MEDIASESSION = (function () {
+    var own = null, blob = null;
+    function ms() { try { return navigator.mediaSession || null; } catch (e) { return null; } }
+    function meta(title, art) { var m = ms(); if (!m) return; try { if (typeof MediaMetadata !== "function") return; m.metadata = new MediaMetadata({ title: tr(title || "Session"), artist: "ALTER", artwork: art || MS_ART }); } catch (e) {} }
+    function claim(who, title, art) { own = who; meta(title, art); }
+    function state(s) { var m = ms(); if (!m) return; try { m.playbackState = s; } catch (e) {} }
+    function pos(dur, at) { var m = ms(); if (!m || !m.setPositionState) return; if (!isFinite(dur) || !isFinite(at) || dur <= 0) return; try { m.setPositionState({ duration: dur, position: at < 0 ? 0 : (at > dur ? dur : at), playbackRate: 1 }); } catch (e) {} } // a NaN / Infinity / not-yet-laid-out total throws instead of printing — such a session simply does not report a clock
+    function handlers(h) { var m = ms(); if (!m || !m.setActionHandler) return; ["play", "pause", "seekbackward", "seekforward", "seekto", "stop"].forEach(function (k) { try { m.setActionHandler(k, (h && h[k]) || null); } catch (e) {} }); }
+    function art(u) { var old = blob; blob = u || null; if (old && old !== u) { try { URL.revokeObjectURL(old); } catch (e) {} } } // ONE live blob at a time — the previous act's emblem is revoked only after the new metadata is already set
+    function release(who) { if (own !== who) return; own = null; handlers(null); var m = ms(); if (m) { try { m.metadata = null; } catch (e) {} try { m.playbackState = "none"; } catch (e) {} } art(null); }
+    return { claim: claim, meta: meta, state: state, pos: pos, handlers: handlers, art: art, release: release, owner: function () { return own; } };
+  })();
   // ===== THE ENTRY SIGNATURE (SPEC-FIRST-RUN §7, P1): the SAME 3 notes open every ceremony — the constant sensory signature that conditions faster gates (§0 law 4). Composed once, Web Audio, rides the TTS.unlock gesture. Later: called at the head of every room/ceremony. =====
   function entrySignature(vol) {
     try {
@@ -378,7 +425,12 @@
       } catch (e) {}
       return null;
     }
-    if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden) stop(); }); window.addEventListener("pagehide", stop); }
+    // THE HIDE GUARD (David 2026-08-23: "the voiceover stops when the screen goes off"). Hiding the page is NOT the same
+    // event as leaving it: locking the phone and switching apps both fire visibilitychange(hidden), and in both of those
+    // a started session is meant to keep speaking. So the blanket stop() runs only when nothing is actually SOUNDING —
+    // sessionAudioLive() is the honest answer (a playing composed player, or an open breathwork run). pagehide keeps the
+    // unconditional stop: that one is the real exit, and audio outliving a torn-down page is a bug.
+    if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden && !sessionAudioLive()) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
     return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasClipFor(t); }, setVoice: setVoice, setRuVoice: setRuVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; }, voiceGen: voiceGen, bank: curBank };
   })();
@@ -403,6 +455,12 @@
   // guided tool speaks through TTS.speak(), which stops whatever was sounding before it starts, so a preview there
   // can never double up by construction.
   function voiceSessionAudible() { var gp = document.querySelector(".gp-ov"); return !!(gp && gp.classList.contains("gp-playing")); }
+  // …and the same question one surface wider, for the hide guard only. The voice-PREVIEW gate above must stay exactly as
+  // narrow as it is (it answers "could two voices sound at once"); the hide guard has to answer "is anything of ours
+  // sounding at all", which also covers a standalone breathwork() — its spoken cues are scheduled onto the context up
+  // front, so it too keeps sounding with the screen off and must not be executed-killed by a lock. Kept as a separate
+  // function on purpose: widening voiceSessionAudible itself would silently change what the voice chips suppress.
+  function sessionAudioLive() { try { return voiceSessionAudible() || _breathSession > 0; } catch (e) { return false; } }
   // 🔊/🔇 toggle for guided overlays — top-left, mirrors the skip button. Lets David mute mid-session.
   function addVoiceToggle(ov) {
     if (!TTS.supported) return null;
@@ -6329,6 +6387,48 @@
     if (o.on && o.ignite) i.style.color = PK_INK;
     return { wrap: w, face: f, icon: i };
   }
+  // ===== THE SAME CARD, DRAWN FOR THE LOCK SCREEN (David 2026-08-23: "the morning stack is an orange thing and then a
+  // teal thing behind it and the pink thing behind it and the little icon — that whole thing shown in the lock screen").
+  // iOS takes an IMAGE, not a DOM node, so the grammar is replayed on a canvas from the SAME constants .stk paints from:
+  // squircle 0.35·S, flat hue face on a 0.12·S lip of its own hue at 50% toward black, white #fff2f9 glyph at 0.34·S
+  // under its soft drop, TWO near-full-size shards fanned UP-LEFT ONLY on their own 0.08·S hue lips plus the ambient.
+  // Nothing here is eyeballed — STK_GEO / stkLip / stkShardShadow supply every number.
+  // THE ONE DEVIATION, stated: STK_GEO's `d` is an ABSOLUTE 4/6 px because the shipped cards are 36-56px. At S≈300 a
+  // literal 4px shrink would stack three identical squares, so `d` scales from its 56px reference — the ratio that
+  // reproduces the frame's look, not a new proportion.
+  function stkEmblemGlyph(ti) { // the Tabler codepoint, read off the FONT's own :before rule — never a hardcoded table that would drift with the icon set
+    try {
+      if (document.fonts && document.fonts.check && !document.fonts.check('16px "tabler-icons"')) return ""; // the webfont has not landed: no glyph beats a tofu box
+      var p = document.createElement("i"); p.className = "ti " + ti; p.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden;";
+      document.body.appendChild(p); var c = getComputedStyle(p, ":before").content || ""; p.parentNode.removeChild(p);
+      c = c.replace(/^["']|["']$/g, ""); return (c && c !== "none" && c !== "normal" && c.length <= 2) ? c : "";
+    } catch (e) { return ""; }
+  }
+  function stkEmblemReady(fn) { try { if (document.fonts && document.fonts.ready && document.fonts.ready.then) { document.fonts.ready.then(fn, fn); return; } } catch (e) {} fn(); } // the icon font is a CDN webfont; the first emblem waits for it rather than baking a box into the card
+  function stkEmblemPNG(hue, ti, shards, done) { // → done(blobURL) or done(null); the caller falls back to the manifest icons on null
+    try {
+      var SZ = 512, S = 300, cv = document.createElement("canvas"); cv.width = cv.height = SZ;
+      var x = cv.getContext("2d"); if (!x) { done(null); return; }
+      x.fillStyle = "#14060f"; x.fillRect(0, 0, SZ, SZ); // the app's own dark ground
+      var k = S / 56; // every absolute px in the 56px reference recipe rides this
+      var fx = (SZ - S * 1.14) / 2 + S * 0.14, fy = (SZ - S * 1.206) / 2 + S * 0.086; // the fan grows up-left (0.14·S / 0.086·S) and the lip hangs 0.12·S below, so the FACE sits low-right of centre by exactly those ratios
+      function rr(px, py, w, h, r, fill, blur, oy) {
+        x.save(); if (blur) { x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = blur; x.shadowOffsetY = oy || 0; }
+        x.fillStyle = fill; x.beginPath();
+        if (x.roundRect) x.roundRect(px, py, w, h, r);
+        else { x.moveTo(px + r, py); x.arcTo(px + w, py, px + w, py + h, r); x.arcTo(px + w, py + h, px, py + h, r); x.arcTo(px, py + h, px, py, r); x.arcTo(px, py, px + w, py, r); }
+        x.fill(); x.restore();
+      }
+      [1, 0].forEach(function (n) { var h = shards && shards[n]; if (!h) return; var G = STK_GEO[n], sz = S - G.d * k, sx = fx - S * G.x, sy = fy - S * G.y, r2 = sz * 0.35;
+        rr(sx, sy + Math.round(sz * 0.08), sz, sz, r2, stkMix(h, "#000000", 0.5), 12 * k, 6 * k); // the shard's THINNER own-hue lip, carrying the soft ambient that lifts the fan off the ground
+        rr(sx, sy, sz, sz, r2, h); }); // far shard first, exactly as stkCard appends them
+      rr(fx, fy + Math.round(S * 0.12), S, S, S * 0.35, stkMix(hue, "#000000", 0.5)); // the chunky lip, in the FACE's own hue at 50% toward black — never ink
+      rr(fx, fy, S, S, S * 0.35, hue);
+      var g = stkEmblemGlyph(ti || "ti-stack-2");
+      if (g) { x.save(); x.font = Math.round(S * 0.34) + 'px "tabler-icons"'; x.textAlign = "center"; x.textBaseline = "middle"; x.shadowColor = "rgba(0,0,0,.28)"; x.shadowOffsetY = 1.5 * k; x.fillStyle = "#fff2f9"; x.fillText(g, fx + S / 2, fy + S / 2); x.restore(); }
+      try { cv.toBlob(function (b) { if (!b) { done(null); return; } try { done(URL.createObjectURL(b)); } catch (e) { done(null); } }, "image/png"); } catch (e) { done(null); }
+    } catch (e) { try { done(null); } catch (e2) {} }
+  }
   // @SEC:TOOLBOX2 — the home-scroll TOOLBOX (Fable-planned frame 20a + 20c, Opus-built 2026-07-23). REPLACES the 2x4 renderHomeGrid tiles + the renderGroundTools shelf: renders (Plan-my-day now lives on the home face) top-eight grid → 2 hero rows → bento intro → 6 collapsible category squares (all into the GROUND zone #tfWorldGround of the one-page world). ONE grid of 8 (David 2026-07-23 device — the second grid was removed), one continuous native scroll, NO new scroll container / listener / snap. Data-driven (TBX_ITEMS + TBX_CATS). Single-open dose card (openStack) + category panel (openCat), inserted in-flow with grid-column:1/-1 / full-width, --ease-settle ~.3s (M6). Guarded by TBX2 (false = old renderHomeGrid + renderGroundTools byte-identical). Child-drain only — ZERO new innerHTML wipes (ratchet law). Every string via tr() + RU dict in the same commit. See DESIGN-EXTRACT frame 20a/20c.
   var TBX2 = true;             // kill-switch: false restores the old 2x4 home grid + full-tool ground shelf exactly.
   var TBX_PLUS = true;         // BETA: assume the user pays — full access, incl. custom-editing the tools (David 2026-07-23). ONE flag, consulted at every Plus gate (currently the dose-card "Adjust steps & timing" row). true → the row is FUNCTIONAL (opens the composer); the PLUS badge stays visible (it signals the future paywall). Flip to false when shipping to non-payers → the row falls back to the whisper toast.
@@ -12136,6 +12236,7 @@
     var P0 = BREATH_PATTERNS[patKey] || BREATH_PATTERNS.resonance;
     return [{ P: P0, cyc: cycles || P0.cyc || 4 }];
   }
+  function breathGlyph(st) { return (st && st.P && st.P.ti) || "ti-lungs"; } // v1353 added the story-bar call without this helper — every picker-launched breathwork() threw before its first frame
   // THE PLAYER'S BREATH RUNS — every contiguous stretch of breath-tagged segments becomes ONE clock, built from the segments' REAL laid-out spans (so the dose re-fit and the act-boundary beat are already inside the numbers, not guessed from the pattern). Shared by timelinePlayer's relayoutFrom AND by DEV.breathAgree, so the probe measures the shipping code rather than a copy of it.
   function breathRunsFromSegs(segs) {
     var runs = [], i = 0;
@@ -12182,6 +12283,30 @@
           o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05); } catch (e) {} } }
   };
   var BREATH_CUE_KEYS = ["bell", "gong", "woodblock", "off"];
+  // ===== SCHEDULE-AHEAD FOR THE BREATH LAYER (David 2026-08-23, the screen-lock lane). Both engines strike their cue and
+  // move their tone from a paint loop, and iOS freezes rAF and every timer the instant the phone locks or the app is
+  // switched away — so the cues stop and the tone parks at whatever level the last frame left it on, while the voice
+  // clips scheduled on the context keep playing. hit() and update() BOTH already take an explicit context second, so the
+  // whole remaining run is planted on the ctx clock instead and the paint loop only handles what it finds unplanted.
+  // The cue strikes must be planted through a gate the caller owns: a scheduled oscillator is already started in the
+  // future and there is no other way to take it back when the transport jumps.
+  var BREATH_SCHED_STEP = 200, BREATH_SCHED_MAX = 2000; // the tone's pre-planted level grid: one step per 200ms, which its own 80ms setTargetAtTime constant smooths back into a glide. Capped so a very long run cannot plant an unbounded automation list.
+  function breathScheduleAhead(clock, ctx, gate, tone, fromMs, atSec, keys, kpre) {
+    if (!clock || !ctx) return 0;
+    var ck = breathCueKey(), CU = BREATH_CUES[ck] || BREATH_CUES.off, ph = clock.phases, st = clock.starts, n = 0, i;
+    if (ck !== "off" && gate) for (i = 0; i < ph.length; i++) {
+      if (st[i] <= fromMs + 1) continue; // already heard, or the boundary the ear is standing on this instant — the engines' own _bSup owns that one
+      try { CU.hit(ph[i].kind, ctx, gate, ph[i].ms / 1000, atSec + (st[i] - fromMs) / 1000); } catch (e) {}
+      if (keys) keys[(kpre || "") + i] = 1; n++;
+    }
+    if (tone) { var q = 0; for (var ms = fromMs; ms <= clock.total && q < BREATH_SCHED_MAX; ms += BREATH_SCHED_STEP, q++) { var s = clock.at(ms); if (!s) break; try { tone.update(s.level, s.phase, atSec + (ms - fromMs) / 1000); } catch (e) {} } }
+    return n;
+  }
+  function breathGateOff(gate, ctx) { // fade the planted strikes out over 120ms and drop the node — a hard disconnect under a ringing bell is a click
+    if (!gate) return;
+    try { if (ctx) { gate.gain.cancelScheduledValues(ctx.currentTime); gate.gain.setValueAtTime(gate.gain.value, ctx.currentTime); gate.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + 0.12); } } catch (e) {}
+    setTimeout(function () { try { gate.disconnect(); } catch (e) {} }, 400);
+  }
   // hit(kind, ctx, out, durSec, at) — `at` (optional) schedules against an explicit context second instead of ctx.currentTime, so DEV.breathCues / DEV.breathToggles can pre-schedule a whole run into an OfflineAudioContext and MEASURE what the set actually emits per phase.
   var BREATH_TONES = { glide: { name: "Glide" }, chord: { name: "Chord" }, ocean: { name: "Ocean" } };
   var BREATH_TONE_KEYS = ["glide", "chord", "ocean"];
@@ -12493,10 +12618,20 @@
     // THE TWO AUDIO LAYERS, INDEPENDENT (David 2026-08-15). S.breathCue picks the per-phase cue set, S.breathTone picks the guiding tone; either, both or neither. The old single S.breathSound could only ever be one of them.
     var actx = null; try { actx = sharedAudioCtx(); } catch (e) { actx = null; }
     var CU = BREATH_CUES.off, tone = null, toneKey = "off";
+    var _bwGate = null, _bwSchedK = {}, _bwUp = 0; // the planted cue strikes' gate + the boundaries already planted (so the paint loop never strikes one twice)
     function readSound() { // re-readable, so a change made in the in-session cog applies to THIS session
       CU = BREATH_CUES[breathCueKey()] || BREATH_CUES.off;
       var tk = breathToneKey();
       if (tk !== toneKey) { if (tone) { try { tone.stop(); } catch (e) {} tone = null; } toneKey = tk; if (tk !== "off" && actx) { try { tone = makeBreathSustain(tk, actx); } catch (e) { tone = null; } } }
+      if (_bwUp) bwPlant(); // a live pick lands on the SCHEDULE too, not only on the next visible frame — otherwise a set chosen mid-session would be missing the moment the screen goes off
+    }
+    function bwPlantOff() { breathGateOff(_bwGate, actx); _bwGate = null; _bwSchedK = {}; }
+    function bwPlant() { // plant the whole REMAINING run on the context clock: this surface has no seek and no pause, so one pass covers it end to end
+      bwPlantOff(); if (!actx || done) return;
+      var from = Math.max(0, nowMs()); if (from >= clock.total) return;
+      try { _bwGate = actx.createGain(); _bwGate.gain.value = 1; _bwGate.connect(bgBus() || actx.destination); } catch (e) { _bwGate = null; }
+      breathScheduleAhead(clock, actx, _bwGate, tone, from, T0 + (from + START_MS) / 1000, _bwSchedK, "");
+      _bwUp = 1;
     }
     readSound(); _breathLive = readSound;
     var START_MS = 900;
@@ -12507,9 +12642,15 @@
     if (S && S.breathVoice) (function () { var tSec = START_MS / 1000; for (var fi = 0; fi < phases.length; fi++) { if (phases[fi].kind !== "rest") { var s = TTS.scheduleClipAsync(phases[fi].label, tSec, VPROF.breath.volume, T0); if (s) schedSrcs.push(s); } tSec += phases[fi].ms / 1000; } })(); // voiceless unless S.breathVoice opted in (David 2026-07-20); speak the SHOWN label so the voice matches the on-screen text
     function nowMs() { return ((actx ? actx.currentTime : (Date.now() / 1000)) - T0) * 1000 - START_MS; }
     var done = false, raf = null;
+    // SURVIVE THE LOCK (David 2026-08-23). The carrier goes up inside this launch tap — a deferred play() is blocked — and
+    // the cue strikes + the tone's level curve are planted on the context clock beside the spoken clips that already were.
+    var _bwTok = {}; _breathSession++; KEEPALIVE.start(_bwTok); bwPlant();
+    MEDIASESSION.claim(_bwTok, "Breathe", null); MEDIASESSION.state("playing"); MEDIASESSION.pos(totalMs / 1000, 0);
+    stkEmblemReady(function () { if (done) return; stkEmblemPNG(BREATH_HUE, "ti-lungs", stkShards(BREATH_HUE, []), function (u) { if (done || MEDIASESSION.owner() !== _bwTok) { if (u) { try { URL.revokeObjectURL(u); } catch (e) {} } return; } MEDIASESSION.meta("Breathe", u ? [{ src: u, sizes: "512x512", type: "image/png" }] : null); MEDIASESSION.art(u); }); }); // this surface has no transport, so it claims the card's NAME and clock only — no action handlers, because there is no real pause behind them to keep honest
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); TTS.stop();
       schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
+      bwPlantOff(); _breathSession = Math.max(0, _breathSession - 1); KEEPALIVE.stop(_bwTok); MEDIASESSION.release(_bwTok);
       if (tone) { try { tone.stop(); } catch (e) {} tone = null; }
       if (_breathLive === readSound) _breathLive = null;
       if (_gpSettings === _bwScope) _gpSettings = null; // only if it is still OURS (a composed player opened over this one owns it now) — same rule as the _breathLive hook above
@@ -12552,7 +12693,7 @@
       if (el >= totalMs) { lab.textContent = tr("Done ✓"); sub.textContent = tr("carry the calm with you"); paintPhase(null); if (tone) tone.update(0, "rest"); paintBars(totalMs); VIZ.paint(vnodes, clock.at(totalMs)); if (!ov._ending) { ov._ending = 1; setTimeout(function () { finish(false); }, 1400); } return; }
       var s = clock.at(el);
       if (s.phaseIdx !== curIdx) { curIdx = s.phaseIdx; lab.textContent = s.label; var F = phases[s.phaseIdx]; sub.textContent = tr(F.name).toLowerCase() + " · " + (LADDER ? (F.si + 1) + " / " + stages.length : (F.c + 1) + " / " + F.cyc); // tr() 2026-08-15: this sub-line printed the raw EN pattern name in RU mode ("4-7-8 breath" under a Russian cue) — a standing latinAudit failure on the surface this pass rebuilt
-        try { if (actx) CU.hit(s.phase, actx, bgBus() || actx.destination, s.phaseDur / 1000); } catch (e) {} } // ONE cue per phase entry, fired from the boundary the clock reports — so the sound, the word and the picture can never disagree about when the phase turned
+        try { if (actx && !_bwSchedK[s.phaseIdx]) CU.hit(s.phase, actx, bgBus() || actx.destination, s.phaseDur / 1000); } catch (e) {} MEDIASESSION.pos(totalMs / 1000, el / 1000); } // ONE cue per phase entry — and only if the schedule-ahead pass did not already plant this boundary on the context clock (that is the copy that survives a lock; striking it here too would double it) — so the sound, the word and the picture can never disagree about when the phase turned
       if (tone) tone.update(s.level, s.phase); // the tone follows the clock's LEVEL every frame, so its contour IS the visual's contour (and there is no boundary event left to snap)
       paintPhase(s); paintBars(el); VIZ.paint(vnodes, s);
     }
@@ -14698,6 +14839,7 @@
       for (var li = 0; li < actLabels.length; li++) if (actLabels[li]) actLabels[li].style.opacity = (li <= ai) ? "1" : "0.34"; // done + current activities light up to full color; upcoming stay dim
       if (ticks) { while (ticks.firstChild) ticks.removeChild(ticks.firstChild); var _st = acts[ai]._secTimes || [], _as = acts[ai]._start || 0, _ad = ((acts[ai]._end != null ? acts[ai]._end : total) - _as) || 1; if (_st.length) { _st.forEach(function (x) { var tk = add(ticks, "i"); tk.style.left = ((x - _as) / _ad * 100) + "%"; }); ticks.style.display = ""; } else { ticks.style.display = "none"; } } // section-ticks on THIS activity's local timeline — only where it has real sections (meditation); clean bar everywhere else
       // (the meditation act used to expand here and hide those ticks — removed 2026-08-15; the ticks now stand, which is where its sections show)
+      msPaint(); msArt(); msSync(); // the card takes the new act's NAME and re-draws the emblem in its hue; the clock keeps climbing on the whole-session transport (an act boundary must never walk it back to 0)
     }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.zIndex = "10"; cog.onclick = function () { if (playing) pause(); openVolumePanel(); }; // opening Sound pauses the player so you can preview beds freely (David 2026-07-10)
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
@@ -14744,15 +14886,62 @@
     // player already carries are now fed to the SAME makeBreathClock breathwork reads, and that one clock drives the orb,
     // the phase indicator, the per-phase cue and the tone. Non-breath segments trigger none of it.
     var _bRuns = [], _bTone = null, _bTk = null, _bPh = null, _bSup = false, _bRun = null, _bHits = []; // _bHits = the cue receipt DEV.breathPlayer reads: one entry per FIRED strike, so "once per phase, never doubled" is a number and not a claim
-    function breathAudioOff() { if (_bTone) { try { _bTone.stop(); } catch (e) {} } _bTone = null; _bTk = null; _bPh = null; }
+    function breathAudioOff() { breathSchedCancel(); if (_bTone) { try { _bTone.stop(); } catch (e) {} } _bTone = null; _bTk = null; _bPh = null; }
+    // THE BREATH LAYER, PLANTED AHEAD (David 2026-08-23). paintNow is the visible driver and stays exactly that; this
+    // plants the SAME cue strikes and the SAME tone contour for the rest of the current breath run on the context clock,
+    // so a phone lock (which freezes rAF outright) cannot silence the cues or park the tone at its last level. Every
+    // transport move re-enters through startFrom, which cancels and replants — a jump can never leave an old run's
+    // strikes ringing at their old times. A run is bounded (one breathing ACT), so one pass covers it whole.
+    function breathSchedCancel() { breathGateOff(_bGate, ctx); _bGate = null; _bSchedK = {}; }
+    function breathSchedFrom(sec) {
+      breathSchedCancel(); if (!ctx || !playing || done) return;
+      var run = null; for (var r = 0; r < _bRuns.length; r++) { var R = _bRuns[r], end = R.t0 + R.clock.total / 1000; if (sec >= R.t0 - 0.001 && sec < end) { run = R; break; } }
+      if (!run) return;
+      var into = (sec - run.t0) * 1000;
+      if (breathCueKey() !== "off") { try { _bGate = ctx.createGain(); _bGate.gain.value = 1; _bGate.connect(bgBus() || ctx.destination); } catch (e) { _bGate = null; } }
+      var tk = breathToneKey();
+      if (_bTone) { try { _bTone.stop(); } catch (e) {} } _bTone = null; _bTk = tk; if (tk !== "off" && ctx) { try { _bTone = makeBreathSustain(tk, ctx); } catch (e) { _bTone = null; } } // ALWAYS a fresh tone, even when the key did not change: the previous plant's automation is still sitting on the old node's timeline at the OLD times, and re-planting over it would interleave two contours. A new node is the only clean slate.
+      breathScheduleAhead(run.clock, ctx, _bGate, _bTone, into, ctx.currentTime, _bSchedK, run.a + ":");
+    }
+    // THE NOW-PLAYING CARD, wired to this player's REAL transport (David 2026-08-23). Title names the running act, but
+    // duration/position are always the WHOLE session — `total` and curElapsed(), the same two numbers the scrubber uses —
+    // so crossing an act never walks the lock-screen clock back to zero.
+    function msTitle() { var a = acts && acts[curAct]; return (a && a.name) || opts.title || opts.logTitle || "Session"; }
+    function msPaint() { MEDIASESSION.meta(msTitle(), _msArtA); }
+    function msSync() { MEDIASESSION.state(playing ? "playing" : "paused"); MEDIASESSION.pos(total, curElapsed()); }
+    function msArt() { // the stack's own emblem in the canonical deck grammar: the CURRENT act's hue on the face with its glyph, the other acts' hues as the two shards behind it
+      var a = acts && acts[curAct], L = acts || actBars || [];
+      var hue = (a && a.color) || col, ti = (a && a.icon) || (L[0] && L[0].icon) || opts.ti || "ti-stack-2", key = hue + "|" + ti;
+      if (key === _msArtK) return; _msArtK = key;
+      var steps = L.map(function (q) { return { c: q.color || col }; }); if (!steps.length) steps = [{ c: col }];
+      stkEmblemReady(function () {
+        if (done) return;
+        stkEmblemPNG(hue, ti, stkShards(hue, steps), function (u) {
+          if (done || MEDIASESSION.owner() !== _msTok || key !== _msArtK) { if (u) { try { URL.revokeObjectURL(u); } catch (e) {} } return; } // a later act already claimed the card — drop this render rather than paint the past onto it
+          _msArtA = u ? [{ src: u, sizes: "512x512", type: "image/png" }] : null; msPaint(); MEDIASESSION.art(u);
+        });
+      });
+    }
+    function msOn() {
+      MEDIASESSION.claim(_msTok, msTitle(), _msArtA); msArt();
+      MEDIASESSION.handlers({
+        play: function () { if (ready && !done && !playing) startFrom(offset); msSync(); },
+        pause: function () { if (playing) pause(); msSync(); }, // the card's pause is the player's OWN pause, so the in-app state cannot drift from what the lock screen shows
+        seekbackward: function (d) { if (!ready || done) return; seek(_clampAct(curElapsed() - ((d && d.seekOffset) || 15))); msSync(); },
+        seekforward: function (d) { if (!ready || done) return; seek(_clampAct(curElapsed() + ((d && d.seekOffset) || 15))); msSync(); },
+        seekto: function (d) { if (!ready || done || !d || d.seekTime == null) return; seek(_clampAct(d.seekTime)); msSync(); } // the same seek() the ±15 buttons and the scrub release call, so the voice tail re-schedules identically
+      });
+      msSync();
+    }
+    function msOff() { KEEPALIVE.stop(_msTok); MEDIASESSION.release(_msTok); _msArtA = null; _msArtK = null; }
     function breathAudio(s) { // s = a makeBreathClock sample. Called only from paintNow while actually PLAYING, so a scrub-drag, a 2× hold-scan and a paused player are all silent by construction.
       var tk = breathToneKey();
       if (tk !== _bTk) { if (_bTone) { try { _bTone.stop(); } catch (e) {} } _bTone = null; _bTk = tk; if (tk !== "off" && ctx) { try { _bTone = makeBreathSustain(tk, ctx); } catch (e) { _bTone = null; } } } // picked live from the Sound panel the gear opens, so a change lands in the session you are in
       if (_bTone) _bTone.update(s.level, s.phase);
       var key = (_bRun ? _bRun.a : 0) + ":" + s.phaseIdx;
-      if (key !== _bPh) { _bPh = key; if (_bSup) { _bSup = false; return; } try { if (ctx) { var ck = breathCueKey(); (BREATH_CUES[ck] || BREATH_CUES.off).hit(s.phase, ctx, bgBus() || ctx.destination, s.phaseDur / 1000); _bHits.push({ t: +curElapsed().toFixed(2), ph: s.phase, key: key, set: ck }); if (_bHits.length > 200) _bHits.shift(); } } catch (e) {} } // the receipt records the boundary AND which set was live at it — "off" is a real, silent set, and a log that hid that would be lying by omission // ONE hit per phase ENTRY. _bSup is set by every jump (pause, seek, ±15, act-nav, the end of a fast-scan) so landing mid-phase never fires a cue the ear already had.
+      if (key !== _bPh) { _bPh = key; if (_bSup) { _bSup = false; return; } if (_bSchedK[key]) return; try { if (ctx) { var ck = breathCueKey(); (BREATH_CUES[ck] || BREATH_CUES.off).hit(s.phase, ctx, bgBus() || ctx.destination, s.phaseDur / 1000); _bHits.push({ t: +curElapsed().toFixed(2), ph: s.phase, key: key, set: ck }); if (_bHits.length > 200) _bHits.shift(); } } catch (e) {} } // the receipt records the boundary AND which set was live at it — "off" is a real, silent set, and a log that hid that would be lying by omission // ONE hit per phase ENTRY. _bSup is set by every jump (pause, seek, ±15, act-nav, the end of a fast-scan) so landing mid-phase never fires a cue the ear already had.
     }
-    var _bLiveHook = function () { _bTk = null; }; _breathLive = _bLiveHook; // a settings change forces the tone to be re-made from the new key on the next frame; the cue set is read per hit
+    var _bLiveHook = function () { _bTk = null; if (playing) breathSchedFrom(curElapsed()); }; _breathLive = _bLiveHook; // a settings change forces the tone to be re-made from the new key on the next frame — AND replants the schedule from where we are, or the pick would exist only while the screen is on
     // ===== THE VISUAL REGISTRY, ON THE FRONT DOOR (David 2026-08-19: "the wave visualization still doesn't work").
     // Same shape of miss as the cue sounds a round earlier: BREATH_VIZ / breathVizKey() were read ONLY at the top of
     // breathwork() — the STANDALONE breath tool — so S.breathViz was inert everywhere the main stack actually runs, which
@@ -14784,7 +14973,7 @@
       BREATH_VIZ[k].paint(_vzN, s);
       return true;
     }
-    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, atPhase: _bPh, hits: _bHits.slice(), viz: { pick: breathVizKey(), mounted: _vzK, node: !!(_vzEl && _vzEl.parentNode), orbParked: !!(_vzOrb && _vzOrb.style.display === "none"), path: _vzN && _vzN.path ? (_vzN.path.getAttribute("d") || "").length : null, pts: _vzN && _vzN.pts ? _vzN.pts.length : null } },
+    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, lock: { keepalive: KEEPALIVE.live(), planted: Object.keys(_bSchedK).length, card: MEDIASESSION.owner() === _msTok, art: !!_msArtA, pos: +curElapsed().toFixed(2), dur: +total.toFixed(2) }, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, atPhase: _bPh, hits: _bHits.slice(), viz: { pick: breathVizKey(), mounted: _vzK, node: !!(_vzEl && _vzEl.parentNode), orbParked: !!(_vzOrb && _vzOrb.style.display === "none"), path: _vzN && _vzN.path ? (_vzN.path.getAttribute("d") || "").length : null, pts: _vzN && _vzN.pts ? _vzN.pts.length : null } },
       ready: ready, transport: bar ? (getComputedStyle(bar).visibility) : null, label: lab ? lab.textContent : null, decoded: segs.filter(function (sg) { return !!sg.buf; }).length, voiced: segs.filter(function (sg) { return !!sg.text; }).length, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, shift: sg._clipShift ? +sg._clipShift.toFixed(3) : 0, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording). `live` = the line in the air; `swap` = the last re-voice's receipt, including the mid-line splice numbers (t/Dold/Dnew/p/start) so the preview can prove the rewind arithmetic it cannot hear.
 
     // WHAT IS IN THIS SESSION (David 2026-08-20, the settings-card rule): "a single-type session gets only its own settings;
@@ -14794,6 +14983,8 @@
       return { hue: (hue || col).trim(), breath: segs.some(function (sg) { return !!sg.breath; }), stack: !!((acts && acts.length > 1) || (actBars && actBars.length > 1)) }; };
     var segs = opts.segments.slice(), fmtT = function (s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + pad(s % 60); };
     var total = 0, ready = false, playing = false, done = false, sources = [], sourceGains = [], baseCtx = 0, offset = 0, raf = 0, minimized = false;
+    var _msTok = {}, _msUp = 0, _msArtK = null, _msArtA = null; // this session's ownership token for the lock-screen carrier + card, plus the emblem currently on it (hue|glyph, so an act change re-draws once and only when it actually differs)
+    var _bGate = null, _bSchedK = {}; // the gate the planted breath cues ride, and the boundaries already planted
     var _fitK = 1; // the dose re-fit factor (≤1), computed once at open in relayoutFrom(0) and held across a live voice swap so re-voicing a running session never re-negotiates its pacing mid-flight
     var _lastSwap = null; // the last re-voice's receipt (bank, transport second, tail-vs-midline, the splice numbers) — read only by _gpProbe/DEV.voice, never by the engine
     var myVoiceGen = TTS.voiceGen(), revoicing = false; // THE VOICE THIS SESSION'S BUFFERS CAME FROM. Captured HERE, above the decode below, so a switch made WHILE the session is still decoding is caught too (capturing it inside layout() would have swallowed exactly that case). `revoicing` is the lock: two fast chip taps must never interleave two re-layouts.
@@ -14935,10 +15126,11 @@
           src._seg = _i; sources.push(src); sourceGains.push(g); // _seg: which line this source is speaking — stopSourcesFrom / xfadeOutSeg need it to reach the present and the future separately
         } catch (e) {}
       });
+      KEEPALIVE.start(_msTok); breathSchedFrom(sec); if (!_msUp) { _msUp = 1; msOn(); } else msSync(); // the silent carrier goes up INSIDE the gesture chain that reached here (Begin / play / a lock-screen press), the breath layer is replanted from the new transport second, and the card follows
       dbg2("PLAY ctx:" + ctx.state + " n:" + sources.length); // report so meditation shows a message too
     }
-    function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bedStop(); breathAudioOff(); _bSup = true; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // pause the background bed AND the breath tone; _bSup so resuming mid-inhale does not re-strike a cue you already heard
-    function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); offset = sec; _bSup = true; if (wasPlaying) startFrom(sec); paintNow(sec); }
+    function pause() { if (!playing) return; offset = curElapsed(); playing = false; ov.classList.remove("gp-playing"); stopSources(); bedStop(); breathAudioOff(); _bSup = true; KEEPALIVE.stop(_msTok); msSync(); bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; } // pause the background bed AND the breath tone; _bSup so resuming mid-inhale does not re-strike a cue you already heard. The carrier pauses with it, so the lock screen reads PAUSED instead of claiming audio that stopped.
+    function seek(sec) { sec = Math.max(0, Math.min(total, sec)); var wasPlaying = playing; stopSources(); breathSchedCancel(); offset = sec; _bSup = true; if (wasPlaying) startFrom(sec); paintNow(sec); msSync(); } // cancel before the jump: a seek made while PAUSED never re-enters startFrom, and stale planted strikes would fire at their old context times
     function paintNow(e) { paintMap(e); paintBars(e);
       var _ci = 0; if (acts) { for (var _q = 0; _q < acts.length; _q++) if (acts[_q]._start != null && e >= acts[_q]._start) _ci = _q; }
       var pct, curTxt, totTxt;
@@ -15051,7 +15243,7 @@
       function navBy(dir) { if (!ready || done) return; // one tap = one STEP, meditation included (2026-08-15: the zoom used to eat the first taps as section-steps, then fall out of zoom permanently at the section edge)
         var j = curAct + dir;
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
-        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
+        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); msOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
         gotoAct(j); }
       // SIDE-CLICK NAV (David 2026-07-10): left third = back, right third = forward. Zones start BELOW the story bars / ✕ / gear and stop ABOVE the transport.
       var _tzTop = "top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);z-index:5;";
@@ -15087,7 +15279,7 @@
     }
 
     function finish(skip) {
-      if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop(); breathAudioOff(); vizDrop(); // the breath visual goes with the run — a session that ENDS on a breath phase must hand the closing "Done ✓" beat back to the orb it was hiding
+      if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop(); breathAudioOff(); msOff(); vizDrop(); // the carrier and the lock-screen card die on BOTH teardown paths (this one and the onEdgePrev bail) — a silent element left playing behind a closed session is a phantom now-playing card // the breath visual goes with the run — a session that ENDS on a breath phase must hand the closing "Done ✓" beat back to the orb it was hiding
       _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }

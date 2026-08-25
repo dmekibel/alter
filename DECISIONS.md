@@ -56,3 +56,19 @@ behind M1-M4 and must not advance against the old plan. Recorded in `_specs/MAST
 2026-08-22; `/standup` reads that block first.
 **STILL OPEN, and blocking M4:** David's own notes for the tools and the player. Nothing gets designed against a
 paraphrase of them.
+
+## 2026-08-23 — Journey/onboarding concept round (chat verdicts)
+- Onboarding shrinks; its questions migrate into the journey, asked when they matter. APPROVED.
+- First lesson = explain briefly, then ASK for a time commitment the user picks (tiny ok; app recommends a minimum, never forces). Respecting their time is the hook. APPROVED (David's own 2026-07-10 stone design confirmed as the model).
+- User-driven dosing ("same/easier/more" after each rep): KILLED — the app recommends and adapts; user doesn't know the science. Baby-step trust relationship.
+- Journey law restated: ONE visible next thing AT A TIME (a queue), not one per day.
+EVIDENCE: David chat verdicts this session, on the graph round in _design-sync/journey-2026-08-23/graph/.
+- Install onboarding = two taps: feeling + what-do-you-need. Language auto-detected. APPROVED.
+- Experience gauge lives INSIDE the first lesson (one tap right before the rep, shapes it on the spot). APPROVED.
+- Second door is routed by the need-answer (stressed→calm tool, order→track one thing, goal→name it). APPROVED.
+- Skip repair = shrink first, never "lazy"; swap family only after shrinking fails. APPROVED.
+- First payoff = the first garden seed, planted in a tiny ceremony after the first exercise. APPROVED.
+- Explorers: solo tool use quietly advances the journey; it never repeats what they already do. APPROVED.
+- Features introduced by a fixed importance order, one doing-lesson at a time. APPROVED (order itself still David's pick).
+- Cut onboarding questions ride the stone where the answer pays off immediately. APPROVED.
+- The Intro stone (chapter one, stone one) = the July 8-10 first-stone structure (typed hook → offer → time chips + skip → hold-to-commit → breath + gentle relax → escalation to meditation + mantra → reward). David 2026-08-23: "closest to what I envision the journey to be, except it's too much text." The orb-era lesson designs are rejected outright ("ugly and trash"). Verdict: keep the structure, cut the text.
