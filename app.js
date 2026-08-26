@@ -5441,12 +5441,13 @@
       hj.onclick = function (e) { if (e) e.stopPropagation(); tfhGoJourney(); };
       gc.onclick = function (e) { if (e) e.stopPropagation(); if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e2) {} } try { setPaneRest("game"); } catch (e2) {} }; // the app's OWN garden door path (it tears the cockpit down first); a bare openGame() would leave home layered over the world
     } else if (hud.parentNode !== inner) inner.appendChild(hud);
-    // THE YOU DOOR'S GLYPH. SUPERSEDED 2026-08-26 by "Home Screen (static).dc.html", David's definitive home frame: the
-    // top-left is a 13px ti-SETTINGS in #ff8fc0 inside a real 28px circle (border 2px rgba(255,242,249,.16) on #2a1220 —
-    // the base .tfh-spark class), not the 18px ti-adjustments-horizontal on nothing that the 2026-08-14 prototype review
-    // installed. Written here rather than at build time so a HUD created before this line existed is corrected on its next
-    // render; idempotent, no innerHTML, and the button's own onclick (the guardian card) is untouched.
-    var _spi = hud.querySelector("#tfHudSpark i"); if (_spi && _spi.className !== "ti ti-settings") _spi.className = "ti ti-settings";
+    // THE YOU DOOR'S GLYPH: an 18px ti-adjustments-horizontal in #ff8fc0 on nothing (the .tf-2c CSS strips the circle's
+    // border and fill and carries David's scale(1.5); the 28x28 hit area stays). The ti-settings-in-a-circle this reverts
+    // to came from the FIRST "Home Screen (static)" export, which David then replaced: "I accidentally gave you the wrong
+    // home screen." The corrected frame is the v22 chrome, and it is what this line now follows. Written here rather than
+    // at build time so a HUD created before this line existed is corrected on its next render; idempotent, no innerHTML,
+    // and the button's own onclick (the guardian card) is untouched.
+    var _spi = hud.querySelector("#tfHudSpark i"); if (_spi && _spi.className !== "ti ti-adjustments-horizontal") _spi.className = "ti ti-adjustments-horizontal";
     var b = hud.querySelector(".tfh-gems b"); if (b) b.textContent = ((S.game && S.game.spark) || 0).toLocaleString();
     var ck = el("tfClock"); if (ck) ck.textContent = ""; // the home face shows NO clock (the status bar already does); the CSS hides it, this empties it too
   }
@@ -5940,10 +5941,10 @@
     var card = jlAdd(row, "div", "jl-lock-card" + ((c.fx & JL_FX_GLOW) ? " jl-lit jl-fx" : ""));
     jlAdd(card, "span", "jl-l-tex jl-fx", "background:" + c.tex + ";");
     if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
-    if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl"), "span", "jl-fx");
+    if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl jl-glis"), "span", "jl-fx");
     if (c.fx & JL_FX_INGLOW) jlAdd(card, "span", "jl-l-inglow");
     if (c.fx & JL_FX_BEVEL) jlAdd(card, "span", "jl-l-bevel");
-    if (c.fx & JL_FX_RAIN) jlAdd(jlAdd(card, "span", "jl-l-rain"), "span", "jl-fx", "animation-duration:" + c.rb + "s;");
+    if (c.fx & JL_FX_RAIN) jlAdd(jlAdd(card, "span", "jl-l-rain jl-glis"), "span", "jl-fx", "animation-duration:" + c.rb + "s;");
     if (c.fx & JL_FX_SPARK) jlAdd(card, "span", "jl-l-spark jl-fx");
     var mid = jlAdd(card, "span", "jl-card-mid");
     jlAdd(mid, "span", "jl-lock-kick", "color:" + c.k + ";").textContent = tr("CHAPTER") + " " + c.ch;
@@ -5967,7 +5968,7 @@
     // (mPass) is untouched, and so is every banner effect.
     var jit = JL_JITTER ? ("animation:" + JL_JITV[k % 3] + " " + (9 + 0.8 * (k % 7)).toFixed(1) + "s ease-in-out infinite;animation-delay:" + jd.toFixed(1) + "s;") : "";
     var st = jlAdd(row, "span", "jl-lstone jl-fx", "background:" + c.tex + ";" + jit);
-    jlAdd(jlAdd(st, "span", "jl-lstone-pass"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
+    jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
     jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
     return row;
   }
@@ -5977,7 +5978,7 @@
   // cascade's inline animation on the row itself. Rows are born paused (the frame's default: nothing animates until seen).
   // EVERY ROW, IN VISUAL ORDER, ACROSS BOTH CONTAINERS. Since the parallax pass the line's tail lives in #jrnyFoot, so
   // `col.children` is no longer the row list — it is the deep rows plus one wrapper. Everything that enumerates rows goes
-  // through here (jcEls · jlDeepen · jlObserve · the gates), which is why the split cost no behaviour anywhere else.
+  // through here (jcEls · jlObserve · the gates), which is why the split cost no behaviour anywhere else.
   function jlRows() {
     var col = el("jrnyCol"); if (!col) return [];
     var out = [], k = col.children;
@@ -6033,21 +6034,13 @@
       if (q) for (var i = 0; i < q.length; i++) q[i].classList.remove("jl-anim-off");
     }, 180);
   }
-  // ---- …AND THE DEEP ONES STOP LAYING OUT. Everything further than 1.5 viewports above the line's foot is marked for
-  // content-visibility (see .jl-deep in index.html) — comfortably outside jcEls()'s 1.3-viewport cascade set, so no row
-  // that has to animate in is ever size-contained. Re-derived only when the viewport height actually changes.
-  var _jlDeepVh = 0;
-  function jlDeepen(col, force) {
-    if (!col) return;
-    var w = el("tfWorld"), vh = (w && w.clientHeight) || window.innerHeight || 874;
-    if (!force && vh === _jlDeepVh) return;
-    _jlDeepVh = vh;
-    var g = jlGeom(), cut = g.H - vh * 1.5;
-    for (var i = 0; i < g.rows.length; i++) {
-      var n = g.rows[i].n, cl = n.classList;
-      cl.toggle("jl-deep", g.rows[i].bot <= cut && (cl.contains("jl-lstone-row") || cl.contains("jl-div")));
-    }
-  }
+  // ---- jlDeepen / .jl-deep DELETED (David's device video 2026-08-26). It marked everything deeper than 1.5 viewports
+  // for content-visibility:auto, and on his iPhone the line past chapter one rendered as a VOID — starfield and puck, no
+  // stones, no gates — while the same depth painted fine in desktop Chrome: iOS Safari was failing to materialize the
+  // skipped subtrees during scroll in a 26,000px scroller, and once enough rows in a tile stalled the whole area blanked.
+  // Its premise was the giant composited column, which the #jrnyFoot split already removed, so nothing replaces it: the
+  // IO pause plus the sleeping-row blend diet (.jl-glis, index.html) carry the paint budget on their own. designAudit's
+  // "rows never use content-visibility" gate keeps it from coming back.
   // ---- the renderer. BUILD-ONCE and idempotent: a full line already sitting in the sky is REUSED, never rebuilt, so the
   // per-minute master tick can call this as often as it likes. Child-drain only (removeChild loop) — no innerHTML wipe,
   // the preship ratchet fails the ship if that count grows. ----
@@ -6060,7 +6053,7 @@
     // BUILD-ONCE, counted across BOTH containers. col.children is 252 since the parallax split (251 deep rows + the
     // foot), so counting it against JL_ROWS made this guard fail forever and the whole line was rebuilt on every render —
     // which re-armed the observer constantly and left every row born-paused, i.e. a permanently dark journey.
-    if (line && col && jlRows().length === JL_ROWS) { if (!_jlIO) jlObserve(col); jlDeepen(col); return line; } // reused: only re-arm what a teardown or a resize could have invalidated
+    if (line && col && jlRows().length === JL_ROWS) { if (!_jlIO) jlObserve(col); return line; } // reused: only re-arm what a teardown could have invalidated
     if (!line) { line = document.createElement("div"); line.id = "jrnyLine"; sky.insertBefore(line, sky.firstChild); }
     while (line.firstChild) line.removeChild(line.firstChild);
     col = document.createElement("div"); col.id = "jrnyCol"; line.appendChild(col);
@@ -6091,7 +6084,6 @@
     for (var q = col.children.length - 1; q >= 0; q--) { _acc += col.children[q].offsetHeight; _cut = q; if (_acc >= _need) break; }
     col.appendChild(foot);
     while (col.children[_cut] && col.children[_cut] !== foot) foot.appendChild(col.children[_cut]); // visual order is untouched: the tail moves into the foot in place, and the foot is the column's last child
-    jlDeepen(col, true);
     jlObserve(col);
     return line;
   }
@@ -6735,7 +6727,7 @@
     var _jcC = el("jrnyCol"); if (_jcC) _jcC.style.transform = "";
     var _jcF = el("jrnyFoot"); if (_jcF) _jcF.style.transform = ""; // the parallax layer since the v1376 pass — leaving it composited would hold the texture across a closed world
     if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; } // ONE observer, and it dies with the world — renderJourneyLine re-arms it on the next open
-    clearTimeout(_jlIOT); _jlIOSeen = false; _jlDeepVh = 0;
+    clearTimeout(_jlIOT); _jlIOSeen = false;
     _jlWake = null; clearTimeout(_jlWakeT);
     ["tfHudJourney", "tfHudHome", "tfToolsHint"].forEach(function (id) { var n = el(id); if (n) { n.style.opacity = ""; n.style.pointerEvents = ""; n.style.translate = ""; } }); // translate too, or a label's scrub offset sticks across a teardown
     var _pw = document.querySelector(".tbx-planwrap"); if (_pw) { _pw.style.opacity = ""; _pw.style.pointerEvents = ""; }
@@ -20247,7 +20239,9 @@
     var _hudcs = _hud ? getComputedStyle(_hud) : null;
     // SUPERSEDED: "HUD at the frame's line (top 42 + 12 drop)". The static home frame's HUD is `top:42px` with NO
     // transform — its row measures t=42 h=32. The 12px drop came from the v22 motion prototype.
-    chk("HUD at the frame's line (top 42, no drop)", !!(_hudcs && Math.round(parseFloat(_hudcs.top)) === 42 && (_hudcs.translate === "none" || Math.abs(parseFloat(String(_hudcs.translate).split(/\s+/)[1] || "0")) <= 0.5)), _hudcs ? ("top " + _hudcs.top + " · translate " + _hudcs.translate) : "missing", "top 42px · no row translate (no safe-area added: the artboard is an island phone)");
+    // RESTORED (the corrected static frame): its HUD is `top:42px; z-index:23; transform:translateY(12px)`. Round 4 read
+    // the FIRST export, which had no row transform, and dropped the 12 — this puts it back and supersedes that gate.
+    chk("HUD at the frame's line (top 42 + 12 drop)", !!(_hudcs && Math.round(parseFloat(_hudcs.top)) === 42 && Math.abs(parseFloat(String(_hudcs.translate).split(/\s+/)[1] || "0") - 12) <= 0.5), _hudcs ? ("top " + _hudcs.top + " · translate " + _hudcs.translate) : "missing", "top 42px · translate 0 12px (no safe-area added: the artboard is an island phone)");
     var _hzcs = el("tfWorldHome") ? getComputedStyle(el("tfWorldHome")) : null;
     chk("home column pad-top 42px", !!(_hzcs && Math.round(parseFloat(_hzcs.paddingTop)) === 42), _hzcs ? _hzcs.paddingTop : "missing", "42px — the design column's own `padding: 42px 20px 0`");
     var _brcs = bars ? getComputedStyle(bars) : null;
@@ -20257,7 +20251,13 @@
     // both chips sit at their natural size. The gate is inverted: any scale on either chip is now a failure.
     var _gdcs = _hgd ? getComputedStyle(_hgd) : null;
     var _noScale = function (s) { return !s || s.scale === "none" || Math.abs(parseFloat(s.scale) - 1) < 0.005; };
-    chk("HUD chips carry NO scale (static frame)", _noScale(_spcs) && _noScale(_gdcs), "you-door " + (_spcs ? _spcs.scale : "-") + " · leaf " + (_gdcs ? _gdcs.scale : "-"), "both 'none' — the 1.5 / 1.1 slider scales are the v22 prototype's, not the static frame's");
+    // SUPERSEDES round 4's "HUD chips carry NO scale": the corrected frame carries BOTH of David's slider scales, each
+    // about the edge that grows it INTO the row — the you-door 1.5 from its left, the garden leaf 1.1 from its right.
+    // transform-origin COMPUTES TO PX, so "left"/"right" never appear in it — the edge has to be read as a position in the
+    // element's own box: left = 0, right = its own offsetWidth. (`right` matched nothing and failed a correct board.)
+    var _originX = function (n, cs) { var v = parseFloat(String(cs.transformOrigin).split(/\s+/)[0]); return isFinite(v) ? v : NaN; };
+    var _spOx = _spcs ? _originX(_hsp, _spcs) : NaN, _gdOx = _gdcs ? _originX(_hgd, _gdcs) : NaN;
+    chk("HUD chips carry David's slider scales (1.5 / 1.1)", !!(_spcs && Math.abs(parseFloat(_spcs.scale) - 1.5) <= 0.005 && _spOx <= 0.5 && _gdcs && Math.abs(parseFloat(_gdcs.scale) - 1.1) <= 0.005 && Math.abs(_gdOx - _hgd.offsetWidth) <= 0.5), (_spcs ? "you-door " + _spcs.scale + " @x" + (isFinite(_spOx) ? Math.round(_spOx * 10) / 10 : "?") : "-") + " · " + (_gdcs ? "leaf " + _gdcs.scale + " @x" + (isFinite(_gdOx) ? Math.round(_gdOx * 10) / 10 : "?") + " of " + _hgd.offsetWidth : "-"), "you-door 1.5 about x=0 (its left edge), leaf 1.1 about x=its own width (its right edge)");
     var _thcs = _thint ? getComputedStyle(_thint) : null;
     chk("fold hint padding-bottom 20px", !!(_thcs && Math.round(parseFloat(_thcs.paddingBottom)) === 20), _thcs ? _thcs.paddingBottom : "missing", "20px (the frame's 59px hint block: 4 above, 20 below)");
     var _wv2 = el("tfWorld"), _hz3 = el("tfWorldHome");
@@ -20274,8 +20274,9 @@
       chk("home zone is one frame tall (2c)", _hz3.offsetHeight <= _frameH + 2, _hz3.offsetHeight + "px of " + _frameH + " (viewport " + _wv2.clientHeight + ")", "≤ the artboard's 874 or the viewport, whichever is larger (+2) — anything more pushes the fold hint off the screen"); }
     // SUPERSEDED, both: "HUD you-door is a bare glyph (no ring, no fill)" + "glyph ti-adjustments-horizontal 18px".
     // The static frame draws a real circle — 2px rgba(255,242,249,.16) on #2a1220 — with a 13px ti-settings in #ff8fc0.
-    chk("HUD you-door is a framed circle (static frame)", !!(_spcs && Math.round(parseFloat(_spcs.borderTopWidth || 0)) === 2 && _spcs.borderTopColor === "rgba(255, 242, 249, 0.16)" && _spcs.backgroundColor === "rgb(42, 18, 32)"), _spcs ? ("border " + (_spcs.borderTopWidth || "0px") + " " + _spcs.borderTopColor + " · bg " + _spcs.backgroundColor) : "missing", "2px rgba(255,242,249,.16) on rgb(42,18,32)");
-    chk("HUD you-door glyph ti-settings 13px", !!(_spi2 && _spi2.classList.contains("ti-settings") && Math.round(parseFloat(_spis.fontSize)) === 13 && _spis.color === "rgb(255, 143, 192)"), _spi2 ? (_spi2.className + " · " + _spis.fontSize + " · " + _spis.color) : "no glyph", "ti ti-settings · 13px · rgb(255,143,192)");
+    // …and both SUPERSEDE round 4's framed-circle pair: the corrected frame's you-door is a BARE glyph again.
+    chk("HUD you-door is a bare glyph (no ring, no fill)", !!(_spcs && parseFloat(_spcs.borderTopWidth || 0) === 0 && (_spcs.backgroundColor === "rgba(0, 0, 0, 0)" || _spcs.backgroundColor === "transparent")), _spcs ? ("border " + (_spcs.borderTopWidth || "0px") + " · bg " + _spcs.backgroundColor) : "missing", "0px border on a transparent fill");
+    chk("HUD you-door glyph ti-adjustments-horizontal 18px", !!(_spi2 && _spi2.classList.contains("ti-adjustments-horizontal") && Math.round(parseFloat(_spis.fontSize)) === 18 && _spis.color === "rgb(255, 143, 192)"), _spi2 ? (_spi2.className + " · " + _spis.fontSize + " · " + _spis.color) : "no glyph", "ti ti-adjustments-horizontal · 18px · rgb(255,143,192)");
     var _pwr = document.querySelector("#trackerFull .tbx-planwrap"), _pws = _pwr ? getComputedStyle(_pwr) : null;
     var _pwsc = _pws ? (_pws.scale !== "none" ? parseFloat(_pws.scale) : NaN) : NaN, _pwty = _pws ? parseFloat(String(_pws.translate).split(/\s+/)[1] || "0") : NaN;
     chk("planner wrapper drops 12px at 1.06 (frame)", Math.abs(_pwsc - 1.06) <= 0.005 && Math.abs(_pwty - 12) <= 0.5, _pwr ? ("scale " + _pws.scale + " · translate " + _pws.translate) : "missing", "scale 1.06 · translate 0 12px — David's \"the planner looks too high up\""); // properties, not transform: wScrub owns this node's opacity and must not be fighting a transform write
@@ -20487,8 +20488,25 @@
       if (_dst) {
         var _dfx = [].slice.call(_dst.querySelectorAll(".jl-fx"));
         var _dlive = _dfx.filter(function (n) { return getComputedStyle(n).animationPlayState !== "paused"; });
-        chk("deep rows are quiet at home rest", _dst.classList.contains("jl-anim-off") && _dfx.length > 0 && !_dlive.length, (_dst.classList.contains("jl-anim-off") ? "jl-anim-off" : "NOT marked off") + " · " + _dfx.length + " effect nodes, " + _dlive.length + " still running", "the ch30 stone marked jl-anim-off with every .jl-fx node computing animation-play-state:paused");
-        chk("deep rows skip layout (content-visibility)", _dst.classList.contains("jl-deep") && getComputedStyle(_dst).containIntrinsicSize.indexOf("74px") >= 0, (_dst.classList.contains("jl-deep") ? "jl-deep · " : "NOT deep · ") + getComputedStyle(_dst).containIntrinsicSize, "jl-deep carrying contain-intrinsic-size 74px 74px (the row's exact content box, so the column's height is unchanged)");
+        // …and a sleeping row must also drop its BLEND layers, which is the other half of the paint diet: mix-blend-mode
+        // costs iOS per tile even with the animation paused, and there are ~296 of them down the line.
+        var _dgl = [].slice.call(_dst.querySelectorAll(".jl-glis"));
+        var _dglLit = _dgl.filter(function (n) { return getComputedStyle(n).opacity !== "0"; });
+        chk("deep rows are quiet at home rest", _dst.classList.contains("jl-anim-off") && _dfx.length > 0 && !_dlive.length && _dgl.length > 0 && !_dglLit.length, (_dst.classList.contains("jl-anim-off") ? "jl-anim-off" : "NOT marked off") + " · " + _dfx.length + " effect nodes, " + _dlive.length + " running · " + _dgl.length + " blend layers, " + _dglLit.length + " painted", "the ch30 stone marked jl-anim-off, every .jl-fx paused AND every .jl-glis blend layer at opacity 0");
+        // SUPERSEDES "deep rows skip layout (content-visibility)". content-visibility is GONE — on David's iPhone the line
+        // past chapter one rendered as a void because iOS Safari would not materialize the skipped subtrees during scroll.
+        // This gate is its inverse: it fails a ship that reintroduces it anywhere on the line.
+        var _cvBad = jlRows().filter(function (n) { var v = getComputedStyle(n).contentVisibility; return v && v !== "visible" && v !== "normal" && v !== ""; });
+        chk("rows never use content-visibility", !_cvBad.length, _cvBad.length ? _cvBad.length + " row(s) skipping (" + getComputedStyle(_cvBad[0]).contentVisibility + ")" : "all " + _jlN + " rows render normally", "no row may skip its own layout: iOS Safari blanked the deep line when it did (David's device video 2026-08-26)");
+      }
+      // THE FOOT ROWS PAUSE TOO. The old rule was keyed `#jrnyCol > .jl-anim-off`, and since the parallax split a foot row
+      // is a GRANDCHILD — so the twenty-one rows nearest the landing, the ones most worth pausing, never were. The ch30
+      // probe above sits in #jrnyCol and could never have caught it; this reads a row from the other container.
+      var _jlF0 = el("jrnyFoot");
+      var _fOff = _jlF0 ? [].slice.call(_jlF0.children).filter(function (n) { return n.classList.contains("jl-anim-off") && n.querySelector(".jl-fx"); })[0] : null;
+      if (_fOff) {
+        var _ffx = [].slice.call(_fOff.querySelectorAll(".jl-fx")).filter(function (n) { return getComputedStyle(n).animationPlayState !== "paused"; });
+        chk("sleeping FOOT rows pause too", !_ffx.length, _ffx.length ? _ffx.length + " effect node(s) still running inside #jrnyFoot" : "every .jl-fx in the sampled foot row is paused", "the pause rule is keyed to #jrnyLine, so it reaches rows in #jrnyCol and #jrnyFoot alike");
       }
       var _fxRows = _jlRows.filter(function (n) { return n.classList.contains("jl-fx"); });   // checked across BOTH containers
       chk("cascade rows never carry .jl-fx", !_fxRows.length, _fxRows.length ? _fxRows.length + " ROW(s) carry .jl-fx" : "no row does", "no row element itself — the pause selector must never be able to reach jlRowIn/jlRowOut");
@@ -20501,11 +20519,19 @@
       chk("parallax layer is the foot only", !!_jlFt && _ftRows > 0 && _ftRows < _jlN && _colT === "none" && (!_atRest || !_ftT), (_jlFt ? _ftRows + " of " + _jlN + " rows in #jrnyFoot" : "no #jrnyFoot") + " · col transform " + _colT + " · foot transform " + (_ftT || "none") + (_atRest ? " (at rest)" : " (mid-travel)"), "a strict tail of the rows in #jrnyFoot, #jrnyCol never transformed, and the foot cleared at both rest states");
       // RESTING AT HOME the line must be HARD HIDDEN — nothing pre-shown behind the board. Re-armed first, exactly as
       // the render path does it, so this reads the settled state and not a 0ms timer that has not fired yet.
+      // …and it must NOT fire while the line is legitimately SHOWN. jcScrub deliberately refuses to fold a cascade that
+      // arrived less than 600ms ago (the engine's own anti-flicker hysteresis, v22's rule), so an audit run that parks at
+      // home immediately after a visit to the landing reads nine lit rows and calls a correct build broken. That is a
+      // flaky gate, which is worse than none — it cried wolf once here already. Assert only on a line that is actually
+      // at rest, and SAY when it was skipped rather than passing silently.
       var _jw = el("tfWorld");
       if (_jw && _jlC && wLive() && Math.abs(_jw.scrollTop - wHomeY()) < 40) {
         try { jcResync(true); jcScrub(jcU(_jw)); } catch (e) {}
-        var _lit = (_jcEls || []).filter(function (n) { return getComputedStyle(n).opacity !== "0"; });
-        chk("line hidden at home rest", !_lit.length, _lit.length ? _lit.length + " of " + (_jcEls || []).length + " landing rows lit" : "all " + (_jcEls || []).length + " landing rows at opacity 0", "every landing-screen row computes opacity 0 — the cascade is the only thing that lights them");
+        if (_jcShown) out.push("SKIP · line hidden at home rest · the cascade is still shown (folded only after its 600ms hold) — nothing to assert about a resting line");
+        else {
+          var _lit = (_jcEls || []).filter(function (n) { return getComputedStyle(n).opacity !== "0"; });
+          chk("line hidden at home rest", !_lit.length, _lit.length ? _lit.length + " of " + (_jcEls || []).length + " landing rows lit" : "all " + (_jcEls || []).length + " landing rows at opacity 0", "every landing-screen row computes opacity 0 — the cascade is the only thing that lights them");
+        }
       }
     }
     // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The

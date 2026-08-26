@@ -3,6 +3,16 @@
 
 ---
 
+## STATUS UPDATE (2026-08-26 (4), the iOS void + the corrected home frame): v1377
+David on v1376: better but fast scroll still chops, and the DEEP LINE renders as a VOID on his iPhone (past ch1: starfield only, no rows). Chrome renders the same depth fine → iOS Safari's content-visibility failing to materialize rows in our huge scroller. Fixes:
+**(1) content-visibility REMOVED entirely** (jlDeepen/.jl-deep deleted, stone-row padding back to the recipe's 10px 0; new inverse gate "rows never use content-visibility" fails any ship that reintroduces it — the old "deep rows skip layout" gate superseded by name). Deep-scroll proof at scrollTop 12000: every row painted. HONEST TRADE (agent's numbers, desktop Chrome): home rest 61→45fps in CHROME because c-v was masking ~16fps of always-painted cost (sky gradient ~6.6 + rows ~11.7); landing 61.4, transition 54fps/1.33s (v1375 was 1.82s). Chrome is not the device; the void was a device correctness bug. OPEN LEVER for David: capping the sky gradient's painted region recovers ~6.6fps at a visible design cost — not applied unasked.
+**(2) Real bug: the round-5 foot split broke the pause selector** (`#jrnyCol >` child combinator) — the 21 rows nearest the landing were NEVER pausing. Re-keyed to #jrnyLine; new gate "sleeping FOOT rows pause too".
+**(3) Paint diet:** all ~296 mix-blend-mode overlay layers (stone glisten + gate foils, now .jl-glis) go opacity-0 while their row sleeps; quiet gate extended to assert it.
+**(4) David's CORRECTED "Home Screen (static)" frame** (the earlier one was his accidental wrong file): HUD reverted — bare ti-adjustments-horizontal 18px scale(1.5) you-door, HUD row 12px drop, leaf scale(1.1) — JOURNEY hint stays centered/lifted-8. The four round-4 HUD gates flipped back, named. Column untouched (identical in both frames).
+**Gates 96/96 both sizes · ratchet flat · landing table unchanged · audioIdleCheck clean. DEVICE-UNTESTED:** whether the void is actually gone + fast-scroll feel. **ONE move — David:** fresh.html (v1377): scroll DEEP into the line — chapters visible all the way up? and the gear is your old glyph again. **ONE move — Claude:** peaks verdict + ch1 stones to the real day.
+
+---
+
 ## STATUS UPDATE (2026-08-26 (3), device jank + phantom player): v1376
 David's device recording of v1375: home↔journey super slow/choppy (sky blank ~2s mid-pull), home→tools choppy too, and the iOS Now Playing card up with nothing playing. Three root causes, all ours:
 **(1) The parallax composited the whole 26,000px line column** — and at home rest it sat transformed permanently, taxing ALL scrolling. Fix: new #jrnyFoot wrapper (the tail 21 rows, 2.61 viewports) is the only parallax target; #jrnyCol never transforms; transform cleared entirely at both rest states. Scripted home→journey transition: 1.82s wall → 1.02s, 49→58.8fps (preview; device should gain more — its GPU pays the giant-layer tax harder). Row enumeration now spans both containers (jlRows/jlGeom, summed offsetHeight never offsetTop — the transformed-offsetParent trap). Builder caught its own rebuild-loop bug (stale JL_ROWS guard rebuilt the line every render, leaving it born-paused/dark).
