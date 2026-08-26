@@ -199,8 +199,13 @@
     var el = null, own = null;
     function node() { if (el) return el; try { var u = _silentWav(1); if (!u) return null; el = document.createElement("audio"); el.src = u; el.loop = true; el.volume = 0.0001; el.preload = "auto"; el.setAttribute("playsinline", ""); } catch (e) { el = null; } return el; }
     function start(who) { var a = node(); if (!a) return; own = who || 1; try { var p = a.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
-    function stop(who) { if (who != null && own != null && own !== who) return; own = null; try { if (el) { el.pause(); el.currentTime = 0; } } catch (e) {} } // a breathwork opened OVER a player owns the carrier now; the player's own pause must not pull it out from under it
-    return { start: start, stop: stop, live: function () { return !!el && !el.paused; } };
+    // STOP MEANS RELEASE (David on device 2026-08-26: iOS was showing a Now Playing card with nothing running in the app).
+    // Pausing was not enough: a played-then-paused <audio> that still holds a src keeps the platform's now-playing session
+    // alive, so the lock screen kept a card for a session that had ended. The element is torn down and dropped; node()
+    // rebuilds it on the next start(), which always happens inside a real gesture chain, exactly as the first one did.
+    function stop(who) { if (who != null && own != null && own !== who) return; own = null; release(); } // a breathwork opened OVER a player owns the carrier now; the player's own pause must not pull it out from under it
+    function release() { try { if (el) { el.pause(); el.currentTime = 0; el.removeAttribute("src"); el.load(); } } catch (e) {} el = null; }
+    return { start: start, stop: stop, live: function () { return !!el && !el.paused; }, owner: function () { return own; }, node: function () { return el; } };
   })();
   // ===== THE NOW-PLAYING CARD (David 2026-08-23). Every call is guarded: Media Session is absent on plenty of engines and
   // a throw here would take the running session down with it. THE PROGRESS IS THE WHOLE STACK'S — duration is the player's
@@ -216,8 +221,11 @@
     function pos(dur, at) { var m = ms(); if (!m || !m.setPositionState) return; if (!isFinite(dur) || !isFinite(at) || dur <= 0) return; try { m.setPositionState({ duration: dur, position: at < 0 ? 0 : (at > dur ? dur : at), playbackRate: 1 }); } catch (e) {} } // a NaN / Infinity / not-yet-laid-out total throws instead of printing — such a session simply does not report a clock
     function handlers(h) { var m = ms(); if (!m || !m.setActionHandler) return; ["play", "pause", "seekbackward", "seekforward", "seekto", "stop"].forEach(function (k) { try { m.setActionHandler(k, (h && h[k]) || null); } catch (e) {} }); }
     function art(u) { var old = blob; blob = u || null; if (old && old !== u) { try { URL.revokeObjectURL(old); } catch (e) {} } } // ONE live blob at a time — the previous act's emblem is revoked only after the new metadata is already set
-    function release(who) { if (own !== who) return; own = null; handlers(null); var m = ms(); if (m) { try { m.metadata = null; } catch (e) {} try { m.playbackState = "none"; } catch (e) {} } art(null); }
-    return { claim: claim, meta: meta, state: state, pos: pos, handlers: handlers, art: art, release: release, owner: function () { return own; } };
+    // …and the card is cleared the same way: metadata null, playbackState "none", handlers dropped AND the position state
+    // wiped — a stale setPositionState is what leaves a scrubber sitting on the lock screen after the session is gone.
+    function wipe() { var m = ms(); if (!m) return; try { m.metadata = null; } catch (e) {} try { m.playbackState = "none"; } catch (e) {} try { if (m.setPositionState) m.setPositionState(); } catch (e) {} }
+    function release(who) { if (own !== who) return; own = null; handlers(null); wipe(); art(null); }
+    return { claim: claim, meta: meta, state: state, pos: pos, handlers: handlers, art: art, release: release, wipe: wipe, owner: function () { return own; } };
   })();
   // ===== THE ENTRY SIGNATURE (SPEC-FIRST-RUN §7, P1): the SAME 3 notes open every ceremony — the constant sensory signature that conditions faster gates (§0 law 4). Composed once, Web Audio, rides the TTS.unlock gesture. Later: called at the head of every room/ceremony. =====
   function entrySignature(vol) {
@@ -5967,23 +5975,63 @@
   // never leak a second one. Root is #tfWorld with the frame's own 120px margin (recipes/j1-script.js wireAnim), and it
   // toggles ONLY the row-level .jl-anim-off class — the CSS behind it pauses .jl-fx descendants and cannot reach the
   // cascade's inline animation on the row itself. Rows are born paused (the frame's default: nothing animates until seen).
+  // EVERY ROW, IN VISUAL ORDER, ACROSS BOTH CONTAINERS. Since the parallax pass the line's tail lives in #jrnyFoot, so
+  // `col.children` is no longer the row list — it is the deep rows plus one wrapper. Everything that enumerates rows goes
+  // through here (jcEls · jlDeepen · jlObserve · the gates), which is why the split cost no behaviour anywhere else.
+  function jlRows() {
+    var col = el("jrnyCol"); if (!col) return [];
+    var out = [], k = col.children;
+    for (var i = 0; i < k.length; i++) { var n = k[i];
+      if (n.id === "jrnyFoot") { var f = n.children; for (var j = 0; j < f.length; j++) out.push(f[j]); }
+      else out.push(n); }
+    return out;
+  }
+  // …and their vertical geometry by SUMMING offsetHeight, never offsetTop and never a rect. Both of those lie the moment
+  // a parallax transform is on (Round 4's false-FAIL class: a transformed #jrnyFoot becomes its own children's
+  // offsetParent, so the frame the numbers are in silently changes). Rows carry no margins, so the sum is exact.
+  function jlGeom() {
+    var rows = jlRows(), y = 0, out = [];
+    for (var i = 0; i < rows.length; i++) { var h = rows[i].offsetHeight; out.push({ n: rows[i], bot: y + h }); y += h; }
+    return { rows: out, H: y };
+  }
   var _jlIO = null, _jlIOSeen = false, _jlIOT = 0;
-  function jlUnpauseAll(col) { for (var i = 0; i < col.children.length; i++) col.children[i].classList.remove("jl-anim-off"); }
+  function jlUnpauseAll() { var r = jlRows(); for (var i = 0; i < r.length; i++) r[i].classList.remove("jl-anim-off"); }
   function jlObserve(col) {
     if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; }
-    clearTimeout(_jlIOT); _jlIOSeen = false;
+    clearTimeout(_jlIOT); _jlIOSeen = false; _jlWake = null; clearTimeout(_jlWakeT);
     if (!col) return;
-    var w = el("tfWorld");
-    if (!w || typeof IntersectionObserver === "undefined") { jlUnpauseAll(col); return; } // no observer to be had → everything animates, exactly as it did before this pass
+    var w = el("tfWorld"), rows = jlRows();
+    if (!w || typeof IntersectionObserver === "undefined") { jlUnpauseAll(); return; } // no observer to be had → everything animates, exactly as it did before this pass
     _jlIO = new IntersectionObserver(function (ents) {
       _jlIOSeen = true;
-      for (var i = 0; i < ents.length; i++) ents[i].target.classList.toggle("jl-anim-off", !ents[i].isIntersecting);
+      for (var i = 0; i < ents.length; i++) {
+        var t = ents[i].target;
+        if (!ents[i].isIntersecting) { t.classList.add("jl-anim-off"); jlWakeDrop(t); }   // PAUSING is always immediate — it can only ever free the frame
+        else if (jlBusy()) { (_jlWake || (_jlWake = [])).push(t); jlWakeSoon(); }         // …WAKING waits for the column to be still (see jlBusy)
+        else t.classList.remove("jl-anim-off");
+      }
     }, { root: w, rootMargin: "120px 0px" });
-    for (var k = 0; k < col.children.length; k++) _jlIO.observe(col.children[k]);
+    for (var k = 0; k < rows.length; k++) _jlIO.observe(rows[k]);
     // THE DEADMAN. Born-paused is only safe if something is guaranteed to wake them: if the observer never delivers a
     // single entry (a root that is display:contents at arm time, a browser quirk), the whole line would sit frozen and
     // look shipped-broken. Unpause everything rather than ship a still image.
-    _jlIOT = setTimeout(function () { if (!_jlIOSeen && el("jrnyCol")) { try { console.warn("[alter] jlObserve: no IntersectionObserver entries — unpausing the line"); } catch (e) {} jlUnpauseAll(el("jrnyCol")); } }, 1500);
+    _jlIOT = setTimeout(function () { if (!_jlIOSeen && el("jrnyCol")) { try { console.warn("[alter] jlObserve: no IntersectionObserver entries — unpausing the line"); } catch (e) {} jlUnpauseAll(); } }, 1500);
+  }
+  // ---- DON'T WAKE EFFECTS MID-SCROLL (David's device recording of v1375). The observer fires the instant a row crosses
+  // the 120px margin, which during a fling is dozens of rows at once — and each wake starts an mPass / mDrift / mFoil /
+  // mSpark loop on a frame budget that is already the thing being complained about. So the WAKE is deferred until the
+  // column is actually still; the PAUSE stays immediate, because pausing can only ever give frames back. A row that
+  // leaves again before the flush is simply dropped from the queue, so nothing wakes behind the user.
+  var _jlWake = null, _jlWakeT = 0;
+  function jlBusy() { return !!(_wAnim || (_wLastT && wNow() - _wLastT < 150) || _wTouch); } // the spring is flying, a finger is down, or a scroll event landed within 150ms
+  function jlWakeDrop(t) { if (!_jlWake) return; var i = _jlWake.indexOf(t); if (i >= 0) _jlWake.splice(i, 1); }
+  function jlWakeSoon() {
+    clearTimeout(_jlWakeT);
+    _jlWakeT = setTimeout(function () {
+      if (jlBusy()) { jlWakeSoon(); return; }                 // still moving — ask again rather than spend the frame now
+      var q = _jlWake; _jlWake = null;
+      if (q) for (var i = 0; i < q.length; i++) q[i].classList.remove("jl-anim-off");
+    }, 180);
   }
   // ---- …AND THE DEEP ONES STOP LAYING OUT. Everything further than 1.5 viewports above the line's foot is marked for
   // content-visibility (see .jl-deep in index.html) — comfortably outside jcEls()'s 1.3-viewport cascade set, so no row
@@ -5994,10 +6042,10 @@
     var w = el("tfWorld"), vh = (w && w.clientHeight) || window.innerHeight || 874;
     if (!force && vh === _jlDeepVh) return;
     _jlDeepVh = vh;
-    var H = col.offsetHeight || 0, cut = H - vh * 1.5;
-    for (var i = 0; i < col.children.length; i++) {
-      var n = col.children[i], cl = n.classList;
-      cl.toggle("jl-deep", (n.offsetTop + n.offsetHeight) <= cut && (cl.contains("jl-lstone-row") || cl.contains("jl-div")));
+    var g = jlGeom(), cut = g.H - vh * 1.5;
+    for (var i = 0; i < g.rows.length; i++) {
+      var n = g.rows[i].n, cl = n.classList;
+      cl.toggle("jl-deep", g.rows[i].bot <= cut && (cl.contains("jl-lstone-row") || cl.contains("jl-div")));
     }
   }
   // ---- the renderer. BUILD-ONCE and idempotent: a full line already sitting in the sky is REUSED, never rebuilt, so the
@@ -6009,7 +6057,10 @@
     sky.classList.add("jl-sky");
     var lab = el("tfWorldSkyLabel"); if (lab && lab.parentNode) lab.parentNode.removeChild(lab); // the line opens on its own BOOK ONE divider; the frame draws no "Your journey" caption
     var line = el("jrnyLine"), col = el("jrnyCol");
-    if (line && col && col.children.length === JL_ROWS) { if (!_jlIO) jlObserve(col); jlDeepen(col); return line; } // reused: only re-arm what a teardown or a resize could have invalidated
+    // BUILD-ONCE, counted across BOTH containers. col.children is 252 since the parallax split (251 deep rows + the
+    // foot), so counting it against JL_ROWS made this guard fail forever and the whole line was rebuilt on every render —
+    // which re-armed the observer constantly and left every row born-paused, i.e. a permanently dark journey.
+    if (line && col && jlRows().length === JL_ROWS) { if (!_jlIO) jlObserve(col); jlDeepen(col); return line; } // reused: only re-arm what a teardown or a resize could have invalidated
     if (!line) { line = document.createElement("div"); line.id = "jrnyLine"; sky.insertBefore(line, sky.firstChild); }
     while (line.firstChild) line.removeChild(line.firstChild);
     col = document.createElement("div"); col.id = "jrnyCol"; line.appendChild(col);
@@ -6029,6 +6080,17 @@
       for (var j = 0; j < c.cnt; j++) { rows.push(jlLockedStone(c, JL_POOL[(c.i0 + j) % 12], JL_TXC[j % 8], k)); k++; }
     });
     for (var i = rows.length - 1; i >= 0; i--) { rows[i].classList.add("jl-anim-off"); col.appendChild(rows[i]); } // born quiet; the observer wakes what you can actually see
+    // THE PARALLAX LAYER IS THE FOOT, NOT THE COLUMN (David's device recording of v1375: home↔journey "super slow and
+    // choppy", the sky blank for ~2s mid-pull). jcScrub used to transform #jrnyCol — ~26,000px of texture the compositor
+    // has to hold and re-raster on every frame of the transition. Only the bottom ~2.6 viewports can ever be on screen
+    // during a home↔landing move (the cascade set is 1.3), so only they need to lag. Everything above stays in #jrnyCol
+    // with no transform on it at all, and is never composited.
+    var foot = document.createElement("div"); foot.id = "jrnyFoot";
+    var _w0 = el("tfWorld"), _vh0 = (_w0 && _w0.clientHeight) || window.innerHeight || 874;
+    var _need = _vh0 * 2.6, _acc = 0, _cut = col.children.length;
+    for (var q = col.children.length - 1; q >= 0; q--) { _acc += col.children[q].offsetHeight; _cut = q; if (_acc >= _need) break; }
+    col.appendChild(foot);
+    while (col.children[_cut] && col.children[_cut] !== foot) foot.appendChild(col.children[_cut]); // visual order is untouched: the tail moves into the foot in place, and the foot is the column's last child
     jlDeepen(col, true);
     jlObserve(col);
     return line;
@@ -6507,11 +6569,10 @@
   var _jcShown, _jcHard = false, _jcInAt = 0, _jcInT = 0, _jcEls = null;
   var _jcU = 0; // the last upward-travel fraction jcScrub computed. wScrub READS it (never recomputes) — onWorldScroll runs jcScrub first, and with JLINE off it stays 0, which makes wScrub's use of it a no-op.
   function jcEls() {
-    var col = el("jrnyCol"); if (!col) return [];
+    var g = jlGeom(); if (!g.rows.length) return [];
     var w = el("tfWorld"), vh = (w && w.clientHeight) || window.innerHeight || 874;
-    var H = col.offsetHeight || 0, cut = H - vh * 1.3;
-    var out = [], kids = col.children;
-    for (var i = 0; i < kids.length; i++) { var n = kids[i]; if (n.offsetTop + n.offsetHeight > cut) out.push(n); }
+    var cut = g.H - vh * 1.3, out = [];
+    for (var i = 0; i < g.rows.length; i++) if (g.rows[i].bot > cut) out.push(g.rows[i].n);
     return out.reverse(); // BOTTOM-UP — chapter one pops first, exactly v22's rows() reverse
   }
   function jcFlat(n) { if (!n._jcClean) { n._jcClean = 1; n.addEventListener("animationend", function (e) { if (e.target !== n) return; n.style.animation = ""; n.style.opacity = n._jcExit ? "0" : ""; }); } } // e.target guard: animationend BUBBLES and these rows are full of animating children (mJit, mFoil, mSpark, the glints) — an unguarded handler would clear the row on a child's animation, the same trap tcFlat documents
@@ -6546,9 +6607,13 @@
     if (!JLINE) return;
     _jcU = u2;                                                // published for wScrub's JOURNEY-hint fade (note C) — one source, one computation
     jcResync();
-    // PARALLAX: the line lags and holds a touch of zoom until you arrive, then sits perfectly still (v22 skyLag 50 / skyZoom 8%)
-    var col = el("jrnyCol");
-    if (col) col.style.transform = u2 >= 1 ? "" : ("translateY(" + Math.round(-(1 - u2) * 50) + "px) scale(" + (1 + (1 - u2) * 0.08).toFixed(3) + ")");
+    // PARALLAX: the line lags and holds a touch of zoom until you arrive, then sits perfectly still (v22 skyLag 50 /
+    // skyZoom 8%) — but ONLY #jrnyFoot moves, and only while you are actually between the two rest states. At home
+    // (u2 ≤ .02) and at the landing (u2 ≥ .98) the transform is CLEARED, so no composited layer exists at either rest:
+    // the old code parked translateY(-50px) scale(1.08) on the whole 26,000px column at u2=0 and left it there through
+    // every home→tools scroll as well.
+    var foot = el("jrnyFoot");
+    if (foot) foot.style.transform = (u2 <= 0.02 || u2 >= 0.98) ? "" : ("translateY(" + Math.round(-(1 - u2) * 50) + "px) scale(" + (1 + (1 - u2) * 0.08).toFixed(3) + ")");
     if (!_jcEls.length) return;
     if (_jcShown === undefined) { _jcShown = false; jcCascade(-1, true); }
     var up = (_wDir || 0) < 0, down = !up;
@@ -6668,8 +6733,10 @@
     if (_jcEls) { _jcEls.forEach(function (n) { n.style.animation = ""; n.style.opacity = ""; }); }
     _jcEls = null; _jcShown = undefined; _jcHard = false;
     var _jcC = el("jrnyCol"); if (_jcC) _jcC.style.transform = "";
+    var _jcF = el("jrnyFoot"); if (_jcF) _jcF.style.transform = ""; // the parallax layer since the v1376 pass — leaving it composited would hold the texture across a closed world
     if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; } // ONE observer, and it dies with the world — renderJourneyLine re-arms it on the next open
     clearTimeout(_jlIOT); _jlIOSeen = false; _jlDeepVh = 0;
+    _jlWake = null; clearTimeout(_jlWakeT);
     ["tfHudJourney", "tfHudHome", "tfToolsHint"].forEach(function (id) { var n = el(id); if (n) { n.style.opacity = ""; n.style.pointerEvents = ""; n.style.translate = ""; } }); // translate too, or a label's scrub offset sticks across a teardown
     var _pw = document.querySelector(".tbx-planwrap"); if (_pw) { _pw.style.opacity = ""; _pw.style.pointerEvents = ""; }
     _worldPositioned = false;
@@ -20365,7 +20432,8 @@
     // home-column sentinel above enforces). A FAIL here = do not ship.
     if (JLINE) {
       var _jlL = el("jrnyLine"), _jlC = el("jrnyCol"), _jlS = el("tfWorldSky"), _jss0 = function (n) { return getComputedStyle(n); };
-      var _jlN = _jlC ? _jlC.children.length : 0;
+      var _jlRows = (typeof jlRows === "function") ? jlRows() : [];   // spans #jrnyCol AND #jrnyFoot since the parallax pass — col.children is no longer the row list
+      var _jlN = _jlRows.length;
       chk("journey line rows", _jlN === JL_ROWS, _jlN + " rows", JL_ROWS + " = the frame's 130 (ch 1-17) + 19 generated gates + 122 generated stones + the BOOK THREE divider");
       chk("sky wears the line's paint (not the old trail)", !!(_jlS && _jlS.classList.contains("jl-sky")) && !el("tfWorldSkyLabel") && !(el("jpTrail") && el("jpTrail").parentNode === _jlS), (_jlS && _jlS.classList.contains("jl-sky") ? "jl-sky" : "no jl-sky") + (el("tfWorldSkyLabel") ? " + the old caption" : "") + (el("jpTrail") && el("jpTrail").parentNode === _jlS ? " + #jpTrail adopted" : ""), "jl-sky, no \"Your journey\" caption, #jpTrail still home in #jpScroll");
       if (_jlL) { var _jlcs = getComputedStyle(_jlL);
@@ -20388,15 +20456,17 @@
       // offsetTop/offsetHeight are transform-immune. Two numbers, because they fail differently: the sky the padding
       // leaves, and whether the last row hands its bottom straight to the column's (a stray margin would eat the gap).
       if (_jlC && _jlL) {
-        var _lastRow = _jlC.children[_jlC.children.length - 1];
+        var _lastRow = _jlRows[_jlRows.length - 1];
         // NO RECTS AND NO offsetTop, deliberately. Rects read through jcScrub's parallax (translateY(-50px) scale(1.08)
         // at home rest) and answer 110 for a correct 60; and offsetTop's frame MOVES — while the parallax transform is
         // on, #jrnyCol becomes the rows' offsetParent, so the same subtraction that reads 0 mid-scroll reads 120 (the
         // line's padding-top) at rest. Both traps cost a false FAIL here before this. What is left is pure computed
         // style: the sky the padding declares, and the one way it can be eaten — a margin under the last row.
         var _seam = parseFloat(_jlcs.paddingBottom) || 0;
-        var _lrcs = _lastRow ? getComputedStyle(_lastRow) : null, _ccs = getComputedStyle(_jlC);
-        var _trail = _lrcs ? ((parseFloat(_lrcs.marginBottom) || 0) + (parseFloat(_ccs.paddingBottom) || 0) + (parseFloat(_ccs.marginBottom) || 0)) : NaN;
+        // the last row now sits inside #jrnyFoot, so the foot's own bottom padding/margin counts toward the gap too
+        var _jlF = el("jrnyFoot"), _lrcs = _lastRow ? getComputedStyle(_lastRow) : null, _ccs = getComputedStyle(_jlC), _fcs = _jlF ? getComputedStyle(_jlF) : null;
+        var _trail = _lrcs ? ((parseFloat(_lrcs.marginBottom) || 0) + (parseFloat(_ccs.paddingBottom) || 0) + (parseFloat(_ccs.marginBottom) || 0)
+          + (_fcs ? ((parseFloat(_fcs.paddingBottom) || 0) + (parseFloat(_fcs.marginBottom) || 0)) : 0)) : NaN;
         chk("BOOK ONE divider sits 60px above the home seam", Math.abs(_seam - 60) <= 2 && isFinite(_trail) && Math.abs(_trail) <= 1, Math.round(_seam * 10) / 10 + "px of sky · " + (isFinite(_trail) ? Math.round(_trail * 10) / 10 : "?") + "px of margin/padding under the divider", "60px ±2, handed straight off the last row with nothing under it (supersedes the J1 178px seam)");
       }
       if (_jlS) { var _jss = getComputedStyle(_jlS); chk("sky side gutters 20px", Math.abs(parseFloat(_jss.paddingLeft) - 20) <= 0.5 && Math.abs(parseFloat(_jss.paddingRight) - 20) <= 0.5, _jss.paddingLeft + " / " + _jss.paddingRight, "20px each side (the .tf-2c .tfw-sky rule; the line adds none of its own)"); }
@@ -20420,7 +20490,15 @@
         chk("deep rows are quiet at home rest", _dst.classList.contains("jl-anim-off") && _dfx.length > 0 && !_dlive.length, (_dst.classList.contains("jl-anim-off") ? "jl-anim-off" : "NOT marked off") + " · " + _dfx.length + " effect nodes, " + _dlive.length + " still running", "the ch30 stone marked jl-anim-off with every .jl-fx node computing animation-play-state:paused");
         chk("deep rows skip layout (content-visibility)", _dst.classList.contains("jl-deep") && getComputedStyle(_dst).containIntrinsicSize.indexOf("74px") >= 0, (_dst.classList.contains("jl-deep") ? "jl-deep · " : "NOT deep · ") + getComputedStyle(_dst).containIntrinsicSize, "jl-deep carrying contain-intrinsic-size 74px 74px (the row's exact content box, so the column's height is unchanged)");
       }
-      chk("cascade rows never carry .jl-fx", !(_jlC && _jlC.querySelector(":scope > .jl-fx")), _jlC && _jlC.querySelector(":scope > .jl-fx") ? "a ROW carries .jl-fx" : "no row does", "no row element itself — the pause selector must never be able to reach jlRowIn/jlRowOut");
+      var _fxRows = _jlRows.filter(function (n) { return n.classList.contains("jl-fx"); });   // checked across BOTH containers
+      chk("cascade rows never carry .jl-fx", !_fxRows.length, _fxRows.length ? _fxRows.length + " ROW(s) carry .jl-fx" : "no row does", "no row element itself — the pause selector must never be able to reach jlRowIn/jlRowOut");
+      // …and the parallax layer is the FOOT, not the column: only the landing end may ever be composited, and neither may
+      // be left transformed at a rest state (the v1375 choppiness was a 26,000px layer held through every transition).
+      var _jlFt = el("jrnyFoot"), _ftRows = _jlFt ? _jlFt.children.length : 0;
+      var _colT = _jlC ? getComputedStyle(_jlC).transform : "none", _wv3 = el("tfWorld");
+      var _atRest = _wv3 ? (Math.abs(_wv3.scrollTop - wHomeY()) < 8 || Math.abs(_wv3.scrollTop - wSkyY()) < 8) : false;
+      var _ftT = _jlFt ? (_jlFt.style.transform || "") : "";
+      chk("parallax layer is the foot only", !!_jlFt && _ftRows > 0 && _ftRows < _jlN && _colT === "none" && (!_atRest || !_ftT), (_jlFt ? _ftRows + " of " + _jlN + " rows in #jrnyFoot" : "no #jrnyFoot") + " · col transform " + _colT + " · foot transform " + (_ftT || "none") + (_atRest ? " (at rest)" : " (mid-travel)"), "a strict tail of the rows in #jrnyFoot, #jrnyCol never transformed, and the foot cleared at both rest states");
       // RESTING AT HOME the line must be HARD HIDDEN — nothing pre-shown behind the board. Re-armed first, exactly as
       // the render path does it, so this reads the settled state and not a 0ms timer that has not fired yet.
       var _jw = el("tfWorld");
@@ -20436,6 +20514,30 @@
     var _other = (Math.abs(W - 440) < 1 && Math.abs(H - 956) < 1) ? { w: 402, h: 874 } : { w: 440, h: 956 };
     var _geo = "GEOMETRY " + W + "x" + H + " · artboard 402x874 · scale " + _AS.toFixed(4) + " · board " + Math.round(402 * _AS) + "px · the other phone (" + _other.w + "x" + _other.h + ") renders these same artboard px at scale " + (Math.min(1.15, Math.max(1, _other.w / 402))).toFixed(4);
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + " · " + _geo + "\n" + out.join("\n");
+  };
+  // THE PHANTOM NOW-PLAYING CARD (David on device 2026-08-26: "the iOS player card shows while nothing is playing").
+  // Asserts the honest invariant rather than a screenshot of it: with NO session live, the silent carrier must not be
+  // playing, must hold no src at all, nobody may own the card, and playbackState must read "none". Run it at boot, then
+  // again after a session ends — those are the two moments the card was surviving.
+  window.DEV.audioIdleCheck = function () {
+    var live = (_breathSession || 0) > 0 || !!_gpProbe;                 // a breathwork run, or a composed player still mounted
+    var ka = KEEPALIVE.live(), kaNode = !!KEEPALIVE.node(), kaSrc = "";
+    try { var n = KEEPALIVE.node(); kaSrc = n ? (n.getAttribute("src") || "") : ""; } catch (e) {}
+    var m = null; try { m = navigator.mediaSession || null; } catch (e) {}
+    var ps = m ? (m.playbackState || "?") : "no mediaSession", md = m ? !!m.metadata : false;
+    var owner = MEDIASESSION.owner();
+    var bad = [];
+    if (!live) {
+      if (ka) bad.push("keep-alive is PLAYING with no session");
+      if (kaNode && kaSrc) bad.push("keep-alive element still holds a src (" + kaSrc.slice(0, 24) + "…) — iOS keeps a card for it");
+      if (owner) bad.push("the card still has an owner");
+      if (md) bad.push("mediaSession.metadata still set");
+      if (m && ps !== "none") bad.push('playbackState is "' + ps + '", want "none"');
+    } else if (!ka) bad.push("a session IS live but the keep-alive is not playing");
+    return (bad.length ? "FAIL · " : "PASS · ") + (live ? "session LIVE" : "no session") +
+      " · keepAlive " + (ka ? "playing" : "silent") + (kaNode ? (kaSrc ? " (element+src)" : " (element, no src)") : " (no element)") +
+      " · owner " + (owner ? "held" : "none") + " · metadata " + (md ? "set" : "clear") + " · playbackState " + ps +
+      (bad.length ? "\n  " + bad.join("\n  ") : "");
   };
   window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
   window.DEV.isleSize = function (r2) { var S = new Set(); var R = r2 || 13; for (var i = -8; i <= 8; i++) for (var j = -8; j <= 8; j++) if (i * i + j * j <= R) S.add(tkey(i, j)); ISLE = { tiles: S, house: [0, -1], objects: [], _stamp: (ISLE && ISLE._stamp || 0) + 1 }; window._isleBakeCache = null; window._sanctSceneCache = null; return "island set to " + S.size + " tiles (r2=" + R + ")"; }; // DEV: set island to a radius^2 for proportion checks (small/med/large)
