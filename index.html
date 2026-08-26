@@ -1867,7 +1867,13 @@
      the vanishing point lands ~13,000px from the landing and translateZ(85px) throws each row hundreds of px sideways on
      its way in — rows cross and overlap. `transform: perspective(900px) translateZ(...)` in the keyframe gives every row
      its OWN origin, at its own centre, which is the local pop the design actually shows. */
-  #jrnyCol{ width:100%; display:flex; flex-direction:column; align-items:center; transform-origin:50% 100%; }
+  #jrnyCol{ width:100%; display:flex; flex-direction:column; align-items:center; }
+  /* THE PARALLAX LAYER, and it is deliberately SMALL. #jrnyFoot holds only the line's bottom ~2.6 viewports — the cascade
+     set plus the landing screen — because that is all that can be on screen during a home↔journey move. Transforming the
+     whole 26,000px column instead (what shipped in v1375) handed the compositor a texture that tall to re-raster on every
+     frame of the transition, and parked it composited through home→tools as well. Same layout, same visual order: the
+     foot is just the column's last child, itself a flex column of the same rows. */
+  #jrnyFoot{ width:100%; display:flex; flex-direction:column; align-items:center; transform-origin:50% 100%; }
   /* the two BOOK dividers (h 57) — accent arrives from JS (#ff4fa0 · #2a9fe0 · #8a5cf0) */
   .jl-div{ width:100%; box-sizing:border-box; display:flex; align-items:center; gap:10px; padding:20px 0 22px; }
   .jl-div-rule{ flex:1; height:2px; border-radius:1px; }
@@ -4365,6 +4371,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1375"></script>
+  <script src="app.js?v=1376"></script>
 </body>
 </html>
