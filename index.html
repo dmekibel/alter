@@ -1930,10 +1930,7 @@
   .jl-lock-ico{ position:relative; z-index:5; flex:none; font-size:22px; color:#c9a4bc; filter:drop-shadow(0 2.5px 0 #160510); }
   /* a locked stone (74px, row h 94). Its whole paint is the chapter's own card texture written inline by app.js; the
      dark wash rides inside --ss's `inset 0 0 0 999px #10060e80`, and the glisten sweeps up the line one stone at a time. */
-  /* the 4px side pad is PAINT ROOM, not design: .jl-deep below turns on contain:paint, which clips a descendant to this
-     row's padding box — and mJit peaks at scale(1.03) + translate(2.4px), ~3.3px past a 74px box. Zero visual effect
-     (the row is shrink-to-fit and centred, so the stone lands on the same pixel either way) and zero height effect. */
-  .jl-lstone-row{ padding:10px 4px; }
+  .jl-lstone-row{ padding:10px 0; } /* back to the recipe's own padding: the 4px of side "paint room" existed only to keep contain:paint from clipping mJit, and both are gone (see below) */
   .jl-lstone{ width:74px; height:74px; border-radius:50%; position:relative; overflow:hidden; box-shadow:var(--ss); display:flex; align-items:center; justify-content:center; }
   .jl-lstone-pass{ position:absolute; inset:0; border-radius:50%; overflow:hidden; mix-blend-mode:overlay; }
   .jl-lstone-pass > span{ position:absolute; inset:-30% -40%; background:var(--gl); }
@@ -1950,14 +1947,22 @@
      stone's jitter phase and glisten phase are per-stone values), and a shorthand resets animation-play-state to
      `running`; inline beats any stylesheet declaration without it. Caught by the audit: the row went off, the effects
      kept running. Scoped to .jl-fx under an off row, so it can reach nothing else in the app. */
-  #jrnyCol > .jl-anim-off .jl-fx{ animation-play-state:paused !important; }
-  /* …and the ones deeper than 1.5 viewports stop laying out and painting at all. The intrinsic sizes are the rows' EXACT
-     measured content boxes, so the column's height — and with it every landing y — is bit-for-bit what it was without
-     this. Only the two row types whose paint stays inside their own box are listed: the chapter GATES are deliberately
-     absent, because their 24-40px outer glow and the mGlow aura live outside the card and contain:paint would shear
-     them. iOS 18+ / Chrome only; every other engine ignores the declaration and simply renders the row, as before. */
-  .jl-lstone-row.jl-deep{ content-visibility:auto; contain-intrinsic-size:74px 74px; }
-  .jl-div.jl-deep{ content-visibility:auto; contain-intrinsic-size:362px 15px; }
+  /* KEYED TO #jrnyLine, NOT `#jrnyCol >`. Since the parallax pass the line's tail lives in #jrnyFoot, so a foot row is a
+     GRANDCHILD of #jrnyCol and the old child combinator silently stopped matching it — the twenty-one rows nearest the
+     landing, the ones most worth pausing, were never paused at all. The descendant form reaches a row wherever it lives,
+     and the "no row element ever carries .jl-fx" law above is what still keeps it off jlRowIn / jlRowOut. */
+  #jrnyLine .jl-anim-off .jl-fx{ animation-play-state:paused !important; }
+  /* …AND A SLEEPING ROW DROPS ITS BLEND LAYERS (David on device 2026-08-26, fast scrolling still chopping). The glisten
+     over each stone and the two foils on each gate are `mix-blend-mode:overlay` — iOS pays to blend them per tile even
+     with the animation paused, and there are ~296 of them down the line. At opacity 0 the engine skips the layer
+     entirely, so a sleeping row paints as a plain textured circle with no blending at all; the wake path restores it. */
+  #jrnyLine .jl-anim-off .jl-glis{ opacity:0; }
+  /* CONTENT-VISIBILITY IS GONE (David's device video 2026-08-26: scrolled past chapter one the whole line was a VOID —
+     starfield and puck, no stones, no gates — while the same depth rendered fine in desktop Chrome). iOS Safari was
+     failing to materialize the skipped subtrees during scroll in a 26,000px scroller, and once enough rows in a tile
+     stalled the entire area blanked. Its premise died with the #jrnyFoot fix anyway: the giant composited column it was
+     insuring against no longer exists, and the IO pause + this blend-layer diet carry the paint budget on their own.
+     Do not reintroduce it here — designAudit's "rows never use content-visibility" gate now fails a ship that tries. */
   /* the frame's keyframes, verbatim from recipes/j1-style-block.css (jlAlive = its jpAlive, renamed on collision) */
   @keyframes jGlint{ 0%{ transform:translateX(-135%) rotate(0.001deg); } 55%,100%{ transform:translateX(135%) rotate(0.001deg); } }
   @keyframes jlAlive{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
@@ -2085,25 +2090,27 @@
      MECHANISM, deliberately NOT `zoom`: the frame is laid out at a literal 402 x (100dvh/scale) px and then TRANSFORM-scaled. `zoom` was tried first and rejected — under zoom, 100dvh and position:fixed resolve against the unzoomed viewport while everything else resolves zoomed, so the home zone measured 956 layout px inside a 402-wide frame, and that inconsistency is engine-specific (the exact razor-edge class that passes Chromium and breaks iOS Safari). A transform is deterministic: layout is untouched, so every locked px, every landing law and every gate still reads the frame's own numbers, and the only thing that changes is the pixel ratio it is painted at. --tfscale is written per render by renderOnePageWorld; tf-scaled is only set above 402 wide, so a 402-or-narrower phone renders byte-identically to v1283. */
   #trackerFull.tf-2c.tf-scaled .tf-inner{ width:402px; left:50%; right:auto; top:0; bottom:auto; height:calc(100dvh / var(--tfscale, 1)); transform:translateX(-50%) scale(var(--tfscale, 1)); transform-origin:top center; }
   #trackerFull.tf-onepage.tf-onehome.tf-2c.tf-scaled .tfw-home{ min-height:100%; } /* THE dvh TRAP: the shipped min-height:100dvh is the REAL viewport (956), but inside a scaled frame the board's own height is 100dvh/scale (873.5). 100% of #tfWorld — which is inset:0 of the sized .tf-inner — resolves to exactly that, with no second place for the scale to be spelled. Scoped to .tf-scaled so the unscaled path keeps the shipped dvh rule verbatim. */
-  /* the 12px row drop is GONE (static frame): its HUD is `position:absolute; top:42px` with no transform at all, and the
-     row measures t=42 h=32 there. The drop came from the v22 motion prototype. */
-  #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:42px; left:20px; right:20px; align-items:center; gap:14px; z-index:6; font-family:"Jost",sans-serif; }
+  /* the 12px row drop is BACK — the corrected static frame's HUD is `top:42px; z-index:23; transform:translateY(12px)`.
+     Written as the `translate` PROPERTY, not transform, because wScrub writes this node's opacity and the chips carry
+     their own transforms; the two compose instead of fighting. */
+  #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:42px; translate:0 12px; left:20px; right:20px; align-items:center; gap:14px; z-index:23; font-family:"Jost",sans-serif; }
   /* CARD-OPEN FADE (David's card-open frame 2026-08-11 shows NO HUD — in his design the HUD row scrolls away with the column; here it is fixed chrome, so it FADES instead). opacity, never display: the design audit and the reveal anchor still read its rect and its colours. */
   #trackerFull.tf-2c #tfHud{ transition:opacity .2s ease; }
   #trackerFull.tf-2c.tfh-cardopen #tfHud{ opacity:0; pointer-events:none; }
   body #trackerFull.tf-2c.tf-2c .tf-clock, body #trackerFull.tf-2c.tf-2c .tf-spark, body #trackerFull.tf-2c.tf-2c #tfGear{ display:none !important; } /* EDGES CLEARED (spec §3): no clock on the home face; the HUD carries the gems, and the sparkle takes the avatar slot the gear was wearing (the Sound panel keeps its own door in Settings). The `body` prefix and the REPEATED .tf-2c are load-bearing, not a typo: `#trackerFull.tf-home.st-idle .tf-clock{display:block !important}` re-shows them at (1,3,0), so this hide has to out-specify it. */
   .tfh-spark{ flex:0 0 auto; width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,242,249,.16); background:#2a1220; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-spark i{ font-size:13px; color:#ff8fc0; line-height:1; }
-  /* SUPERSEDED 2026-08-26 by "Home Screen (static).dc.html" — David's definitive home frame ("so u never mess up the home
-     screen again"). Three 2c overrides are DELETED here, and their deletion is the change:
-       · the you-door's bare-glyph look (border:none, transparent, 18px ti-adjustments-horizontal) — the static frame draws
-         a real 28px CIRCLE: border 2px rgba(255,242,249,.16) on #2a1220 with a 13px ti-settings in #ff8fc0, which is
-         exactly what the base .tfh-spark class above already says. Removing the override IS the fix.
-       · the you-door's scale(1.5) about its left edge, and
-       · the garden leaf's scale(1.1) about its right edge.
-     Both scale/translate hacks came from the v22 motion prototype's sliders; the static frame draws neither, and per
-     David's word this frame is the law for the whole idle 2c column and the HUD row. The glyph class itself is set in
-     renderHome2cHud (app.js), which is where the node is built. */
+  /* THE HUD CHROME, per the CORRECTED "Home Screen (static).dc.html" (David 2026-08-26: "I accidentally gave you the wrong
+     home screen — this is the correct one"). The first file had a bordered ti-settings circle and an untransformed row;
+     the real frame keeps the v22 chrome, so these three overrides are RESTORED verbatim from it:
+       · the you-door is a BARE glyph — border:none over no fill, an 18px ti-adjustments-horizontal in #ff8fc0, carried at
+         `translate(-1px,1px) scale(1.5)` about its LEFT edge (a 28px hit area rendering 42 wide),
+       · the garden leaf at `translateX(7px) scale(1.1)` about its RIGHT edge — both grow INTO the row, never off its ends.
+     Properties, not transform: each chip's :active already owns transform, and the two compose. The COLUMN below the HUD
+     is unchanged by this correction — every block round 4 measured against the frame still lands on it. */
+  #trackerFull.tf-2c .tfh-spark{ border:none; background:none; translate:-1px 1px; scale:1.5; transform-origin:left center; }
+  #trackerFull.tf-2c .tfh-spark i{ font-size:18px; }
+  #trackerFull.tf-2c .tfh-garden{ translate:7px 0; scale:1.1; transform-origin:right center; }
   .tfh-spark:active{ transform:translateY(1px); }
   .tfh-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-hint i{ font-size:20px; color:#c77ea3; line-height:1; animation:hintFloat 2.2s ease-in-out infinite; }
@@ -4371,6 +4378,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1376"></script>
+  <script src="app.js?v=1377"></script>
 </body>
 </html>
