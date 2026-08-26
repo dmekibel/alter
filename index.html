@@ -1769,6 +1769,13 @@
   #trackerFull.tf-onehome .tf-subblock .sb-dot{ color:#b39ab0 !important; font-size:14.5px; }
   #trackerFull.tf-onehome .tf-subblock .sb-cd{ color:#b39ab0 !important; font-weight:600; font-size:14.5px; }
   .tf-invite{ display:inline-flex; align-items:center; gap:7px; color:#b39ab0; font-size:13.5px; margin-top:4px; }
+  /* the static frame's sub line: a plain 16/700 #a487a0 text block that measures 23px tall. The app rendered the pre-2c
+     13.5/#b39ab0, and its .tf-invite is INLINE-flex — an inline box sits on the text baseline, so the line box added ~4px
+     of descender under it and every block below (planner, hero grid, TOOLS hint) sat 2.6px low. flex + line-height:normal
+     is the frame's own box. */
+     margin-top:0 because .tf-verdict already carries the frame's own 4px above this line — the base .tf-invite adds a
+     SECOND 4px which, once the line became block-level, stopped collapsing and made the block 27 where the frame is 23. */
+  #trackerFull.tf-2c .tf-invite{ display:flex; justify-content:center; font-size:16px; font-weight:700; color:#a487a0; line-height:normal; margin-top:0; }
   .tf-invite i{ font-size:15px; color:#ffb27a; }
   /* doors: optional right-tag (names the block) + optional second cost-line */
   .tf-door.has-tag{ justify-content:space-between; }
@@ -1852,12 +1859,15 @@
   #jrnyLine{ --ss:inset 0 4px 0 #ffffff0f,inset 0 -6px 0 #00000038,0 6px 0 #00000061,inset 0 0 0 999px #10060e80;
     --tex:radial-gradient(#16051021 0 1px, #0000 1.6px), repeating-linear-gradient(45deg, #ffffff0a 0 1px, #0000 1px 4px);
     --gl:linear-gradient(115deg,#0000 24%,#ffb4d68c 36%,#ffe096a6 44%,#ffffffd9 50%,#a0f5d7a6 56%,#96c8ff8c 64%,#0000 76%);
-    max-width:362px; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; align-items:center; padding:110px 0 178px; perspective:900px; }
+    max-width:362px; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; align-items:center; padding:120px 0 60px; perspective:900px; }
   #jrnyLine > *{ pointer-events:none; } /* LOOK-ONLY this round: #tfWorld owns the gesture, the line takes no taps (the journey wiring is a later round) */
-  /* perspective lives on the ROWS' OWN PARENT — the frame puts padding, perspective and the parallax transform on one
-     element; the app splits it in two (the pad + the parallax target) and a perspective on the outer one would never
-     reach the rows, so the cascade's translateZ(85px) would flatten to nothing. */
-  #jrnyCol{ width:100%; display:flex; flex-direction:column; align-items:center; transform-origin:50% 100%; perspective:900px; }
+  /* NO `perspective` HERE — it is baked PER ELEMENT into jlRowIn instead (David's device video 2026-08-26: "Settle" flew
+     in jammed behind the gold stone). A parent `perspective` puts the vanishing point at that parent's own centre; v22's
+     trail was ONE SCREEN tall so its centre sat among the rows and the pop read local. This column is ~26,000px tall, so
+     the vanishing point lands ~13,000px from the landing and translateZ(85px) throws each row hundreds of px sideways on
+     its way in — rows cross and overlap. `transform: perspective(900px) translateZ(...)` in the keyframe gives every row
+     its OWN origin, at its own centre, which is the local pop the design actually shows. */
+  #jrnyCol{ width:100%; display:flex; flex-direction:column; align-items:center; transform-origin:50% 100%; }
   /* the two BOOK dividers (h 57) — accent arrives from JS (#ff4fa0 · #2a9fe0 · #8a5cf0) */
   .jl-div{ width:100%; box-sizing:border-box; display:flex; align-items:center; gap:10px; padding:20px 0 22px; }
   .jl-div-rule{ flex:1; height:2px; border-radius:1px; }
@@ -1956,7 +1966,7 @@
   @keyframes mTextFoil{ 0%{ background-position:0% 50%; } 100%{ background-position:200% 50%; } }
   /* the v22 cascade: the whole landing screen pops bottom-up out of the sky when the pull commits, and folds back the
      other way heading home. `to{ transform:none }` is safe precisely because the row's tx lives on `translate`. */
-  @keyframes jlRowIn{ from{ opacity:0; transform:translateZ(85px) translateY(-10px) rotateX(-5deg); } 40%{ opacity:1; } to{ opacity:1; transform:none; } }
+  @keyframes jlRowIn{ from{ opacity:0; transform:perspective(900px) translateZ(85px) translateY(-10px) rotateX(-5deg); } 40%{ opacity:1; } to{ opacity:1; transform:none; } }
   @keyframes jlRowOut{ from{ opacity:1; } to{ opacity:0; } }
   /* while the one-page world is on, the inner column is just the fixed frame for the overlays — #tfWorld owns the scroll flow */
   #trackerFull.tf-onepage.tf-onehome .tf-inner{ overflow:hidden; }
@@ -1965,7 +1975,7 @@
   .tbx *{ box-sizing:border-box; }
   .tbx-planwrap{ display:flex; justify-content:center; }
   /* FP3 §4: home idle carries exactly ONE button under the sub-line — Plan my day, violet #8a5cf0 / r15 / 0 4px 0 ink / #fff2f9 Baloo 15px. */
-  .tbx-plan{ display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:15px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; background-color:#8a5cf0; position:relative; top:-3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+  .tbx-plan{ display:flex; align-items:center; gap:9px; padding:10px 18px; border-radius:15px; border:2.5px solid #160510; box-shadow:0 4px 0 #160510; background-color:#8a5cf0; position:relative; top:-3px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tbx-plan i{ font-size:17px; color:#fff2f9; }
   .tbx-plan span{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; white-space:nowrap; }
   .tbx-plan:active{ transform:translateY(3px); box-shadow:0 1px 0 #160510; }
@@ -2069,22 +2079,34 @@
      MECHANISM, deliberately NOT `zoom`: the frame is laid out at a literal 402 x (100dvh/scale) px and then TRANSFORM-scaled. `zoom` was tried first and rejected — under zoom, 100dvh and position:fixed resolve against the unzoomed viewport while everything else resolves zoomed, so the home zone measured 956 layout px inside a 402-wide frame, and that inconsistency is engine-specific (the exact razor-edge class that passes Chromium and breaks iOS Safari). A transform is deterministic: layout is untouched, so every locked px, every landing law and every gate still reads the frame's own numbers, and the only thing that changes is the pixel ratio it is painted at. --tfscale is written per render by renderOnePageWorld; tf-scaled is only set above 402 wide, so a 402-or-narrower phone renders byte-identically to v1283. */
   #trackerFull.tf-2c.tf-scaled .tf-inner{ width:402px; left:50%; right:auto; top:0; bottom:auto; height:calc(100dvh / var(--tfscale, 1)); transform:translateX(-50%) scale(var(--tfscale, 1)); transform-origin:top center; }
   #trackerFull.tf-onepage.tf-onehome.tf-2c.tf-scaled .tfw-home{ min-height:100%; } /* THE dvh TRAP: the shipped min-height:100dvh is the REAL viewport (956), but inside a scaled frame the board's own height is 100dvh/scale (873.5). 100% of #tfWorld — which is inset:0 of the sized .tf-inner — resolves to exactly that, with no second place for the scale to be spelled. Scoped to .tf-scaled so the unscaled path keeps the shipped dvh rule verbatim. */
-  #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:42px; translate:0 12px; left:20px; right:20px; align-items:center; gap:14px; z-index:6; font-family:"Jost",sans-serif; }
+  /* the 12px row drop is GONE (static frame): its HUD is `position:absolute; top:42px` with no transform at all, and the
+     row measures t=42 h=32 there. The drop came from the v22 motion prototype. */
+  #trackerFull.tf-2c #tfHud{ display:flex; position:absolute; top:42px; left:20px; right:20px; align-items:center; gap:14px; z-index:6; font-family:"Jost",sans-serif; }
   /* CARD-OPEN FADE (David's card-open frame 2026-08-11 shows NO HUD — in his design the HUD row scrolls away with the column; here it is fixed chrome, so it FADES instead). opacity, never display: the design audit and the reveal anchor still read its rect and its colours. */
   #trackerFull.tf-2c #tfHud{ transition:opacity .2s ease; }
   #trackerFull.tf-2c.tfh-cardopen #tfHud{ opacity:0; pointer-events:none; }
   body #trackerFull.tf-2c.tf-2c .tf-clock, body #trackerFull.tf-2c.tf-2c .tf-spark, body #trackerFull.tf-2c.tf-2c #tfGear{ display:none !important; } /* EDGES CLEARED (spec §3): no clock on the home face; the HUD carries the gems, and the sparkle takes the avatar slot the gear was wearing (the Sound panel keeps its own door in Settings). The `body` prefix and the REPEATED .tf-2c are load-bearing, not a typo: `#trackerFull.tf-home.st-idle .tf-clock{display:block !important}` re-shows them at (1,3,0), so this hide has to out-specify it. */
   .tfh-spark{ flex:0 0 auto; width:28px; height:28px; border-radius:50%; border:2px solid rgba(255,242,249,.16); background:#2a1220; display:flex; align-items:center; justify-content:center; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-spark i{ font-size:13px; color:#ff8fc0; line-height:1; }
-  /* THE YOU DOOR IS A BARE GLYPH (David's device review 2026-08-14). The design's top-left is an 18px ti-adjustments-horizontal in #ff8fc0 on NOTHING — the button keeps its 28x28 hit area and its round hit shape, but border-style:none and a transparent background (measured on the prototype's own HUD: `border-style: none`, bg rgba(0,0,0,0), icon 18px rgb(255,143,192)). The framed-circle look this replaces is the variant the design's own default rejects. The glyph class itself is set in renderHome2cHud, which is where the node is built. */
-  /* …and the two HUD chips carry David's own slider scales, measured off the prototype: the you-door matrix(1.5,0,0,1.5,-1,1) about its LEFT edge (a 28px hit area rendering 42 wide with a 27px glyph), the garden leaf matrix(1.1,0,0,1.1,7,0) about its RIGHT edge so both grow INTO the row instead of off its ends. Properties, not transform: each chip's :active already owns transform, and the two compose. */
-  #trackerFull.tf-2c .tfh-spark{ border:none; background:none; translate:-1px 1px; scale:1.5; transform-origin:left center; }
-  #trackerFull.tf-2c .tfh-spark i{ font-size:18px; }
-  #trackerFull.tf-2c .tfh-garden{ translate:7px 0; scale:1.1; transform-origin:right center; }
+  /* SUPERSEDED 2026-08-26 by "Home Screen (static).dc.html" — David's definitive home frame ("so u never mess up the home
+     screen again"). Three 2c overrides are DELETED here, and their deletion is the change:
+       · the you-door's bare-glyph look (border:none, transparent, 18px ti-adjustments-horizontal) — the static frame draws
+         a real 28px CIRCLE: border 2px rgba(255,242,249,.16) on #2a1220 with a 13px ti-settings in #ff8fc0, which is
+         exactly what the base .tfh-spark class above already says. Removing the override IS the fix.
+       · the you-door's scale(1.5) about its left edge, and
+       · the garden leaf's scale(1.1) about its right edge.
+     Both scale/translate hacks came from the v22 motion prototype's sliders; the static frame draws neither, and per
+     David's word this frame is the law for the whole idle 2c column and the HUD row. The glyph class itself is set in
+     renderHome2cHud (app.js), which is where the node is built. */
   .tfh-spark:active{ transform:translateY(1px); }
   .tfh-hint{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:2px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .tfh-hint i{ font-size:20px; color:#c77ea3; line-height:1; animation:hintFloat 2.2s ease-in-out infinite; }
   .tfh-hint span{ font-family:"Jost",sans-serif; font-size:9px; font-weight:800; letter-spacing:2px; color:#8a6d85; }
+  /* the static frame centres the hint on the row's own cross-axis and lifts it 8px — NOT top:50% + translateY(-50%),
+     which sat it 9.5px too high once the row's 12px drop went. Absolutely-positioned flex children take their static
+     position from align-items:center, so `top:auto` centres it exactly as the frame's does. wScrub writes the separate
+     `translate` PROPERTY on this node, which composes with this transform instead of fighting it. */
+  #trackerFull.tf-2c .tfh-hint{ top:auto; transform:translate(-50%,-8px); }
   /* the HOME label shares the JOURNEY label's centre slot and CROSSFADES with it as you travel down (design: JOURNEY fades out over the first 70px, HOME fades in 150->290px and hides the instant you move up). Both are driven by direct style writes on the scroll listener — never by a re-render. */
   #tfHudHome{ opacity:0; pointer-events:none; }
   .tfh-garden{ margin-left:auto; flex:0 0 auto; display:flex; align-items:center; border:2px solid rgba(79,208,138,.4); background:rgba(79,208,138,.1); padding:5px 11px; border-radius:999px; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -2094,7 +2116,11 @@
   .tfh-gems i{ font-size:17px; color:#ffc41f; line-height:1; }
   .tfh-gems b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:20px; color:#ffc41f; }
   /* WEEK STRIP v2 (§2): five day pills + the icon row under them. Same flex columns the story strip already used — one column per day, so the icons sit centred under their pill and the trailing chevron keeps its own column. */
-  #trackerFull.tf-2c #tfHomeBars{ gap:9px; align-items:flex-start; }
+  /* THE REPEATED .tf-2c IS LOAD-BEARING (same idiom as the edges-cleared rule above, and found the same way — by
+     measuring). `#trackerFull.tf-home.st-idle #tfHomeBars` declares gap:7px at (2,2,0) and out-specifies a plain
+     `#trackerFull.tf-2c` (2,1,0) no matter how late it sits, so this rule's 9px had NEVER applied on the live face and
+     the strip rendered at 7. The static home frame's pill row is gap:9px. */
+  #trackerFull.tf-2c.tf-2c #tfHomeBars{ gap:9px; align-items:flex-start; }
   #trackerFull.tf-2c .tf-hb{ gap:11px; }
   #trackerFull.tf-2c .tf-hb-bar{ height:13px; margin:1px 0; border-radius:999px; background:#2e1a28; } /* the 1px above and below is the frame's PILL ROW: there the 13px pills share a 15px-tall row with the 15px chevron that rides in it, so the strip block is 43 and the pill sits at +1. Our chevron is a sibling column and never grew the row, which is the 2px every board element below the strip was landing short by. */
   #trackerFull.tf-2c .tf-hb-fill{ border-radius:999px; }
@@ -4339,6 +4365,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1374"></script>
+  <script src="app.js?v=1375"></script>
 </body>
 </html>

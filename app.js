@@ -5433,11 +5433,12 @@
       hj.onclick = function (e) { if (e) e.stopPropagation(); tfhGoJourney(); };
       gc.onclick = function (e) { if (e) e.stopPropagation(); if (TF_OPEN) { try { leaveHomeForPlayer(); } catch (e2) {} } try { setPaneRest("game"); } catch (e2) {} }; // the app's OWN garden door path (it tears the cockpit down first); a bare openGame() would leave home layered over the world
     } else if (hud.parentNode !== inner) inner.appendChild(hud);
-    // THE YOU DOOR'S GLYPH (David's device review 2026-08-14): the design's top-left is ti-adjustments-horizontal, not the sparkle — an
-    // 18px #ff8fc0 line-glyph on nothing (the .tf-2c CSS strips the circle's border and fill; the 28x28 hit area stays). Written here
-    // rather than at build time so a HUD created before this line existed is corrected on its next render; idempotent, no innerHTML, and
-    // the button's own onclick (the guardian card) is untouched.
-    var _spi = hud.querySelector("#tfHudSpark i"); if (_spi && _spi.className !== "ti ti-adjustments-horizontal") _spi.className = "ti ti-adjustments-horizontal";
+    // THE YOU DOOR'S GLYPH. SUPERSEDED 2026-08-26 by "Home Screen (static).dc.html", David's definitive home frame: the
+    // top-left is a 13px ti-SETTINGS in #ff8fc0 inside a real 28px circle (border 2px rgba(255,242,249,.16) on #2a1220 —
+    // the base .tfh-spark class), not the 18px ti-adjustments-horizontal on nothing that the 2026-08-14 prototype review
+    // installed. Written here rather than at build time so a HUD created before this line existed is corrected on its next
+    // render; idempotent, no innerHTML, and the button's own onclick (the guardian card) is untouched.
+    var _spi = hud.querySelector("#tfHudSpark i"); if (_spi && _spi.className !== "ti ti-settings") _spi.className = "ti ti-settings";
     var b = hud.querySelector(".tfh-gems b"); if (b) b.textContent = ((S.game && S.game.spark) || 0).toLocaleString();
     var ck = el("tfClock"); if (ck) ck.textContent = ""; // the home face shows NO clock (the status bar already does); the CSS hides it, this empties it too
   }
@@ -5700,7 +5701,11 @@
       // gone before you could watch it scale to nothing (note 16). Hidden outright under an open card.
       away = zn === "sky" ? true : (wBusy() || (_wDir || 0) < 0 ? false : (zn !== "home" || tp > 66));
       // The two centre labels are tp-LINKED IN BOTH AXES (design values): the JOURNEY hint's TAP dies at 40px of downward travel while its fade only completes at 70, and it rides up with the scroll (jnyOffY = -tp). HOME rises into its seat from 14px below as it fades in. Written to the separate CSS `translate` PROPERTY, never transform, because .tfh-hint's centering lives in transform:translate(-50%,-50%) — same translate-not-transform idiom as the home cascade (see the homeRise keyframes comment in index.html).
-      var hj = el("tfHudJourney"); if (hj) { var jo = 1 - Math.min(1, tp / 70); hj.style.opacity = String(jo); hj.style.translate = "0 " + (-tp) + "px"; hj.style.pointerEvents = tp > 40 ? "none" : ""; } // the JOURNEY invitation is spent the moment you head down
+      // …AND IT IS SPENT ON THE WAY UP TOO (David's device 2026-08-26: at the journey landing the JOURNEY chevron was
+      // still lit, sitting on top of "Close the day"). The downward `tp` behaviour below is UNTOUCHED; this only adds
+      // v22's own upward rule — the hint dies over the first 30% of the pull and stops taking taps at 20%. _jcU is
+      // jcScrub's already-computed travel fraction (0 at home, 1 at the landing), so the two never disagree.
+      var hj = el("tfHudJourney"); if (hj) { var jo = Math.min(1 - Math.min(1, tp / 70), Math.max(0, 1 - (_jcU || 0) / 0.3)); hj.style.opacity = String(jo); hj.style.translate = "0 " + (-tp) + "px"; hj.style.pointerEvents = (tp > 40 || (_jcU || 0) > 0.2) ? "none" : ""; } // the JOURNEY invitation is spent the moment you head down — or up
       var hh = el("tfHudHome"); if (hh) { var ho = (_wDir || 0) < 0 ? 0 : Math.max(0, Math.min(1, (tp - 150) / 140)); hh.style.opacity = String(ho); hh.style.translate = "0 " + (((1 - ho) * 14).toFixed(1)) + "px"; hh.style.pointerEvents = ho > 0.5 ? "auto" : "none"; } // …and HOME takes its place, gone again the instant you turn back
       var th = el("tfToolsHint"); if (th) th.style.opacity = String(1 - Math.min(1, tp / 110));
       var pw = document.querySelector(".tbx-planwrap");
@@ -5847,6 +5852,7 @@
   var JL_TXC = [-24, 26, -20, 28, -26, 22, -28, 24];  // the stone zig-zag, per stone within a chapter
   var JL_CNT = [7, 6, 5, 8];                          // stones per chapter, cycling by (ch-2)%4
   var JL_JITV = ["mJitA", "mJitB", "mJitC"], JL_PASSD = [5.4, 5.7, 6];
+  var JL_JITTER = false;              // the stones' resting wobble — David killed it on device 2026-08-26; true restores the frame's mJit exactly (see jlLockedStone)
   var JL_INK = ["#288968", "#972b56", "#aa822c", "#aa5a2b", "#227883", "#aa3f6c"]; // the six icon inks the frame uses, in first-appearance order
   // THE 36-CHAPTER TABLE. Chapters 2-17 ARE the frame (their row in JL_FRAME); 18-36 re-enter the frame's own rotation
   // at index (ch-2)%16 for the text treatment and carry the full ladder, which is what "extrapolate" means here: no hex,
@@ -5947,8 +5953,12 @@
     var jd = -((k * 1.7) % 12);                                          // frame: 0.0, -1.7, -3.4 … wrapping at 12s
     var pd = JL_PASSD[k % 3], x = (k * 1.05) % pd;
     var gd = k === 0 ? 0 : -(pd - x);                                    // the very first stone starts unshifted; every other one carries its phase
-    var st = jlAdd(row, "span", "jl-lstone jl-fx", "background:" + c.tex + ";animation:" + JL_JITV[k % 3] + " " +
-      (9 + 0.8 * (k % 7)).toFixed(1) + "s ease-in-out infinite;animation-delay:" + jd.toFixed(1) + "s;");
+    // JL_JITTER=false (David on device 2026-08-26: "video one is the expectation EXCEPT for the jitteriness") — the
+    // stones no longer wobble at rest. The mJit keyframes, the variant/duration/phase derivation and this line are all
+    // kept intact, so flipping the flag back restores the frame's jitter exactly; only the emission stops. The glisten
+    // (mPass) is untouched, and so is every banner effect.
+    var jit = JL_JITTER ? ("animation:" + JL_JITV[k % 3] + " " + (9 + 0.8 * (k % 7)).toFixed(1) + "s ease-in-out infinite;animation-delay:" + jd.toFixed(1) + "s;") : "";
+    var st = jlAdd(row, "span", "jl-lstone jl-fx", "background:" + c.tex + ";" + jit);
     jlAdd(jlAdd(st, "span", "jl-lstone-pass"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
     jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
     return row;
@@ -6495,6 +6505,7 @@
   // 1.3 viewports up from the line's foot you are no longer arriving, you are READING — those rows are always visible
   // and never animate, exactly as wSnapIntent lets the magnet go past one viewport for the same reason.
   var _jcShown, _jcHard = false, _jcInAt = 0, _jcInT = 0, _jcEls = null;
+  var _jcU = 0; // the last upward-travel fraction jcScrub computed. wScrub READS it (never recomputes) — onWorldScroll runs jcScrub first, and with JLINE off it stays 0, which makes wScrub's use of it a no-op.
   function jcEls() {
     var col = el("jrnyCol"); if (!col) return [];
     var w = el("tfWorld"), vh = (w && w.clientHeight) || window.innerHeight || 874;
@@ -6533,6 +6544,7 @@
   function jcU(w) { return w ? Math.max(0, Math.min(1, -(w.scrollTop - wHomeY()) / (w.clientHeight || 1))) : 0; } // 0 at home, 1 at the journey landing
   function jcScrub(u2) {
     if (!JLINE) return;
+    _jcU = u2;                                                // published for wScrub's JOURNEY-hint fade (note C) — one source, one computation
     jcResync();
     // PARALLAX: the line lags and holds a touch of zoom until you arrive, then sits perfectly still (v22 skyLag 50 / skyZoom 8%)
     var col = el("jrnyCol");
@@ -20166,13 +20178,19 @@
     // they hold at any viewport and on any safe-area: the frame's HUD line, the frame's column inset, and David's own slider scale on the
     // you-door. The app's env(safe-top)+11 anchor is exactly what these replace.
     var _hudcs = _hud ? getComputedStyle(_hud) : null;
-    chk("HUD at the frame's line (top 42 + 12 drop)", !!(_hudcs && Math.round(parseFloat(_hudcs.top)) === 42 && Math.abs(parseFloat(String(_hudcs.translate).split(/\s+/)[1] || "0") - 12) <= 0.5), _hudcs ? ("top " + _hudcs.top + " · translate " + _hudcs.translate) : "missing", "top 42px · translate 0 12px (no safe-area added: the artboard is an island phone)");
+    // SUPERSEDED: "HUD at the frame's line (top 42 + 12 drop)". The static home frame's HUD is `top:42px` with NO
+    // transform — its row measures t=42 h=32. The 12px drop came from the v22 motion prototype.
+    chk("HUD at the frame's line (top 42, no drop)", !!(_hudcs && Math.round(parseFloat(_hudcs.top)) === 42 && (_hudcs.translate === "none" || Math.abs(parseFloat(String(_hudcs.translate).split(/\s+/)[1] || "0")) <= 0.5)), _hudcs ? ("top " + _hudcs.top + " · translate " + _hudcs.translate) : "missing", "top 42px · no row translate (no safe-area added: the artboard is an island phone)");
     var _hzcs = el("tfWorldHome") ? getComputedStyle(el("tfWorldHome")) : null;
     chk("home column pad-top 42px", !!(_hzcs && Math.round(parseFloat(_hzcs.paddingTop)) === 42), _hzcs ? _hzcs.paddingTop : "missing", "42px — the design column's own `padding: 42px 20px 0`");
     var _brcs = bars ? getComputedStyle(bars) : null;
     chk("strip margin-top 40 + 13px drop", !!(_brcs && Math.round(parseFloat(_brcs.marginTop)) === 40 && Math.abs(parseFloat(String(_brcs.translate).split(/\s+/)[1] || "0") - 13) <= 0.5), _brcs ? (_brcs.marginTop + " · translate " + _brcs.translate) : "missing", "40px (28px HUD spacer + 12) with the block's own translate 0 13px");
     var _spcs = _hsp ? getComputedStyle(_hsp) : null, _spi2 = _hsp ? _hsp.querySelector("i") : null, _spis = _spi2 ? getComputedStyle(_spi2) : null;
-    chk("you-door scaled 1.5 from its left edge", !!(_spcs && Math.abs(parseFloat(_spcs.scale) - 1.5) <= 0.005 && /left|^0px/.test(_spcs.transformOrigin)), _spcs ? ("scale " + _spcs.scale + " · origin " + _spcs.transformOrigin) : "missing", "1.5 about left center (David's own slider; 28px hit area renders 42)");
+    // SUPERSEDED: "you-door scaled 1.5 from its left edge" and its garden-leaf twin. The static frame draws NEITHER —
+    // both chips sit at their natural size. The gate is inverted: any scale on either chip is now a failure.
+    var _gdcs = _hgd ? getComputedStyle(_hgd) : null;
+    var _noScale = function (s) { return !s || s.scale === "none" || Math.abs(parseFloat(s.scale) - 1) < 0.005; };
+    chk("HUD chips carry NO scale (static frame)", _noScale(_spcs) && _noScale(_gdcs), "you-door " + (_spcs ? _spcs.scale : "-") + " · leaf " + (_gdcs ? _gdcs.scale : "-"), "both 'none' — the 1.5 / 1.1 slider scales are the v22 prototype's, not the static frame's");
     var _thcs = _thint ? getComputedStyle(_thint) : null;
     chk("fold hint padding-bottom 20px", !!(_thcs && Math.round(parseFloat(_thcs.paddingBottom)) === 20), _thcs ? _thcs.paddingBottom : "missing", "20px (the frame's 59px hint block: 4 above, 20 below)");
     var _wv2 = el("tfWorld"), _hz3 = el("tfWorldHome");
@@ -20187,8 +20205,10 @@
       // 887px board that pushed David's TOOLS chevron under his own fold, which exceeds BOTH bounds.
       var _frameH = Math.max(874, _wv2.clientHeight);
       chk("home zone is one frame tall (2c)", _hz3.offsetHeight <= _frameH + 2, _hz3.offsetHeight + "px of " + _frameH + " (viewport " + _wv2.clientHeight + ")", "≤ the artboard's 874 or the viewport, whichever is larger (+2) — anything more pushes the fold hint off the screen"); }
-    chk("HUD you-door is a bare glyph (no ring, no fill)", !!(_spcs && parseFloat(_spcs.borderTopWidth || 0) === 0 && (_spcs.backgroundColor === "rgba(0, 0, 0, 0)" || _spcs.backgroundColor === "transparent")), _spcs ? ("border " + (_spcs.borderTopWidth || "0px") + " · bg " + _spcs.backgroundColor) : "missing", "0px border on a transparent fill");
-    chk("HUD you-door glyph ti-adjustments-horizontal 18px", !!(_spi2 && _spi2.classList.contains("ti-adjustments-horizontal") && Math.round(parseFloat(_spis.fontSize)) === 18 && _spis.color === "rgb(255, 143, 192)"), _spi2 ? (_spi2.className + " · " + _spis.fontSize + " · " + _spis.color) : "no glyph", "ti ti-adjustments-horizontal · 18px · rgb(255,143,192)");
+    // SUPERSEDED, both: "HUD you-door is a bare glyph (no ring, no fill)" + "glyph ti-adjustments-horizontal 18px".
+    // The static frame draws a real circle — 2px rgba(255,242,249,.16) on #2a1220 — with a 13px ti-settings in #ff8fc0.
+    chk("HUD you-door is a framed circle (static frame)", !!(_spcs && Math.round(parseFloat(_spcs.borderTopWidth || 0)) === 2 && _spcs.borderTopColor === "rgba(255, 242, 249, 0.16)" && _spcs.backgroundColor === "rgb(42, 18, 32)"), _spcs ? ("border " + (_spcs.borderTopWidth || "0px") + " " + _spcs.borderTopColor + " · bg " + _spcs.backgroundColor) : "missing", "2px rgba(255,242,249,.16) on rgb(42,18,32)");
+    chk("HUD you-door glyph ti-settings 13px", !!(_spi2 && _spi2.classList.contains("ti-settings") && Math.round(parseFloat(_spis.fontSize)) === 13 && _spis.color === "rgb(255, 143, 192)"), _spi2 ? (_spi2.className + " · " + _spis.fontSize + " · " + _spis.color) : "no glyph", "ti ti-settings · 13px · rgb(255,143,192)");
     var _pwr = document.querySelector("#trackerFull .tbx-planwrap"), _pws = _pwr ? getComputedStyle(_pwr) : null;
     var _pwsc = _pws ? (_pws.scale !== "none" ? parseFloat(_pws.scale) : NaN) : NaN, _pwty = _pws ? parseFloat(String(_pws.translate).split(/\s+/)[1] || "0") : NaN;
     chk("planner wrapper drops 12px at 1.06 (frame)", Math.abs(_pwsc - 1.06) <= 0.005 && Math.abs(_pwty - 12) <= 0.5, _pwr ? ("scale " + _pws.scale + " · translate " + _pws.translate) : "missing", "scale 1.06 · translate 0 12px — David's \"the planner looks too high up\""); // properties, not transform: wScrub owns this node's opacity and must not be fighting a transform write
@@ -20201,6 +20221,12 @@
     chk("strip block 43px tall (frame's 15px pill row)", !!bars && Math.abs(bars.offsetHeight - 43) <= 1, bars ? bars.offsetHeight + "px" : "missing", "43px = 15 + 11 + 17");
     var _pills = [].slice.call(document.querySelectorAll("#tfHomeBars .tf-hb-bar"));
     chk("week strip = 5 pills, 13px, radius 999", _pills.length === 5 && _pills.every(function (p) { return Math.round(_nr(p).height) === 13 && parseFloat(getComputedStyle(p).borderTopLeftRadius) >= 99; }), _pills.length + " pills · " + (_pills[0] ? Math.round(_nr(_pills[0]).height) + "px r" + getComputedStyle(_pills[0]).borderTopLeftRadius : "-"), "5 × 13px at radius 999px");
+    // the static frame's pill row is gap:9px. GEOMETRY ONLY — the pill and icon COLOURS are the app's own data (which day
+    // is filled, which activity ran); the frame's are mock, and gating them would pin a screenshot instead of a design.
+    chk("week strip gap 9px (static frame)", !!(_brcs && Math.round(parseFloat(_brcs.gap)) === 9), _brcs ? _brcs.gap : "missing", "9px — the frame's pill row (a .tf-home.st-idle rule was out-specifying the 2c 9px with 7px)");
+    // …and the JOURNEY hint sits on the row's own centre line, lifted 8px — not top:50% + translateY(-50%).
+    var _jhc = _hjn ? getComputedStyle(_hjn) : null;
+    chk("JOURNEY hint centred, lifted 8px (static frame)", !!(_jhc && /matrix\([^)]*,\s*-8(\.0+)?\)$/.test(_jhc.transform.replace(/\s+/g, " ")) ), _jhc ? _jhc.transform : "missing", "transform translate(-50%, -8px) — the frame's own; the old top:50%/-50% sat it 9.5px high once the row's 12px drop went");
     var _hf = [].slice.call(document.querySelectorAll("#tfHeroRow .tfh-face"));
     // THE DECK RIDES AT 96% (frame: row one's wrapper carries an authored scale(0.96) — no opacity, no animation beside it, so it is a
     // size and not a cascade frame): the 50px tile RENDERS at 48. The gate reads the rendered rect, so it locks the scale AND the tile.
@@ -20350,7 +20376,28 @@
         var _jlLead = _jlSr ? _jlLr.left - _jlSr.left - (parseFloat(_jss0(_jlS).paddingLeft) || 0) : 0;
         var _jlTail = _jlSr ? _jlSr.right - (parseFloat(_jss0(_jlS).paddingRight) || 0) - _jlLr.right : 0;
         chk("line column ≤362px and centered (the letterbox law)", _jlL.clientWidth > 0 && _jlL.clientWidth <= 362.5 && Math.abs(_jlLead - _jlTail) <= 1.5, Math.round(_jlL.clientWidth * 10) / 10 + "px wide · " + Math.round(_jlLead) + "px left / " + Math.round(_jlTail) + "px right of it", "≤362px (the frame's 402 artboard minus its own 20px gutters), evenly inset — identical layout px at 402x874 and 440x956");
-        chk("line padding 110 above / 178 below the seam", Math.abs(parseFloat(_jlcs.paddingTop) - 110) <= 1 && Math.abs(parseFloat(_jlcs.paddingBottom) - 178) <= 1, _jlcs.paddingTop + " / " + _jlcs.paddingBottom, "110px / 178px — the frame's own, and the 178 IS the sky between the BOOK ONE divider and the home seam");
+        // SUPERSEDED: the J1 lock "110px / 178px". David's expectation recording is the v22 frame, whose trail column is
+        // `padding:120px 20px 60px` — the landing parks the BOOK ONE divider ~82px above the seam with six stones in
+        // view instead of hanging it 178px up with four. The side 20 still comes from the sky's own rule, never here.
+        chk("line padding 120 above / 60 below the seam", Math.abs(parseFloat(_jlcs.paddingTop) - 120) <= 1 && Math.abs(parseFloat(_jlcs.paddingBottom) - 60) <= 1, _jlcs.paddingTop + " / " + _jlcs.paddingBottom, "120px / 60px — the v22 trail column's own (supersedes the J1 110/178 lock)");
+      }
+      // …and the seam itself, MEASURED rather than inferred: the gap the divider actually leaves above the home seam at
+      // the landing. The padding gate above can pass while a stray margin on the last row eats the gap; this cannot.
+      // LAYOUT SPACE, NOT RECTS: at home rest jcScrub parks the parallax on #jrnyCol (translateY(-50px) scale(1.08)), so
+      // a getBoundingClientRect read here answers 110 for a correct 60 — it is measuring the entrance, not the seam.
+      // offsetTop/offsetHeight are transform-immune. Two numbers, because they fail differently: the sky the padding
+      // leaves, and whether the last row hands its bottom straight to the column's (a stray margin would eat the gap).
+      if (_jlC && _jlL) {
+        var _lastRow = _jlC.children[_jlC.children.length - 1];
+        // NO RECTS AND NO offsetTop, deliberately. Rects read through jcScrub's parallax (translateY(-50px) scale(1.08)
+        // at home rest) and answer 110 for a correct 60; and offsetTop's frame MOVES — while the parallax transform is
+        // on, #jrnyCol becomes the rows' offsetParent, so the same subtraction that reads 0 mid-scroll reads 120 (the
+        // line's padding-top) at rest. Both traps cost a false FAIL here before this. What is left is pure computed
+        // style: the sky the padding declares, and the one way it can be eaten — a margin under the last row.
+        var _seam = parseFloat(_jlcs.paddingBottom) || 0;
+        var _lrcs = _lastRow ? getComputedStyle(_lastRow) : null, _ccs = getComputedStyle(_jlC);
+        var _trail = _lrcs ? ((parseFloat(_lrcs.marginBottom) || 0) + (parseFloat(_ccs.paddingBottom) || 0) + (parseFloat(_ccs.marginBottom) || 0)) : NaN;
+        chk("BOOK ONE divider sits 60px above the home seam", Math.abs(_seam - 60) <= 2 && isFinite(_trail) && Math.abs(_trail) <= 1, Math.round(_seam * 10) / 10 + "px of sky · " + (isFinite(_trail) ? Math.round(_trail * 10) / 10 : "?") + "px of margin/padding under the divider", "60px ±2, handed straight off the last row with nothing under it (supersedes the J1 178px seam)");
       }
       if (_jlS) { var _jss = getComputedStyle(_jlS); chk("sky side gutters 20px", Math.abs(parseFloat(_jss.paddingLeft) - 20) <= 0.5 && Math.abs(parseFloat(_jss.paddingRight) - 20) <= 0.5, _jss.paddingLeft + " / " + _jss.paddingRight, "20px each side (the .tf-2c .tfw-sky rule; the line adds none of its own)"); }
       var _jos = document.querySelector("#jrnyCol .jl-disc"), _jls = document.querySelector("#jrnyCol .jl-lstone"), _jns = document.querySelector("#jrnyCol .jl-next-disc"), _jdv = document.querySelector("#jrnyCol .jl-div"), _jbn = document.querySelector("#jrnyCol .jl-lock");
@@ -20941,7 +20988,11 @@
   // layout's LEFT and the home indicator on our RIGHT; angle 270 mirrors it. Nothing is remapped this round — David asked
   // for "nothing changes", and remapping the insets is the opposite of that.
   // DEVICE-UNTESTED: rotation, the notch, and how touch-action:pan-y maps through a rotated ancestor are only honest on the phone.
-  var ROTFREE = true;
+  // DAVID'S VERDICT 2026-08-26, after testing on device: iOS spins a home-screen PWA before any of this can run, and the
+  // spin itself is what he did not want — so the app goes back to the GUARD. ROTFREE stays here, whole, behind the flag:
+  // flipping it to true restores the counter-rotation exactly (verified working at 874x402 both angles) if a future iOS
+  // ever lets the spin be suppressed. false = the portrait lock above is live and nothing below ever runs.
+  var ROTFREE = false;
   function rotAngle() { try { var a = (window.screen && screen.orientation && typeof screen.orientation.angle === "number") ? screen.orientation.angle : window.orientation; return ((+a || 0) % 360 + 360) % 360; } catch (e) { return 0; } }
   function rotOn() { return !!(ROTFREE && window.innerWidth > window.innerHeight && window.innerHeight <= 520); }
   function appVW() { return rotOn() ? window.innerHeight : window.innerWidth; }  // the app's own viewport, in ITS axis — every viewport-derived number must read these two, never innerWidth/innerHeight
