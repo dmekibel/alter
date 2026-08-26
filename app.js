@@ -5755,7 +5755,16 @@
         var hy = wHomeY(), ty = wToolsY(), st = world.scrollTop;
         if (iv > 0 && st > hy - 6 && st < ty - 6) { _wFlung = true; clearTimeout(_wSnapT); wMeasurePad(); wSpring(wToolsY(), false); } // re-read after the pad: a flick must land on the SAME whole-screen tools the snap would
         else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
-        else if (iv < -0.7 && st <= hy + 6 && st > 6 && !_wHold) { _wFlung = true; clearTimeout(_wSnapT); wSpring(wSkyY(), true); } // only a HARD upward flick from home reaches the journey
+        // THE FLING-CATCH LOCK (David on device 2026-08-26: "it's not letting me go any higher in journey past the
+        // beginning"). `st <= hy + 6` is true at home AND everywhere ABOVE the landing, so a hard upward flick taken while
+        // already deep in the line fired this branch and sprang to wSkyY() — which is BELOW you up there, so his own
+        // momentum was swallowed and he was yanked back down to the line's start. The spring fighting that momentum is
+        // also half the jitter. `st > wSkyY() + 6` pins the branch to the home↔journey transition band it was written for;
+        // past the landing native momentum runs free, which is the same free-scroll law wSnapIntent already encodes
+        // (`if (d < -w.clientHeight) return null`). Audited the whole path for siblings: wSnapIntent free-scrolls above the
+        // landing, wReSettle is capped at 180px, _wHold is only ever armed at home, worldScrollHome is _worldPositioned-
+        // gated, magnetSnap is the WM=false legacy path, and the two door taps are deliberate — this was the only one.
+        else if (iv < -0.7 && st <= hy + 6 && st > wSkyY() + 6 && st > 6 && !_wHold) { _wFlung = true; clearTimeout(_wSnapT); wSpring(wSkyY(), true); } // only a HARD upward flick from home reaches the journey
       }
     }
     _wLastSt = world.scrollTop; _wLastT = nw;
@@ -5894,6 +5903,40 @@
     ["wave-sine", "The Gap", -28, "#34d39a", "#1e483b66"],
     ["map-2", "Plan your day", 22, "#36b3f0", "#1f3d5766"]
   ];
+  // ---- THE STARFIELD AS BITMAP TILES (David on device 2026-08-26: still chopping both directions). The sky's two star
+  // layers are `repeating` radial gradients, and the browser re-rasterizes a gradient PER TILE across a 26,098px element
+  // every time the scroller paints a new band — the classic iOS scroll-raster killer, and the ~6.6fps the round-6
+  // isolation measured. Each pattern is drawn ONCE here into a canvas at its own period, at devicePixelRatio so it stays
+  // crisp, and handed back as a plain image the compositor can blit. IDENTICAL PIXELS, not a redesign: the two stops of
+  // each gradient are transcribed straight off the CSS below, and background-size / position / repeat keep the same
+  // period. The night gradient stays in CSS — it is one cheap non-repeating layer and re-rendering it as an image would
+  // mean a 26,000px bitmap. If anything here throws, the caller's try/catch leaves the CSS gradients untouched.
+  var _jlSkyBmp = null;
+  function jlSkyTile(w, h, cx, cy, rSolid, rFade, rgba) { // one star, at the same fraction of the same period the CSS uses
+    var dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+    var c = document.createElement("canvas");
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    var x = c.getContext("2d"); if (!x) return null;
+    x.scale(dpr, dpr);
+    var g = x.createRadialGradient(cx, cy, 0, cx, cy, rFade);
+    g.addColorStop(0, rgba(1)); g.addColorStop(rSolid / rFade, rgba(1)); g.addColorStop(1, rgba(0)); // solid to rSolid, then out to nothing at rFade — the CSS's `COLOR 0 <rSolid>, transparent <rFade>`
+    x.fillStyle = g; x.fillRect(0, 0, w, h);
+    return c.toDataURL("image/png");
+  }
+  function jlSkyBitmap(sky) {
+    if (!sky) return;
+    if (!_jlSkyBmp) {
+      var a = jlSkyTile(150, 210, 0.28 * 150, 0.22 * 210, 1.6, 2.4, function (k) { return "rgba(255,242,249," + (k ? 0.5 : 0) + ")"; });
+      var b = jlSkyTile(96, 128, 0.72 * 96, 0.64 * 128, 1.2, 1.9, function (k) { return "rgba(255,224,242," + (k ? 0.34 : 0) + ")"; });
+      if (!a || !b) return;                                  // no canvas → say nothing and let the CSS gradients stand
+      _jlSkyBmp = [a, b];
+    }
+    sky.style.backgroundImage = "url(" + _jlSkyBmp[0] + "), url(" + _jlSkyBmp[1] + "), linear-gradient(0deg, rgba(58,15,36,0) 0 30%, rgba(30,18,52,.45) 58%, rgba(20,32,63,.6) 82%, rgba(9,13,30,.78) 100%)";
+    sky.style.backgroundSize = "150px 210px, 96px 128px, auto";
+    sky.style.backgroundPosition = "0 0, 0 0, 0 0";
+    sky.style.backgroundRepeat = "repeat, repeat, no-repeat";
+    sky.classList.add("jl-sky-bmp");                          // purely a marker for designAudit — carries no paint of its own
+  }
   function jlAdd(p, tag, cls, style) { var n = document.createElement(tag); if (cls) n.className = cls; if (style) n.setAttribute("style", style); p.appendChild(n); return n; }
   // ---- the six row recipes as DOM. Structure mirrors recipes/frame-rows-all.html one node for one node; every repeated
   // value lives in the .jl-* classes in index.html, and only what VARIES per row is written here. ----
@@ -6048,6 +6091,7 @@
     if (!ONEPAGE || !JLINE) return null;
     var sky = skyZone(); if (!sky) return null;
     sky.classList.add("jl-sky");
+    try { jlSkyBitmap(sky); } catch (e) {}   // the starfield as two pre-rendered tiles instead of two live gradient layers (see jlSkyBitmap); on any failure the CSS gradients stay exactly as they were
     var lab = el("tfWorldSkyLabel"); if (lab && lab.parentNode) lab.parentNode.removeChild(lab); // the line opens on its own BOOK ONE divider; the frame draws no "Your journey" caption
     var line = el("jrnyLine"), col = el("jrnyCol");
     // BUILD-ONCE, counted across BOTH containers. col.children is 252 since the parallax split (251 deep rows + the
@@ -20469,6 +20513,15 @@
         var _trail = _lrcs ? ((parseFloat(_lrcs.marginBottom) || 0) + (parseFloat(_ccs.paddingBottom) || 0) + (parseFloat(_ccs.marginBottom) || 0)
           + (_fcs ? ((parseFloat(_fcs.paddingBottom) || 0) + (parseFloat(_fcs.marginBottom) || 0)) : 0)) : NaN;
         chk("BOOK ONE divider sits 60px above the home seam", Math.abs(_seam - 60) <= 2 && isFinite(_trail) && Math.abs(_trail) <= 1, Math.round(_seam * 10) / 10 + "px of sky · " + (isFinite(_trail) ? Math.round(_trail * 10) / 10 : "?") + "px of margin/padding under the divider", "60px ±2, handed straight off the last row with nothing under it (supersedes the J1 178px seam)");
+      }
+      // the starfield must be BITMAP tiles, not live gradients — two repeating radial gradients rasterized per tile across
+      // 26,098px is what the round-6 isolation measured at ~6.6fps, and the classic iOS scroll-raster killer. Same pixels,
+      // same period; only the night gradient stays a CSS layer. A canvas failure legitimately falls back, so this reports
+      // WHICH state it is in rather than failing a device that cannot rasterize.
+      if (_jlS) { var _sbi = getComputedStyle(_jlS).backgroundImage, _sbmp = _jlS.classList.contains("jl-sky-bmp");
+        var _sStars = (_sbi.match(/url\(/g) || []).length, _sGrad = (_sbi.match(/radial-gradient/g) || []).length;
+        if (_sbmp) chk("starfield is pre-rendered tiles", _sStars === 2 && _sGrad === 0 && _sbi.indexOf("linear-gradient") >= 0 && getComputedStyle(_jlS).backgroundSize.indexOf("150px 210px") === 0, _sStars + " image layer(s) · " + _sGrad + " live radial gradient(s) · size " + getComputedStyle(_jlS).backgroundSize, "2 url() star tiles at 150px 210px / 96px 128px + the night linear-gradient, and NO repeating radial gradient left");
+        else out.push("SKIP · starfield is pre-rendered tiles · canvas unavailable, the CSS gradients are the honest fallback");
       }
       if (_jlS) { var _jss = getComputedStyle(_jlS); chk("sky side gutters 20px", Math.abs(parseFloat(_jss.paddingLeft) - 20) <= 0.5 && Math.abs(parseFloat(_jss.paddingRight) - 20) <= 0.5, _jss.paddingLeft + " / " + _jss.paddingRight, "20px each side (the .tf-2c .tfw-sky rule; the line adds none of its own)"); }
       var _jos = document.querySelector("#jrnyCol .jl-disc"), _jls = document.querySelector("#jrnyCol .jl-lstone"), _jns = document.querySelector("#jrnyCol .jl-next-disc"), _jdv = document.querySelector("#jrnyCol .jl-div"), _jbn = document.querySelector("#jrnyCol .jl-lock");

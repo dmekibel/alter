@@ -3,6 +3,14 @@
 
 ---
 
+## STATUS UPDATE (2026-08-26 (5), the climb unlock + bitmap stars): v1378
+David on v1377: still jittery both ways and "not letting me go any higher in journey past the beginning."
+**(1) THE LOCK, found and proven:** the fling catch's journey branch guard (`st <= hy+6`) was true everywhere ABOVE the landing too — a hard upward flick deep in the line sprang BACK to wSkyY(), swallowing his momentum (and the spring-vs-momentum fight was half the jitter). Fix: `st > wSkyY()+6` bound — the catch now fires only in the home↔journey band. Proven by DEV.wIntent decision table (landing-2000/-8000: FREE all directions) + a settled real-scroll test (deep flick lands exactly where the flick took it, anim:false; home flick still commits to the landing). Every other guard audited — this was the only one that could fire above the landing.
+**(2) Starfield → pre-rendered bitmap tiles** (jlSkyBitmap: each star pattern drawn once at its period at dpr, url() layers; the night linear stays CSS; canvas-fail falls back to gradients + gate SKIP). Zero design change — same pixels. Scripted transition ~10% faster in Chrome (every bitmap run beat every gradient run); iOS should gain more (gradient raster is what iOS tiles choke on). New gate "starfield is pre-rendered tiles".
+**Gates 97/96 both sizes · ratchet flat · landing table unchanged · deep paint proof @12000 clean. DEVICE-UNTESTED:** the two reported symptoms. **ONE move — David:** fresh.html (v1378): (a) flick hard UP past the beginning — climbs freely now? (b) is the deep line still choppy, as a SEPARATE answer? **ONE move — Claude:** if chop persists, the sky-gradient paint cap is the next lever (design-visible, needs his call).
+
+---
+
 ## STATUS UPDATE (2026-08-26 (4), the iOS void + the corrected home frame): v1377
 David on v1376: better but fast scroll still chops, and the DEEP LINE renders as a VOID on his iPhone (past ch1: starfield only, no rows). Chrome renders the same depth fine → iOS Safari's content-visibility failing to materialize rows in our huge scroller. Fixes:
 **(1) content-visibility REMOVED entirely** (jlDeepen/.jl-deep deleted, stone-row padding back to the recipe's 10px 0; new inverse gate "rows never use content-visibility" fails any ship that reintroduces it — the old "deep rows skip layout" gate superseded by name). Deep-scroll proof at scrollTop 12000: every row painted. HONEST TRADE (agent's numbers, desktop Chrome): home rest 61→45fps in CHROME because c-v was masking ~16fps of always-painted cost (sky gradient ~6.6 + rows ~11.7); landing 61.4, transition 54fps/1.33s (v1375 was 1.82s). Chrome is not the device; the void was a device correctness bug. OPEN LEVER for David: capping the sky gradient's painted region recovers ~6.6fps at a visible design cost — not applied unasked.
