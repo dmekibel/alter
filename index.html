@@ -54,6 +54,29 @@
      overlay, because a sideways phone should show one thing. The max-height bound is what keeps it off desktop and tablet-shaped
      windows — a wide viewport there is legitimate, and the dev preview must stay usable. Pure media query: nothing to desync. */
   #rotGuard{ display:none; }
+  /* ROTFREE (David 2026-08-26, SUPERSEDES the guard below): "when you turn the phone sideways, nothing changes." The app
+     no longer refuses landscape — it stays glued to the device's PHYSICAL portrait axis. applyRot() (app.js) gives <body>
+     an explicit portrait-shaped box and counter-rotates it by the negative of screen.orientation.angle, so the whole app,
+     every fixed overlay included, simply appears sideways to a sideways user. One wrapper is enough BY CONSTRUCTION: a
+     transform on <body> makes body the containing block for every position:fixed descendant, so all 59 fixed layers ride
+     the rotation without being touched. PORTRAIT WRITES NOTHING — no class, no transform, no inline style: byte-identical.
+     The rules below exist because `vh`/`dvh` always resolve against the REAL viewport, which is the SHORT side once we are
+     rotated. Each one is the same declaration expressed against the body box we just sized, so it means the same thing. */
+  body.rot-free #rotGuard{ display:none !important; }
+  body.rot-land #trackerFull{ height:100%; }
+  body.rot-land .tf-inner{ height:100%; }
+  body.rot-land #trackerFull.tf-2c.tf-scaled .tf-inner{ height:calc(100% / var(--tfscale, 1)); }
+  body.rot-land #trackerFull.tf-onepage.tf-onehome .tfw-home{ min-height:100%; }
+  body.rot-land #pullSheet{ height:calc(100% - env(safe-area-inset-top,0px) - 66px); }
+  body.rot-land .scard{ max-height:88%; }
+  body.rot-land .ps-card{ max-height:calc(100% - 178px); }
+  body.rot-land .bento-card{ max-height:88%; }
+  body.rot-land .bento-card.bento-sheet{ max-height:86%; }
+  body.rot-land .bento-card.bento-sheet.bento-plan{ height:86%; }
+  body.rot-land .bento-orderlist.editor{ max-height:52%; }
+  body.rot-land .goal-card, body.rot-land .nb-card{ max-height:88%; }
+  body.rot-land .mind-card{ max-height:90%; }
+  body.rot-land .ob-card{ max-height:100%; }
   @media (orientation:landscape) and (max-height:520px){
     #rotGuard{ position:fixed; inset:0; z-index:10000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
       background:linear-gradient(180deg,#201022 0%,#190b18 60%,#150912 100%); font-family:"Jost",sans-serif; }
@@ -1811,6 +1834,130 @@
   /* GROUND section header + the extra tool rows (rendered by renderGroundTools with the same .tf-htool tiles) */
   .tfw-glabel{ width:100%; text-align:center; font-family:var(--bub); font-weight:800; font-size:11px; letter-spacing:1.6px; text-transform:uppercase; color:#b39ab0; margin:6px 0 12px; }
   .tfw-skylabel{ width:100%; text-align:center; font-family:var(--bub); font-weight:800; font-size:11px; letter-spacing:1.6px; text-transform:uppercase; color:#b39ab0; margin:14px 0 4px; }
+  /* ===== JLINE — THE JOURNEY LINE IN THE SKY (David's "Chapter Line" J1 frame, entering with the "Journey Scroll v22"
+     cascade; ported 2026-08-26 under the app.js JLINE flag). Every value below is QUOTED from
+     _design-sync/journey-scroll-2026-08-26/recipes/frame-rows-all.html + j1-style-block.css — app.js builds the frame's
+     own DOM structure and these classes carry its repeated inline values verbatim, so a diff against a recipe row is a
+     string compare. The three vars are the frame's own body vars, scoped to #jrnyLine so nothing else can ever see them.
+     ONE rename, and only because it collides: the frame calls the next-stone's breath `jpAlive`, which is ALREADY a
+     DIFFERENT keyframe in this file (the journey trail's translateY+drop-shadow pop, above). Two @keyframes of one name
+     = the last wins globally and the old trail silently changes shape. The frame's VALUES are kept, under `jlAlive`.
+     THE LETTERBOX LAW (David's 16 Pro Max, 440x956): the line column is capped at the frame's own 362 content px and
+     centered, exactly like .tfw-home — nothing here is sized in vw/vh/%, so the whole line lays out in artboard px on
+     every phone and only --tfscale changes the pixel ratio it is painted at. ===== */
+  #trackerFull.tf-onepage.tf-onehome .tfw-sky.jl-sky{ background:
+    radial-gradient(circle at 28% 22%, rgba(255,242,249,.5) 0 1.6px, transparent 2.4px) 0 0/150px 210px,
+    radial-gradient(circle at 72% 64%, rgba(255,224,242,.34) 0 1.2px, transparent 1.9px) 0 0/96px 128px,
+    linear-gradient(0deg, rgba(58,15,36,0) 0 30%, rgba(30,18,52,.45) 58%, rgba(20,32,63,.6) 82%, rgba(9,13,30,.78) 100%); }
+  #jrnyLine{ --ss:inset 0 4px 0 #ffffff0f,inset 0 -6px 0 #00000038,0 6px 0 #00000061,inset 0 0 0 999px #10060e80;
+    --tex:radial-gradient(#16051021 0 1px, #0000 1.6px), repeating-linear-gradient(45deg, #ffffff0a 0 1px, #0000 1px 4px);
+    --gl:linear-gradient(115deg,#0000 24%,#ffb4d68c 36%,#ffe096a6 44%,#ffffffd9 50%,#a0f5d7a6 56%,#96c8ff8c 64%,#0000 76%);
+    max-width:362px; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; align-items:center; padding:110px 0 178px; perspective:900px; }
+  #jrnyLine > *{ pointer-events:none; } /* LOOK-ONLY this round: #tfWorld owns the gesture, the line takes no taps (the journey wiring is a later round) */
+  /* perspective lives on the ROWS' OWN PARENT — the frame puts padding, perspective and the parallax transform on one
+     element; the app splits it in two (the pad + the parallax target) and a perspective on the outer one would never
+     reach the rows, so the cascade's translateZ(85px) would flatten to nothing. */
+  #jrnyCol{ width:100%; display:flex; flex-direction:column; align-items:center; transform-origin:50% 100%; perspective:900px; }
+  /* the two BOOK dividers (h 57) — accent arrives from JS (#ff4fa0 · #2a9fe0 · #8a5cf0) */
+  .jl-div{ width:100%; box-sizing:border-box; display:flex; align-items:center; gap:10px; padding:20px 0 22px; }
+  .jl-div-rule{ flex:1; height:2px; border-radius:1px; }
+  .jl-div-lab{ display:flex; align-items:baseline; gap:7px; }
+  .jl-div-book{ font-size:9px; font-weight:800; letter-spacing:2.4px; }
+  .jl-div-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; line-height:1; color:#fff2f9; }
+  /* TODAY banner (h 67) */
+  .jl-today{ padding:0 0 4px; width:100%; }
+  .jl-today-card{ width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3); overflow:hidden; position:relative; background:repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), linear-gradient(115deg, #8a5cf0, color-mix(in srgb, #8a5cf0 78%, #14060f)); display:flex; align-items:center; gap:12px; padding:13px 15px; }
+  .jl-today-glint{ position:absolute; inset:-2px; border-radius:16px; overflow:hidden; pointer-events:none; }
+  .jl-today-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.32) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite; }
+  .jl-card-mid{ position:relative; z-index:5; flex:1; display:flex; flex-direction:column; gap:2px; }
+  .jl-today-kick{ font-size:9.5px; font-weight:800; letter-spacing:2.2px; color:#fff2f9; text-shadow:0 2px 0 rgba(22,5,16,.4); }
+  .jl-today-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:21px; color:#fff2f9; line-height:1.02; text-shadow:0 2px 0 rgba(22,5,16,.4); }
+  .jl-today-ico{ position:relative; font-size:22px; color:#fff2f9; filter:drop-shadow(0 2px 0 rgba(22,5,16,.35)); }
+  /* the open chapter-one stones (row h 138). The row's translateX rides the separate CSS `translate` PROPERTY, never
+     transform — the cascade owns transform, and the frame's own composite:add has no CSS-keyframe equivalent. Same
+     translate-not-transform idiom the home HUD labels already use (see wScrub). */
+  .jl-stone{ padding:11px 0; }
+  .jl-stone-in{ display:flex; flex-direction:column; align-items:center; gap:11px; }
+  .jl-disc{ width:84px; height:84px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 5px 0 rgba(255,255,255,.22), inset 0 -7px 0 rgba(0,0,0,.28), 0 9px 20px rgba(0,0,0,.5), 0 0 26px var(--jglow,transparent); }
+  .jl-disc > i{ font-size:34px; color:#fff; }
+  .jl-stone-lab{ font-family:"Jost",sans-serif; font-size:14.5px; font-weight:700; color:#e8c8dd; text-shadow:0 2px 6px rgba(0,0,0,.45); }
+  /* the gold NEXT stone (row h 196). content-box is the FRAME's box model — its file carries no universal border-box
+     reset, so `width:110px` + `border:4px` renders 118 wide there. This app DOES reset to border-box globally, which
+     would silently shrink the stone by 8px and slide every landing y with it. */
+  .jl-next{ padding:12px 0 0; }
+  .jl-next-in{ display:flex; flex-direction:column; align-items:center; gap:13px; }
+  .jl-next-disc{ box-sizing:content-box; width:110px; height:110px; border-radius:50%; background:repeating-linear-gradient(45deg, #f5c343 0 14px, #b08a1e 14px 28px); border:4px solid rgba(255,236,170,.32); box-shadow:0 8px 0 rgba(70,45,0,.45), 0 0 58px rgba(255,196,31,.65); display:flex; align-items:center; justify-content:center; position:relative; animation:jlAlive 2.8s cubic-bezier(.22,.9,.3,1) infinite; }
+  .jl-next-glint{ position:absolute; inset:-2px; border-radius:50%; overflow:hidden; pointer-events:none; }
+  .jl-next-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.55) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite; }
+  .jl-next-disc > i{ font-size:46px; color:#fff; }
+  .jl-next-lab{ display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .jl-next-t{ font-family:"Baloo 2",sans-serif; font-size:20px; font-weight:800; color:#fff2f9; text-shadow:0 2px 6px rgba(0,0,0,.45); }
+  .jl-next-s{ font-size:12.5px; font-weight:700; color:#c9a4bc; }
+  /* a locked chapter's GATE (row h 98) + THE MYTHIC LADDER — each layer below is one span the frame adds as the line
+     climbs (grain from ch10, the --gl sweep from ch13, the inner hairline and the sparks from ch12, the bevel and the
+     rainbow sheen from ch8, and the mGlow aura in place of the resting lip from ch12). app.js hangs only the layers a
+     chapter has earned; the values are the frame's, unchanged. */
+  .jl-lock{ padding:16px 0 8px; width:100%; }
+  .jl-lock-card{ width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3), inset 0 0 0 999px rgba(16,6,14,.52); overflow:hidden; position:relative; background:#1b0c1a; display:flex; align-items:center; gap:12px; padding:13px 15px; }
+  .jl-lock-card.jl-lit{ box-shadow:none; animation:mGlow 4.6s ease-in-out infinite; }
+  .jl-l-tex{ position:absolute; inset:-45%; animation:mDrift 13s ease-in-out infinite; }
+  .jl-l-grain{ position:absolute; inset:0; pointer-events:none; z-index:4; background:var(--tex); background-size:5px 5px, auto; }
+  .jl-l-gl{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:2; mix-blend-mode:overlay; }
+  .jl-l-gl > span{ position:absolute; inset:-40% -30%; background:var(--gl); animation:mFoil 6.5s ease-in-out infinite; }
+  .jl-l-inglow{ position:absolute; inset:0; pointer-events:none; z-index:3; box-shadow:inset 0 0 16px #ffffff40, inset 0 0 2px #ffffff66; }
+  .jl-l-bevel{ position:absolute; inset:0; pointer-events:none; z-index:3; background:linear-gradient(128deg,#ffffff3d 0%,#0000 34%,#1605106b 100%); }
+  .jl-l-rain{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:2; mix-blend-mode:overlay; }
+  .jl-l-rain > span{ position:absolute; inset:-40% -30%; background:linear-gradient(115deg, transparent 38%, rgba(255,140,205,.55) 43%, rgba(255,224,150,.70) 47%, rgba(255,255,255,.90) 50%, rgba(160,245,215,.70) 53%, rgba(150,205,255,.60) 57%, rgba(205,165,255,.50) 61%, transparent 66%); animation:mFoil 4.6s ease-in-out infinite; }
+  .jl-l-spark{ position:absolute; inset:0; pointer-events:none; z-index:3; background:radial-gradient(circle at 18% 32%, rgba(255,255,255,.9) 0 1.4px, transparent 2.4px), radial-gradient(circle at 58% 22%, rgba(255,255,255,.85) 0 1.2px, transparent 2.2px), radial-gradient(circle at 78% 66%, rgba(255,255,255,.8) 0 1.2px, transparent 2.2px), radial-gradient(circle at 38% 78%, rgba(255,255,255,.75) 0 1px, transparent 2px); animation:mSpark 2.6s ease-in-out infinite; }
+  .jl-lock-kick{ font-size:9.5px; font-weight:800; letter-spacing:2.2px; text-shadow:0 2px 0 rgba(22,5,16,.6); }
+  .jl-lock-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:20px; background-size:220% 100%; -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent; animation:mTextFoil 8s linear infinite; filter:drop-shadow(0 2px 0 rgba(22,5,16,.85)); }
+  .jl-lock-ico{ position:relative; z-index:5; flex:none; font-size:22px; color:#c9a4bc; filter:drop-shadow(0 2.5px 0 #160510); }
+  /* a locked stone (74px, row h 94). Its whole paint is the chapter's own card texture written inline by app.js; the
+     dark wash rides inside --ss's `inset 0 0 0 999px #10060e80`, and the glisten sweeps up the line one stone at a time. */
+  /* the 4px side pad is PAINT ROOM, not design: .jl-deep below turns on contain:paint, which clips a descendant to this
+     row's padding box — and mJit peaks at scale(1.03) + translate(2.4px), ~3.3px past a 74px box. Zero visual effect
+     (the row is shrink-to-fit and centred, so the stone lands on the same pixel either way) and zero height effect. */
+  .jl-lstone-row{ padding:10px 4px; }
+  .jl-lstone{ width:74px; height:74px; border-radius:50%; position:relative; overflow:hidden; box-shadow:var(--ss); display:flex; align-items:center; justify-content:center; }
+  .jl-lstone-pass{ position:absolute; inset:0; border-radius:50%; overflow:hidden; mix-blend-mode:overlay; }
+  .jl-lstone-pass > span{ position:absolute; inset:-30% -40%; background:var(--gl); }
+  .jl-lstone > i{ font-size:27px; }
+  /* ===== OFF-SCREEN ROWS GO QUIET (David 2026-08-26, the perf correction — 628 infinite effects ticking forever on a
+     26,000px column is real jank on his phone). The frame specifies the mechanism itself: recipes/j1-script.js wireAnim()
+     watches its zones with an IntersectionObserver (rootMargin 120px) and drops `data-anim` on the ones nobody is looking
+     at. Ported to rows: app.js hangs .jl-fx on every node that carries an idle loop and toggles .jl-anim-off per row.
+     THE SELECTOR TARGETS DESCENDANTS ONLY, deliberately: the arrival cascade writes jlRowIn / jlRowOut as an inline
+     style.animation on the ROW element, and no row element ever carries .jl-fx — so the entrance can never be paused by
+     this, which would strand a row invisible mid-fade. Rows are born paused and wake on first sight. ===== */
+  /* !important is load-bearing, not laziness — and it is the frame's own rule verbatim ([data-anim="off"] * in
+     j1-style-block.css). Most .jl-fx nodes carry their loop as an INLINE `animation:` shorthand written by app.js (each
+     stone's jitter phase and glisten phase are per-stone values), and a shorthand resets animation-play-state to
+     `running`; inline beats any stylesheet declaration without it. Caught by the audit: the row went off, the effects
+     kept running. Scoped to .jl-fx under an off row, so it can reach nothing else in the app. */
+  #jrnyCol > .jl-anim-off .jl-fx{ animation-play-state:paused !important; }
+  /* …and the ones deeper than 1.5 viewports stop laying out and painting at all. The intrinsic sizes are the rows' EXACT
+     measured content boxes, so the column's height — and with it every landing y — is bit-for-bit what it was without
+     this. Only the two row types whose paint stays inside their own box are listed: the chapter GATES are deliberately
+     absent, because their 24-40px outer glow and the mGlow aura live outside the card and contain:paint would shear
+     them. iOS 18+ / Chrome only; every other engine ignores the declaration and simply renders the row, as before. */
+  .jl-lstone-row.jl-deep{ content-visibility:auto; contain-intrinsic-size:74px 74px; }
+  .jl-div.jl-deep{ content-visibility:auto; contain-intrinsic-size:362px 15px; }
+  /* the frame's keyframes, verbatim from recipes/j1-style-block.css (jlAlive = its jpAlive, renamed on collision) */
+  @keyframes jGlint{ 0%{ transform:translateX(-135%) rotate(0.001deg); } 55%,100%{ transform:translateX(135%) rotate(0.001deg); } }
+  @keyframes jlAlive{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
+  @keyframes mJitA{ 0%,100%{ transform:translate(0,0) rotate(0deg) scale(1); } 22%{ transform:translate(2.2px,-1.6px) rotate(1.7deg) scale(1.03); } 48%{ transform:translate(-1.2px,1.9px) rotate(-1.1deg) scale(.978); } 74%{ transform:translate(1.4px,1.1px) rotate(0.9deg) scale(1.016); } }
+  @keyframes mJitB{ 0%,100%{ transform:translate(0,0) rotate(0deg) scale(1); } 26%{ transform:translate(-2.4px,1.3px) rotate(-1.9deg) scale(1.024); } 55%{ transform:translate(1.6px,-1.8px) rotate(1.3deg) scale(.975); } 80%{ transform:translate(-0.9px,-1.2px) rotate(-0.7deg) scale(1.012); } }
+  @keyframes mJitC{ 0%,100%{ transform:translate(0,0) rotate(0deg) scale(1); } 30%{ transform:translate(1.5px,2.1px) rotate(1.2deg) scale(.972); } 58%{ transform:translate(-2.1px,-1.4px) rotate(-1.6deg) scale(1.028); } 84%{ transform:translate(0.8px,-1.5px) rotate(0.6deg) scale(1.008); } }
+  @keyframes mPass{ 0%{ transform:translateX(-150%); } 74%{ transform:translateX(150%); } 100%{ transform:translateX(150%); } }
+  @keyframes mFoil{ 0%{ transform:translateX(-70%); } 100%{ transform:translateX(70%); } }
+  @keyframes mSpark{ 0%,100%{ opacity:.12; } 50%{ opacity:.95; } }
+  @keyframes mGlow{ 0%,100%{ box-shadow:0 5px 0 #160510, 0 0 18px rgba(176,122,255,.35); } 50%{ box-shadow:0 5px 0 #160510, 0 0 40px rgba(176,122,255,.75); } }
+  @keyframes mDrift{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(22px,12px); } }
+  @keyframes mTextFoil{ 0%{ background-position:0% 50%; } 100%{ background-position:200% 50%; } }
+  /* the v22 cascade: the whole landing screen pops bottom-up out of the sky when the pull commits, and folds back the
+     other way heading home. `to{ transform:none }` is safe precisely because the row's tx lives on `translate`. */
+  @keyframes jlRowIn{ from{ opacity:0; transform:translateZ(85px) translateY(-10px) rotateX(-5deg); } 40%{ opacity:1; } to{ opacity:1; transform:none; } }
+  @keyframes jlRowOut{ from{ opacity:1; } to{ opacity:0; } }
   /* while the one-page world is on, the inner column is just the fixed frame for the overlays — #tfWorld owns the scroll flow */
   #trackerFull.tf-onepage.tf-onehome .tf-inner{ overflow:hidden; }
   /* ===== @SEC:TOOLBOX2 — the home-scroll TOOLBOX (frame 20a + 20c). Renders into the GROUND zone (#tfWorldGround). All colors resolve from the 8 domain CSS vars scoped to .tbx; lips = color-mix hard offsets (color-mix already ships in this app). These vars now match the DOM registry exactly: play unified on this surface's #ffc83d 2026-07-30 (the registry's darker #d99f30 is gone). ===== */
@@ -4192,6 +4339,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1373"></script>
+  <script src="app.js?v=1374"></script>
 </body>
 </html>

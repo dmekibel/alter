@@ -5748,6 +5748,7 @@
     var dd = world.scrollTop - wHomeY();
     try { tcScrub(dd / wSpan()); } catch (e) {}
     try { hcScrub(dd); } catch (e) {}
+    try { if (JLINE) jcScrub(Math.max(0, Math.min(1, -dd / (world.clientHeight || 1)))); } catch (e) {} // JLINE: the sky's own scrub, on the same one listener — no second watcher
     wScrub();
     if (_wAnim) return;                                                  // the spring owns the column while it runs — never queue against it
     wQueueSnap(_wTouch ? 260 : 30);
@@ -5762,6 +5763,288 @@
   }
   function skyZone() { var w = ensureWorld(); return w ? el("tfWorldSky") : null; }
   function groundZone() { var w = ensureWorld(); return w ? el("tfWorldGround") : null; }
+  // ===== JLINE — THE JOURNEY LINE IN THE SKY (David 2026-08-26: "animation from journey scroll, contents from chapter
+  // line"; grep anchor JLINE). The one-page world's SKY stops adopting the old Duolingo #jpTrail and renders David's
+  // designed chapter trail instead: the "Chapter Line" J1 frame's 130 rows for chapters 1-17, ported element-by-element,
+  // then chapters 18-36 EXTRAPOLATED by the frame's own rotation laws (his words: "we just happened not to visualize all
+  // of them in journey — you should just extrapolate"). It enters on the "Journey Scroll v22" cascade, running on this
+  // app's own DEVICE-PROVEN engine (wSpring / wSnapIntent / wMaybeSnap / hc* / tc* are untouched; only the sky-cascade
+  // hooks below are new). Design source: _design-sync/journey-scroll-2026-08-26/ (SPEC.md + SPEC-ADDENDUM-36.md).
+  // REVERSIBLE: JLINE=false restores the adoptTrailToSky path byte-identically. The standalone journey overlay still owns
+  // #jpTrail / drawJourney / releaseTrailFromSky (@SEC:JOURNEY-TRAIL) — under JLINE the sky simply never adopts them.
+  var JLINE = true;
+  // THE ROW TOTAL, derived not guessed: 130 frame rows (ch-1 block 9 + ch2-17's 16 gates and 104 stones + the BOOK TWO
+  // divider) + 19 generated gates + 122 generated stones + the BOOK THREE divider = 272. (SPEC-ADDENDUM-36 says 271; its
+  // own count cycle [7,6,5,8] over ch18-36 sums to 122, not 121 — arithmetic slip in the addendum, flagged to David.)
+  var JL_ROWS = 272;
+  var JL_NAME = [
+    "The Spark", "Who You Are", "Your Hours", "The Engine", "The Steady Hand", "The Wall", "The Long Game", "The Craft", "Your People", "The Deep Water", "The Weather", "The Summit", "The Still Point", "The Watcher", "The Forge", "The Portrait", "The Bellows", "The Undertow",
+    "Your Own Words", "The Hearth", "The Dream Door", "The Quiet Power", "The Open Hand", "The Return", "The Nest", "The Tide", "The Crossroads", "The New Ground", "The Two of You", "The Long Watch", "The Fallow", "The Arena", "The Empty Room", "The Roots", "The Harvest", "The Lantern"
+  ]; // chapter 1-36, verbatim from recipes/chapter-cards-36.json
+  // Each chapter's CARD TEXTURE, verbatim from recipes/chapter-cards-36.json (identical to the retired
+  // chapter-textures.json for 2-17, machine-checked). ONE string paints both that chapter's gate and every one of its
+  // stones — that is the frame's own rule, which is why the line reads as a chapter at a glance.
+  var JL_TEX = [
+    "repeating-linear-gradient(0deg, rgba(255,242,249,.14) 0 1.5px, transparent 1.5px 15px), repeating-linear-gradient(90deg, rgba(255,242,249,.14) 0 1.5px, transparent 1.5px 15px), linear-gradient(115deg, #8a5cf0, #6a3fd0)",
+    "repeating-linear-gradient(115deg, rgba(255,255,255,.30) 0 2px, transparent 2px 12px), linear-gradient(115deg, #ff5fa0, #d6316f)",
+    "conic-gradient(from 200deg at 50% 50%, #31c38f, #269ca7, #3c7eb0, #31c38f)",
+    "repeating-linear-gradient(90deg, rgba(22,5,16,.20) 0 3px, transparent 3px 26px), linear-gradient(115deg, #d98a24 0 30%, #c4691f 30% 62%, #a04416 62%)",
+    "repeating-linear-gradient(115deg, rgba(255,95,160,0.55) 0 8px, transparent 8px 16px), repeating-linear-gradient(65deg, rgba(224,64,126,0.50) 0 8px, transparent 8px 16px), repeating-linear-gradient(90deg, rgba(255,143,192,0.24) 0 8px, transparent 8px 16px), #200a14",
+    "radial-gradient(circle at 11px 11px, transparent 2.5px, rgba(255,200,61,0.62) 2.5px 4px, transparent 4.5px), radial-gradient(circle at 24px 20px, transparent 2.5px, rgba(255,138,58,0.56) 2.5px 4px, transparent 4.5px), radial-gradient(circle at 7px 28px, transparent 2px, rgba(255,95,160,0.50) 2px 3.5px, transparent 4px), #221126; background-size:36px 36px, 36px 36px, 36px 36px, auto",
+    "repeating-radial-gradient(ellipse 160% 100% at 50% 130%, rgba(42,184,196,0.46) 0 11px, transparent 11px 24px, rgba(52,211,154,0.42) 24px 35px, transparent 35px 48px, rgba(74,168,232,0.38) 48px 59px, transparent 59px 72px), #14101d",
+    "repeating-linear-gradient(115deg, rgba(224,64,126,0.42) 0 3px, transparent 3px 10px, rgba(138,92,240,0.36) 10px 13px, transparent 13px 20px, rgba(54,179,240,0.34) 20px 23px, transparent 23px 30px), #241031",
+    "repeating-conic-gradient(from -8deg at 50% 50%, #ff5fa0 0 14deg, #e0407e 14deg 28deg, #ff8fb8 28deg 42deg, #ffb43d 42deg 56deg)",
+    "repeating-conic-gradient(from 45deg, rgba(224,64,126,0.78) 0 25%, transparent 25% 50%), repeating-conic-gradient(from 45deg, rgba(138,92,240,0.66) 0 25%, transparent 25% 50%), #2a759f; background-size:30px 30px, 30px 30px, auto; background-position:0 0, 15px 15px, 0 0",
+    "repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,200,61,0.42) 0 12deg, transparent 12deg 22deg, rgba(255,138,58,0.36) 22deg 34deg, transparent 34deg 44deg, rgba(255,95,160,0.32) 44deg 56deg, transparent 56deg 66deg), #241031",
+    "radial-gradient(circle at 50% 50%, rgba(255,255,255,.55) 0 5px, rgba(255,242,249,.25) 12px, transparent 30px), repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,95,160,0.55) 0 10deg, rgba(255,200,61,0.48) 10deg 20deg, rgba(52,211,154,0.44) 20deg 30deg, rgba(74,168,232,0.44) 30deg 40deg, rgba(176,122,255,0.46) 40deg 50deg, transparent 50deg 60deg), #241031",
+    "radial-gradient(circle at 8px 8px, rgba(255,95,160,0.50) 2px, transparent 3px), radial-gradient(circle at 22px 18px, rgba(255,200,61,0.44) 1.8px, transparent 2.8px), radial-gradient(circle at 36px 30px, rgba(52,211,154,0.44) 1.8px, transparent 2.8px), radial-gradient(circle at 14px 36px, rgba(54,179,240,0.40) 1.6px, transparent 2.6px), #17101f; background-size:46px 46px, 46px 46px, 46px 46px, 46px 46px, auto",
+    "radial-gradient(ellipse 44% 32% at 50% 34%, rgba(190,255,232,.55), rgba(52,211,154,.22) 62%, transparent 80%), linear-gradient(180deg, #12463c 0%, #0c2b2c 62%, #08191f)",
+    "repeating-linear-gradient(25deg, rgba(255,150,50,.24) 0 3px, transparent 3px 13px), radial-gradient(circle at 26% 74%, rgba(255,178,60,.85), rgba(224,90,30,.40) 42%, transparent 66%), linear-gradient(115deg, #7a2c10, #3a1208)",
+    "repeating-radial-gradient(circle at 64% 46%, rgba(255,190,150,.22) 0 1.5px, transparent 1.5px 8px), radial-gradient(circle at 64% 46%, rgba(255,168,120,.75) 0 6px, rgba(255,140,110,.30) 20px, transparent 46px), linear-gradient(115deg, #6a2848, #35142c)",
+    "repeating-conic-gradient(from 0deg at 50% 62%, rgba(255,95,160,0.50) 0 9deg, transparent 9deg 18deg, rgba(176,122,255,0.46) 18deg 27deg, transparent 27deg 36deg), radial-gradient(circle at 50% 62%, rgba(255,143,192,.40), transparent 48%), #200f30",
+    "repeating-radial-gradient(ellipse 160% 100% at 50% 130%, rgba(64,196,255,0.52) 0 11px, transparent 11px 24px, rgba(60,120,230,0.46) 24px 35px, transparent 35px 48px, rgba(150,230,255,0.38) 48px 59px, transparent 59px 72px), #0d1230",
+    "repeating-linear-gradient(115deg, rgba(214,244,255,0.55) 0 3px, transparent 3px 10px, rgba(110,200,255,0.42) 10px 13px, transparent 13px 20px), linear-gradient(115deg, #163a5c, #0d2038)",
+    "conic-gradient(from 200deg at 50% 50%, #e08a3a, #c04a52, #e0743a, #a83a5c, #e08a3a)",
+    "repeating-radial-gradient(circle at 50% 118%, rgba(255,214,120,0.42) 0 9px, transparent 9px 22px, rgba(146,110,255,0.40) 22px 31px, transparent 31px 44px), #1a1440",
+    "repeating-linear-gradient(65deg, rgba(255,255,255,.10) 0 2px, transparent 2px 9px), linear-gradient(115deg, #3aa88a, #1f7268 58%, #164c50)",
+    "repeating-conic-gradient(from 244deg at 4% 50%, rgba(255,95,160,.55) 0 4deg, transparent 4deg 9deg, rgba(255,200,61,.50) 9deg 13deg, transparent 13deg 18deg, rgba(52,211,154,.46) 18deg 22deg, transparent 22deg 27deg, rgba(74,168,232,.46) 27deg 31deg, transparent 31deg 36deg, rgba(176,122,255,.48) 36deg 40deg, transparent 40deg 45deg), #201028",
+    "linear-gradient(180deg, #d79433 0 16%, #d1603c 16% 34%, #cf3f74 34% 54%, #8a45cc 54% 78%, #3f2688 78%)",
+    "repeating-linear-gradient(115deg, rgba(96,200,120,0.60) 0 8px, transparent 8px 16px), repeating-linear-gradient(65deg, rgba(230,120,180,0.50) 0 8px, transparent 8px 16px), repeating-linear-gradient(90deg, rgba(255,214,110,0.22) 0 8px, transparent 8px 16px), #101f14",
+    "repeating-radial-gradient(ellipse 210% 130% at 50% 178%, rgba(80,232,240,.66) 0 20px, rgba(22,5,16,.66) 20px 30px, rgba(150,130,255,.60) 30px 50px, rgba(22,5,16,.66) 50px 60px, rgba(236,246,255,.48) 60px 78px, rgba(22,5,16,.66) 78px 90px), #0b2233",
+    "repeating-conic-gradient(from 45deg, rgba(255,190,70,0.72) 0 25%, transparent 25% 50%), repeating-conic-gradient(from 45deg, rgba(150,90,240,0.66) 0 25%, transparent 25% 50%), #201042; background-size:30px 30px, 30px 30px, auto; background-position:0 0, 15px 15px, 0 0",
+    "repeating-linear-gradient(80deg, rgba(178,240,110,.50) 0 6px, rgba(52,200,150,.44) 6px 12px, rgba(255,214,110,.36) 12px 17px, rgba(22,5,16,.58) 17px 28px), #14200c",
+    "repeating-linear-gradient(115deg, #c94a86 0 11px, #2a1024 11px 14px, #7a4ac0 14px 25px, #2a1024 25px 28px)",
+    "repeating-radial-gradient(circle at 78% 46%, rgba(255,224,140,.55) 0 6px, rgba(22,5,16,.62) 6px 14px, rgba(146,120,255,.44) 14px 20px, rgba(22,5,16,.62) 20px 30px), #141033",
+    "conic-gradient(from 190deg at 46% 58%, rgba(150,225,255,.42), rgba(196,170,255,.38), rgba(160,240,215,.36), rgba(120,180,240,.38), rgba(150,225,255,.42)), #101827",
+    "repeating-conic-gradient(from -8deg at 50% 50%, rgba(255,64,88,.60) 0 9deg, rgba(22,5,16,.66) 9deg 18deg, rgba(255,190,70,.50) 18deg 27deg, rgba(22,5,16,.66) 27deg 36deg), #2a0c14",
+    "linear-gradient(105deg, rgba(120,240,225,.66) 0 22%, rgba(22,5,16,.70) 22% 25%, rgba(255,222,150,.56) 25% 48%, rgba(22,5,16,.70) 48% 51%, rgba(160,205,255,.60) 51% 74%, rgba(22,5,16,.70) 74% 77%, rgba(236,246,255,.50) 77%), #0f2a34",
+    "repeating-radial-gradient(ellipse 160% 100% at 50% 130%, rgba(240,150,70,.55) 0 7px, rgba(22,5,16,.62) 7px 16px, rgba(52,200,150,.44) 16px 23px, rgba(22,5,16,.62) 23px 34px), #1d1108",
+    "repeating-linear-gradient(115deg, rgba(255,200,61,.52) 0 6px, rgba(255,110,70,.46) 6px 12px, rgba(200,70,140,.42) 12px 18px, rgba(22,5,16,.60) 18px 28px), #2a1020",
+    "repeating-linear-gradient(115deg, rgba(255,190,225,.45) 0 6px, rgba(255,224,150,.42) 6px 12px, rgba(160,240,210,.40) 12px 18px, rgba(150,205,255,.42) 18px 24px, rgba(200,165,255,.45) 24px 30px, rgba(22,5,16,.55) 30px 40px), #241436"
+  ];
+  // ch · kicker hex · the name's foil gradient · mTextFoil s · the rainbow sheen's mFoil s (null = that chapter has no rainbow layer) · the effect bits (see JL_FX_*) · the stone icons' ink
+  var JL_FRAME = [
+    [2, "#ffd6ea", "linear-gradient(100deg, #ffd6ea, #ff9ac8, #ffe9f4, #ffd6ea)", 8, null, 0, "#288968"],
+    [3, "#a8f0d8", "linear-gradient(100deg, #a8f0d8, #7fe4ff, #e8fff6, #a8f0d8)", 9, null, 0, "#972b56"],
+    [4, "#ffdca8", "linear-gradient(100deg, #ffdca8, #ffb066, #fff0d8, #ffdca8)", 6, null, 0, "#aa822c"],
+    [5, "#ffc0d8", "linear-gradient(100deg, #ffc0d8, #ff8fb8, #ffe4ef, #ffc0d8)", 7, null, 0, "#aa5a2b"],
+    [6, "#ffe0a8", "linear-gradient(100deg, #ffe0a8, #ffb894, #ffd0e4, #ffe0a8)", 8, null, 0, "#aa822c"],
+    [7, "#a8e4ff", "linear-gradient(100deg, #a8e4ff, #ffe0a8, #d8f0ff, #a8e4ff)", 9, null, 0, "#227883"],
+    [8, "#bcdcff", "linear-gradient(100deg, #bcdcff, #e8f4ff, #a8c4ff, #bcdcff)", 6, "4.6", 24, "#972b56"],
+    [9, "#ffc4dc", "linear-gradient(100deg, #ffc4dc, #ffd9a8, #ffe8f2, #ffc4dc)", 7, "4.6", 24, "#227883"],
+    [10, "#a8f0f0", "linear-gradient(100deg, #a8f0f0, #9ac8ff, #e0fbff, #a8f0f0)", 8, "4.6", 25, "#972b56"],
+    [11, "#d8e4f8", "linear-gradient(100deg, #d8e4f8, #ffe0b0, #f0f4ff, #d8e4f8)", 9, "4.6", 25, "#aa822c"],
+    [12, "#ff3ea0", "linear-gradient(100deg, #ff3ea0, #ffb43d, #34d39a, #36b3f0, #b07aff, #ff3ea0, #ff3ea0)", 6, "4.6", 125, "#227883"],
+    [13, "#dce8ff", "linear-gradient(100deg, #dce8ff, #f4f8ff, #c0d4ff, #dce8ff)", 7, "4.6", 127, "#aa3f6c"],
+    [14, "#a8f0cc", "linear-gradient(100deg, #a8f0cc, #d8fff0, #8fe4d8, #a8f0cc)", 8, "4.6", 127, "#aa822c"],
+    [15, "#ffcc8f", "linear-gradient(100deg, #ffcc8f, #ff9a5e, #ffe4c0, #ffcc8f)", 9, "3.4", 127, "#aa3f6c"],
+    [16, "#ffc8a8", "linear-gradient(100deg, #ffc8a8, #ffa8c0, #ffe4d8, #ffc8a8)", 6, "3.4", 127, "#972b56"],
+    [17, "#ff9ad0", "linear-gradient(100deg, #ff9ad0, #ffd08f, #ffb0e8, #ff9ad0)", 7, "3.4", 127, "#aa3f6c"]
+  ];
+  var JL_FX_GRAIN = 1, JL_FX_GLFOIL = 2, JL_FX_INGLOW = 4, JL_FX_BEVEL = 8, JL_FX_RAIN = 16, JL_FX_SPARK = 32, JL_FX_GLOW = 64;
+  var JL_FX_FULL = 127; // the ch13-17 gate, the top of the frame's ladder — what every generated chapter wears
+  var JL_POOL = ["flag", "cards", "moon", "target-arrow", "map-2", "wave-sine", "shield-check", "compass", "heart", "anchor", "book", "star"]; // the frame's 12-icon rotation
+  var JL_TXC = [-24, 26, -20, 28, -26, 22, -28, 24];  // the stone zig-zag, per stone within a chapter
+  var JL_CNT = [7, 6, 5, 8];                          // stones per chapter, cycling by (ch-2)%4
+  var JL_JITV = ["mJitA", "mJitB", "mJitC"], JL_PASSD = [5.4, 5.7, 6];
+  var JL_INK = ["#288968", "#972b56", "#aa822c", "#aa5a2b", "#227883", "#aa3f6c"]; // the six icon inks the frame uses, in first-appearance order
+  // THE 36-CHAPTER TABLE. Chapters 2-17 ARE the frame (their row in JL_FRAME); 18-36 re-enter the frame's own rotation
+  // at index (ch-2)%16 for the text treatment and carry the full ladder, which is what "extrapolate" means here: no hex,
+  // no gradient and no duration in this line is invented — every one of them is a value David drew, re-dealt by the
+  // frame's own cycles. CONFLICT FLAGGED (one line, per DESIGN AUTHORITY LAW 3): SPEC-ADDENDUM-36 asks the peaks (24, 36)
+  // to ALSO wear row 84's treatment (ch12 The Summit), but row 84's layer stack is a strict SUBSET of the ch13-17 gate
+  // every generated chapter already wears — there is nothing left to add, so the peaks are marked by their own designed
+  // textures ("return, full dawn" / "pearl stripes, the last light") and nothing else. David decides if he wants more.
+  var _jlChaps = null;
+  function jlChapters() {
+    if (_jlChaps) return _jlChaps;
+    var out = [];
+    for (var ch = 2; ch <= 36; ch++) {
+      var f = JL_FRAME[ch <= 17 ? ch - 2 : (ch - 2) % 16];
+      out.push({ ch: ch, n: JL_NAME[ch - 1], tex: JL_TEX[ch - 1],
+        k: f[1], g: f[2], tf: f[3],
+        rb: f[4] || "4.6",                                    // a chapter rotated onto a pre-ladder frame row has no sheen of its own; 4.6 is the frame's dominant
+        fx: ch <= 17 ? f[5] : JL_FX_FULL,
+        ic: ch <= 17 ? f[6] : JL_INK[(ch - 2) % 6],
+        cnt: JL_CNT[(ch - 2) % 4], i0: (ch - 2) % 12 });
+    }
+    _jlChaps = out; return out;
+  }
+  // the chapter-one head, ported straight off frame rows 2-8: icon · label · zig-zag · flat hue · glow hex
+  var JL_CH1 = [
+    ["check", "Intro", -26, "#b07aff", "#462b5c66"],
+    ["leaf", "Settle", 24, "#2ab8c4", "#1b3f4966"],
+    ["moon-stars", "Close the day", -22, "#ff5fa0", "#5f223d66"],
+    ["lungs", "Breathe \u00b7 morning", 26, "#4aa8e8", "#253a5466"],
+    ["wave-sine", "The Gap", -28, "#34d39a", "#1e483b66"],
+    ["map-2", "Plan your day", 22, "#36b3f0", "#1f3d5766"]
+  ];
+  function jlAdd(p, tag, cls, style) { var n = document.createElement(tag); if (cls) n.className = cls; if (style) n.setAttribute("style", style); p.appendChild(n); return n; }
+  // ---- the six row recipes as DOM. Structure mirrors recipes/frame-rows-all.html one node for one node; every repeated
+  // value lives in the .jl-* classes in index.html, and only what VARIES per row is written here. ----
+  function jlDivider(book, name, accent) {
+    var row = document.createElement("div"); row.className = "jl-div";
+    jlAdd(row, "span", "jl-div-rule", "background:" + accent + "33;");
+    var lab = jlAdd(row, "span", "jl-div-lab");
+    jlAdd(lab, "span", "jl-div-book", "color:" + accent + ";").textContent = tr(book);
+    jlAdd(lab, "span", "jl-div-name").textContent = tr(name);
+    jlAdd(row, "span", "jl-div-rule", "background:" + accent + "33;");
+    return row;
+  }
+  function jlToday(ch, name) {
+    var row = document.createElement("div"); row.className = "jl-today";
+    var card = jlAdd(row, "div", "jl-today-card");
+    jlAdd(jlAdd(card, "span", "jl-today-glint"), "span", "jl-fx");
+    var mid = jlAdd(card, "span", "jl-card-mid");
+    jlAdd(mid, "span", "jl-today-kick").textContent = tr("TODAY \u00b7 CHAPTER") + " " + ch;
+    jlAdd(mid, "span", "jl-today-name").textContent = tr(name);
+    jlAdd(card, "i", "ti ti-sparkles jl-today-ico");
+    return row;
+  }
+  function jlStone(icon, label, tx, hue, glow) {
+    var row = document.createElement("div"); row.className = "jl-stone";
+    row.style.translate = tx + "px 0";                        // the zig-zag rides `translate`, leaving `transform` free for the cascade
+    var col = jlAdd(row, "div", "jl-stone-in");
+    var disc = jlAdd(col, "span", "jl-disc", "background:" + hue + ";--jglow:" + glow + ";");
+    jlAdd(disc, "i", "ti ti-" + icon);
+    jlAdd(col, "span", "jl-stone-lab").textContent = tr(label);
+    return row;
+  }
+  function jlNext(icon, title, sub) {
+    var row = document.createElement("div"); row.className = "jl-next";
+    var col = jlAdd(row, "div", "jl-next-in");
+    var disc = jlAdd(col, "span", "jl-next-disc jl-fx");
+    jlAdd(jlAdd(disc, "span", "jl-next-glint"), "span", "jl-fx");
+    jlAdd(disc, "i", "ti ti-" + icon);
+    var lab = jlAdd(col, "span", "jl-next-lab");
+    jlAdd(lab, "span", "jl-next-t").textContent = tr(title);
+    jlAdd(lab, "span", "jl-next-s").textContent = tr(sub);
+    return row;
+  }
+  function jlBanner(c) { // a locked chapter's GATE, wearing exactly the ladder rungs that chapter has earned
+    var row = document.createElement("div"); row.className = "jl-lock";
+    var card = jlAdd(row, "div", "jl-lock-card" + ((c.fx & JL_FX_GLOW) ? " jl-lit jl-fx" : ""));
+    jlAdd(card, "span", "jl-l-tex jl-fx", "background:" + c.tex + ";");
+    if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
+    if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl"), "span", "jl-fx");
+    if (c.fx & JL_FX_INGLOW) jlAdd(card, "span", "jl-l-inglow");
+    if (c.fx & JL_FX_BEVEL) jlAdd(card, "span", "jl-l-bevel");
+    if (c.fx & JL_FX_RAIN) jlAdd(jlAdd(card, "span", "jl-l-rain"), "span", "jl-fx", "animation-duration:" + c.rb + "s;");
+    if (c.fx & JL_FX_SPARK) jlAdd(card, "span", "jl-l-spark jl-fx");
+    var mid = jlAdd(card, "span", "jl-card-mid");
+    jlAdd(mid, "span", "jl-lock-kick", "color:" + c.k + ";").textContent = tr("CHAPTER") + " " + c.ch;
+    jlAdd(mid, "span", "jl-lock-name jl-fx", "background-image:" + c.g + ";animation-duration:" + c.tf + "s;").textContent = tr(c.n);
+    jlAdd(card, "i", "ti ti-lock jl-lock-ico");
+    return row;
+  }
+  // A LOCKED STONE, and its four numbers are the frame's own, not decoration: the jitter variant/duration/phase and the
+  // glisten phase were reverse-derived from all 104 frame stones and reproduce every one of them exactly (checked against
+  // recipes/row-table.json), which is the only reason the same generator is allowed to run past chapter 17. k = the
+  // stone's index along the whole line, so the shine travels UP it one stone at a time instead of flashing in lockstep.
+  function jlLockedStone(c, icon, tx, k) {
+    var row = document.createElement("div"); row.className = "jl-lstone-row";
+    row.style.translate = tx + "px 0";
+    var jd = -((k * 1.7) % 12);                                          // frame: 0.0, -1.7, -3.4 … wrapping at 12s
+    var pd = JL_PASSD[k % 3], x = (k * 1.05) % pd;
+    var gd = k === 0 ? 0 : -(pd - x);                                    // the very first stone starts unshifted; every other one carries its phase
+    var st = jlAdd(row, "span", "jl-lstone jl-fx", "background:" + c.tex + ";animation:" + JL_JITV[k % 3] + " " +
+      (9 + 0.8 * (k % 7)).toFixed(1) + "s ease-in-out infinite;animation-delay:" + jd.toFixed(1) + "s;");
+    jlAdd(jlAdd(st, "span", "jl-lstone-pass"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
+    jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
+    return row;
+  }
+  // ---- OFF-SCREEN ROWS GO QUIET (David 2026-08-26). ONE observer for the whole line, stored like _jcEls so a rebuild can
+  // never leak a second one. Root is #tfWorld with the frame's own 120px margin (recipes/j1-script.js wireAnim), and it
+  // toggles ONLY the row-level .jl-anim-off class — the CSS behind it pauses .jl-fx descendants and cannot reach the
+  // cascade's inline animation on the row itself. Rows are born paused (the frame's default: nothing animates until seen).
+  var _jlIO = null, _jlIOSeen = false, _jlIOT = 0;
+  function jlUnpauseAll(col) { for (var i = 0; i < col.children.length; i++) col.children[i].classList.remove("jl-anim-off"); }
+  function jlObserve(col) {
+    if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; }
+    clearTimeout(_jlIOT); _jlIOSeen = false;
+    if (!col) return;
+    var w = el("tfWorld");
+    if (!w || typeof IntersectionObserver === "undefined") { jlUnpauseAll(col); return; } // no observer to be had → everything animates, exactly as it did before this pass
+    _jlIO = new IntersectionObserver(function (ents) {
+      _jlIOSeen = true;
+      for (var i = 0; i < ents.length; i++) ents[i].target.classList.toggle("jl-anim-off", !ents[i].isIntersecting);
+    }, { root: w, rootMargin: "120px 0px" });
+    for (var k = 0; k < col.children.length; k++) _jlIO.observe(col.children[k]);
+    // THE DEADMAN. Born-paused is only safe if something is guaranteed to wake them: if the observer never delivers a
+    // single entry (a root that is display:contents at arm time, a browser quirk), the whole line would sit frozen and
+    // look shipped-broken. Unpause everything rather than ship a still image.
+    _jlIOT = setTimeout(function () { if (!_jlIOSeen && el("jrnyCol")) { try { console.warn("[alter] jlObserve: no IntersectionObserver entries — unpausing the line"); } catch (e) {} jlUnpauseAll(el("jrnyCol")); } }, 1500);
+  }
+  // ---- …AND THE DEEP ONES STOP LAYING OUT. Everything further than 1.5 viewports above the line's foot is marked for
+  // content-visibility (see .jl-deep in index.html) — comfortably outside jcEls()'s 1.3-viewport cascade set, so no row
+  // that has to animate in is ever size-contained. Re-derived only when the viewport height actually changes.
+  var _jlDeepVh = 0;
+  function jlDeepen(col, force) {
+    if (!col) return;
+    var w = el("tfWorld"), vh = (w && w.clientHeight) || window.innerHeight || 874;
+    if (!force && vh === _jlDeepVh) return;
+    _jlDeepVh = vh;
+    var H = col.offsetHeight || 0, cut = H - vh * 1.5;
+    for (var i = 0; i < col.children.length; i++) {
+      var n = col.children[i], cl = n.classList;
+      cl.toggle("jl-deep", (n.offsetTop + n.offsetHeight) <= cut && (cl.contains("jl-lstone-row") || cl.contains("jl-div")));
+    }
+  }
+  // ---- the renderer. BUILD-ONCE and idempotent: a full line already sitting in the sky is REUSED, never rebuilt, so the
+  // per-minute master tick can call this as often as it likes. Child-drain only (removeChild loop) — no innerHTML wipe,
+  // the preship ratchet fails the ship if that count grows. ----
+  function renderJourneyLine() {
+    if (!ONEPAGE || !JLINE) return null;
+    var sky = skyZone(); if (!sky) return null;
+    sky.classList.add("jl-sky");
+    var lab = el("tfWorldSkyLabel"); if (lab && lab.parentNode) lab.parentNode.removeChild(lab); // the line opens on its own BOOK ONE divider; the frame draws no "Your journey" caption
+    var line = el("jrnyLine"), col = el("jrnyCol");
+    if (line && col && col.children.length === JL_ROWS) { if (!_jlIO) jlObserve(col); jlDeepen(col); return line; } // reused: only re-arm what a teardown or a resize could have invalidated
+    if (!line) { line = document.createElement("div"); line.id = "jrnyLine"; sky.insertBefore(line, sky.firstChild); }
+    while (line.firstChild) line.removeChild(line.firstChild);
+    col = document.createElement("div"); col.id = "jrnyCol"; line.appendChild(col);
+    // built in the FRAME'S OWN bottom-up data order (its file is column-reverse, index 0 = the line's foot), then
+    // appended in reverse so index 0 lands at the foot of a normal-flow column. Same rows, same order, no column-reverse.
+    var rows = [];
+    rows.push(jlDivider("BOOK ONE", "The Climb", "#ff4fa0"));
+    rows.push(jlToday(1, JL_NAME[0]));
+    rows.push(jlStone(JL_CH1[0][0], JL_CH1[0][1], JL_CH1[0][2], JL_CH1[0][3], JL_CH1[0][4]));  // Intro, done
+    rows.push(jlNext("lungs", "Again tonight", "up next \u00b7 one minute"));
+    for (var s = 1; s < JL_CH1.length; s++) rows.push(jlStone(JL_CH1[s][0], JL_CH1[s][1], JL_CH1[s][2], JL_CH1[s][3], JL_CH1[s][4]));
+    var k = 0;
+    jlChapters().forEach(function (c) {
+      if (c.ch === 13) rows.push(jlDivider("BOOK TWO", "The Deep", "#2a9fe0"));
+      if (c.ch === 25) rows.push(jlDivider("BOOK THREE", "The Seasons", "#8a5cf0"));
+      rows.push(jlBanner(c));
+      for (var j = 0; j < c.cnt; j++) { rows.push(jlLockedStone(c, JL_POOL[(c.i0 + j) % 12], JL_TXC[j % 8], k)); k++; }
+    });
+    for (var i = rows.length - 1; i >= 0; i--) { rows[i].classList.add("jl-anim-off"); col.appendChild(rows[i]); } // born quiet; the observer wakes what you can actually see
+    jlDeepen(col, true);
+    jlObserve(col);
+    return line;
+  }
+  // RU flagged for David's RU pass. Extended in place per the B4 law (the I18N seed lives at @SEC:I18N-CORE). Keys the
+  // dictionary already carries ("Who You Are", "Settle", "Close the day", "The Gap", "Plan your day") are deliberately
+  // NOT repeated here — re-declaring them would silently re-translate those words on every other surface too.
+  Object.assign(I18N.ru, {
+    "BOOK ONE": "\u041a\u041d\u0418\u0413\u0410 \u041f\u0415\u0420\u0412\u0410\u042f", "BOOK TWO": "\u041a\u041d\u0418\u0413\u0410 \u0412\u0422\u041e\u0420\u0410\u042f", "BOOK THREE": "\u041a\u041d\u0418\u0413\u0410 \u0422\u0420\u0415\u0422\u042c\u042f",
+    "The Climb": "\u041f\u043e\u0434\u044a\u0451\u043c", "The Deep": "\u0413\u043b\u0443\u0431\u0438\u043d\u0430", "The Seasons": "\u0412\u0440\u0435\u043c\u0435\u043d\u0430 \u0433\u043e\u0434\u0430",
+    "TODAY \u00b7 CHAPTER": "\u0421\u0415\u0413\u041e\u0414\u041d\u042f \u00b7 \u0413\u041b\u0410\u0412\u0410", "CHAPTER": "\u0413\u041b\u0410\u0412\u0410",
+    "Intro": "\u0412\u0441\u0442\u0443\u043f\u043b\u0435\u043d\u0438\u0435", "Breathe \u00b7 morning": "\u0414\u044b\u0445\u0430\u043d\u0438\u0435 \u00b7 \u0443\u0442\u0440\u043e",
+    "Again tonight": "\u0415\u0449\u0451 \u0440\u0430\u0437 \u0432\u0435\u0447\u0435\u0440\u043e\u043c", "up next \u00b7 one minute": "\u0434\u0430\u043b\u044c\u0448\u0435 \u00b7 \u043e\u0434\u043d\u0430 \u043c\u0438\u043d\u0443\u0442\u0430",
+    "The Spark": "\u0418\u0441\u043a\u0440\u0430", "Your Hours": "\u0422\u0432\u043e\u0438 \u0447\u0430\u0441\u044b", "The Engine": "\u0414\u0432\u0438\u0433\u0430\u0442\u0435\u043b\u044c",
+    "The Steady Hand": "\u0422\u0432\u0451\u0440\u0434\u0430\u044f \u0440\u0443\u043a\u0430", "The Wall": "\u0421\u0442\u0435\u043d\u0430", "The Long Game": "\u0414\u043e\u043b\u0433\u0430\u044f \u0438\u0433\u0440\u0430",
+    "The Craft": "\u0420\u0435\u043c\u0435\u0441\u043b\u043e", "Your People": "\u0422\u0432\u043e\u0438 \u043b\u044e\u0434\u0438", "The Deep Water": "\u0413\u043b\u0443\u0431\u043e\u043a\u0430\u044f \u0432\u043e\u0434\u0430",
+    "The Weather": "\u041f\u043e\u0433\u043e\u0434\u0430", "The Summit": "\u0412\u0435\u0440\u0448\u0438\u043d\u0430", "The Still Point": "\u0422\u043e\u0447\u043a\u0430 \u043f\u043e\u043a\u043e\u044f",
+    "The Watcher": "\u041d\u0430\u0431\u043b\u044e\u0434\u0430\u0442\u0435\u043b\u044c", "The Forge": "\u041a\u0443\u0437\u043d\u0438\u0446\u0430", "The Portrait": "\u041f\u043e\u0440\u0442\u0440\u0435\u0442",
+    "The Bellows": "\u041c\u0435\u0445\u0438", "The Undertow": "\u041f\u043e\u0434\u0432\u043e\u0434\u043d\u043e\u0435 \u0442\u0435\u0447\u0435\u043d\u0438\u0435", "Your Own Words": "\u0422\u0432\u043e\u0438 \u0441\u043e\u0431\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0435 \u0441\u043b\u043e\u0432\u0430",
+    "The Hearth": "\u041e\u0447\u0430\u0433", "The Dream Door": "\u0414\u0432\u0435\u0440\u044c \u0441\u043d\u043e\u0432", "The Quiet Power": "\u0422\u0438\u0445\u0430\u044f \u0441\u0438\u043b\u0430",
+    "The Open Hand": "\u041e\u0442\u043a\u0440\u044b\u0442\u0430\u044f \u043b\u0430\u0434\u043e\u043d\u044c", "The Return": "\u0412\u043e\u0437\u0432\u0440\u0430\u0449\u0435\u043d\u0438\u0435", "The Nest": "\u0413\u043d\u0435\u0437\u0434\u043e",
+    "The Tide": "\u041f\u0440\u0438\u043b\u0438\u0432", "The Crossroads": "\u041f\u0435\u0440\u0435\u043a\u0440\u0451\u0441\u0442\u043e\u043a", "The New Ground": "\u041d\u043e\u0432\u0430\u044f \u0437\u0435\u043c\u043b\u044f",
+    "The Two of You": "\u0412\u044b \u0434\u0432\u043e\u0435", "The Long Watch": "\u0414\u043e\u043b\u0433\u0438\u0439 \u0434\u043e\u0437\u043e\u0440", "The Fallow": "\u041f\u043e\u0434 \u043f\u0430\u0440\u043e\u043c",
+    "The Arena": "\u0410\u0440\u0435\u043d\u0430", "The Empty Room": "\u041f\u0443\u0441\u0442\u0430\u044f \u043a\u043e\u043c\u043d\u0430\u0442\u0430", "The Roots": "\u041a\u043e\u0440\u043d\u0438",
+    "The Harvest": "\u0423\u0440\u043e\u0436\u0430\u0439", "The Lantern": "\u0424\u043e\u043d\u0430\u0440\u044c"
+  });
   // ---- SKY: adopt the ONE live journey trail (#jpTrail) up from #journeyPath, so scrolling up from home IS the journey (same page, same DOM). Reversible: releaseTrailFromSky returns it. ----
   function adoptTrailToSky() {
     if (!ONEPAGE) return;
@@ -5896,7 +6179,7 @@
   // is exactly that path. Extracted here and also driven from the resize/orientationchange listener at @SEC:BOOT.
   function wApplyScale() {
     var tf = el("trackerFull"); if (!tf) return 1;
-    var s = tfh2c() ? Math.min(Math.max(window.innerWidth / 402, 1), 1.15) : 1;
+    var s = tfh2c() ? Math.min(Math.max(appVW() / 402, 1), 1.15) : 1; // appVW, not innerWidth: under ROTFREE a landscape phone reports the LONG side, and re-deriving the artboard scale from it would blow the whole board up to the 1.15 cap on a rotation
     tf.style.setProperty("--tfscale", s.toFixed(4));
     tf.classList.toggle("tf-scaled", s > 1.001);
     return s;
@@ -5949,6 +6232,7 @@
     var w = el("tfWorld"); if (!w) return;
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } } // leaving upward: the shelf starts folding away NOW, not when we arrive
+    if (_wDown && JLINE && _jcShown) { _jcShown = false; clearTimeout(_jcInT); jcCascade(-1); } // …and the mirror image: leaving the sky downward, the line starts folding NOW, not on the seam
     _wAnim = true; _wStop = false;
     var x = w.scrollTop, v = Math.max(-0.9, Math.min(0.9, _wV || 0));   // seeded with the LIVE gesture velocity, clamped — a flick carries through
     var dir = to > x ? 1 : (to < x ? -1 : 0);
@@ -6203,6 +6487,64 @@
     if (u > 0.16 && !_tcShown && !up && !(_wAnim && _wUp)) { _tcShown = true; _tcInAt = wNow(); clearTimeout(_tcInT); _tcInT = setTimeout(function () { tcCascade(1); }, 90); }
     else if (u < (up ? 0.62 : 0.1) && _tcShown && wNow() - _tcInAt > 600 && !(_wAnim && _wDown)) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); }
   }
+  // ===== THE SKY CASCADE (JLINE) — the journey line arriving as you pull up out of home, and folding away as you head
+  // back down. This is "Journey Scroll v22"'s reveal, running on this app's own machinery: tcCascade's batched write
+  // pattern (ONE forced reflow for the whole cascade, never one per row), the same velocity stretch, the same
+  // hysteresis, the same guarded-animationend flatten so nothing rides the glide lit (note 5).
+  // ONLY THE LANDING SCREEN CASCADES. The design's sky is one screen; this one is 36 chapters and ~26,000px tall. Past
+  // 1.3 viewports up from the line's foot you are no longer arriving, you are READING — those rows are always visible
+  // and never animate, exactly as wSnapIntent lets the magnet go past one viewport for the same reason.
+  var _jcShown, _jcHard = false, _jcInAt = 0, _jcInT = 0, _jcEls = null;
+  function jcEls() {
+    var col = el("jrnyCol"); if (!col) return [];
+    var w = el("tfWorld"), vh = (w && w.clientHeight) || window.innerHeight || 874;
+    var H = col.offsetHeight || 0, cut = H - vh * 1.3;
+    var out = [], kids = col.children;
+    for (var i = 0; i < kids.length; i++) { var n = kids[i]; if (n.offsetTop + n.offsetHeight > cut) out.push(n); }
+    return out.reverse(); // BOTTOM-UP — chapter one pops first, exactly v22's rows() reverse
+  }
+  function jcFlat(n) { if (!n._jcClean) { n._jcClean = 1; n.addEventListener("animationend", function (e) { if (e.target !== n) return; n.style.animation = ""; n.style.opacity = n._jcExit ? "0" : ""; }); } } // e.target guard: animationend BUBBLES and these rows are full of animating children (mJit, mFoil, mSpark, the glints) — an unguarded handler would clear the row on a child's animation, the same trap tcFlat documents
+  function jcCascade(dir, instant) {
+    var els = _jcEls || []; if (!els.length) return;
+    var f = (_wAnim || !_wPk) ? 1 : Math.max(1, Math.min(1.8, 0.45 / Math.max(0.05, _wPk))); // v22's velocity scaling, verbatim
+    var stag = Math.min(120 * f, 1500 / Math.max(1, els.length));
+    var q = [];
+    els.forEach(function (n, i) {
+      n.style.animation = "none"; jcFlat(n);
+      if (dir > 0) { n._jcExit = false; n.style.opacity = "0"; q.push([n, "jlRowIn " + (0.66 * f).toFixed(2) + "s cubic-bezier(.26,1.12,.38,1) " + Math.round(i * stag) + "ms both"]); }
+      else if (instant) { n._jcExit = true; n.style.opacity = "0"; }
+      else { n._jcExit = true; n.style.opacity = "1"; q.push([n, "jlRowOut .3s ease-in-out " + Math.round((els.length - 1 - i) * 26) + "ms both"]); }
+    });
+    if (!q.length) return;                                    // the instant/hidden branch writes no animation — nothing to flush, no reason to touch layout
+    var w = el("tfWorld"); if (w) void w.offsetWidth;          // THE one forced reflow for the whole cascade
+    q.forEach(function (a) { a[0].style.animation = a[1]; });
+  }
+  var _jcSyncT = 0;
+  function jcResyncSoon() { // mirrors tcResyncSoon: deferred + coalesced, so it runs AFTER the whole render pass whatever order the renderers took
+    if (_jcSyncT) return;
+    _jcSyncT = setTimeout(function () { _jcSyncT = 0; try { if (!wLive()) return; jcResync(true); var w = el("tfWorld"); jcScrub(jcU(w)); } catch (e) {} }, 0);
+  }
+  function jcResync(force) {
+    if (!force && _jcEls && _jcEls.length && _jcEls[0].isConnected) return false;
+    _jcEls = jcEls(); _jcHard = false;
+    if (!_jcShown) _jcShown = undefined;                      // hidden before a rebuild → let the resting-hide re-apply to the fresh rows
+    return true;
+  }
+  function jcU(w) { return w ? Math.max(0, Math.min(1, -(w.scrollTop - wHomeY()) / (w.clientHeight || 1))) : 0; } // 0 at home, 1 at the journey landing
+  function jcScrub(u2) {
+    if (!JLINE) return;
+    jcResync();
+    // PARALLAX: the line lags and holds a touch of zoom until you arrive, then sits perfectly still (v22 skyLag 50 / skyZoom 8%)
+    var col = el("jrnyCol");
+    if (col) col.style.transform = u2 >= 1 ? "" : ("translateY(" + Math.round(-(1 - u2) * 50) + "px) scale(" + (1 + (1 - u2) * 0.08).toFixed(3) + ")");
+    if (!_jcEls.length) return;
+    if (_jcShown === undefined) { _jcShown = false; jcCascade(-1, true); }
+    var up = (_wDir || 0) < 0, down = !up;
+    if (u2 < 0.06 && !_jcShown && !_jcHard) { _jcHard = true; jcCascade(-1, true); } // resting at home: hard-hidden, so the line is never pre-shown behind the board
+    if (u2 > 0.08) _jcHard = false;
+    if (u2 > 0.3 && !_jcShown && up && !(_wAnim && _wDown)) { _jcShown = true; _jcInAt = wNow(); clearTimeout(_jcInT); _jcInT = setTimeout(function () { jcCascade(1); }, 60); }
+    else if (u2 < (down ? 0.45 : 0.06) && _jcShown && wNow() - _jcInAt > 600 && !(_wAnim && _wUp)) { _jcShown = false; clearTimeout(_jcInT); jcCascade(-1); }
+  }
   // ---- the deliberate doors (the two HUD hints + the puck). Each ARMS the cascade, then travels. ----
   // presetting _hcState here defeats hcScrub's own exit guard and silently skips the homeSinkUp cascade (constants-audit find, 2026-08-14); the scroll drives everything, same as the design's goJourney
   function wGoJourney() { var w = el("tfWorld"); if (!w) return; wScrollTo(wSkyY()); }
@@ -6228,7 +6570,10 @@
       var scrollable = world.scrollHeight - world.clientHeight > peek;
       // BOOT-EMPTY-SKY FIX (David 2026-07-22 "scroll up = empty screen; only after scrolling to tools does up unlock"): the trail must ACTUALLY be adopted+drawn into the sky before we commit. Without this gate, home.offsetTop is just the ~34px sky-LABEL height (target≈20 > peek, column scrollable via the ground) → the retry committed _worldPositioned on an EMPTY sky, locking the scroll at a wrong spot with only a blank label above → scrolling up showed empty. A later re-render (e.g. after a down-scroll re-adopts) was the only thing that fixed it. Require jpTrail to sit in the sky with real children first.
       var trail = el("jpTrail"), sky = el("tfWorldSky");
-      var skyReady = !!(trail && sky && trail.parentNode === sky && trail.children.length);
+      // JLINE: the same gate, pointed at the same fact — the sky must actually be holding a DRAWN line before we commit,
+      // or the landing locks onto a target computed from an empty zone (the boot-empty-sky trap this whole gate exists for).
+      var _jcl = el("jrnyCol");
+      var skyReady = JLINE ? !!(sky && _jcl && _jcl.children.length) : !!(trail && sky && trail.parentNode === sky && trail.children.length);
       // NOT ready to land = sky not yet holding the drawn trail, still morphing, or the column can't scroll. Leave _worldPositioned FALSE so a later render/kick retries — never commit on an empty/hidden home (the boot-under-startscreen premature-commit trap).
       if (skyReady && target > peek && !morphing && scrollable) {
         world.scrollTop = target;
@@ -6245,7 +6590,7 @@
     if (_worldPosHeals < 3) {
       _worldPosHeals++;
       try { console.warn("[alter] worldScrollHome: home landing unreached after " + tries + " tries — repairing the sky, heal " + _worldPosHeals + "/3"); } catch (e) {}
-      try { adoptTrailToSky(); var _ht = el("jpTrail"); if (_ht && !_ht.children.length) drawJourney(false); } catch (e) {}
+      try { if (JLINE) renderJourneyLine(); else { adoptTrailToSky(); var _ht = el("jpTrail"); if (_ht && !_ht.children.length) drawJourney(false); } } catch (e) {}
       _worldPosTo = setTimeout(function () { worldScrollHome(0); }, 240);
     } else { try { console.warn("[alter] worldScrollHome: giving up after 3 heals — the one-page world stays unpositioned (wLive off)"); } catch (e) {} }
   }
@@ -6265,7 +6610,7 @@
     // DOOR-TAP FIX (David 2026-07-22 "the buttons are broken"): #tfBackdrop is a fixed z97 pointer-catcher for the OLD sheet-mode calendar-peek-close. On the full-screen ONE-PAGE home it covers the top 200px — exactly where the door tabs sit (y≈92-172) — and swallows every door tap. The onepage home is a PLACE, not a peel-back sheet: it has no calendar peek to close. Neutralise the backdrop so door taps reach the doors (#tfWorld owns the scroll; you leave via the doors/nav, not by tapping a peek).
     try { var _bd = el("tfBackdrop"); if (_bd) _bd.classList.remove("on"); } catch (e) {}
     ensureWorld();
-    adoptTrailToSky();
+    if (JLINE) { renderJourneyLine(); try { jcResyncSoon(); } catch (e) {} } else adoptTrailToSky(); // JLINE: the sky is David's chapter line, built once; the old trail stays home in #jpScroll
     var ground = groundZone();
     if (showGround) { if (ground) ground.style.display = ""; if (TBX2) { try { renderToolbox2(); } catch (e) {} } else renderGroundTools(); } // TBX2: the ground zone IS the Toolbox (Plan + grids + heroes + bento); renderGroundTools stays in the file, unused (flagged in the handoff)
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
@@ -6300,12 +6645,19 @@
     var _b = el("tfHomeBars"); if (_b) { _b.style.opacity = ""; _b.style.transform = ""; } // clear the scroll-linked strip fade so it never sticks dimmed on the next open
     // …and hand every cascaded node back to plain CSS. A block left flattened at opacity:0 by an exit that never got its arrival would be
     // INVISIBLE on the next open (note 6, "the top header is now invisible") — the one failure mode this whole engine must not ship with.
-    _wStop = true; clearTimeout(_wSnapT); clearTimeout(_hcT); clearTimeout(_hcInT); clearTimeout(_tcInT);
+    _wStop = true; clearTimeout(_wSnapT); clearTimeout(_hcT); clearTimeout(_hcInT); clearTimeout(_tcInT); clearTimeout(_jcInT);
     _wAnim = false; _wHold = null; _wDir = 0; _wV = 0; _wPk = 0; _wLastSt = null; _wLastT = 0; _wLastD = null; _wFlung = false;
     _hcState = null; _hcArmUp = _hcArmDown = false; _hcAnimAt = 0; _hcDone = false; _hcQ = null;
     _hcDone = false; try { hcReset(); } catch (e) {}
     if (_tcEls) { _tcEls.forEach(function (n) { n.style.animation = ""; n.style.transition = ""; n.style.opacity = ""; n.style.transform = ""; n.style.pointerEvents = ""; }); } // pointerEvents rides with opacity here for the same reason it does in tcCascade: a row left at "none" by an exit that never got its arrival would be DEAD to taps on the next open, note 6's failure mode in the tap layer
     _tcEls = null; _tcShown = undefined; _tcHard = false; _worldPosHeals = 0; // fresh stranding budget for the next open (David 2026-08-15)
+    // …and the sky line by the same rule: a row left flattened at opacity 0 by an exit that never got its arrival would
+    // be INVISIBLE on the next open. The line's DOM survives (build-once), only its cascade state is handed back to CSS.
+    if (_jcEls) { _jcEls.forEach(function (n) { n.style.animation = ""; n.style.opacity = ""; }); }
+    _jcEls = null; _jcShown = undefined; _jcHard = false;
+    var _jcC = el("jrnyCol"); if (_jcC) _jcC.style.transform = "";
+    if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; } // ONE observer, and it dies with the world — renderJourneyLine re-arms it on the next open
+    clearTimeout(_jlIOT); _jlIOSeen = false; _jlDeepVh = 0;
     ["tfHudJourney", "tfHudHome", "tfToolsHint"].forEach(function (id) { var n = el(id); if (n) { n.style.opacity = ""; n.style.pointerEvents = ""; n.style.translate = ""; } }); // translate too, or a label's scrub offset sticks across a teardown
     var _pw = document.querySelector(".tbx-planwrap"); if (_pw) { _pw.style.opacity = ""; _pw.style.pointerEvents = ""; }
     _worldPositioned = false;
@@ -19981,6 +20333,56 @@
     });
     chk("garden sheets OPAQUE (no alpha)", !_alpha.length, _alpha.length ? _alpha.join(" ") : "all rgb()", "rgb(22, 7, 20) on all four, never rgba");
     chk("garden sheets rest at the PARTIAL snap", !_snap.length, _snap.length ? _snap.join(" ") : "all " + Math.round(window.innerHeight * 0.38) + "px", "38% of viewport (" + Math.round(window.innerHeight * 0.38) + "px), gv-exp off");
+    // ===== THE JLINE GATES (2026-08-26) — the journey line's locked geometry, so a design port can never again ship
+    // "close enough". Style- and layout-based, never a ratio of viewport: the line is an ABSOLUTE 402 artboard capped
+    // at its own 362 content px, so one run at 402x874 is a statement about David's 440x956 Max too (the same law the
+    // home-column sentinel above enforces). A FAIL here = do not ship.
+    if (JLINE) {
+      var _jlL = el("jrnyLine"), _jlC = el("jrnyCol"), _jlS = el("tfWorldSky"), _jss0 = function (n) { return getComputedStyle(n); };
+      var _jlN = _jlC ? _jlC.children.length : 0;
+      chk("journey line rows", _jlN === JL_ROWS, _jlN + " rows", JL_ROWS + " = the frame's 130 (ch 1-17) + 19 generated gates + 122 generated stones + the BOOK THREE divider");
+      chk("sky wears the line's paint (not the old trail)", !!(_jlS && _jlS.classList.contains("jl-sky")) && !el("tfWorldSkyLabel") && !(el("jpTrail") && el("jpTrail").parentNode === _jlS), (_jlS && _jlS.classList.contains("jl-sky") ? "jl-sky" : "no jl-sky") + (el("tfWorldSkyLabel") ? " + the old caption" : "") + (el("jpTrail") && el("jpTrail").parentNode === _jlS ? " + #jpTrail adopted" : ""), "jl-sky, no \"Your journey\" caption, #jpTrail still home in #jpScroll");
+      if (_jlL) { var _jlcs = getComputedStyle(_jlL);
+        // BOTH SIDES IN LAYOUT PX. _nr divides the rect back through the artboard scale, which is the whole reason this
+        // gate can be taken once and believed on the other phone — mixing a raw rect with a layout padding is exactly
+        // the 440-vs-402 error class the normalizer exists for (it read 2px/-2px on the Max before this).
+        var _jlSr = _jlS ? _nr(_jlS) : null, _jlLr = _nr(_jlL);
+        var _jlLead = _jlSr ? _jlLr.left - _jlSr.left - (parseFloat(_jss0(_jlS).paddingLeft) || 0) : 0;
+        var _jlTail = _jlSr ? _jlSr.right - (parseFloat(_jss0(_jlS).paddingRight) || 0) - _jlLr.right : 0;
+        chk("line column ≤362px and centered (the letterbox law)", _jlL.clientWidth > 0 && _jlL.clientWidth <= 362.5 && Math.abs(_jlLead - _jlTail) <= 1.5, Math.round(_jlL.clientWidth * 10) / 10 + "px wide · " + Math.round(_jlLead) + "px left / " + Math.round(_jlTail) + "px right of it", "≤362px (the frame's 402 artboard minus its own 20px gutters), evenly inset — identical layout px at 402x874 and 440x956");
+        chk("line padding 110 above / 178 below the seam", Math.abs(parseFloat(_jlcs.paddingTop) - 110) <= 1 && Math.abs(parseFloat(_jlcs.paddingBottom) - 178) <= 1, _jlcs.paddingTop + " / " + _jlcs.paddingBottom, "110px / 178px — the frame's own, and the 178 IS the sky between the BOOK ONE divider and the home seam");
+      }
+      if (_jlS) { var _jss = getComputedStyle(_jlS); chk("sky side gutters 20px", Math.abs(parseFloat(_jss.paddingLeft) - 20) <= 0.5 && Math.abs(parseFloat(_jss.paddingRight) - 20) <= 0.5, _jss.paddingLeft + " / " + _jss.paddingRight, "20px each side (the .tf-2c .tfw-sky rule; the line adds none of its own)"); }
+      var _jos = document.querySelector("#jrnyCol .jl-disc"), _jls = document.querySelector("#jrnyCol .jl-lstone"), _jns = document.querySelector("#jrnyCol .jl-next-disc"), _jdv = document.querySelector("#jrnyCol .jl-div"), _jbn = document.querySelector("#jrnyCol .jl-lock");
+      chk("open stone 84px", !!_jos && _jos.offsetWidth === 84 && _jos.offsetHeight === 84, _jos ? _jos.offsetWidth + "x" + _jos.offsetHeight : "missing", "84x84");
+      chk("locked stone 74px", !!_jls && _jls.offsetWidth === 74 && _jls.offsetHeight === 74, _jls ? _jls.offsetWidth + "x" + _jls.offsetHeight : "missing", "74x74");
+      // the NEXT stone is the one place the frame's box model differs from this app's: content-box, so 110 + its 4px border renders 118
+      chk("next stone 110px content-box (renders 118)", !!_jns && getComputedStyle(_jns).width === "110px" && _jns.offsetWidth === 118, _jns ? (getComputedStyle(_jns).width + " content / " + _jns.offsetWidth + " rendered · " + getComputedStyle(_jns).boxSizing) : "missing", "110px content-box, 118px outer — border-box would silently shrink it 8px and slide every landing y");
+      chk("book divider 57px tall", !!_jdv && Math.abs(_jdv.offsetHeight - 57) <= 2, _jdv ? _jdv.offsetHeight + "px" : "missing", "57px ±2");
+      chk("chapter gate 98px tall", !!_jbn && Math.abs(_jbn.offsetHeight - 98) <= 2, _jbn ? _jbn.offsetHeight + "px" : "missing", "98px ±2");
+      chk("all 36 chapter names present", jlChapters().length === 35 && JL_NAME.length === 36 && JL_NAME[35] === "The Lantern", jlChapters().length + 1 + " chapters · last \"" + JL_NAME[35] + "\"", "36 chapters, ending on The Lantern (recipes/chapter-cards-36.json)");
+      // OFF-SCREEN ROWS ARE QUIET (the perf law). Read off a row nobody can possibly be looking at — chapter thirty's —
+      // because that is the one the 26,000px column would otherwise animate forever behind David's home board.
+      // (?!\d), not \b: the kicker and the chapter name are one textContent run — "CHAPTER 30The Long Watch" — and there
+      // is no word boundary between "0" and "T", so \b silently matched nothing and this gate never ran.
+      var _ch30 = null; [].slice.call(_jlC ? _jlC.querySelectorAll(".jl-lock") : []).forEach(function (n) { if (/CHAPTER 30(?!\d)/.test(n.textContent)) _ch30 = n; });
+      var _dst = _ch30 ? _ch30.previousElementSibling : null; // DOM runs top-down, so a gate's previous sibling is its own deepest stone
+      if (_dst) {
+        var _dfx = [].slice.call(_dst.querySelectorAll(".jl-fx"));
+        var _dlive = _dfx.filter(function (n) { return getComputedStyle(n).animationPlayState !== "paused"; });
+        chk("deep rows are quiet at home rest", _dst.classList.contains("jl-anim-off") && _dfx.length > 0 && !_dlive.length, (_dst.classList.contains("jl-anim-off") ? "jl-anim-off" : "NOT marked off") + " · " + _dfx.length + " effect nodes, " + _dlive.length + " still running", "the ch30 stone marked jl-anim-off with every .jl-fx node computing animation-play-state:paused");
+        chk("deep rows skip layout (content-visibility)", _dst.classList.contains("jl-deep") && getComputedStyle(_dst).containIntrinsicSize.indexOf("74px") >= 0, (_dst.classList.contains("jl-deep") ? "jl-deep · " : "NOT deep · ") + getComputedStyle(_dst).containIntrinsicSize, "jl-deep carrying contain-intrinsic-size 74px 74px (the row's exact content box, so the column's height is unchanged)");
+      }
+      chk("cascade rows never carry .jl-fx", !(_jlC && _jlC.querySelector(":scope > .jl-fx")), _jlC && _jlC.querySelector(":scope > .jl-fx") ? "a ROW carries .jl-fx" : "no row does", "no row element itself — the pause selector must never be able to reach jlRowIn/jlRowOut");
+      // RESTING AT HOME the line must be HARD HIDDEN — nothing pre-shown behind the board. Re-armed first, exactly as
+      // the render path does it, so this reads the settled state and not a 0ms timer that has not fired yet.
+      var _jw = el("tfWorld");
+      if (_jw && _jlC && wLive() && Math.abs(_jw.scrollTop - wHomeY()) < 40) {
+        try { jcResync(true); jcScrub(jcU(_jw)); } catch (e) {}
+        var _lit = (_jcEls || []).filter(function (n) { return getComputedStyle(n).opacity !== "0"; });
+        chk("line hidden at home rest", !_lit.length, _lit.length ? _lit.length + " of " + (_jcEls || []).length + " landing rows lit" : "all " + (_jcEls || []).length + " landing rows at opacity 0", "every landing-screen row computes opacity 0 — the cascade is the only thing that lights them");
+      }
+    }
     // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The
     // board is one uniform scale of a 402x874 artboard, so with the sentinel above passing, every artboard px in this report renders at
     // x(scale) on the other phone and the PROPORTIONS are identical — that projection is what the two runs verify empirically.
@@ -20523,7 +20925,48 @@
   // (max-height:520px) in index.html), so it costs nothing in portrait and cannot desync from a JS state. Built here rather
   // than written into index.html so the line goes through tr() like every other user-visible string (the I18N contract).
   // The height bound keeps it OFF desktop/tablet-shaped windows, where a wide viewport is legitimate (the dev preview included).
+  // ===== ROTFREE (David 2026-08-26, "when you turn the phone sideways, nothing changes") — SUPERSEDES the guard above.
+  // The portrait lock refused landscape with a black "Turn me upright" panel. This keeps the app's exact portrait layout
+  // and glues it to the device's PHYSICAL portrait axis instead: <body> is given a portrait-shaped box (the landscape
+  // viewport with its dimensions swapped) and counter-rotated by the negative of the device angle, so a sideways phone
+  // shows a sideways app and nothing inside it moves a pixel. ONE ROOT IS ENOUGH BY CONSTRUCTION: a transform on <body>
+  // makes body the containing block for every position:fixed descendant, so all 59 fixed layers (the tracker, the sheets,
+  // the player, the toasts, the nav, the puck) ride the rotation without being enumerated or touched.
+  // PORTRAIT IS A NO-OP: no class, no transform, no inline style — the layout is byte-identical to before this flag.
+  // BOUNDED to phone-shaped landscape (short side ≤ 520px), which is the guard's own law: a wide desktop window is a
+  // legitimate viewport and must stay upright, and the dev preview must stay usable.
+  // ROTFREE = false restores the old behavior exactly (the guard builds again and nothing ever rotates).
+  // SAFE-AREA CAVEAT (v1, accepted): env(safe-area-inset-*) follows the DEVICE, so once we are rotated the notch inset
+  // arrives on what our layout thinks is a side edge. angle 90 (device turned counter-clockwise) puts the island on our
+  // layout's LEFT and the home indicator on our RIGHT; angle 270 mirrors it. Nothing is remapped this round — David asked
+  // for "nothing changes", and remapping the insets is the opposite of that.
+  // DEVICE-UNTESTED: rotation, the notch, and how touch-action:pan-y maps through a rotated ancestor are only honest on the phone.
+  var ROTFREE = true;
+  function rotAngle() { try { var a = (window.screen && screen.orientation && typeof screen.orientation.angle === "number") ? screen.orientation.angle : window.orientation; return ((+a || 0) % 360 + 360) % 360; } catch (e) { return 0; } }
+  function rotOn() { return !!(ROTFREE && window.innerWidth > window.innerHeight && window.innerHeight <= 520); }
+  function appVW() { return rotOn() ? window.innerHeight : window.innerWidth; }  // the app's own viewport, in ITS axis — every viewport-derived number must read these two, never innerWidth/innerHeight
+  function appVH() { return rotOn() ? window.innerWidth : window.innerHeight; }
+  function applyRot() {
+    if (!ROTFREE) return;
+    var b = document.body; if (!b) return;
+    b.classList.add("rot-free");
+    var W = window.innerWidth, H = window.innerHeight;
+    if (!rotOn()) { // portrait (or a legitimately wide window): clear everything and leave no trace
+      if (b.classList.contains("rot-land")) { b.classList.remove("rot-land"); b.style.position = ""; b.style.left = ""; b.style.top = ""; b.style.width = ""; b.style.height = ""; b.style.transformOrigin = ""; b.style.transform = ""; }
+      return;
+    }
+    // The device angle is measured CLOCKWISE from natural, so the app's counter-rotation is its negative. A browser window
+    // that is merely wide reports 0 (no device to ask) — treat that as 90 so the behavior is drivable in the preview.
+    var a = rotAngle(), ccw = (a === 270);
+    b.classList.add("rot-land");
+    b.style.position = "fixed"; b.style.left = "0px"; b.style.top = "0px";
+    b.style.width = H + "px"; b.style.height = W + "px";   // the portrait box: the landscape viewport with its axes swapped
+    b.style.transformOrigin = "0 0";
+    // origin 0 0, so the rotated box has to be walked back onto the screen: -90 lands it above the top edge, +90 to the left of it
+    b.style.transform = ccw ? ("translate(" + W + "px, 0px) rotate(90deg)") : ("translate(0px, " + H + "px) rotate(-90deg)");
+  }
   function buildRotGuard() {
+    if (ROTFREE) return; // the guard is the behavior being replaced — never built, so its media query has nothing to show
     if (el("rotGuard")) return;
     var g = document.createElement("div"); g.id = "rotGuard";
     var mark = document.createElement("i"); mark.className = "ti ti-rotate-rectangle"; g.appendChild(mark);
@@ -20536,11 +20979,15 @@
     load(); try { TTS.applyVoice(); } catch (e) {} loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
     try { devInit(); } catch (e) {}
     try { buildRotGuard(); } catch (e) {}
+    try { applyRot(); } catch (e) {} // ROTFREE: land already-sideways on the counter-rotated axis rather than waiting for a resize
     var tc = el("tree"); if (tc) tc.addEventListener("click", treeTap);
-    window.addEventListener("resize", function () { treeFit(); guardianFit(); if (gameOn) worldFit();
+    var _onViewport = function () { try { applyRot(); } catch (e) {} // ROTFREE FIRST: it resizes the body box every viewport-derived number below is measured against
+      treeFit(); guardianFit(); if (gameOn) worldFit();
       // …and the 2c board's artboard scale + the shelf's measured pad, which are both viewport-derived: without this a rotation
       // (or the keyboard, or iOS's URL bar) leaves the board at the old phone's scale until the next render (2026-08-15).
-      try { wApplyScale(); wMeasurePad(); } catch (e) {} });
+      try { wApplyScale(); wMeasurePad(); } catch (e) {} };
+    window.addEventListener("resize", _onViewport);
+    window.addEventListener("orientationchange", _onViewport); // iOS fires this before the resize settles; running both is idempotent and costs one class toggle
     // (removed v640) The settle() overflow-toggle hack is GONE. Body scroll is now permanently locked in CSS (body{height:100vh;overflow:hidden}). Toggling overflow ''→hidden on every visualViewport 'scroll' + 7 timers was a reflow-thrash loop that FOUGHT the layout on every scroll — the "sometimes it fixes itself, lately nothing does" symptom. The real cause was min-height:100dvh (cold-start dvh under-reports + a scrollable body detaches the fixed bottom bars), fixed in index.html. (David 2026-07-02)
     // @CONTRACT — THE MASTER 1s TICK: re-renders per second (tickCharge) and per minute (renderToday). ANY surface with inputs must be built ONCE + idempotent (the renderStage dataset.mode guard pattern) or this tick wipes what the user is typing. Never tear down the timeline mid-drag / mid-zoom / while the edge inspector is open (guards below).
     var _lastMin = nowMin();
