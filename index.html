@@ -1806,7 +1806,7 @@
   #tfWorld, #tfWorld > .tfw-sky, #tfWorld > .tfw-home, #tfWorld > .tfw-ground{ display:contents; } /* off by default: the container + all three zone wrappers are layout-transparent, so the flow children lay out in .tf-inner exactly as before (ONEPAGE=false, or a staged/guided face where .tf-onehome is dropped) */
   #trackerFull.tf-onepage.tf-onehome #tfWorld > .tfw-sky{ display:block; } /* re-materialize the zones only when the one-page world is active */
   #trackerFull.tf-onepage.tf-onehome #tfWorld > .tfw-ground{ display:block; }
-  #trackerFull.tf-onepage.tf-onehome #tfWorld{ display:block; position:absolute; left:0; right:0; top:0; bottom:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:none; touch-action:pan-y; scrollbar-width:none; box-sizing:border-box; padding:0 20px; }
+  #trackerFull.tf-onepage.tf-onehome #tfWorld{ display:block; position:absolute; left:0; right:0; top:0; bottom:0; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior:none; overflow-anchor:none; touch-action:pan-y; scrollbar-width:none; box-sizing:border-box; padding:0 20px; } /* overflow-anchor:none (2026-08-27): scroll anchoring answers any content-size change above the viewport by silently ADJUSTING scrollTop — with a 26,000px sky above home, a single padding write mid-transition became a position jump. This engine owns its own landings; the browser must never move the column on its behalf. */
   #trackerFull.tf-onepage.tf-onehome #tfWorld::-webkit-scrollbar{ display:none; }
   /* the three zones stack in normal document flow inside the scroller (no snap = continuous, no cuts) */
   #trackerFull.tf-onepage.tf-onehome .tfw-sky{ width:100%; box-sizing:border-box; }
@@ -4473,6 +4473,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1393"></script>
+  <script src="app.js?v=1394"></script>
 </body>
 </html>

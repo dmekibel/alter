@@ -6919,9 +6919,25 @@
   var _worldPosHeals = 0; // heal attempts for the current stranding; cleared on a committed landing and in teardownWorld
   // ---- the orchestrator: called by renderTrackerFull on every calm full-screen home face. Builds/reuses the world, adopts the trail, renders the ground shelf, positions on first open. ----
   var _worldPositioned = false;
+  var _wRenderT = 0;
   function renderOnePageWorld(showGround) {
     if (!ONEPAGE) return;
     var tf = el("trackerFull"); if (!tf) return;
+    // NEVER RENDER INTO A MOVING COLUMN (David 2026-08-27, the two halves of the jitter he could still see: "the rate at
+    // which the cascade is appearing is wrong — sometimes things appear to be already there before the cascade happens",
+    // and "the actual positioning of the scroll jitters"). The master tick runs this every minute-boundary and on every
+    // renderAll — INCLUDING mid-transition. In flight it: rebuilds the shelf (fresh rows land fully visible until the
+    // resync hides them = "already there before the cascade"), re-runs wMeasurePad (padding writes that the browser's
+    // scroll anchoring answers by ADJUSTING scrollTop = the position jump), and re-arms both cascades' resting state
+    // under a running animation. None of that work is urgent: home is a calm face and a transition lasts ~1s. So while
+    // the column is moving — spring flying, finger down, or scroll events within the last 250ms — the render defers to
+    // the settle, coalesced to one run. First-open is exempt (_worldPositioned false: nothing is moving, everything must
+    // build).
+    if (_worldPositioned && (_wAnim || _wTouch || (wNow() - (_wLastT || 0)) < 250)) {
+      clearTimeout(_wRenderT);
+      _wRenderT = setTimeout(function () { try { renderOnePageWorld(showGround); } catch (e) {} }, 300);
+      return;
+    }
     tf.classList.add("tf-onepage");
     // THE ARTBOARD SCALE (see the index.html comment at .tf-inner): on a phone wider than the 402 artboard the whole face is
     // laid out at the artboard's own px and TRANSFORM-scaled to fill the screen, the way Claude Design's frame fills its phone
