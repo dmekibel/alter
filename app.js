@@ -5695,9 +5695,35 @@
         // _wGen++ is the finger's real kill (v1396 trace): `_wStop = true` only holds until the NEXT engine start clears it,
         // and any loop still scheduled at that moment comes back to life. Bumping the generation retires them permanently.
         if (on) { _wTouch = 1; _wHold = null; _wPk = 0; _wDir = 0; _wFlung = false; _wGen++; _wTarget = null; _wStop = true; _wAnim = false; _wStartTop = world.scrollTop; clearTimeout(_wSnapT); magnetAbort(); }
-        else { _wTouch = 0; if (WM) wQueueSnap(140); else magnetArm(); }  // momentum keeps firing scroll events after this; the settle timer waits them out
+        else {
+          _wTouch = 0;
+          // THE FINGER OUTVOTES THE STARVED EVENT STREAM (David's v1397 trace: release v -1.10 by his own finger, _wV -0.14 by
+          // the two scroll events iOS deigned to deliver — and his up-flick was answered with a spring back down to home). The
+          // touch stream samples every 8-16ms and is the gesture's ground truth; scroll events during a fast drag arrive
+          // batched, late, or not at all. On release, if the finger's velocity is decisively larger, it becomes the gesture
+          // velocity — everything downstream (the fling catch, wSnapIntent's pole pick, the spring's seed, wLiveStart's
+          // extrapolation, the cascade pace) reads _wV and is corrected by this one assignment.
+          if (wNow() - _wTvT < 120 && Math.abs(_wTv) > Math.abs(_wV || 0)) {
+            _wV = _wTv; _wDir = _wTv < 0 ? -1 : 1; _wPk = Math.max(_wPk || 0, Math.abs(_wTv)); _wTvLock = wNow();
+            wtLog("tv", Math.round(_wTv * 100));
+          }
+          if (WM) wQueueSnap(140); else magnetArm();  // momentum keeps firing scroll events after this; the settle timer waits them out
+        }
       };
-      world.addEventListener("touchstart", function () { wTouch(true); }, { passive: true });
+      world.addEventListener("touchstart", function (e) { wTouch(true); var _t0 = e.touches && e.touches[0]; if (_t0) { _wTvY = _t0.clientY; _wTvT = wNow(); _wTv = 0; } }, { passive: true }); // …and seed the finger-velocity tracker in the same instant the gesture is declared (the tracker below)
+      // THE ALWAYS-ON FINGER VELOCITY TRACKER (David's v1397 on-device trace: a 134px flick produced TWO scroll events, and
+      // another drag delivered a single event of 126px — iOS starves the main thread of scroll events during a fast drag, so
+      // the smoothed _wV read -0.14px/ms at commit while his finger had actually released at -1.10). The touch stream does
+      // not starve: it samples every 8-16ms, and it is the only ground truth the main thread is given. Cost per move: one
+      // property read and three arithmetic ops — no layout read, no style write, nothing queued — which is why this runs
+      // unconditionally rather than behind the trace's _wtOn gate (that logger stays exactly as it is, diagnostics only).
+      // SIGN: a finger moving DOWN the glass (clientY increasing) scrolls the column UP (scrollTop decreasing), so
+      // scroll-space velocity is the NEGATED clientY rate — the same sign convention _wV carries everywhere else.
+      world.addEventListener("touchmove", function (e) {
+        var t = e.touches && e.touches[0]; if (!t) return;
+        var nw2 = wNow(), dy = t.clientY - _wTvY, dt2 = nw2 - _wTvT;
+        if (dt2 > 0 && _wTvY != null) { var iv2 = -dy / dt2; _wTv = _wTv * 0.45 + iv2 * 0.55; _wTvY = t.clientY; _wTvT = nw2; } // weighted toward the newest sample: the release is what the engine acts on, not the average of the drag
+      }, { passive: true });
       world.addEventListener("touchend", function () { wTouch(false); }, { passive: true });
       world.addEventListener("touchcancel", function () { wTouch(false); }, { passive: true });
       world.addEventListener("pointerdown", function (e) { if (e && e.pointerType !== "mouse") wTouch(true); }, { passive: true }); // Apple Pencil / non-touch pointers land here, not on touchstart
@@ -5820,7 +5846,14 @@
     if (_wLastT) {
       var dt = Math.max(1, nw - _wLastT);
       var iv = (world.scrollTop - (_wLastSt == null ? world.scrollTop : _wLastSt)) / dt;
-      _wV = (_wV || 0) * 0.55 + iv * 0.45;                               // smoothed, so one noisy sample can't fling the column
+      // …BUT NEVER BACK OVER THE FINGER'S VERDICT (same v1397 trace as the touchend override above). The first momentum
+      // event after release is usually the same starved single sample that undersold the drag, and blending it in would
+      // halve the corrected velocity right back to the number that lost his up-flick — the override would be erased one
+      // event after it was made. For 160ms a momentum event may CONFIRM the finger (a stronger iv blends in as normal),
+      // never dilute it. Nothing else in this block is gated: direction, peak, the fling catch all read on as before.
+      var _ivAbs = Math.abs(iv);
+      if (nw - _wTvLock < 160 && _ivAbs < Math.abs(_wV || 0)) { /* the finger's verdict stands; a starved momentum event may confirm it, never dilute it */ }
+      else _wV = (_wV || 0) * 0.55 + iv * 0.45;                          // smoothed, so one noisy sample can't fling the column
       if (Math.abs(iv) > 0.07) _wDir = iv < 0 ? -1 : 1;
       if (!_wAnim) _wPk = Math.max(_wPk || 0, Math.abs(iv));
       // FLING CATCH: a decisive flick doesn't wait for the settle timer — it commits to the destination immediately. Latched once per gesture.
@@ -5840,7 +5873,10 @@
         // encodes for the slow path (`_wStartTop > hy + 40` gates the journey), which is why slow drags never overshot and
         // only decisive flicks did. _wStartTop re-anchors after 220ms of silence, so a second flick from home carries on
         // into the tools exactly as before — what dies is the single unbroken flick that ate the middle zone.
-        if (iv > 0 && st > hy - 6 && st < ty - 6 && _wStartTop >= hy - 6) { _wFlung = true; clearTimeout(_wSnapT); wMeasurePad(); wSpring(wToolsY(), false); } // re-read after the pad: a flick must land on the SAME whole-screen tools the snap would
+        // WHICH DOOR COMMITTED (v1397 trace): path 1 = the fling catch, path 2 = the settle magnet in wMaybeSnap. Two
+        // different decisions produce the same `commit` row, so the trace could only show that SOMETHING sprang and left
+        // us guessing which of the two mis-fired on David's up-flick. One log line per commit path ends the guessing.
+        if (iv > 0 && st > hy - 6 && st < ty - 6 && _wStartTop >= hy - 6) { _wFlung = true; clearTimeout(_wSnapT); wMeasurePad(); wtLog("path", 1); wSpring(wToolsY(), false); } // re-read after the pad: a flick must land on the SAME whole-screen tools the snap would
         // DESCENDING OUT OF THE SKY — but only from inside the transition band (David on device 2026-08-27: "if you're up
         // in the journey and you just do one hard scroll down, it takes you all the way back down to home… it should
         // just be like scrolling in any other iPhone app, the momentum takes you wherever it goes"). v1379 added this
@@ -5848,8 +5884,8 @@
         // line into a flight to home. It is the mirror of the upward rule v1378 fixed, and it takes the mirror bound:
         // the catch belongs to the home↔journey transition, and above the journey landing the phone's own momentum owns
         // the gesture — the same free-scroll law wSnapIntent already encodes past one viewport.
-        else if (iv > 0 && st < hy - 6 && st >= wSkyY() - 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
-        else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
+        else if (iv > 0 && st < hy - 6 && st >= wSkyY() - 6) { _wFlung = true; clearTimeout(_wSnapT); wtLog("path", 1); wSpring(hy, true); }
+        else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wtLog("path", 1); wSpring(hy, true); }
         // THE FLING-CATCH LOCK (David on device 2026-08-26: "it's not letting me go any higher in journey past the
         // beginning"). `st <= hy + 6` is true at home AND everywhere ABOVE the landing, so a hard upward flick taken while
         // already deep in the line fired this branch and sprang to wSkyY() — which is BELOW you up there, so his own
@@ -5859,7 +5895,7 @@
         // (`if (d < -w.clientHeight) return null`). Audited the whole path for siblings: wSnapIntent free-scrolls above the
         // landing, wReSettle is capped at 180px, _wHold is only ever armed at home, worldScrollHome is _worldPositioned-
         // gated, magnetSnap is the WM=false legacy path, and the two door taps are deliberate — this was the only one.
-        else if (iv < -0.7 && st <= hy + 6 && st > wSkyY() + 6 && st > 6 && !_wHold && _wStartTop <= hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(wSkyY(), true); } // only a HARD upward flick that BEGAN at or above home reaches the journey (the one-zone law above)
+        else if (iv < -0.7 && st <= hy + 6 && st > wSkyY() + 6 && st > 6 && !_wHold && _wStartTop <= hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wtLog("path", 1); wSpring(wSkyY(), true); } // only a HARD upward flick that BEGAN at or above home reaches the journey (the one-zone law above)
       }
     }
     _wLastSt = world.scrollTop; _wLastT = nw;
@@ -6390,6 +6426,11 @@
   // _wGen is the ENGINE GENERATION TOKEN and _wTarget the flying engine's declared destination — see wSpring for the
   // trace that made both necessary (David's on-device SCROLL TRACE, v1396).
   var _wGen = 0, _wTarget = null;
+  // THE FINGER'S OWN VELOCITY, measured off the touch stream instead of the scroll stream (v1397 trace — see the tracker
+  // wired in ensureWorld). _wTv is the smoothed scroll-space px/ms, _wTvY/_wTvT the last sample, _wTvLock the moment the
+  // release override fired. These live HERE rather than beside the listeners because onWorldScroll reads _wTvLock and
+  // ensureWorld is its sibling, not its parent — a var declared inside ensureWorld would be invisible to it.
+  var _wTv = 0, _wTvT = 0, _wTvY = null, _wTvLock = 0;
   var _magT = 0, _magRaf = 0, _magAnim = 0, _magHold = 0;
   // ===== OUR OWN SCROLL WRITES, MARKED (David on device 2026-08-27: "the big pink button flickers on and off… and I'm
   // scrolling quickly and it starts going quickly and then it tries to slow itself down, and in the process it does a
@@ -6727,6 +6768,7 @@
     wMeasurePad();                                                    // the tools landing must be a WHOLE screen before we decide to fly to it
     var to = wSnapIntent();
     if (to === null || Math.abs(w.scrollTop - to) < 0.5) return;
+    wtLog("path", 2);                                                   // path 2 = the settle magnet; the fling catch tags its four commits path 1 (see onWorldScroll)
     wSpring(to, to === wHomeY());                                       // soft to home/journey, firm to tools
   }
   // ---- legacy band magnet (WM=false). Kept whole so the flag is a real one-line revert. ----
@@ -21441,9 +21483,13 @@
   function devScrollTraceOverlay() {
     var old = el("devTraceOv"); if (old) { old.remove(); return "closed"; }
     var rows = _wtBuf.slice(), POS = { ev: 1, w: 1, tw: 1, pin: 1, land: 1 };
-    var revs = [], revTs = [], commits = [], commitTs = [], kills = [], cascs = [], prev = null, lastD = 0;
+    var revs = [], revTs = [], commits = [], commitTs = [], kills = [], cascs = [], prev = null, lastD = 0, lastPath = null;
     rows.forEach(function (r) {
-      if (r[1] === "commit") { commits.push("commit @+" + r[0] + "ms  raw " + r[2] + "  started " + r[3] + " (ext " + (r[3] - r[2]) + ")  target " + r[4]); commitTs.push(r[0]); }
+      // WHO COMMITTED. The fling catch and the settle magnet both end in wSpring, so every commit row used to be
+      // authorless and the v1397 up-flick-answered-with-a-bounce could not be pinned on either. Each path logs itself
+      // immediately before its spring, so the nearest preceding `path` row inside 50ms is that commit's author.
+      if (r[1] === "path") { lastPath = r; return; }
+      if (r[1] === "commit") { commits.push("commit @+" + r[0] + "ms  raw " + r[2] + "  started " + r[3] + " (ext " + (r[3] - r[2]) + ")  target " + r[4] + "  via " + ((lastPath && r[0] - lastPath[0] <= 50) ? (lastPath[2] === 1 ? "catch" : "settle") : "?")); commitTs.push(r[0]); }
       else if (r[1] === "kill") kills.push("kill @+" + r[0] + "ms  pre " + r[2] + " post " + r[3] + " (sync " + (r[3] - r[2]) + ")");
       else if (r[1] === "casc") cascs.push("casc @+" + r[0] + "ms  " + (r[2] ? "in" : "out") + " " + (r[3] === 1 ? "home" : r[3] === 2 ? "tools" : "sky"));
       if (!POS[r[1]]) return;                                  // the finger rows (td/tm/tu) are deliberately NOT positions: they are screen coordinates, not scrollTop, and mixing them into this walk would invent reversals out of the sign flip below
