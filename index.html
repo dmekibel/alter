@@ -2003,6 +2003,19 @@
   body.jlx-nocascade #jrnyLine .jl-today, body.jlx-nocascade #jrnyLine .jl-next, body.jlx-nocascade #jrnyLine .jl-stone,
   body.jlx-nocascade #tbxGridTop > *, body.jlx-nocascade .tbx-hero, body.jlx-nocascade .tbx-intro, body.jlx-nocascade .tbx-bento > *, body.jlx-nocascade [data-hc], body.jlx-nocascade [data-hcs]{ animation:none !important; opacity:1 !important; transform:none !important; }
   body.jlx-nopara #jrnyFoot{ transform:none !important; }
+  /* MODE 11 — THE MAGNET, DONE BY THE OS (David 2026-08-27 on mode 10: "when I do a gentle flick, it scrolls faster than
+     I flicked it, so it feels unnatural"). That is the exact weakness of scrollTo({behavior:"smooth"}): a FIXED duration
+     with no velocity handoff, so a soft flick still travels at the browser's pace. CSS scroll-snap has neither problem —
+     iOS runs it on the compositor AND settles it with the momentum the finger actually gave, which is what our JS spring
+     was hand-rolling. `proximity` (not `mandatory`) is the magnet's own law: it engages only near a landing, so reading
+     deep in the line stays free. The three snap points are the three landings, expressed as the zones themselves:
+     home's TOP to the viewport top, the sky's BOTTOM to the viewport bottom (= wSkyY), the ground's BOTTOM to the bottom
+     (= wToolsY, which wMeasurePad already pads to exactly one viewport). The JS spring stands down while this is on —
+     two snap models running at once is the bounce the constitution bans. */
+  body.jlx-snap #trackerFull.tf-onepage.tf-onehome #tfWorld{ scroll-snap-type:y proximity; }
+  body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-home{ scroll-snap-align:start; }
+  body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-sky{ scroll-snap-align:end; }
+  body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-ground{ scroll-snap-align:end; }
   #jlxFps{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 96px); z-index:99999;
     background:#160510e6; color:#fff2f9; font:800 13px/1.25 "Jost",sans-serif; padding:8px 14px; border-radius:12px; text-align:center; pointer-events:none; white-space:pre; }
   /* CONTENT-VISIBILITY IS GONE (David's device video 2026-08-26: scrolled past chapter one the whole line was a VOID —
@@ -4426,6 +4439,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1383"></script>
+  <script src="app.js?v=1384"></script>
 </body>
 </html>
