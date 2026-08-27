@@ -3,6 +3,15 @@
 
 ---
 
+## STATUS UPDATE (2026-08-27 (15), never render into a moving column): v1394
+David re-tested (on v1392) with three flick strengths: jitter in ALL three, and mode 12 did NOT fix it — the self-write hypothesis is dead as the main cause. But his description split the fault precisely: **(a)** "the rate at which the cascade is appearing is wrong — sometimes the things appear to be already there before the cascade happens"; **(b)** "the actual positioning of the scroll jitters."
+**BOTH ARE THE MASTER TICK RENDERING MID-TRANSITION.** renderOnePageWorld runs on every renderAll/minute tick, INCLUDING while the column is moving. In flight it: REBUILDS the shelf (fresh rows land fully visible until the resync hides them — literally "already there before the cascade"); re-runs wMeasurePad, whose padding writes the browser's SCROLL ANCHORING answers by silently adjusting scrollTop (the position jump — with 26,000px of sky above home, one padding write above the viewport moves the world under your finger); and re-arms both cascades' resting state under a running animation.
+**Fixes:** (1) renderOnePageWorld now DEFERS while the column is moving (spring flying, finger down, or scroll events in the last 250ms) — coalesced to one run 300ms after settle; first-open exempt (_worldPositioned false). A transition lasts ~1s and home is a calm face; nothing in that render is urgent. (2) `overflow-anchor:none` on #tfWorld — this engine owns its landings, the browser must never move the column on its behalf.
+**Verified:** anchorCss computes "none"; boots clean; landings unchanged. The tab's 2 recurring gate fails reproduce on SHIPPED builds there (the half-hidden pane starves the wake observer) — environmental, on record since (13).
+**ONE move — David:** fresh.html (v1394), scroll test OFF, the same three-flick test. Cascade timing right? Position still jumping?
+
+---
+
 ## STATUS UPDATE (2026-08-27 (14), the scroll test stops wasting his time): v1393
 David: "switching scroll tests is inconvenient — every time you click one it closes the dev menu and you have to reopen it and click it again. Think of a better way to select the twelfth one." Twelve modes behind a self-closing sheet is twelve open-tap cycles per pass; he is testing constantly right now, so this was costing more than the tests.
 **The readout became the switcher.** It is already on screen while he tests, so the controls live on it: **◀ / ▶ / ✕**, 44px targets (the app's own tap-size rule), the mode name and the live fps in the middle. No dev menu at all once it is up.
