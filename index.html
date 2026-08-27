@@ -2045,7 +2045,13 @@
   body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-sky{ scroll-snap-align:end; }
   body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-ground{ scroll-snap-align:end; }
   #jlxFps{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 96px); z-index:99999;
-    background:#160510e6; color:#fff2f9; font:800 13px/1.25 "Jost",sans-serif; padding:8px 14px; border-radius:12px; text-align:center; pointer-events:none; white-space:pre; }
+    background:#160510e6; color:#fff2f9; font:800 13px/1.25 "Jost",sans-serif; padding:6px 6px; border-radius:12px; text-align:center;
+    display:flex; align-items:center; gap:4px; max-width:calc(100vw - 24px); }
+  #jlxFps .jlx-read{ white-space:pre; padding:2px 6px; flex:1; }
+  #jlxFps .jlx-arrow{ flex:none; width:44px; height:44px; border:none; border-radius:10px; background:#3a2147; color:#fff2f9;
+    font:800 16px/1 "Jost",sans-serif; cursor:pointer; } /* 44px: a real thumb target, per the app's own tap-size rule */
+  #jlxFps .jlx-arrow:active{ background:#ff4fa0; color:#160510; }
+  #jlxFps .jlx-kill{ width:34px; background:#2a1220; color:#c9a4bc; font-size:13px; }
   /* CONTENT-VISIBILITY IS GONE (David's device video 2026-08-26: scrolled past chapter one the whole line was a VOID —
      starfield and puck, no stones, no gates — while the same depth rendered fine in desktop Chrome). iOS Safari was
      failing to materialize the skipped subtrees during scroll in a 26,000px scroller, and once enough rows in a tile
@@ -4467,6 +4473,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1392"></script>
+  <script src="app.js?v=1393"></script>
 </body>
 </html>

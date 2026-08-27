@@ -3,6 +3,15 @@
 
 ---
 
+## STATUS UPDATE (2026-08-27 (14), the scroll test stops wasting his time): v1393
+David: "switching scroll tests is inconvenient — every time you click one it closes the dev menu and you have to reopen it and click it again. Think of a better way to select the twelfth one." Twelve modes behind a self-closing sheet is twelve open-tap cycles per pass; he is testing constantly right now, so this was costing more than the tests.
+**The readout became the switcher.** It is already on screen while he tests, so the controls live on it: **◀ / ▶ / ✕**, 44px targets (the app's own tap-size rule), the mode name and the live fps in the middle. No dev menu at all once it is up.
+**Three things make it one tap:** (a) at OFF the panel STAYS (it used to remove itself, which made ◀ unreachable from a fresh load) and reads "◀ is the last test"; (b) ◀ from OFF WRAPS to the LAST mode — verified live: one tap from OFF lands on **12 · engine ignores its OWN scrolling**, which is the one he actually needs; (c) the chosen mode PERSISTS in localStorage and is restored at boot when dev is on, so a fresh.html reload no longer resets him to OFF.
+**And the dev row no longer closes the sheet:** a row may now return "keep", which leaves the sheet open and relabels the row in place — verified OFF → 1 → 2 without a single reopen. ✕ dismisses the panel outright; the dev row brings it back. All of it dev-only.
+**ONE move — David:** fresh.html (v1393) → one ◀ tap → mode 12 → scroll fast. Does the pink button stop flickering, and does the speed-up-then-jerk go away?
+
+---
+
 ## STATUS UPDATE (2026-08-27 (13), THE PORT OMISSION — behind mode 12): v1392
 David narrowed the jitter properly, and neither mode 5 nor mode 1 fixed it — so it is not the rows and not the sky. His two descriptions: **(a)** "the big pink button flickers on and off — either you scroll to it and see it appear once, or scroll away and see it disappear once, instead of it flickering"; **(b)** "I'm scrolling quickly and it starts going quickly and then it TRIES TO SLOW ITSELF DOWN, and in the process it does a jittery jump."
 **ONE ROOT CAUSE, and it is an omission in the original port.** The design's engine MARKS every scrollTop it writes and ignores those events (`selfW`, **7 places** in Journey Scroll v22). This app's port has **zero**. Consequences, exactly matching his two reports: the engine derives velocity and DIRECTION from its own spring's motion — and `_wDir` is what the cascades read, so the board flips exit/arrive under him (the pink-button flicker); and it can never notice the user's momentum OPPOSING the spring, so iOS's scroll and ours write scrollTop in the same frames and fight ("tries to slow itself down, then jumps").
