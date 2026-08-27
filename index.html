@@ -1955,7 +1955,14 @@
      GRANDCHILD of #jrnyCol and the old child combinator silently stopped matching it — the twenty-one rows nearest the
      landing, the ones most worth pausing, were never paused at all. The descendant form reaches a row wherever it lives,
      and the "no row element ever carries .jl-fx" law above is what still keeps it off jlRowIn / jlRowOut. */
-  #jrnyLine .jl-anim-off .jl-fx{ animation-play-state:paused !important; }
+  /* …and PAUSED IS NOT ENOUGH (David 2026-08-27, once he pinned the chop to the TRANSITIONS rather than to scrolling up
+     the line). Measured during one home→journey transition: 11 animations actually RUNNING and 401 PAUSED. A paused
+     animation is not a free animation — the object still exists, the engine still tracks the element that owns it, and
+     every one of those elements is composited as a whole zone sweeps past, which is precisely what a transition is.
+     `animation:none` DESTROYS the object instead of freezing it. The phase relationship survives untouched because each
+     row's stagger lives in its own NEGATIVE animation-delay (the inline shorthand app.js writes), so when the row wakes
+     the animation restarts already at its correct offset — the shine still travels up the line. */
+  #jrnyLine .jl-anim-off .jl-fx{ animation:none !important; }
   /* …AND A SLEEPING ROW DROPS ITS BLEND LAYERS (David on device 2026-08-26, fast scrolling still chopping). The glisten
      over each stone and the two foils on each gate are `mix-blend-mode:overlay` — iOS pays to blend them per tile even
      with the animation paused, and there are ~296 of them down the line. At opacity 0 the engine skips the layer
@@ -1987,6 +1994,15 @@
   body.jlx-noblend #jrnyLine .jl-glis{ display:none !important; }
   body.jlx-noshadow #jrnyLine .jl-lstone{ box-shadow:none !important; }
   body.jlx-norows #jrnyLine .jl-lstone-row, body.jlx-norows #jrnyLine .jl-lock{ visibility:hidden !important; }
+  /* TRANSITION SUSPECTS (David 2026-08-27: "the choppiness is specifically going from home to journey, from journey to
+     home, and from home to tools and back. NOT actually going up in the journey"). That is a different machine entirely:
+     during a transition the spring writes scrollTop every frame on the main thread WHILE three cascades animate ~44
+     elements at once (21 landing rows with 3D perspective keyframes, 17 shelf rows, 6 home blocks), the parallax rewrites
+     a transform per scroll event, and both paint-window observers flip dozens of rows as a whole zone sweeps past. */
+  body.jlx-nocascade #jrnyLine .jl-lstone-row, body.jlx-nocascade #jrnyLine .jl-lock, body.jlx-nocascade #jrnyLine .jl-div,
+  body.jlx-nocascade #jrnyLine .jl-today, body.jlx-nocascade #jrnyLine .jl-next, body.jlx-nocascade #jrnyLine .jl-stone,
+  body.jlx-nocascade #tbxGridTop > *, body.jlx-nocascade .tbx-hero, body.jlx-nocascade .tbx-intro, body.jlx-nocascade .tbx-bento > *, body.jlx-nocascade [data-hc], body.jlx-nocascade [data-hcs]{ animation:none !important; opacity:1 !important; transform:none !important; }
+  body.jlx-nopara #jrnyFoot{ transform:none !important; }
   #jlxFps{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 96px); z-index:99999;
     background:#160510e6; color:#fff2f9; font:800 13px/1.25 "Jost",sans-serif; padding:8px 14px; border-radius:12px; text-align:center; pointer-events:none; white-space:pre; }
   /* CONTENT-VISIBILITY IS GONE (David's device video 2026-08-26: scrolled past chapter one the whole line was a VOID —
@@ -4410,6 +4426,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1381"></script>
+  <script src="app.js?v=1382"></script>
 </body>
 </html>

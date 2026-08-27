@@ -3,6 +3,15 @@
 
 ---
 
+## STATUS UPDATE (2026-08-27 (4), THE MISUNDERSTANDING + 401 paused animations): v1382
+**DAVID CORRECTED THE PROBLEM STATEMENT, and it invalidated four rounds of work:** "the choppiness is specifically going from home to journey, from journey to home, and from home to tools and back. NOT actually going up in the journey." Every fix since v1376 (paint window, texture layer promotion, wash removal, bitmap stars) targeted DEEP-LINE SCROLLING, which was never the complaint. LESSON, permanent: pin WHICH gesture before optimizing — "choppy" is not a location.
+**THE REAL CAUSE, measured in one transition:** 11 animations RUNNING · **401 PAUSED**. A paused animation is not a free animation — the object still exists and the engine still tracks the element that owns it, and a transition is precisely the moment every one of those elements is composited as a whole zone sweeps past. `animation-play-state:paused` (the v1376 mechanism, and the frame's own idiom) was the wrong tool at this scale. Now `animation:none` DESTROYS the object. Measured after: **0 paused, 19 running** — the engine tracks 19 animation objects during a transition instead of 412. The design survives because each row's stagger lives in its own NEGATIVE animation-delay, so a waking row restarts already at its correct phase — verified on device-sized preview: a woken stone's glisten runs with delay -4.2s and its blend layer is back at opacity 1.
+**Gates:** two gates FAILED on this change and were right to (they asserted "paused"); both rewritten to the stronger claim — the animation object is GONE, not frozen — and the supersede is named in the code. 97/97 both sizes.
+**Also in:** the scroll test gains three transition-specific modes (7 cascades off · 8 parallax off · 9 both), since the original six only stripped row PAINT, i.e. the wrong machine.
+**DEVICE-UNTESTED:** whether this is THE fix. It is the first change aimed at the gesture he actually named, and it is backed by a real measurement rather than a hypothesis. **ONE move — David:** fresh.html (v1382): home↔journey and home↔tools — smooth now? If not, dev menu → 🎚 Scroll test → try mode 7 (cascades off) and mode 9 during those transitions; whichever helps names what is left.
+
+---
+
 ## STATUS UPDATE (2026-08-27 (3), the lock clock + THE PHONE GETS TO ANSWER): v1381
 David on v1380: chop STILL there (4th report) · the island shows a player while he is in the app · and the lock-screen clock starts at ~0 and only later jumps to the true position.
 **(1) THE LOCK CLOCK — fixed.** `setPositionState` is an ANCHOR, not a readout: iOS draws `position + (now - whenYouSetIt)`. msSync only ran at act boundaries and transport events, so by the time the screen lit the anchor could be minutes stale — a clock that starts wrong and then jumps when something re-syncs it. Now: a `visibilitychange` re-anchor (fires while our JS can still run, so the card is BORN with the true second) + a 5s heartbeat while the card is up. Both armed in msOn, torn down in msOff (a leaked interval would write to a card this player no longer owns).

@@ -20616,12 +20616,12 @@
       var _dst = _ch30 ? _ch30.previousElementSibling : null; // DOM runs top-down, so a gate's previous sibling is its own deepest stone
       if (_dst) {
         var _dfx = [].slice.call(_dst.querySelectorAll(".jl-fx"));
-        var _dlive = _dfx.filter(function (n) { return getComputedStyle(n).animationPlayState !== "paused"; });
+        var _dlive = _dfx.filter(function (n) { try { return n.getAnimations().length > 0; } catch (e) { return getComputedStyle(n).animationName !== "none"; } }); // SUPERSEDES the "…is paused" form of this gate (2026-08-27): a paused animation still exists and is still tracked per element — 401 of them during one transition, which is the transition chop. The rule is now `animation:none`, so the honest assertion is that the object is GONE, not frozen.
         // …and a sleeping row must also drop its BLEND layers, which is the other half of the paint diet: mix-blend-mode
         // costs iOS per tile even with the animation paused, and there are ~296 of them down the line.
         var _dgl = [].slice.call(_dst.querySelectorAll(".jl-glis"));
         var _dglLit = _dgl.filter(function (n) { return getComputedStyle(n).opacity !== "0"; });
-        chk("deep rows are quiet at home rest", _dst.classList.contains("jl-anim-off") && _dfx.length > 0 && !_dlive.length && _dgl.length > 0 && !_dglLit.length, (_dst.classList.contains("jl-anim-off") ? "jl-anim-off" : "NOT marked off") + " · " + _dfx.length + " effect nodes, " + _dlive.length + " running · " + _dgl.length + " blend layers, " + _dglLit.length + " painted", "the ch30 stone marked jl-anim-off, every .jl-fx paused AND every .jl-glis blend layer at opacity 0");
+        chk("deep rows are quiet at home rest", _dst.classList.contains("jl-anim-off") && _dfx.length > 0 && !_dlive.length && _dgl.length > 0 && !_dglLit.length, (_dst.classList.contains("jl-anim-off") ? "jl-anim-off" : "NOT marked off") + " · " + _dfx.length + " effect nodes, " + _dlive.length + " still carrying an animation · " + _dgl.length + " blend layers, " + _dglLit.length + " painted", "the ch30 stone marked jl-anim-off, every .jl-fx animation DESTROYED (not merely paused) AND every .jl-glis blend layer at opacity 0");
         // SUPERSEDES "deep rows skip layout (content-visibility)". content-visibility is GONE — on David's iPhone the line
         // past chapter one rendered as a void because iOS Safari would not materialize the skipped subtrees during scroll.
         // This gate is its inverse: it fails a ship that reintroduces it anywhere on the line.
@@ -20634,8 +20634,8 @@
       var _jlF0 = el("jrnyFoot");
       var _fOff = _jlF0 ? [].slice.call(_jlF0.children).filter(function (n) { return n.classList.contains("jl-anim-off") && n.querySelector(".jl-fx"); })[0] : null;
       if (_fOff) {
-        var _ffx = [].slice.call(_fOff.querySelectorAll(".jl-fx")).filter(function (n) { return getComputedStyle(n).animationPlayState !== "paused"; });
-        chk("sleeping FOOT rows pause too", !_ffx.length, _ffx.length ? _ffx.length + " effect node(s) still running inside #jrnyFoot" : "every .jl-fx in the sampled foot row is paused", "the pause rule is keyed to #jrnyLine, so it reaches rows in #jrnyCol and #jrnyFoot alike");
+        var _ffx = [].slice.call(_fOff.querySelectorAll(".jl-fx")).filter(function (n) { try { return n.getAnimations().length > 0; } catch (e) { return getComputedStyle(n).animationName !== "none"; } });
+        chk("sleeping FOOT rows go quiet too", !_ffx.length, _ffx.length ? _ffx.length + " effect node(s) still carrying an animation inside #jrnyFoot" : "every .jl-fx in the sampled foot row has no animation at all", "the quiet rule is keyed to #jrnyLine, so it reaches rows in #jrnyCol and #jrnyFoot alike");
       }
       var _fxRows = _jlRows.filter(function (n) { return n.classList.contains("jl-fx"); });   // checked across BOTH containers
       chk("cascade rows never carry .jl-fx", !_fxRows.length, _fxRows.length ? _fxRows.length + " ROW(s) carry .jl-fx" : "no row does", "no row element itself — the pause selector must never be able to reach jlRowIn/jlRowOut");
@@ -21163,7 +21163,10 @@
     { k: "jlx-noblend", n: "3 · glisten/foil blend layers OFF" },
     { k: "jlx-noshadow", n: "4 · stone shadows OFF" },
     { k: "jlx-norows", n: "5 · all rows HIDDEN (sky only)" },
-    { k: "jlx-nostars jlx-flat jlx-noblend jlx-noshadow", n: "6 · everything stripped but the layout" }
+    { k: "jlx-nostars jlx-flat jlx-noblend jlx-noshadow", n: "6 · everything stripped but the layout" },
+    { k: "jlx-nocascade", n: "7 · CASCADES off (rows/shelf/board don't animate in)" },
+    { k: "jlx-nopara", n: "8 · sky PARALLAX off" },
+    { k: "jlx-nocascade jlx-nopara", n: "9 · cascades AND parallax off" }
   ];
   var _jlxI = 0, _jlxRaf = 0;
   function jlxApply() {
