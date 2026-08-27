@@ -6748,7 +6748,22 @@
       // tie-break above defaults an UNKNOWN direction to down, and inheriting that here would start yanking people to home while they
       // are reading the trail. The free-scroll guard above (past one viewport = the magnet lets go) is untouched.
       if (v > 0.25 || (Math.abs(v) <= 0.25 && _wDir === 1)) return hy;
-      return (_wStartTop > hy + 40 || -d < w.clientHeight * 0.45) ? hy : wSkyY(); // above home: journey ONLY if this gesture began at home AND cleared 45% of the viewport (notes 20/25/28)
+      // …AND THE MIRROR OF IT: AN EXPLICIT UPWARD GESTURE COMMITS UP, HOWEVER GENTLE (David device 2026-08-28: "if I'm at home and I
+      // gently swipe up, it starts going up, but then it doesn't register… makes all the stuff disappear and then reappear and take me
+      // back to home. It should register that as me trying to go up. If I do it really lightly, it doesn't work"). A light swipe
+      // travels under 45% of a viewport, so the clearance rule below sent him home — and the round trip is visible, because the board
+      // already exited at d < -80 and has to re-arrive, which is the disappear/reappear he is describing. That clearance rule predates
+      // v1398's touch-velocity tracker: back then a gentle gesture had no measurable direction and distance was the only evidence
+      // available. Direction is measurable now, so distance may only break TIES — it must never overrule a direction we actually read.
+      // The one-zone law still holds, and it is the `_wStartTop > hy + 40` half that carries it: that test means the gesture BEGAN
+      // BELOW home, i.e. in the tools, so a drag climbing out of the shelf lands on home and may not fly through it into the journey —
+      // exactly one zone per gesture. (It is NOT a sky-start test; the sky sits at a SMALLER scrollTop than home, so a sky start fails
+      // that comparison. Descending out of the journey is already settled one line above, by the explicit-down check — which is why
+      // this line does not need to re-guard it. Verified through DEV.wIntent at David's 402x874: a tools-start up-drag says home, a
+      // sky-start up-drag says journey, and an explicit-down anywhere in the band says home.)
+      // Same shape, same thresholds, same tie-break as the explicit-down check above — this is its missing other half.
+      if (v < -0.25 || (Math.abs(v) <= 0.25 && _wDir === -1)) return (_wStartTop > hy + 40) ? hy : wSkyY();
+      return (_wStartTop > hy + 40 || -d < w.clientHeight * 0.45) ? hy : wSkyY(); // above home with NO direction read at all (v under the threshold and _wDir still 0 — a gesture that never moved enough to register one): the 45% clearance is now purely that tie-break, the last resort rather than the rule (notes 20/25/28)
     }
     return null;
   }
@@ -6833,6 +6848,14 @@
 
         // FLATTEN (design perf note): a finished `both`-filled animation keeps a compositor layer alive for the whole glide. An EXIT
         // collapses to a plain inline opacity:0 (which is also why the stone can't reappear lit mid-glide, note 5); an ARRIVAL clears out.
+        // …AND CLEARING OUT IS ALSO A HANDOFF, for one block: #tfRing IS .tf-ring (one element, index.html), and on the night face its
+        // resting look is a STYLESHEET animation — `tfNightPulse 7s infinite`. An inline cascade animation silently switches that off
+        // for the whole flight, so the stone rides the transition at the arrival keyframe's opacity 1 (David device 2026-08-28: "it's
+        // BRIGHT, but when it arrives at home, it goes dark"). This line is what gives it back: the ring returns to its own pulse the
+        // moment its pop ends — block 3 of 6, so roughly half a second before hcReset's timer would have done it. The visible half of
+        // that fix is in index.html, where the pulse was phase-shifted to RESUME at .9 instead of .6 so the handoff from 1 is a step
+        // rather than a snap; this hook only decides WHEN the handoff happens. No other block has a stylesheet animation to restore,
+        // which is why the general hcReset timing is left exactly as it is and no per-node hook is needed here.
         if (n._hcExit) { n.style.opacity = "0"; n.style.animation = ""; n._hcExit = false; return; }
         n.style.animation = ""; n.style.opacity = "";
       }); }
@@ -6848,14 +6871,14 @@
     var els = hcEls(), order = dirKey === "down" ? els : els.slice().reverse();
     var name = dirKey === "down" ? "homeSinkDown" : "homeSinkUp";
     order.forEach(function (n, i) { hcPlay(n, name, 0.3, i * 40, "cubic-bezier(.45,0,.75,.4)", true); });
-    // …AND THE DECK TILES LEAVE WITH THE BOARD, both ways. They sit below the Planner row, so they take the bottom slot of the mirror:
-    // on an up-exit (toward the journey) they fold FIRST, left to right, ahead of the board's bottom-to-top climb; on a down-exit
-    // (toward the tools) they fold LAST, after the top-to-bottom sink. Both directions are needed and neither is the shelf's business
-    // — the shelf's cascade never touches these nodes (see tcPeek). Without the up-exit David watches them stand there while the
-    // journey slides in; without the down-exit they are still lit on the glide back up from the tools, which is the "already there"
-    // half of his 2026-08-28 report. Same batch, same hcFlush, no extra reflow.
-    var peek = tcPeek(), pBase = dirKey === "down" ? order.length * 40 : 0;
-    peek.forEach(function (n, j) { hcPlay(n, name, 0.3, pBase + j * 30, "cubic-bezier(.45,0,.75,.4)", true); });
+    // …AND THE DECK TILES LEAVE WITH THE BOARD ON THE JOURNEY SIDE ONLY. v1399 folded them on both exits and David rejected it on the
+    // device the same day: "You made the four things on the bottom disappear when you go from home to tools, but they shouldn't
+    // disappear. That's not how I designed it… when you go from journey down to home, they should appear. That's it." So toward the
+    // TOOLS the tiles stay standing and the board sinks around them — they are the last thing you see of home as the shelf takes over,
+    // which is the composition tfhHeroRow was written for ("the row hugs the bottom band just above the fold invitation"). Toward the
+    // JOURNEY they fold first, left to right, ahead of the board's bottom-to-top climb, because there they must be gone before the
+    // journey→home arrival can bring them back. One direction, one verdict. Same batch, same hcFlush, no extra reflow.
+    if (dirKey === "up") tcPeek().forEach(function (n, j) { hcPlay(n, name, 0.3, j * 30, "cubic-bezier(.45,0,.75,.4)", true); });
     hcFlush();
   }
   function hcArrive(from) { // from "up" (out of the tools) = bottom-to-top, Planner first (note 4). from "down" (out of the journey) = the exact opposite (note 10).
@@ -6869,18 +6892,15 @@
     var name = from === "up" ? "homeRise" : "homeDrop", step = 55, dur = 0.42, t = 0;
     var EASE = "cubic-bezier(.3,1.28,.5,1)";                     // the tools' spring-pop, now the home board's too
     var SWEEP_EASE = "cubic-bezier(.2,.85,.28,1)";               // …except the strip's sweep, which David approved as it is: its keyframe rotates the columns through a 3D perspective, and an overshoot ease on that reads as a wobble rather than a pop
-    // THE FOUR DECK TILES ARE A BEAT OF THIS ARRIVAL (David 2026-08-28: "the four tools on the bottom appear to be already there —
-    // instead they should appear in a cascading manner from left to right, after Planner"). Left to right on a 45ms stagger, one step
-    // after the Planner row's own beat, and the rest of the board resumes AFTER the sweep rather than climbing through it — otherwise
-    // the tiles and the stone start on the same frame and the flow stops reading as one line. They take the board's own keyframe
-    // (homeRise / homeDrop), not the shelf's youRowIn: index.html records that homeRise IS youRowIn's spring-pop rewritten in the
-    // translate/scale properties, so the feel is identical while the DIRECTION stays honest to which way the board is being built.
-    // Coming up out of the tools Planner is the first beat, so the tiles follow it immediately; coming down out of the journey Planner
-    // is the last, so the tiles close the arrival — either way they are the bottom of the board and they read as its final sweep.
-    var peek = tcPeek(), peekDone = false;
-    function hcPeekBeat() { peekDone = true; var b = t; peek.forEach(function (p, j) { hcPlay(p, name, dur, b + j * 45, EASE); }); t = b + peek.length * 45; }
-    order.forEach(function (n, i) {
-      if (from === "up" && i === 1 && peek.length && !peekDone) hcPeekBeat();
+    // THE FOUR DECK TILES CLOSE THE JOURNEY→HOME ARRIVAL, and only that one (David 2026-08-28, rejecting v1399's both-directions read:
+    // "when you go from journey down to home, they should appear. That's it"). Coming DOWN the board builds top-to-bottom, the Planner
+    // row is the last block, and the tiles sit under it — so they are the natural final beat, sweeping left to right on a 45ms stagger.
+    // Coming UP out of the tools this loop is byte-identical to its pre-peek shape: the tiles never left on that exit, so there is
+    // nothing to bring back and nothing to shift the board's timeline for. They take the board's own keyframe (homeDrop), not the
+    // shelf's youRowIn: index.html records that homeRise IS youRowIn's spring-pop rewritten in the translate/scale properties, so the
+    // feel is identical while the DIRECTION stays honest to the way the board is being built.
+    var peek = from === "down" ? tcPeek() : [];
+    order.forEach(function (n) {
       if (n.id === "tfHomeBars") { // the strip sweeps; it never rises as one slab
         n.style.animation = ""; n.style.opacity = ""; n._hcExit = false;
         var cols = hcCols(n);
@@ -6890,7 +6910,8 @@
         t += step + cols.length * 26 * 0.5; // the sweep overlaps the next block rather than blocking on it — the board reads as ONE arrival
       } else { hcPlay(n, name, dur * 1.1, t, EASE); t += step; }
     });
-    if (peek.length && !peekDone) hcPeekBeat(); // the "down" arrival closes on the tiles — and a board reduced to a single laid-out block (the i===1 slot never comes round) falls through to the same append rather than losing the beat
+    peek.forEach(function (p, j) { hcPlay(p, name, dur, t + j * 45, EASE); });
+    if (peek.length) t += peek.length * 45;     // the reset timeout below must cover the tiles too, or hcReset lands mid-sweep and hands a still-animating row back to plain CSS
     hcFlush();
     clearTimeout(_hcT); _hcT = setTimeout(hcReset, Math.round(t + dur * 1000) + 260);
   }
@@ -6921,7 +6942,9 @@
       if (id === "tfHomeBars" && !(WM && tfh2c())) return;
       var n = el(id); if (n && !n._hcExit && n.style.opacity !== "0") { n.style.animation = "none"; n.style.opacity = "0"; }
     });
-    tcPeek().forEach(function (n) { if (!n._hcExit && n.style.opacity !== "0") { n.style.animation = "none"; n.style.opacity = "0"; } }); // the deck tiles are board members here too, on BOTH sides: nothing in the shelf's cascade owns them (see tcPeek), so there is no inbound cascade to fight on the tools side
+    // …and the deck tiles only on the JOURNEY side. On the tools side they never left (David 2026-08-28: they must not disappear
+    // toward the tools), so a hide here would undo his verdict instead of repairing a drift — there is simply nothing to repair there.
+    if (_hcState === "outUp" && d < -200) tcPeek().forEach(function (n) { if (!n._hcExit && n.style.opacity !== "0") { n.style.animation = "none"; n.style.opacity = "0"; } });
   }
   function hcScrub(d) { // d = travel from home. ARM deep in a zone, PLAY on the way back — that ordering is why the cascade can fire mid-glide instead of after landing (notes 19/24/27).
     var w = el("tfWorld"); if (!w) return;
