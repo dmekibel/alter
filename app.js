@@ -5809,6 +5809,7 @@
     var dd = world.scrollTop - wHomeY();
     try { tcScrub(dd / wSpan()); } catch (e) {}
     try { hcScrub(dd); } catch (e) {}
+    if (_wCssSnap) { try { wSnapRegion(world, dd); } catch (e) {} }   // mode 11: mandatory across the transition bands, off above the journey landing (see index.html)
     try { if (JLINE) jcScrub(Math.max(0, Math.min(1, -dd / (world.clientHeight || 1)))); } catch (e) {} // JLINE: the sky's own scrub, on the same one listener — no second watcher
     wScrub();
     if (_wAnim) return;                                                  // the spring owns the column while it runs — never queue against it
@@ -6020,13 +6021,7 @@
   function jlBanner(c) { // a locked chapter's GATE, wearing exactly the ladder rungs that chapter has earned
     var row = document.createElement("div"); row.className = "jl-lock";
     var card = jlAdd(row, "div", "jl-lock-card" + ((c.fx & JL_FX_GLOW) ? " jl-lit jl-fx" : ""));
-    // RAYS SPIN, THEY DO NOT SLIDE (David 2026-08-27: "I like how the patterns are moving left and right, but I don't
-    // think that movement fits the shapes which have radial lines going outwards — those would make more sense if they
-    // just spin within the pattern itself"). A conic gradient IS rays radiating from a centre, and sliding one sideways
-    // reads as the whole sun drifting off its own axis; rotating it reads as the thing turning. Selected by what the
-    // texture actually IS, not by a hand-kept list: any chapter whose fill contains a conic gradient turns instead of
-    // drifting. The other thirty-six-minus-eleven keep David's drift exactly as it was.
-    jlAdd(card, "span", "jl-l-tex jl-fx" + (/conic-gradient/.test(c.tex || "") ? " jl-spin" : ""), "background:" + c.tex + ";");
+    jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : ""), "background:" + c.tex + ";");
     if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
     if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl jl-glis"), "span", "jl-fx");
     if (c.fx & JL_FX_INGLOW) jlAdd(card, "span", "jl-l-inglow");
@@ -6054,7 +6049,23 @@
     // kept intact, so flipping the flag back restores the frame's jitter exactly; only the emission stops. The glisten
     // (mPass) is untouched, and so is every banner effect.
     var jit = JL_JITTER ? ("animation:" + JL_JITV[k % 3] + " " + (9 + 0.8 * (k % 7)).toFixed(1) + "s ease-in-out infinite;animation-delay:" + jd.toFixed(1) + "s;") : "";
-    var st = jlAdd(row, "span", "jl-lstone jl-fx", "background:linear-gradient(rgba(16,6,14,.502),rgba(16,6,14,.502))," + c.tex + ";" + jit); // the leading layer IS the old `inset 0 0 0 999px #10060e80` wash, to the byte (#10060e80 = rgba(16,6,14,.502)) — same pixels, one less shadow layer per stone (see --ss in index.html)
+    // the leading background layer IS the old `inset 0 0 0 999px #10060e80` wash, to the byte (rgba(16,6,14,.502)) — same
+    // pixels, one less shadow layer per stone (see --ss in index.html).
+    var WASH = "linear-gradient(rgba(16,6,14,.502),rgba(16,6,14,.502))";
+    var ray = jlIsRay(c);                                               // "the stones themselves need to spin too, also slowly" (David 2026-08-27)
+    var st = jlAdd(row, "span", "jl-lstone jl-fx", (ray ? "" : "background:" + WASH + "," + c.tex + ";") + jit);
+    if (ray) {
+      // A STONE CANNOT SPIN ITS OWN BACKGROUND — rotating the element would carry the icon round with it. So the fill
+      // moves onto a layer of its own that turns underneath a still glyph. The wash rides WITH it (a uniform sheet looks
+      // identical at every angle), and a square of the circle's own diameter is enough at any rotation, because a
+      // square's inscribed circle does not change when you turn it. DOM order carries the paint order here: texture,
+      // then the icon (positioned, so it lifts above the texture), then the glisten sweeping over both — which is the
+      // same stacking the non-ray stones have always had.
+      jlAdd(st, "span", "jl-lstone-tex jl-fx", "background:" + WASH + "," + c.tex + ";");
+      jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
+      jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
+      return row;
+    }
     jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
     jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
     return row;
@@ -6066,6 +6077,16 @@
   // EVERY ROW, IN VISUAL ORDER, ACROSS BOTH CONTAINERS. Since the parallax pass the line's tail lives in #jrnyFoot, so
   // `col.children` is no longer the row list — it is the deep rows plus one wrapper. Everything that enumerates rows goes
   // through here (jcEls · jlObserve · the gates), which is why the split cost no behaviour anywhere else.
+  // WHICH PATTERNS ARE RAYS (David 2026-08-27: "I don't see why chapter ten is spinning, it's not a ray pattern").
+  // v1385 span-tested for `conic-gradient` and caught eleven chapters, but a conic gradient is not automatically rays:
+  // his own swatch labels in the design file separate them, and HIS LABELS ARE THE TRUTH (the frame-wins order).
+  //   RAYS, and they spin:  9 pinwheel · 11 sunburst · 12 the full spectrum · 17 rays · 23 the palette · 32 arena
+  //   CHECKERS, they drift: 10 checker · 27 crossroads checker   ← ch10 is the one he caught, and he is right
+  //   HOLOS, they drift:     3 holo green · 20 hearth holo · 31 fallow aurora — smooth colour wheels, no lines at all
+  // Kept as a named set rather than a regex: every attempt to infer "rays" from the CSS misreads one of his checkers,
+  // and a wrong guess here is a design error, not a bug.
+  var JL_RAYS = { 9: 1, 11: 1, 12: 1, 17: 1, 23: 1, 32: 1 };
+  function jlIsRay(c) { return !!(c && JL_RAYS[c.ch]); }
   function jlRows() {
     var col = el("jrnyCol"); if (!col) return [];
     var out = [], k = col.children;
@@ -6415,7 +6436,7 @@
   // `scrollTo({behavior:"smooth"})` is compositor-driven on iOS, but it has a fixed easing and no velocity handoff, so it
   // is a FEEL change and only his phone can judge it: it ships OFF, behind scroll-test mode 10, as an A/B he can flip in
   // two taps. If native feels better on the device, the spring's physics come out and this becomes the road.
-  var _wNativeSnap = false, _wNatT = 0, _wCssSnap = false;
+  var _wNativeSnap = false, _wNatT = 0, _wCssSnap = false, _wSnapOn = null;
   function wSpringNative(to) {
     var w = el("tfWorld"); if (!w) return;
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
@@ -6496,6 +6517,16 @@
       return (_wStartTop > hy + 40 || -d < w.clientHeight * 0.45) ? hy : wSkyY(); // above home: journey ONLY if this gesture began at home AND cleared 45% of the viewport (notes 20/25/28)
     }
     return null;
+  }
+  // dd = scrollTop - homeY. Snap is legal from the journey landing (dd = -clientHeight) down through the tools, and
+  // nowhere ABOVE the landing — up there the sky has no snap point at all, so leaving mandatory on would drag a climber
+  // straight back down to the line's start, which is the exact bug v1378 was shipped to kill. The landing itself must be
+  // INSIDE the band (it is a snap target), hence the 6px of slack BELOW it rather than above: enough to include the
+  // landing and absorb sub-pixel rounding, small enough that an upward gesture is free within one frame of travel.
+  function wSnapRegion(w, dd) {
+    var on = dd >= -((w.clientHeight || 1) + 6) && dd <= (wToolsY() - wHomeY()) + 4;
+    if (on === _wSnapOn) return;
+    _wSnapOn = on; document.body.classList.toggle("jlx-snapon", on);
   }
   function wMaybeSnap() {
     if (_wCssSnap) return;                                            // the OS owns the landing in mode 11 — never run two snap models at once
@@ -21226,6 +21257,8 @@
     var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
     _wNativeSnap = mode.k.indexOf("jlx-native") >= 0;   // this one is a JS behaviour, not a paint class
     _wCssSnap = mode.k.indexOf("jlx-snap") >= 0;        // …and this one stands the JS spring down entirely, so the OS is the only thing snapping
+    if (!_wCssSnap) { _wSnapOn = null; document.body.classList.remove("jlx-snapon"); }
+    else { _wSnapOn = null; try { var _sw = el("tfWorld"); if (_sw) wSnapRegion(_sw, _sw.scrollTop - wHomeY()); } catch (e) {} } // prime it: switching mode on while already parked fires no scroll event, so the band would stay unset until the first move
     var box = el("jlxFps");
     if (!_jlxI && box) { box.remove(); if (_jlxRaf) { try { cancelAnimationFrame(_jlxRaf); } catch (e) {} _jlxRaf = 0; } return; } // back to OFF = the meter leaves with it
     if (!box) { box = document.createElement("div"); box.id = "jlxFps"; document.body.appendChild(box); }
