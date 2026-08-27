@@ -6333,8 +6333,33 @@
   var _magT = 0, _magRaf = 0, _magAnim = 0, _magHold = 0;
   function wNow() { try { return performance.now(); } catch (e) { return Date.now(); } }
   // THE THREE ANCHORS. Home is worldHomeTarget() (NOT home.offsetTop) so the spring lands exactly where the boot landing did.
-  function wHomeY() { return worldHomeTarget(); }
-  function wToolsY() { var w = el("tfWorld"); return w ? Math.max(0, w.scrollHeight - w.clientHeight) : 0; }
+  // ===== THE ANCHOR CACHE — and this is very probably THE transition chop (David 2026-08-27; his own scroll-test data
+  // ruled out every paint suspect, which left the machinery, and this is the machinery's hottest read).
+  // wHomeY/wToolsY/wSkyY/wSpan each read LAYOUT — home.offsetTop, scrollHeight, clientHeight — and onWorldScroll alone
+  // calls them SEVEN times per scroll event, with the four scrubs writing inline styles in between. Write, read, write,
+  // read: every read after a write forces a synchronous layout of a 26,000px document, and the spring fires one of these
+  // per animation frame for the whole length of a transition. That is layout thrashing, not painting, which is exactly
+  // why stripping the starfield, the textures, the shadows, the blend layers, the cascades and the parallax all changed
+  // nothing on his phone. Scrolling cannot alter any of these three numbers, so they are computed once and reused until
+  // something that CAN move them says otherwise (wAnchorsDirty: every render, every pad write, resize, teardown).
+  var _wAnchor = null;
+  function wAnchorsDirty() { _wAnchor = null; }
+  function wAnchors() {
+    if (_wAnchor) return _wAnchor;
+    var w = el("tfWorld");
+    if (!w) return { home: 0, tools: 0, sky: 0, span: 1, vh: 1 };
+    var vh = w.clientHeight, hy = worldHomeTarget(), ty = Math.max(0, w.scrollHeight - (vh || 1));
+    var a = { home: hy, tools: ty, sky: Math.max(0, hy - (vh || 1)), span: Math.max(1, ty - hy), vh: vh || 1 };
+    // NEVER CACHE A MEASUREMENT THAT IS NOT REAL YET. The zones are `display:contents` until the one-page classes land,
+    // so an early caller (a scrub during boot) can read clientHeight 0 — and freezing that gives a sky landing one pixel
+    // above home, which is a JOURNEY DOOR THAT DOES NOTHING. Caught in preview before shipping: the door stopped moving
+    // the column at all. Compute-and-return while the column is unmeasurable, and only remember it once it is real.
+    if (!vh || !hy) return a;
+    _wAnchor = a;
+    return _wAnchor;
+  }
+  function wHomeY() { return wAnchors().home; }
+  function wToolsY() { return wAnchors().tools; }
   // THE TOOLS LANDING IS A WHOLE SCREEN (David device frames 2026-08-14 — v1267 shipped broken here, and the break was my own
   // deviation #1: I read the design's _measurePad as cosmetic centering and skipped it. It is not cosmetic. The shelf (~610px) is
   // SHORTER than the viewport, so without a measured pad scrollHeight-clientHeight can never carry home off-screen — 163px of the
@@ -6427,11 +6452,11 @@
     var pad = Math.max(base, Math.round(H - inset - C));                         // inset + block + bottom = one full viewport (floored, never under David's air)
     var curT = parseFloat(g.style.paddingTop), curB = parseFloat(g.style.paddingBottom);
     if (!isFinite(curT)) curT = -1; if (!isFinite(curB)) curB = -1;              // unset inline padding parses to NaN, and NaN fails every comparison — the first write would silently never happen (the v1268 bug)
-    if (Math.abs(curT - padT) > 1) g.style.paddingTop = padT + "px";
-    if (Math.abs(curB - pad) > 1) g.style.paddingBottom = pad + "px";            // write only on a real change — this runs before every snap
+    if (Math.abs(curT - padT) > 1) { g.style.paddingTop = padT + "px"; wAnchorsDirty(); }
+    if (Math.abs(curB - pad) > 1) { g.style.paddingBottom = pad + "px"; wAnchorsDirty(); }            // write only on a real change — this runs before every snap
   }
-  function wSkyY() { var w = el("tfWorld"); return w ? Math.max(0, wHomeY() - w.clientHeight) : 0; }
-  function wSpan() { return Math.max(1, wToolsY() - wHomeY()); } // home→tools travel: the denominator every threshold below is a fraction OF
+  function wSkyY() { return wAnchors().sky; }
+  function wSpan() { return wAnchors().span; } // home→tools travel: the denominator every threshold below is a fraction OF
   function wLive() { var tf = el("trackerFull"), w = el("tfWorld"); return !!(WM && ONEPAGE && w && _worldPositioned && tf && tf.classList.contains("tf-onepage") && tf.classList.contains("tf-onehome")); }
   function wBusy() { return !!(_tbxOpenStack || _tbxOpenCat || _tfhOpen); } // an open dose card / category panel / face card OWNS the column: no snapping, no cascading under it (the design's _stackOpen)
   // ---- THE SPRING: a damped spring integrated in 2ms substeps. While it runs it is the SINGLE authority on scrollTop. ----
@@ -6643,8 +6668,11 @@
     if (down && d > 150 && _tcShown && _hcState !== "outDown") { _hcState = "outDown"; _hcArmUp = true; hcExit("down"); }
     else if (up && d < -80 && _hcState !== "outUp") { _hcState = "outUp"; _hcArmDown = true; hcExit("up"); }
     if (Math.abs(d) < 14 && _hcState !== "outDown" && _hcState !== "outUp" && wNow() - _hcAnimAt > 1900) hcReset(); // parked at home, nothing recent → plain CSS
-    if (_hcArmUp && _wAnim && up && d < 260) { _hcArmUp = _hcArmDown = false; hcArrive("up"); }        // MID-GLIDE: 260px out, while the spring is still flying
-    else if (_hcArmDown && _wAnim && down && d > -260) { _hcArmUp = _hcArmDown = false; hcArrive("down"); }
+    // MID-GLIDE: 260px out, while the spring is still flying — or, in mode 11, while the OS is doing the flying. Without
+    // the second term the board can only arrive on the settle debounce, which is what left David watching home build a
+    // beat AFTER he got there ("it looks like home is already there, and it just appears a second time").
+    if (_hcArmUp && (_wAnim || _wCssSnap) && up && d < 260) { _hcArmUp = _hcArmDown = false; hcArrive("up"); }
+    else if (_hcArmDown && (_wAnim || _wCssSnap) && down && d > -260) { _hcArmUp = _hcArmDown = false; hcArrive("down"); }
     else if (_hcArmUp || _hcArmDown) { clearTimeout(_hcInT); _hcInT = setTimeout(hcMaybeIn, 20); }     // …or on a 20ms-debounced settle, whichever lands first
   }
   // ===== THE TOOLS CASCADE — the shelf's rows, entering bottom-up as you travel down and folding away right-to-left as you leave. =====
@@ -6830,7 +6858,7 @@
     if (_worldPosHeals < 3) {
       _worldPosHeals++;
       try { console.warn("[alter] worldScrollHome: home landing unreached after " + tries + " tries — repairing the sky, heal " + _worldPosHeals + "/3"); } catch (e) {}
-      try { if (JLINE) renderJourneyLine(); else { adoptTrailToSky(); var _ht = el("jpTrail"); if (_ht && !_ht.children.length) drawJourney(false); } } catch (e) {}
+      try { if (JLINE) { renderJourneyLine(); wAnchorsDirty(); } else { adoptTrailToSky(); var _ht = el("jpTrail"); if (_ht && !_ht.children.length) drawJourney(false); } } catch (e) {}
       _worldPosTo = setTimeout(function () { worldScrollHome(0); }, 240);
     } else { try { console.warn("[alter] worldScrollHome: giving up after 3 heals — the one-page world stays unpositioned (wLive off)"); } catch (e) {} }
   }
@@ -6847,10 +6875,11 @@
     // law still reads the design's numbers; only the pixel ratio changes. Capped at 1.15 so a tablet-width window cannot blow
     // the board up past a phone's worth of it. 402-or-narrower → exactly 1 and the class is off (v1283 rendering, untouched).
     try { wApplyScale(); } catch (e) {}
+    wAnchorsDirty();                 // a render can move the column: re-measure the three landings once here rather than sixty times a second during the next transition
     // DOOR-TAP FIX (David 2026-07-22 "the buttons are broken"): #tfBackdrop is a fixed z97 pointer-catcher for the OLD sheet-mode calendar-peek-close. On the full-screen ONE-PAGE home it covers the top 200px — exactly where the door tabs sit (y≈92-172) — and swallows every door tap. The onepage home is a PLACE, not a peel-back sheet: it has no calendar peek to close. Neutralise the backdrop so door taps reach the doors (#tfWorld owns the scroll; you leave via the doors/nav, not by tapping a peek).
     try { var _bd = el("tfBackdrop"); if (_bd) _bd.classList.remove("on"); } catch (e) {}
     ensureWorld();
-    if (JLINE) { renderJourneyLine(); try { jcResyncSoon(); } catch (e) {} } else adoptTrailToSky(); // JLINE: the sky is David's chapter line, built once; the old trail stays home in #jpScroll
+    if (JLINE) { renderJourneyLine(); wAnchorsDirty(); try { jcResyncSoon(); } catch (e) {} } else adoptTrailToSky(); // building the line adds ~26,000px of sky, so the anchors measured before it are meaningless // JLINE: the sky is David's chapter line, built once; the old trail stays home in #jpScroll
     var ground = groundZone();
     if (showGround) { if (ground) ground.style.display = ""; if (TBX2) { try { renderToolbox2(); } catch (e) {} } else renderGroundTools(); } // TBX2: the ground zone IS the Toolbox (Plan + grids + heroes + bento); renderGroundTools stays in the file, unused (flagged in the handoff)
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
@@ -6876,7 +6905,7 @@
     var d = Math.abs(w.scrollTop - wHomeY());
     if (d > 2 && d <= 180) wSpring(wHomeY(), true);
   }
-  function teardownWorld() { // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
+  function teardownWorld() { wAnchorsDirty(); // on leaving home: drop the tf-onepage class, return the trail, re-arm positioning for the next open. Flow content stays inside #tfWorld (harmless — the overlays are what matter, and the next open re-adopts).
     _tfhOpen = null; var _tfc = el("trackerFull"); if (_tfc) _tfc.classList.remove("tfh-cardopen"); // leaving home CLOSES the face card — a fresh home entry is always the calm face with its HUD (David's open-home frame). The per-minute sweep restore inside a visit is untouched: no teardown runs there.
     var tf = el("trackerFull"); if (tf) tf.classList.remove("tf-onepage");
     releaseTrailFromSky();
@@ -21433,7 +21462,7 @@
       treeFit(); guardianFit(); if (gameOn) worldFit();
       // …and the 2c board's artboard scale + the shelf's measured pad, which are both viewport-derived: without this a rotation
       // (or the keyboard, or iOS's URL bar) leaves the board at the old phone's scale until the next render (2026-08-15).
-      try { wApplyScale(); wMeasurePad(true); } catch (e) {} };
+      try { wAnchorsDirty(); wApplyScale(); wMeasurePad(true); wAnchorsDirty(); } catch (e) {} };
     window.addEventListener("resize", _onViewport);
     window.addEventListener("orientationchange", _onViewport); // iOS fires this before the resize settles; running both is idempotent and costs one class toggle
     // (removed v640) The settle() overflow-toggle hack is GONE. Body scroll is now permanently locked in CSS (body{height:100vh;overflow:hidden}). Toggling overflow ''→hidden on every visualViewport 'scroll' + 7 timers was a reflow-thrash loop that FOUGHT the layout on every scroll — the "sometimes it fixes itself, lately nothing does" symptom. The real cause was min-height:100dvh (cold-start dvh under-reports + a scrollable body detaches the fixed bottom bars), fixed in index.html. (David 2026-07-02)
