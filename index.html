@@ -2897,7 +2897,14 @@
   #trackerFull.st-night .tf-verdict{ color:#8a7fb0; font-size:10.5px; letter-spacing:1.4px; }
   #trackerFull.st-night .tf-ring{ animation:tfNightPulse 7s ease-in-out infinite; }
   #trackerFull.st-night .tf-ctx{ color:#7a6f9a; }
-  @keyframes tfNightPulse{ 0%,100%{ opacity:.6; } 50%{ opacity:.9; } }
+  /* PHASE-SHIFTED SO THE CASCADE CAN HAND BACK TO IT (David device 2026-08-28: "when you go from tools up to home or from journey down
+     to home, the circle in the middle… it's in rest mode, the dark one with the moon. It's BRIGHT, but when it arrives at home, it goes
+     dark"). #tfRing and .tf-ring are the SAME element (see the markup below), so the home cascade's INLINE `animation:` replaces this
+     stylesheet one for the whole flight — the ring rides the transition at homeRise/homeDrop's end state, opacity 1, held by `both`.
+     When the inline style is cleared the pulse resumes at its own 0% keyframe, and that used to be .6: a 1 → .6 snap, exactly the "goes
+     dark" he is describing. Same range, same period, same look — only the phase moves, so the resume point is now .9 and the handoff
+     from opacity 1 is a near-invisible step. The trough still reaches .6 half a period later, arrived at by the 7s ease, never by a cut. */
+  @keyframes tfNightPulse{ 0%,100%{ opacity:.9; } 50%{ opacity:.6; } }
   #pullBackdrop{ position:fixed; inset:0; z-index:67; background:rgba(12,4,16,.82); opacity:0; pointer-events:none; transition:opacity .3s; }
   #pullBackdrop.on{ opacity:1; pointer-events:auto; }
   /* reveals BELOW the strip (which stays on top at z70) and stays slightly-not-full-screen — David 2026-06-24 */
@@ -4473,6 +4480,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1399"></script>
+  <script src="app.js?v=1400"></script>
 </body>
 </html>
