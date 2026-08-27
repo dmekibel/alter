@@ -2058,6 +2058,48 @@
      stalled the entire area blanked. Its premise died with the #jrnyFoot fix anyway: the giant composited column it was
      insuring against no longer exists, and the IO pause + this blend-layer diet carry the paint budget on their own.
      Do not reintroduce it here — designAudit's "rows never use content-visibility" gate now fails a ship that tries. */
+  /* ===== THE JOURNEY RAIL (David's "Journey Rail" frame, ported 2026-08-28; every number below is QUOTED from his own
+     tuned slider defaults — spec at _design-sync/journey-rail-2026-08-28/SPEC.md — and nothing here is eyeballed).
+     "It is the thumb and nothing else": no track, no ticks, no plate, no caps, no number riding along. What paints is a
+     pill, a quiet you-are-here dot, and — only under a finger — a chip naming where you would land.
+     WHY IT LIVES ON .tf-inner AND NOT IN THE SCROLLER: #tfWorld owns one gesture and one scroll listener (the whole
+     subject of @SEC:WORLD-MOTION). The rail is an absolute overlay beside the puck and the door hints, so a finger on it
+     can never reach the column underneath and the two can never become two writers racing each other.
+     THE LETTERBOX LAW: these are ARTBOARD px inside the 402 column. top 168 and bottom 191 are FIXED and the height
+     stretches between them on a taller phone — extend, never scale (the same law .tfw-home and #jrnyLine already obey). */
+  .jr-host{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:30; pointer-events:none; }
+  .jr-rail{ position:absolute; right:7px; top:168px; bottom:191px; width:8px; opacity:0; transition:opacity .3s ease; } /* 874-168-191 = the frame's own 515px rail */
+  .jr-host.jr-on .jr-rail{ opacity:1; }
+  /* the pill sits right:-2px INSIDE the box, so its right edge lands 5px from the screen edge (7 - 2) and widening it
+     on grab grows it leftward — the edge David drew never moves. Only OPACITY transitions (the frame's own .3s); the
+     grab widening is instant, because a transition there is a feel nobody designed. */
+  .jr-pill{ position:absolute; right:-2px; top:0; width:10px; height:48px; border-radius:5px; background:hsl(334 100% 65%);
+    box-shadow:inset 0 1px 0 rgba(255,242,249,.2), inset 0 -1px 0 rgba(0,0,0,.28), 0 3px 6px rgba(0,0,0,.45);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; opacity:.31; transition:opacity .3s ease; }
+  .jr-grip{ width:5px; height:2px; border-radius:1px; background:rgba(22,5,16,.45); }
+  .jr-host.jr-awake .jr-pill{ opacity:.86; }                       /* awake = David's pillOpacity; rest = round(.86*36)/100 = .31 */
+  .jr-host.jr-grab .jr-pill{ width:13px; height:52px; border-radius:7px; gap:4px; opacity:.86;
+    box-shadow:inset 0 2px 0 rgba(255,242,249,.2), inset 0 -2px 0 rgba(0,0,0,.28), 0 3px 6px rgba(0,0,0,.45); }
+  .jr-host.jr-grab .jr-grip{ width:7px; }
+  /* s4: scroll away from where you actually are and the rail leaves this behind at your chapter. Quiet by construction —
+     its .42 is its own, not the pill's, so it neither wakes nor sleeps with the thumb. */
+  .jr-dot{ position:absolute; right:1px; top:0; width:7px; height:7px; border-radius:50%; background:#ff4fa0; opacity:.42; }
+  /* THE LANDING CHIP — drawn only while a finger is on the rail. `translate` carries David's chipShiftY so `transform`
+     stays free for the position write (the same translate-not-transform idiom the line's rows and the HUD labels use). */
+  .jr-chip{ position:absolute; right:12px; top:0; display:none; flex-direction:column; gap:3px; align-items:flex-start;
+    padding:2px 9px; background:rgba(20,7,17,.9); border:2px solid #160510; border-radius:12px; box-shadow:0 3px 0 #160510;
+    translate:0 2px; white-space:nowrap; }
+  .jr-host.jr-grab .jr-chip{ display:flex; }
+  .jr-chip-book{ font-size:8.5px; font-weight:800; letter-spacing:1.8px; }
+  .jr-chip-row{ display:flex; align-items:center; gap:3px; }
+  .jr-chip-num{ flex:none; width:26px; height:26px; box-sizing:border-box; border:2px solid #160510; border-radius:9px;
+    display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#160510; }
+  .jr-chip-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16.5px; color:#fff2f9; line-height:1; }
+  /* THE GRAB ZONE — invisible, 44px of real thumb, spanning the rail's range ±13px (top 168-13, bottom 191-13). It takes
+     touches ONLY while the rail is awake, and `touch-action:none` is what stops the page scrolling under the drag, so all
+     three listeners stay passive and nothing ever calls preventDefault on this surface. */
+  .jr-zone{ position:absolute; right:0; top:155px; bottom:178px; width:44px; pointer-events:none; touch-action:none; }
+  .jr-host.jr-awake .jr-zone{ pointer-events:auto; }
   /* the frame's keyframes, verbatim from recipes/j1-style-block.css (jlAlive = its jpAlive, renamed on collision) */
   @keyframes jGlint{ 0%{ transform:translateX(-135%) rotate(0.001deg); } 55%,100%{ transform:translateX(135%) rotate(0.001deg); } }
   @keyframes jlAlive{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.04); } }
@@ -4480,6 +4522,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1400"></script>
+  <script src="app.js?v=1401"></script>
 </body>
 </html>

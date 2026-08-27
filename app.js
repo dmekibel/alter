@@ -1889,7 +1889,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov"; // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov,.jr-zone"; // .jr-zone (2026-08-28): the journey rail's 44px grab strip — a finger there belongs to the rail drag, never to the pane swipe. // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -5798,6 +5798,7 @@
       wPut(bars, "opacity", fp > 0 ? String(1 - fp) : "");
       wPut(bars, "transform", fp > 0 ? ("translateY(" + (-10 * fp).toFixed(1) + "px)") : "");
     }
+    try { jrScrub(); } catch (e) {} // THE JOURNEY RAIL rides here too (grep JRAIL): it is a fifth overlay, so it belongs on the one scrub the one scroll listener already runs — never on a watcher of its own
   }
   // ---- THE ONE SCROLL LISTENER: velocity + direction + the fling catch, then the three scrubs, then the settle timer. ----
   function onWorldScroll() {
@@ -6083,6 +6084,7 @@
   }
   function jlToday(ch, name) {
     var row = document.createElement("div"); row.className = "jl-today";
+    row.dataset.jch = ch;                                     // the RAIL's detent table reads the chapters off the line itself (jrDetents), never off the rendered text — a kicker reword must never move a landing
     var card = jlAdd(row, "div", "jl-today-card");
     jlAdd(jlAdd(card, "span", "jl-today-glint"), "span", "jl-fx");
     var mid = jlAdd(card, "span", "jl-card-mid");
@@ -6113,6 +6115,7 @@
   }
   function jlBanner(c) { // a locked chapter's GATE, wearing exactly the ladder rungs that chapter has earned
     var row = document.createElement("div"); row.className = "jl-lock";
+    row.dataset.jch = c.ch;                                   // …and the gate is that chapter's detent (see jlToday's note)
     var card = jlAdd(row, "div", "jl-lock-card" + ((c.fx & JL_FX_GLOW) ? " jl-lit jl-fx" : ""));
     jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : ""), "background:" + c.tex + ";" + (jlIsRay(c) ? "animation-delay:-" + (((c.ch * 23) % 90) + 5) + "s;" : ""));
     if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
@@ -6453,7 +6456,7 @@
   // nothing on his phone. Scrolling cannot alter any of these three numbers, so they are computed once and reused until
   // something that CAN move them says otherwise (wAnchorsDirty: every render, every pad write, resize, teardown).
   var _wAnchor = null;
-  function wAnchorsDirty() { _wAnchor = null; }
+  function wAnchorsDirty() { _wAnchor = null; _jrBox = null; _jrDet = null; } // the JOURNEY RAIL's railHeight and its chapter→scrollTop table are measured off the same column and go stale on exactly the same events (grep JRAIL) — one invalidation, so the two can never disagree about where the landing is
   function wAnchors() {
     if (_wAnchor) return _wAnchor;
     var w = el("tfWorld");
@@ -7113,6 +7116,218 @@
     if (u2 > 0.3 && !_jcShown && up && !(_wAnim && _wDown)) { _jcShown = true; _jcInAt = wNow(); clearTimeout(_jcInT); _jcInT = setTimeout(function () { jcCascade(1); }, 60); }
     else if (u2 < (down ? 0.45 : 0.06) && _jcShown && wNow() - _jcInAt > 600 && !(_wAnim && _wUp)) { _jcShown = false; clearTimeout(_jcInT); jcCascade(-1); }
   }
+  // ===== THE JOURNEY RAIL (David's "Journey Rail" frame, ported 2026-08-28; grep anchor JRAIL). Spec + his tuned slider
+  // defaults: _design-sync/journey-rail-2026-08-28/SPEC.md. Every px, hex and opacity in this region and in the .jr-*
+  // rules is QUOTED from that file — nothing here is eyeballed or remembered (the token-sheet gate).
+  // WHAT IT IS: a scrollbar for a 26,000px sky, and nothing more than the thumb. It draws PURE DISTANCE — where the pill
+  // sits is where you are in the line, full stop. It wakes to full pink while you scroll and falls back to a third of it
+  // when you stop. Chapters exist only UNDER A FINGER: a drag snaps gate to gate and a chip beside the pill names where
+  // you would land. Always-visible ticks are OUT (David's CALL 1).
+  // WHY IT IS AN OVERLAY: #tfWorld owns ONE gesture and ONE scroll listener (the whole subject of @SEC:WORLD-MOTION, and
+  // the reason that surface has been rebuilt three times). The rail is an absolute child of .tf-inner beside the puck and
+  // the door hints, so its touches never reach the column; and when the drag DOES move the column it does so through the
+  // engine's own doors — one _wGen bump to retire whatever was flying, a _wSelfW mark on every write, _wNoSnap to keep
+  // the settle magnet off the finger. No second scroll listener, no second snap model, no rAF loop.
+  // NOT BUILT, deliberately, and each is David's own switch: the "back to where I am" return chip (`returnChip` false in
+  // his file), the grabbed-state world dim (`worldDim` false), and the frame's haptic tick — an installed iOS PWA has no
+  // vibration API at all, so that one is named and skipped rather than faked.
+  var JR_TOP = 168, JR_BOT = 191;                  // the box's FIXED insets; the height stretches between them (LAW 1: extend, never scale). Mirrored in the .jr-rail rule — these two exist so designAudit and DEV.jrShow quote the same source the CSS does.
+  var JR_PILL_H = 48, JR_PILL_HG = 52;             // rest / grabbed pill height. travel = railHeight - whichever is live.
+  var JR_WAKE_MS = 900;                            // …after the last sky scroll event, the pill falls back to rest
+  var _jrHost = null, _jrRail = null, _jrPill = null, _jrDot = null, _jrChip = null, _jrChipBook = null, _jrChipNum = null, _jrChipName = null, _jrZone = null;
+  var _jrBox = null, _jrDet = null, _jrDrag = null, _jrWakeT = 0, _jrSyncT = 0, _jrLastSt = -1, _jrOn = false, _jrForce = 0;
+  // THE CHIP'S BOOK LINE. Two of the three colours are the line's OWN divider accents (renderJourneyLine passes them);
+  // BOOK TWO is the value David's rail frame actually renders. CONFLICT, flagged in one line per DESIGN AUTHORITY LAW 3:
+  // his rail frame shows BOOK TWO at #7fd4e0 while the line's BOOK TWO divider is #2a9fe0, and the frame is the newer
+  // verdict (LAW 7) — but it speaks for that one book only, so one and three keep the line's accents and read a shade
+  // louder than it. His call whether all three should go to the rail frame's lighter register.
+  var JR_BOOKS = [{ n: "BOOK ONE", c: "#ff4fa0" }, { n: "BOOK TWO", c: "#7fd4e0" }, { n: "BOOK THREE", c: "#8a5cf0" }];
+  function jrBook(ch) { return JR_BOOKS[ch >= 25 ? 2 : (ch >= 13 ? 1 : 0)]; }
+  function jrHue(ch) { // the number tile wears the chapter's own identity colour — its gate KICKER hex, the one flat value the frame gives each chapter (JL_FRAME[1], re-dealt onto 18-36 by jlChapters). Every one of them is light enough to carry the frame's #160510 numeral. Chapter one has no frame row (it is the TODAY card), so it takes BOOK ONE's accent.
+    if (!(ch > 1)) return "#ff4fa0";
+    var cs = jlChapters();
+    for (var i = 0; i < cs.length; i++) if (cs[i].ch === ch) return cs[i].k;
+    return "#ff4fa0";
+  }
+  function jrEnsure() { // built with the world overlays and destroyed with them (jrTeardown), the puck's own lifecycle. Idempotent.
+    if (!ONEPAGE || !JLINE) return null;
+    var inner = document.querySelector("#trackerFull .tf-inner"); if (!inner) return null;
+    if (_jrHost && _jrHost.parentNode === inner) return _jrHost;
+    var host = document.createElement("div"); host.className = "jr-host";
+    var rail = jlAdd(host, "div", "jr-rail");
+    _jrDot = jlAdd(rail, "span", "jr-dot");
+    _jrPill = jlAdd(rail, "span", "jr-pill");
+    for (var i = 0; i < 3; i++) jlAdd(_jrPill, "span", "jr-grip");          // three grips, and they are the only marks on it
+    _jrChip = jlAdd(rail, "div", "jr-chip");
+    _jrChipBook = jlAdd(_jrChip, "span", "jr-chip-book");
+    var crow = jlAdd(_jrChip, "span", "jr-chip-row");
+    _jrChipNum = jlAdd(crow, "span", "jr-chip-num");
+    _jrChipName = jlAdd(crow, "span", "jr-chip-name");
+    _jrZone = jlAdd(host, "div", "jr-zone");
+    inner.appendChild(host);
+    _jrHost = host; _jrRail = rail; _jrBox = null; _jrDet = null; _jrLastSt = -1; _jrOn = false;
+    // PASSIVE, all three. The zone carries touch-action:none, which is what actually stops the page scrolling under the
+    // drag — so there is nothing here to preventDefault, and no non-passive listener anywhere near this scroller.
+    _jrZone.addEventListener("touchstart", jrGrab, { passive: true });
+    _jrZone.addEventListener("touchmove", jrMove, { passive: true });
+    _jrZone.addEventListener("touchend", jrDrop, { passive: true });
+    _jrZone.addEventListener("touchcancel", jrDrop, { passive: true });
+    return host;
+  }
+  function jrTeardown() {
+    clearTimeout(_jrWakeT); clearTimeout(_jrSyncT); _jrSyncT = 0; _jrDrag = null; _jrForce = 0;
+    if (_jrHost && _jrHost.parentNode) _jrHost.parentNode.removeChild(_jrHost);
+    _jrHost = _jrRail = _jrPill = _jrDot = _jrChip = _jrChipBook = _jrChipNum = _jrChipName = _jrZone = null;
+    _jrBox = null; _jrDet = null; _jrOn = false; _jrLastSt = -1;
+  }
+  function jrBox() { // railHeight + the two travels, measured ONCE and reused. Invalidated by wAnchorsDirty, exactly like the three landings — the scroll path may never touch layout (the anchor-cache law at wAnchors).
+    if (_jrBox) return _jrBox;
+    if (!_jrRail) return null;
+    var h = _jrRail.offsetHeight; if (!h) return null;
+    _jrBox = { h: h, t: h - JR_PILL_H, tg: h - JR_PILL_HG };
+    return _jrBox;
+  }
+  function jrDetents() { // chapter → scrollTop, and the you-are-here row's scrollTop, from the LINE'S OWN geometry. Cached; invalidated with the anchors. Never called from the scroll path.
+    if (_jrDet) return _jrDet;
+    var w = el("tfWorld"), col = el("jrnyCol"); if (!w || !col) return null;
+    var sky = wSkyY(); if (!(sky > 0)) return null;
+    var g = jlGeom(); if (!g.rows.length) return null;
+    // THE COLUMN'S TOP, in the scroller's own coordinate space, read once. #jrnyCol carries no transform (the parallax
+    // lives on #jrnyFoot since v1376) so its rect is honest — but a rect answers in VISUAL px while scrollTop is LAYOUT
+    // px, so the artboard scale has to come back out. Every row y AFTER this is pure offsetHeight arithmetic (jlGeom's
+    // running sum), which no transform anywhere can lie about.
+    var top;
+    try {
+      var _as = tfScale() || 1;
+      top = w.scrollTop + (col.getBoundingClientRect().top - w.getBoundingClientRect().top) / _as;
+    } catch (e) { return null; }
+    var raw = [], dot = null, prev = 0;
+    for (var i = 0; i < g.rows.length; i++) {
+      var r = g.rows[i], ch = r.n.dataset ? +(r.n.dataset.jch || 0) : 0;
+      if (ch) {
+        var y = Math.max(0, Math.min(sky, top + prev));      // a chapter's landing = the scrollTop that parks its own row at the top of the window; the floor is the journey landing itself
+        raw.push({ ch: ch, y: y });
+        if (r.n.classList.contains("jl-today")) dot = y;      // the line's own current-chapter marker IS the source; the rail invents no second idea of where you are
+      }
+      prev = r.bot;
+    }
+    if (!raw.length) return null;
+    // The foot of the line sits BELOW the journey landing (that is what the landing shows), so the last chapters clamp
+    // onto the same y. Collapse them, keeping the deepest — otherwise the bottom of the rail would be several detents
+    // that all mean "the landing".
+    var list = [];
+    for (var j = 0; j < raw.length; j++) {
+      if (list.length && Math.abs(list[list.length - 1].y - raw[j].y) < 1) list[list.length - 1] = raw[j];
+      else list.push(raw[j]);
+    }
+    _jrDet = { list: list, dot: dot, sky: sky };
+    return _jrDet;
+  }
+  function jrPlaceDot() { // repositioned when the rail is built or the line moves — never per scroll frame (it cannot move while you scroll: it marks where you ARE, not where you are looking)
+    if (!_jrDot) return;
+    var d = jrDetents(), b = jrBox();
+    if (!d || !b || d.dot == null) { _jrDot.style.display = "none"; return; }
+    _jrDot.style.display = "";
+    var u = Math.max(0, Math.min(1, d.dot / (d.sky || 1)));
+    _jrDot.style.transform = "translateY(" + Math.round(u * b.t + Math.round(JR_PILL_H / 2) - 4) + "px)"; // the frame's own centring math: chapterTop + round(pillH/2) - 4
+  }
+  function jrSyncSoon() { // mirrors jcResyncSoon: deferred + coalesced, so the caches are rebuilt AFTER the whole render pass has settled, whatever order the renderers took
+    if (_jrSyncT) return;
+    _jrSyncT = setTimeout(function () { _jrSyncT = 0; try { if (!jrEnsure()) return; _jrBox = null; _jrDet = null; jrBox(); jrPlaceDot(); jrScrub(); } catch (e) {} }, 0);
+  }
+  // ---- THE POSITION, on the ONE scroll listener. Called from wScrub, which every branch of onWorldScroll already runs,
+  // so the rail adds no watcher of its own. In the steady state it does ZERO layout reads: scrollTop is the only thing it
+  // asks the DOM for, wSkyY() is the cached anchor, and railHeight was measured when the world last changed shape. ----
+  function jrScrub() {
+    var host = _jrHost; if (!host) return;
+    var w = el("tfWorld"); if (!w) return;
+    var st = w.scrollTop;
+    // VISIBLE ONLY IN THE SKY. At home and down in the tools it is gone outright — opacity 0, and the grab zone dead with
+    // it (the .jr-awake rule is what arms that zone, and this drops the class). The 40px of slack keeps it lit while the
+    // landing settles rather than blinking off on the last pixel of the arrival.
+    var on = _jrForce ? true : (!!wLive() && st <= wSkyY() + 40);
+    if (on !== _jrOn) {
+      _jrOn = on; host.classList.toggle("jr-on", on);
+      if (!on) { jrDrop(); host.classList.remove("jr-awake"); clearTimeout(_jrWakeT); }
+    }
+    if (!on) return;
+    var b = jrBox(); if (!b) return;
+    var sky = wSkyY(), u = sky > 0 ? Math.max(0, Math.min(1, st / sky)) : 0;
+    wPut(_jrPill, "transform", "translateY(" + Math.round(u * (_jrDrag ? b.tg : b.t)) + "px)"); // through wPut for the same reason every other scrub write is: an identical assignment still dirties style on WebKit, and this one fires per frame of every transition
+    if (st !== _jrLastSt) {                                  // a REAL move. A render calls wScrub with the column parked, and that must never wake the rail.
+      _jrLastSt = st;
+      if (!host.classList.contains("jr-awake")) host.classList.add("jr-awake");
+      clearTimeout(_jrWakeT);
+      _jrWakeT = setTimeout(function () { if (!_jrDrag && _jrHost) _jrHost.classList.remove("jr-awake"); }, JR_WAKE_MS);
+    }
+  }
+  // ---- THE DRAG. Guards, in David's own order: the zone is 44px, it arms only while the rail is AWAKE, a release lands
+  // exactly on the nearest gate, and pulling the pill to the floor lands the journey landing. ----
+  function jrGrab(e) {
+    var host = _jrHost;
+    if (!host || !host.classList.contains("jr-on") || !host.classList.contains("jr-awake")) return;
+    var t = e.touches && e.touches[0]; if (!t) return;
+    var w = el("tfWorld"); if (!w || !wLive()) return;
+    var d = jrDetents(), b = jrBox(); if (!d || !b || !d.list.length) return;
+    var r; try { r = _jrRail.getBoundingClientRect(); } catch (err) { return; }
+    if (!r.height) return;
+    // KILL WHATEVER IS FLYING, ONCE. `_wStop = true` alone only holds until the next engine start clears it and any loop
+    // still scheduled comes back to life — bumping the generation token is what retires them permanently (the v1396/1397
+    // trace, and the same line the world's own touchstart runs). From here to the release, this finger owns scrollTop.
+    _wHold = null; _wPk = 0; _wDir = 0; _wFlung = false; _wGen++; _wTarget = null; _wStop = true; _wAnim = false;
+    _wStartTop = w.scrollTop; clearTimeout(_wSnapT);
+    // …and the settle magnet stands down for the length of the drag. _wNoSnap rather than _wTouch deliberately: it is
+    // TIME-BOUNDED and heals itself, where a _wTouch left set by a touchend this overlay never received would kill the
+    // snap engine for the rest of the session (magnetHold's own idiom, for exactly this reason).
+    _wNoSnap = wNow() + 500;
+    var k = r.height / b.h;                                  // visual px per artboard px — the 2c face is one uniform transform-scale, so this one ratio converts the whole gesture
+    var u0 = Math.max(0, Math.min(1, w.scrollTop / (d.sky || 1)));
+    var mid = r.top + (u0 * b.tg + JR_PILL_HG / 2) * k, cap = (JR_PILL_HG / 2) * k;
+    // KEEP THE GRAB OFFSET, CLAMPED TO THE THUMB. Land on the pill and nothing jumps; land above or below it in the 44px
+    // zone and the pill's nearest edge comes to the finger and no further. The alternative — mapping the finger to the
+    // pill's centre outright — teleports the column the instant you touch anywhere in a 515px strip.
+    _jrDrag = { top: r.top, k: k, off: Math.max(-cap, Math.min(cap, t.clientY - mid)), ch: 0 };
+    host.classList.add("jr-grab"); clearTimeout(_jrWakeT);
+    jrTo(t.clientY);
+  }
+  function jrMove(e) { var t = _jrDrag && e.touches && e.touches[0]; if (t) jrTo(t.clientY); }
+  function jrPick(d, y) { // THE DETENT DECISION, in one place. Extracted so DEV.jrLand exercises the shipped arithmetic and not a lookalike copy of it — the preview lies about gestures, it does not lie about this.
+    var best = d.list[0], bd = Math.abs(best.y - y), last = d.list[d.list.length - 1];
+    for (var i = 1; i < d.list.length; i++) { var dd = Math.abs(d.list[i].y - y); if (dd < bd) { bd = dd; best = d.list[i]; } }
+    return y > last.y ? { ch: last.ch, y: d.sky } : best;    // below the last gate there is only one thing to land on: the journey landing
+  }
+  function jrTo(clientY) {
+    var g = _jrDrag, w = el("tfWorld"), b = jrBox(), d = _jrDet || jrDetents(); // a render mid-drag invalidates the table (wAnchorsDirty); rebuild it once rather than let the finger go dead
+    if (!g || !w || !b || !d) return;
+    var local = (clientY - g.off - g.top) / g.k;             // finger → the rail's own artboard px
+    var u = Math.max(0, Math.min(1, (local - JR_PILL_HG / 2) / (b.tg || 1)));
+    var best = jrPick(d, u * d.sky);
+    _wNoSnap = wNow() + 500;
+    if (Math.abs(w.scrollTop - best.y) >= 0.5) { _wSelfW = best.y; w.scrollTop = best.y; wtLog("jr", best.y); } // MARKED, like every other write this app makes to the column
+    // Pill and chip are written HERE off the snapped value rather than waiting for our own scroll event, so the two can
+    // never sit a frame apart. jrScrub's later write is the identical string and wPut swallows it.
+    var py = Math.round((d.sky > 0 ? best.y / d.sky : 0) * b.tg);
+    wPut(_jrPill, "transform", "translateY(" + py + "px)");
+    wPut(_jrChip, "transform", "translateY(" + (py - 3) + "px)");
+    if (best.ch !== g.ch) { g.ch = best.ch; jrChip(best.ch); }
+  }
+  function jrChip(ch) { // the chip names the LANDING: its book, its number in that chapter's own hue, its name
+    if (!_jrChip) return;
+    var bk = jrBook(ch);
+    _jrChipBook.textContent = tr(bk.n); _jrChipBook.style.color = bk.c;
+    _jrChipNum.textContent = String(ch); _jrChipNum.style.background = jrHue(ch);
+    _jrChipName.textContent = tr(JL_NAME[ch - 1] || "");
+  }
+  function jrDrop() { // release: the column is ALREADY on the detent (every move landed there), so nothing moves now. Drop the grab, keep it awake, let the decay timer take it to rest.
+    if (!_jrDrag) return;
+    _jrDrag = null;
+    if (_jrHost) _jrHost.classList.remove("jr-grab");
+    _wV = 0; _wDir = 0; _wPk = 0; _wFlung = false;           // our writes fed the engine a velocity that was never a gesture; clear it before anything downstream reads it
+    _wNoSnap = wNow() + 400;                                 // …and hold the magnet off through the settle timer the release's own scroll events queue, or it would pull the column off the gate it was just placed on
+    clearTimeout(_jrWakeT);
+    _jrWakeT = setTimeout(function () { if (!_jrDrag && _jrHost) _jrHost.classList.remove("jr-awake"); }, JR_WAKE_MS);
+    try { jrScrub(); } catch (e) {}                          // re-seat the pill at the REST travel (railH-48, not railH-52)
+  }
   // ---- the deliberate doors (the two HUD hints + the puck). Each ARMS the cascade, then travels. ----
   // presetting _hcState here defeats hcScrub's own exit guard and silently skips the homeSinkUp cascade (constants-audit find, 2026-08-14); the scroll drives everything, same as the design's goJourney
   function wGoJourney() { var w = el("tfWorld"); if (!w) return; wScrollTo(wSkyY()); }
@@ -7195,7 +7410,7 @@
     // DOOR-TAP FIX (David 2026-07-22 "the buttons are broken"): #tfBackdrop is a fixed z97 pointer-catcher for the OLD sheet-mode calendar-peek-close. On the full-screen ONE-PAGE home it covers the top 200px — exactly where the door tabs sit (y≈92-172) — and swallows every door tap. The onepage home is a PLACE, not a peel-back sheet: it has no calendar peek to close. Neutralise the backdrop so door taps reach the doors (#tfWorld owns the scroll; you leave via the doors/nav, not by tapping a peek).
     try { var _bd = el("tfBackdrop"); if (_bd) _bd.classList.remove("on"); } catch (e) {}
     ensureWorld();
-    if (JLINE) { renderJourneyLine(); wAnchorsDirty(); try { jcResyncSoon(); } catch (e) {} } else adoptTrailToSky(); // building the line adds ~26,000px of sky, so the anchors measured before it are meaningless // JLINE: the sky is David's chapter line, built once; the old trail stays home in #jpScroll
+    if (JLINE) { renderJourneyLine(); wAnchorsDirty(); try { jcResyncSoon(); } catch (e) {} try { jrEnsure(); jrSyncSoon(); } catch (e) {} } else adoptTrailToSky(); // building the line adds ~26,000px of sky, so the anchors measured before it are meaningless // JLINE: the sky is David's chapter line, built once; the old trail stays home in #jpScroll
     var ground = groundZone();
     if (showGround) { if (ground) ground.style.display = ""; if (TBX2) { try { renderToolbox2(); } catch (e) {} } else renderGroundTools(); } // TBX2: the ground zone IS the Toolbox (Plan + grids + heroes + bento); renderGroundTools stays in the file, unused (flagged in the handoff)
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
@@ -7241,6 +7456,7 @@
     if (_jcEls) { _jcEls.forEach(function (n) { n.style.animation = ""; n.style.opacity = ""; }); }
     _jcEls = null; _jcShown = undefined; _jcHard = false;
     try { jlNearAll(); } catch (e) {}   // the paint window dies with the observers (jlObserve re-arms both on the next open); a row left .jl-far with nothing observing it would come back invisible
+    try { jrTeardown(); } catch (e) {}  // …and the JOURNEY RAIL leaves with the rest of the world overlays (grep JRAIL): its four touch listeners and its measured caches describe a column that is about to stop existing
     var _jcC = el("jrnyCol"); if (_jcC) _jcC.style.transform = "";
     var _jcF = el("jrnyFoot"); if (_jcF) _jcF.style.transform = ""; // the parallax layer since the v1376 pass — leaving it composited would hold the texture across a closed world
     if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; } // ONE observer, and it dies with the world — renderJourneyLine re-arms it on the next open
@@ -20629,6 +20845,34 @@
     var b = el("tfHomeBars");
     return { blocks: HC_IDS.map(function (id) { return id + ":" + nm(el(id)); }), cols: b ? [].slice.call(b.children).map(function (c) { return nm(c); }) : [], rows: tcEls().slice(0, 4).map(nm) };
   };
+  // THE JOURNEY RAIL, FORCED VISIBLE (grep JRAIL). The rail only paints while the column is up in the sky, and the preview
+  // cannot honestly put it there (a programmatic scrollTop fires no scroll event, and the pane freezes rAF) — so a hidden
+  // overlay would measure as nothing and "verified" would mean "I saw a blank strip". This pins it on and hands back its
+  // computed geometry to diff against SPEC.md. DEV.jrShow(false) puts it back under the engine's own rule.
+  window.DEV.jrShow = function (on) {
+    _jrForce = (on === false) ? 0 : 1;
+    try { if (!jrEnsure()) return "jrShow: no world overlays (open home first)"; _jrBox = null; _jrDet = null; jrBox(); jrPlaceDot(); jrScrub(); if (_jrForce) _jrHost.classList.add("jr-awake"); else _jrHost.classList.remove("jr-awake"); } catch (e) { return "jrShow: " + e; }
+    if (!_jrRail || !_jrPill) return "jrShow: the rail did not build";
+    var r = getComputedStyle(_jrRail), p = getComputedStyle(_jrPill), d = getComputedStyle(_jrDot), gp = getComputedStyle(_jrPill.firstChild), c = getComputedStyle(_jrChip);
+    var b = jrBox() || {}, det = jrDetents();
+    return { forced: !!_jrForce, awake: _jrHost.classList.contains("jr-awake"),
+      railInset: r.top + " / " + r.right + " / " + r.bottom, railSize: _jrRail.offsetWidth + "x" + _jrRail.offsetHeight, railZ: getComputedStyle(_jrHost).zIndex,
+      pill: _jrPill.offsetWidth + "x" + _jrPill.offsetHeight, pillRight: p.right, pillRadius: p.borderRadius, pillBg: p.backgroundColor, pillOpacity: p.opacity, pillShadow: p.boxShadow, pillGap: p.rowGap,
+      grip: _jrPill.firstChild.offsetWidth + "x" + _jrPill.firstChild.offsetHeight, gripBg: gp.backgroundColor, gripRadius: gp.borderRadius,
+      dot: _jrDot.offsetWidth + "x" + _jrDot.offsetHeight, dotBg: d.backgroundColor, dotOpacity: d.opacity, dotRight: d.right,
+      chipRight: c.right, chipBg: c.backgroundColor, chipBorder: c.borderTopWidth + " " + c.borderTopColor, chipRadius: c.borderRadius, chipPad: c.padding, chipGap: c.rowGap, chipShift: c.translate,
+      zone: _jrZone.offsetWidth + "x" + _jrZone.offsetHeight + " @ top " + getComputedStyle(_jrZone).top, zoneArmed: getComputedStyle(_jrZone).pointerEvents,
+      travelRest: b.t, travelGrab: b.tg, detents: det ? det.list.length : 0, dotY: det ? Math.round(det.dot) : null, skyY: Math.round(wSkyY()) };
+  };
+  window.DEV.jrDetents = function () { var d = jrDetents(); if (!d) return "no detent table (open home; the line has to be built)"; return { sky: Math.round(d.sky), youAreHere: Math.round(d.dot), gates: d.list.map(function (a) { return a.ch + ":" + Math.round(a.y); }) }; };
+  // THE DRAG'S DECISION, with no touch event anywhere near it. u = where the thumb sits down the rail (0 top, 1 floor) →
+  // the gate it lands on. It calls the SHIPPED jrPick, so this probe cannot pass while the drag is wrong.
+  window.DEV.jrLand = function (u) {
+    var d = jrDetents(); if (!d) return "no detent table";
+    u = Math.max(0, Math.min(1, +u || 0));
+    var p = jrPick(d, u * d.sky);
+    return { u: u, ch: p.ch, book: jrBook(p.ch).n, name: JL_NAME[p.ch - 1], scrollTop: Math.round(p.y), isLanding: Math.abs(p.y - d.sky) < 1 };
+  };
   window.DEV.you = function () { youMenu(); return "you menu"; };
   window.DEV.vital = function () { characterCard(); return "the vital (PARKED 2026-08-20 — unhooked from the gear, not deleted; David is redesigning it)"; };
   window.DEV.oldSettings = function () { settingsSheet(); return "the pre-2026-08-20 settings sheet (PARKED)"; };
@@ -21093,6 +21337,17 @@
           chk("line hidden at home rest", !_lit.length, _lit.length ? _lit.length + " of " + (_jcEls || []).length + " landing rows lit" : "all " + (_jcEls || []).length + " landing rows at opacity 0", "every landing-screen row computes opacity 0 — the cascade is the only thing that lights them");
         }
       }
+      // ===== THE JOURNEY RAIL'S GEOMETRY (2026-08-28, grep JRAIL). STYLE-based, never rect-based, deliberately: the box's
+      // insets are the frame's absolute artboard px and the pill's size is layout px, and the artboard transform can touch
+      // neither — so one run at 402x874 is a statement about David's 440x956 Max too, the same law the line's own gates
+      // above are built on. The rail lives and dies with the world overlays, so a run with no rail SKIPS rather than fails.
+      if (_jrRail && _jrPill) {
+        var _jrcs = getComputedStyle(_jrRail), _jrps = getComputedStyle(_jrPill);
+        var _jrR = parseFloat(_jrcs.right), _jrT = parseFloat(_jrcs.top), _jrB = parseFloat(_jrcs.bottom), _jrPR = parseFloat(_jrps.right);
+        chk("rail box right 7 · top " + JR_TOP + " · bottom " + JR_BOT, Math.abs(_jrR - 7) <= 0.5 && Math.abs(_jrT - JR_TOP) <= 0.5 && Math.abs(_jrB - JR_BOT) <= 0.5 && _jrRail.offsetWidth === 8, _jrcs.top + " / " + _jrcs.right + " / " + _jrcs.bottom + " · " + _jrRail.offsetWidth + "px wide (" + _jrRail.offsetHeight + " tall here)", "top 168 · right 7 · bottom 191 · width 8 — the insets are FIXED and the height stretches between them (515 at the 874 artboard)");
+        chk("rail pill 10x48 at rest", _jrPill.offsetWidth === 10 && _jrPill.offsetHeight === 48 && Math.abs(parseFloat(_jrps.borderRadius) - 5) <= 0.5, _jrPill.offsetWidth + "x" + _jrPill.offsetHeight + " r" + _jrps.borderRadius, "10x48, radius 5 — David's tuned pillWidth/pillHeight (it becomes 13x52 r7 only under a finger)");
+        chk("rail pill right edge 5px from the screen edge", isFinite(_jrPR) && Math.abs((_jrR + _jrPR) - 5) <= 0.5, "rail right " + _jrcs.right + " · pill right " + _jrps.right + " = " + Math.round((_jrR + _jrPR) * 10) / 10 + "px", "7 + (-2) = 5px — the pill OVERHANGS its box, so widening it on grab grows it leftward and its right edge never moves");
+      } else out.push("SKIP · journey rail geometry · the rail is not built (it is created and destroyed with the world overlays)");
     }
     // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The
     // board is one uniform scale of a 402x874 artboard, so with the sentinel above passing, every artboard px in this report renders at
