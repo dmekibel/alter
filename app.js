@@ -21263,7 +21263,7 @@
     requestAnimationFrame(frame);
   }); };
   function devBtnVisible() { try { var b = el("devBtn"); if (!b) return; var onStart = !!(el("startScreen") && el("startScreen").classList.contains("on")); var keep = false; try { keep = localStorage.getItem("alter_dev") === "1"; } catch (e) {} b.style.display = (onStart || keep) ? "flex" : "none"; } catch (e) {} } // David 2026-07-20: the dev button shows on the START SCREEN always; after Start it stays ONLY if the start-screen toggle kept it on (alter_dev)
-  function devInit() { try { if (devOn()) tunerApply(); } catch (e) {} // DESIGN TUNER: reapply saved tuning ONLY when dev is on (normal users never load the vars → CSS falls back to the approved defaults)
+  function devInit() { try { if (devOn()) tunerApply(); } catch (e) {} try { if (devOn()) jlxLoad(); } catch (e) {} // and restore whichever scroll-test mode was left on — a normal user never has dev on, so this can never reach them // DESIGN TUNER: reapply saved tuning ONLY when dev is on (normal users never load the vars → CSS falls back to the approved defaults)
     if (el("devBtn")) { devBtnVisible(); return; } var b = document.createElement("button"); b.id = "devBtn"; b.textContent = "🛠"; var _l = 6, _t = 6; try { var p = JSON.parse(localStorage.getItem("alter_devpos") || "{}"); if (p.l != null) _l = p.l; if (p.t != null) _t = p.t; } catch (e) {} b.setAttribute("style", "position:fixed;left:" + _l + "px;top:calc(" + _t + "px + env(safe-area-inset-top));z-index:99999;width:34px;height:34px;border-radius:9px;border:2px solid #b07aff;background:rgba(40,16,48,.92);color:#fff;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:grab;");
     // DRAGGABLE (David 2026-07-20: so it never covers content) — a real drag suppresses the click + persists the position
     var dg = false, mv = false, ox = 0, oy = 0;
@@ -21341,6 +21341,10 @@
     { k: "jlx-selffix", n: "12 · engine ignores its OWN scrolling (jitter + flicker)" }
   ];
   var _jlxI = 0, _jlxRaf = 0;
+  var JLX_KEY = "alter_jlx";
+  function jlxLoad() { try { var v = parseInt(localStorage.getItem(JLX_KEY) || "0", 10); if (v > 0 && v < JLX_MODES.length) { _jlxI = v; jlxApply(); } } catch (e) {} } // a mode survives the reload: David tests through fresh.html, and resetting to OFF on every load is half the inconvenience
+  function jlxSave() { try { localStorage.setItem(JLX_KEY, String(_jlxI)); } catch (e) {} }
+  function jlxGo(i) { _jlxI = (i + JLX_MODES.length) % JLX_MODES.length; jlxApply(); jlxSave(); }
   function jlxApply() {
     var b = document.body; JLX_MODES.forEach(function (m) { m.k.split(" ").forEach(function (c) { if (c) b.classList.remove(c); }); });
     var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
@@ -21350,22 +21354,42 @@
     if (!_wCssSnap) { _wSnapOn = null; document.body.classList.remove("jlx-snapon"); }
     else { _wSnapOn = null; try { var _sw = el("tfWorld"); if (_sw) wSnapRegion(_sw, _sw.scrollTop - wHomeY()); } catch (e) {} } // prime it: switching mode on while already parked fires no scroll event, so the band would stay unset until the first move
     var box = el("jlxFps");
-    if (!_jlxI && box) { box.remove(); if (_jlxRaf) { try { cancelAnimationFrame(_jlxRaf); } catch (e) {} _jlxRaf = 0; } return; } // back to OFF = the meter leaves with it
-    if (!box) { box = document.createElement("div"); box.id = "jlxFps"; document.body.appendChild(box); }
-    box.textContent = mode.n + "\nscroll to measure";
-    if (_jlxRaf) return;
+    // AT "OFF" THE SWITCHER STAYS, THE METER STOPS. Removing the panel at OFF meant the only way back in was the dev
+    // menu — and then ◀ (which wraps to the LAST mode) was unreachable from a fresh load, which is the one tap David
+    // actually wants. So OFF keeps the arrows and drops the measuring; ✕ dismisses the panel outright, and the dev-menu
+    // row brings it back. Dev-only: nothing here exists unless dev tools are on.
+    if (!_jlxI && _jlxRaf) { try { cancelAnimationFrame(_jlxRaf); } catch (e) {} _jlxRaf = 0; }
+    if (!box) {
+      // THE PANEL IS THE SWITCHER (David 2026-08-27: "switching scroll tests is inconvenient — every time you click one
+      // it closes the dev menu and you have to reopen it"). Twelve modes behind a self-closing sheet is twelve open-tap
+      // cycles per pass. The readout is already on screen while he tests, so the arrows live on it: one tap per mode,
+      // no menu at all, and ◀ from OFF wraps straight to the LAST mode — so the newest thing to test is always one tap.
+      box = document.createElement("div"); box.id = "jlxFps";
+      var prev = document.createElement("button"); prev.className = "jlx-arrow"; prev.textContent = "◀";
+      var next = document.createElement("button"); next.className = "jlx-arrow"; next.textContent = "▶";
+      var mid = document.createElement("span"); mid.className = "jlx-read";
+      prev.onclick = function (e) { e.stopPropagation(); jlxGo(_jlxI - 1); };
+      next.onclick = function (e) { e.stopPropagation(); jlxGo(_jlxI + 1); };
+      var kill = document.createElement("button"); kill.className = "jlx-arrow jlx-kill"; kill.textContent = "✕";
+      kill.onclick = function (e) { e.stopPropagation(); var b2 = el("jlxFps"); if (b2) b2.remove(); if (_jlxRaf) { try { cancelAnimationFrame(_jlxRaf); } catch (e2) {} _jlxRaf = 0; } };
+      box.appendChild(prev); box.appendChild(mid); box.appendChild(next); box.appendChild(kill);
+      document.body.appendChild(box);
+    }
+    var read = box.querySelector(".jlx-read");
+    if (read) read.textContent = _jlxI ? (mode.n + "\nscroll to measure") : "scroll test OFF\n\u25c0 is the last test";
+    if (!_jlxI || _jlxRaf) return;
     var n = 0, t0 = 0, worst = 0, last = 0;
     (function loop(t) {
       _jlxRaf = requestAnimationFrame(loop);
       if (!t0) { t0 = t; last = t; return; }
       var gap = t - last; last = t; n++; if (gap > worst) worst = gap;
       if (t - t0 >= 1000) {
-        var f = el("jlxFps"); if (f) f.textContent = JLX_MODES[_jlxI].n + "\n" + Math.round(n * 1000 / (t - t0)) + " fps   ·   worst frame " + Math.round(worst) + "ms";
+        var f = el("jlxFps"); var fr = f && f.querySelector(".jlx-read"); if (fr) fr.textContent = JLX_MODES[_jlxI].n + "\n" + Math.round(n * 1000 / (t - t0)) + " fps   ·   worst frame " + Math.round(worst) + "ms";
         n = 0; t0 = t; worst = 0;
       }
     })(0);
   }
-  function jlxCycle() { _jlxI = (_jlxI + 1) % JLX_MODES.length; jlxApply(); try { toast("Scroll test → " + JLX_MODES[_jlxI].n); } catch (e) {} }
+  function jlxCycle() { jlxGo(_jlxI + 1); try { toast("Scroll test → " + JLX_MODES[_jlxI].n); } catch (e) {} return "keep"; } // "keep" = the dev sheet stays open (see the row handler), so a pass through the modes is taps, not reopens
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
     function _dj(fn) { return function () { var ss = el("startScreen"); if (ss) { ss.classList.remove("on", "leaving"); } try { leaveHomeForPlayer(); } catch (e) {} document.body.classList.remove("tracker", "overworld"); try { fn(); } catch (e) {} }; } // dev jump: drop the start-screen + home cockpit + overworld overlays (body.overworld floats #screen at z70 OVER the game) so the target surface lands unobstructed
@@ -21392,7 +21416,7 @@
  // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
       [(devSimMin() == null ? "🌆 Sim time: OFF (real clock)" : "🌆 Sim time: " + fmt(devSimMin())), function () { var cur = devSimMin(); var v = window.prompt("Simulate time of day, 24h (e.g. 20 or 22:30). Empty or 'off' = real clock.", cur == null ? "20" : fmt(cur)); if (v === null) return; try { toast("dev: " + window.DEV.hour(v.trim())); } catch (e) {} }], // DEV TIME-SIM (David 2026-08-15): see the evening/night home without waiting for the evening — heroes flip at 20:00, the night face at bedHour() (his profile's bedtime, default 24:00) or before 05:00
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], [" · persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], [" · persona: early (day 3)", function () { devLoadPersona("early"); }], [" · persona: building (week 2)", function () { devLoadPersona("building"); }], [" · persona: established (month 1)", function () { devLoadPersona("established"); }], [" · persona: power (all chapters)", function () { devLoadPersona("power"); }]];
-    acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { s.remove(); try { a[1](); } catch (e) {} }; s.appendChild(btn); });
+    acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { var r; try { r = a[1](); } catch (e) {} if (r === "keep") { btn.textContent = "🎚 Scroll test: " + JLX_MODES[_jlxI].n; return; } s.remove(); }; s.appendChild(btn); }); // a row may return "keep" to stay open and relabel itself in place
     var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
     document.body.appendChild(s);
   }
