@@ -1957,6 +1957,14 @@
      with the animation paused, and there are ~296 of them down the line. At opacity 0 the engine skips the layer
      entirely, so a sleeping row paints as a plain textured circle with no blending at all; the wake path restores it. */
   #jrnyLine .jl-anim-off .jl-glis{ opacity:0; }
+  /* THE PAINT WINDOW (David on device 2026-08-27, v1378 STILL choppy). Pausing an animation stops it moving; the row is
+     still rasterized every frame it is composited, and 272 rows of textured circles + four-layer shadows + blend overlays
+     is more paint than a phone can carry through a fling. A row further than ~1.6 viewports from the viewport is hidden
+     from PAINT only — `visibility:hidden` keeps its layout box, so the column height, every landing number and every gate
+     read exactly as before. This is deliberately NOT content-visibility: that one defers LAYOUT, which is the work iOS
+     failed to do in time during a fling and left the whole deep line blank (the v1377 void). Nothing here can fail late:
+     visibility is a paint flag, and app.js reveals a row a full viewport before it can be reached (jlObserve, 1400px). */
+  #jrnyLine .jl-far{ visibility:hidden; }
   /* CONTENT-VISIBILITY IS GONE (David's device video 2026-08-26: scrolled past chapter one the whole line was a VOID —
      starfield and puck, no stones, no gates — while the same depth rendered fine in desktop Chrome). iOS Safari was
      failing to materialize the skipped subtrees during scroll in a 26,000px scroller, and once enough rows in a tile
@@ -4378,6 +4386,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1378"></script>
+  <script src="app.js?v=1379"></script>
 </body>
 </html>

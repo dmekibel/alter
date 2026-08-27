@@ -47,20 +47,31 @@
   function _audioCfg() { return (typeof S !== "undefined" && S && S.audio) ? S.audio : { voice: 1, bg: 1 }; }
   function sharedAudioCtx() {
     try { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; if (!_sharedACtx) _sharedACtx = new AC(); if (_sharedACtx.state === "suspended") { try { _sharedACtx.resume(); } catch (e) {} }
-      // PLAY THROUGH THE RING/SILENT SWITCH (David on device 2026-08-20: "the app sound doesn't work unless the iPhone
-      // speaker is turned on, in other words vibrate is turned off — I want the sound to work regardless"). By default
-      // iOS files web audio under the "ambient" session, which the hardware mute switch silences: correct for a game,
-      // wrong for a guided session the user deliberately started. `navigator.audioSession.type = "playback"` is
-      // WebKit's own opt-out (iOS 16.4+) and is the ONLY supported way — there is no CSS or Web Audio flag for it.
-      // Set on every call because the session can be reset by an interruption (a phone call, another app taking audio).
-      try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) {}
+      // (the session TYPE is no longer set here — see audioClaim/audioIdle below. Claiming "playback" merely to build the
+      // graph is what stopped David's music the instant the app opened, and what left a Now Playing card up with nothing
+      // playing: the category, not the media metadata, is what puts an app on the lock screen.)
       // TWO master buses (David 2026-07-01): every VOICE clip routes through _voiceBus, every ambient/drone through _bgBus → the volume sliders set these and affect ALL audio live, including a running tool.
       if (!_voiceBus) { _voiceBus = _sharedACtx.createGain(); _voiceBus.gain.value = _audioCfg().voice != null ? _audioCfg().voice : 1; _voiceBus.connect(_sharedACtx.destination); }
       if (!_bgBus) { _bgBus = _sharedACtx.createGain(); _bgBus.gain.value = _audioCfg().bg != null ? _audioCfg().bg : 1; _bgBus.connect(_sharedACtx.destination); }
       return _sharedACtx; } catch (e) { return null; }
   }
-  function voiceBus() { sharedAudioCtx(); return _voiceBus; }
-  function bgBus() { sharedAudioCtx(); return _bgBus; }
+  // ===== THE AUDIO SESSION, CLAIMED ONLY WHEN WE ACTUALLY MAKE SOUND (David on device 2026-08-27: "the player at the very
+  // top assumes you're playing audio even though nothing is playing" + "if somebody's listening to music and they open up
+  // this app, music doesn't stop unless you turn on the player"). Both are ONE cause. `navigator.audioSession.type` is
+  // WebKit's category switch (iOS 16.4+), and "playback" means THIS APP IS THE LONG-FORM PLAYER: iOS interrupts whatever
+  // else was playing and puts us on the lock screen — with or without media metadata, which is why v1376's keep-alive
+  // release did not remove the card. sharedAudioCtx() set it on EVERY call, and the context is built during boot for the
+  // voice bank and the volume sliders, so simply opening ALTER killed his music and raised a ghost card.
+  //   "ambient" is the honest idle category: we mix with other audio and take no lock-screen slot.
+  //   "playback" is claimed at the moment sound actually starts, which preserves David's 2026-08-20 law (the ring/silent
+  //   switch must not silence a session he deliberately started) — every sound in the app routes through one of the two
+  //   buses below, so claiming HERE cannot be forgotten by a new tool the way a per-tool call site could.
+  var _asClaimed = false;
+  function audioClaim() { try { if (navigator.audioSession) { navigator.audioSession.type = "playback"; _asClaimed = true; } } catch (e) {} }
+  function audioIdle() { try { if (navigator.audioSession) { navigator.audioSession.type = "ambient"; _asClaimed = false; } } catch (e) {} } // called at boot and at every session end — nothing of ours is sounding, so give the stage back
+  function audioClaimed() { return _asClaimed; }
+  function voiceBus() { sharedAudioCtx(); audioClaim(); return _voiceBus; }
+  function bgBus() { sharedAudioCtx(); audioClaim(); return _bgBus; }
   function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
   // PEACEFUL PAD (David 2026-07-01): the original meditation drone he liked best — an open A pad (A2·E3·A3) with a gentle breathing swell, that slowly + OCCASIONALLY drifts to a warm neighbour chord (F2·C3·A3, common A3 top) and back for a touch of nuance. Reused for the tool bed AND the whole-app music. Returns { stop }.
   var _padLive = 0; // how many peaceful pads are actually sounding — the honest receipt DEV.beds() reads (a lit chip is not a running oscillator)
@@ -5753,7 +5764,18 @@
       // FLING CATCH: a decisive flick doesn't wait for the settle timer — it commits to the destination immediately. Latched once per gesture.
       if (!_wAnim && !_wFlung && Math.abs(iv) > (iv < 0 ? 0.55 : 0.85) && !wBusy() && nw >= _wNoSnap) {
         var hy = wHomeY(), ty = wToolsY(), st = world.scrollTop;
-        if (iv > 0 && st > hy - 6 && st < ty - 6) { _wFlung = true; clearTimeout(_wSnapT); wMeasurePad(); wSpring(wToolsY(), false); } // re-read after the pad: a flick must land on the SAME whole-screen tools the snap would
+        // ONE ZONE PER GESTURE (David on device 2026-08-27: "you might be in the journey, and you might scroll down, and it
+        // might skip home and go straight into the tools. That should never happen. And also from the tools up to the
+        // journey"). Both overshoots came from these branches reading only WHERE YOU ARE, never where the gesture BEGAN.
+        // Descending out of the sky you cross hy, the tools branch's `st > hy - 6` turns true mid-flight, and home is
+        // skipped; the mirror happens climbing out of the tools into the journey branch below. Home is the hinge between
+        // the two zones, so a single gesture may cross exactly one of them: a fling may reach the tools only if it STARTED
+        // at or below home, and the journey only if it STARTED at or above home. This is the same law wSnapIntent already
+        // encodes for the slow path (`_wStartTop > hy + 40` gates the journey), which is why slow drags never overshot and
+        // only decisive flicks did. _wStartTop re-anchors after 220ms of silence, so a second flick from home carries on
+        // into the tools exactly as before — what dies is the single unbroken flick that ate the middle zone.
+        if (iv > 0 && st > hy - 6 && st < ty - 6 && _wStartTop >= hy - 6) { _wFlung = true; clearTimeout(_wSnapT); wMeasurePad(); wSpring(wToolsY(), false); } // re-read after the pad: a flick must land on the SAME whole-screen tools the snap would
+        else if (iv > 0 && st < hy - 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }   // descending out of the sky: home is the destination, and it is reached at the SAME moment it used to be skipped
         else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
         // THE FLING-CATCH LOCK (David on device 2026-08-26: "it's not letting me go any higher in journey past the
         // beginning"). `st <= hy + 6` is true at home AND everywhere ABOVE the landing, so a hard upward flick taken while
@@ -5764,7 +5786,7 @@
         // (`if (d < -w.clientHeight) return null`). Audited the whole path for siblings: wSnapIntent free-scrolls above the
         // landing, wReSettle is capped at 180px, _wHold is only ever armed at home, worldScrollHome is _worldPositioned-
         // gated, magnetSnap is the WM=false legacy path, and the two door taps are deliberate — this was the only one.
-        else if (iv < -0.7 && st <= hy + 6 && st > wSkyY() + 6 && st > 6 && !_wHold) { _wFlung = true; clearTimeout(_wSnapT); wSpring(wSkyY(), true); } // only a HARD upward flick from home reaches the journey
+        else if (iv < -0.7 && st <= hy + 6 && st > wSkyY() + 6 && st > 6 && !_wHold && _wStartTop <= hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(wSkyY(), true); } // only a HARD upward flick that BEGAN at or above home reaches the journey (the one-zone law above)
       }
     }
     _wLastSt = world.scrollTop; _wLastT = nw;
@@ -6039,13 +6061,32 @@
     return { rows: out, H: y };
   }
   var _jlIO = null, _jlIOSeen = false, _jlIOT = 0;
+  // ---- THE PAINT WINDOW (David on device 2026-08-27, v1378 still choppy). Pausing an animation stops it MOVING; the row
+  // is still painted every frame it is composited, and 272 rows of textured circles, four-layer shadows, blend overlays
+  // and foiled gate cards is simply too much paint for a phone to carry through a fling. Rows more than ~1.6 viewports
+  // away are therefore marked .jl-far → `visibility:hidden`, which skips their PAINT while keeping their layout box, so
+  // every landing number, every gate and the whole 25918px column geometry are untouched (that is the difference from
+  // content-visibility, which changed layout on demand and is what iOS failed to materialize during a fling → the v1377
+  // void). visibility is a paint flag with no layout work to fail at, and the 1400px margin means a row is made visible
+  // more than a viewport before it can be reached at any realistic fling speed.
+  var _jlFarIO = null, _jlFarSeen = false, _jlFarT = 0;
+  function jlNearAll() { var r = jlRows(); for (var i = 0; i < r.length; i++) r[i].classList.remove("jl-far"); }
   function jlUnpauseAll() { var r = jlRows(); for (var i = 0; i < r.length; i++) r[i].classList.remove("jl-anim-off"); }
   function jlObserve(col) {
     if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; }
-    clearTimeout(_jlIOT); _jlIOSeen = false; _jlWake = null; clearTimeout(_jlWakeT);
+    if (_jlFarIO) { try { _jlFarIO.disconnect(); } catch (e) {} _jlFarIO = null; }
+    clearTimeout(_jlIOT); clearTimeout(_jlFarT); _jlIOSeen = false; _jlFarSeen = false; _jlWake = null; clearTimeout(_jlWakeT);
     if (!col) return;
     var w = el("tfWorld"), rows = jlRows();
-    if (!w || typeof IntersectionObserver === "undefined") { jlUnpauseAll(); return; } // no observer to be had → everything animates, exactly as it did before this pass
+    if (!w || typeof IntersectionObserver === "undefined") { jlUnpauseAll(); jlNearAll(); return; } // no observer to be had → everything animates and paints, exactly as it did before this pass
+    // the paint window: its own observer, because its margin is an order of magnitude wider than the wake margin and the
+    // two must not be tied together — waking early costs animation frames, painting early only costs raster we will need.
+    _jlFarIO = new IntersectionObserver(function (ents) {
+      _jlFarSeen = true;
+      for (var i = 0; i < ents.length; i++) ents[i].target.classList.toggle("jl-far", !ents[i].isIntersecting); // no deferral either way: this is one class flip, and a row must never be invisible when it arrives
+    }, { root: w, rootMargin: "1400px 0px" });
+    for (var f = 0; f < rows.length; f++) _jlFarIO.observe(rows[f]);
+    _jlFarT = setTimeout(function () { if (!_jlFarSeen && el("jrnyCol")) { try { console.warn("[alter] jlObserve: no paint-window entries — showing the whole line"); } catch (e) {} jlNearAll(); } }, 1500); // the same deadman law as the wake observer: never ship an invisible line
     _jlIO = new IntersectionObserver(function (ents) {
       _jlIOSeen = true;
       for (var i = 0; i < ents.length; i++) {
@@ -6097,7 +6138,7 @@
     // BUILD-ONCE, counted across BOTH containers. col.children is 252 since the parallax split (251 deep rows + the
     // foot), so counting it against JL_ROWS made this guard fail forever and the whole line was rebuilt on every render —
     // which re-armed the observer constantly and left every row born-paused, i.e. a permanently dark journey.
-    if (line && col && jlRows().length === JL_ROWS) { if (!_jlIO) jlObserve(col); return line; } // reused: only re-arm what a teardown could have invalidated
+    if (line && col && jlRows().length === JL_ROWS) { if (!_jlIO || !_jlFarIO) jlObserve(col); return line; } // reused: only re-arm what a teardown could have invalidated
     if (!line) { line = document.createElement("div"); line.id = "jrnyLine"; sky.insertBefore(line, sky.firstChild); }
     while (line.firstChild) line.removeChild(line.firstChild);
     col = document.createElement("div"); col.id = "jrnyCol"; line.appendChild(col);
@@ -6116,7 +6157,7 @@
       rows.push(jlBanner(c));
       for (var j = 0; j < c.cnt; j++) { rows.push(jlLockedStone(c, JL_POOL[(c.i0 + j) % 12], JL_TXC[j % 8], k)); k++; }
     });
-    for (var i = rows.length - 1; i >= 0; i--) { rows[i].classList.add("jl-anim-off"); col.appendChild(rows[i]); } // born quiet; the observer wakes what you can actually see
+    for (var i = rows.length - 1; i >= 0; i--) { rows[i].classList.add("jl-anim-off"); rows[i].classList.add("jl-far"); col.appendChild(rows[i]); } // born quiet AND unpainted; the two observers wake and reveal what you can actually reach (both have deadmen)
     // THE PARALLAX LAYER IS THE FOOT, NOT THE COLUMN (David's device recording of v1375: home↔journey "super slow and
     // choppy", the sky blank for ~2s mid-pull). jcScrub used to transform #jrnyCol — ~26,000px of texture the compositor
     // has to hold and re-raster on every frame of the transition. Only the bottom ~2.6 viewports can ever be on screen
@@ -6392,7 +6433,7 @@
     if (d < -w.clientHeight) return null;
     var v = _wV || 0;
     var down = Math.abs(v) > 0.25 ? v > 0 : (_wDir || 0) >= 0;          // slow-drag tie-break: fall back to the last detected direction, default down
-    if (d > 0 && st < ty - 0.5) return down ? ty : hy;                  // between home and the shelf: commit to whichever way you were going
+    if (d > 0 && st < ty - 0.5) return (down && _wStartTop < hy - 40) ? hy : (down ? ty : hy); // between home and the shelf: commit to whichever way you were going — unless this gesture BEGAN up in the sky, in which case home is the end of its one zone (the same one-zone law the fling catch enforces; without it a slow drag out of the journey coasts through home into the tools)
     if (d < 0) {
       // DESCENDING OUT OF THE JOURNEY WINS (David device 2026-08-15: "when you're in journey and try to scroll back down to home it
       // doesn't let you"). The rule below reads where the gesture STARTED but not which way it is going. In the design that was
@@ -6768,6 +6809,7 @@
     // be INVISIBLE on the next open. The line's DOM survives (build-once), only its cascade state is handed back to CSS.
     if (_jcEls) { _jcEls.forEach(function (n) { n.style.animation = ""; n.style.opacity = ""; }); }
     _jcEls = null; _jcShown = undefined; _jcHard = false;
+    try { jlNearAll(); } catch (e) {}   // the paint window dies with the observers (jlObserve re-arms both on the next open); a row left .jl-far with nothing observing it would come back invisible
     var _jcC = el("jrnyCol"); if (_jcC) _jcC.style.transform = "";
     var _jcF = el("jrnyFoot"); if (_jcF) _jcF.style.transform = ""; // the parallax layer since the v1376 pass — leaving it composited would hold the texture across a closed world
     if (_jlIO) { try { _jlIO.disconnect(); } catch (e) {} _jlIO = null; } // ONE observer, and it dies with the world — renderJourneyLine re-arms it on the next open
@@ -13117,7 +13159,7 @@
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); TTS.stop();
       schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
-      bwPlantOff(); _breathSession = Math.max(0, _breathSession - 1); KEEPALIVE.stop(_bwTok); MEDIASESSION.release(_bwTok);
+      bwPlantOff(); _breathSession = Math.max(0, _breathSession - 1); KEEPALIVE.stop(_bwTok); MEDIASESSION.release(_bwTok); audioIdle();
       if (tone) { try { tone.stop(); } catch (e) {} tone = null; }
       if (_breathLive === readSound) _breathLive = null;
       if (_gpSettings === _bwScope) _gpSettings = null; // only if it is still OURS (a composed player opened over this one owns it now) — same rule as the _breathLive hook above
@@ -15400,7 +15442,7 @@
       });
       msSync();
     }
-    function msOff() { KEEPALIVE.stop(_msTok); MEDIASESSION.release(_msTok); _msArtA = null; _msArtK = null; }
+    function msOff() { KEEPALIVE.stop(_msTok); MEDIASESSION.release(_msTok); _msArtA = null; _msArtK = null; audioIdle(); } // audioIdle: the session is over, so hand the audio category back to whatever the phone was playing before us (a PAUSED session deliberately keeps its card and its claim — that is a real session, not a ghost)
     function breathAudio(s) { // s = a makeBreathClock sample. Called only from paintNow while actually PLAYING, so a scrub-drag, a 2× hold-scan and a paused player are all silent by construction.
       var tk = breathToneKey();
       if (tk !== _bTk) { if (_bTone) { try { _bTone.stop(); } catch (e) {} } _bTone = null; _bTk = tk; if (tk !== "off" && ctx) { try { _bTone = makeBreathSustain(tk, ctx); } catch (e) { _bTone = null; } } } // picked live from the Sound panel the gear opens, so a change lands in the session you are in
@@ -20605,17 +20647,25 @@
     var m = null; try { m = navigator.mediaSession || null; } catch (e) {}
     var ps = m ? (m.playbackState || "?") : "no mediaSession", md = m ? !!m.metadata : false;
     var owner = MEDIASESSION.owner();
+    // THE AUDIO CATEGORY (David on device 2026-08-27). This is the half the card check could not see: "playback" is what
+    // puts an app on the lock screen and interrupts the user's music, with or without media metadata — so an idle app
+    // holding it is exactly the ghost card he kept seeing, and exactly why his music stopped on open.
+    var asT = "no audioSession API"; try { if (navigator.audioSession) asT = navigator.audioSession.type || "?"; } catch (e) {}
     var bad = [];
     if (!live) {
+      if (asT === "playback") bad.push('audio category is "playback" with no session — this alone raises a Now Playing card and stops the phone\'s music');
       if (ka) bad.push("keep-alive is PLAYING with no session");
       if (kaNode && kaSrc) bad.push("keep-alive element still holds a src (" + kaSrc.slice(0, 24) + "…) — iOS keeps a card for it");
       if (owner) bad.push("the card still has an owner");
       if (md) bad.push("mediaSession.metadata still set");
       if (m && ps !== "none") bad.push('playbackState is "' + ps + '", want "none"');
-    } else if (!ka) bad.push("a session IS live but the keep-alive is not playing");
+    } else {
+      if (!ka) bad.push("a session IS live but the keep-alive is not playing");
+      if (asT !== "no audioSession API" && asT !== "playback") bad.push('a session IS live but the audio category is "' + asT + '" — the ring/silent switch would mute it (David 2026-08-20)');
+    }
     return (bad.length ? "FAIL · " : "PASS · ") + (live ? "session LIVE" : "no session") +
       " · keepAlive " + (ka ? "playing" : "silent") + (kaNode ? (kaSrc ? " (element+src)" : " (element, no src)") : " (no element)") +
-      " · owner " + (owner ? "held" : "none") + " · metadata " + (md ? "set" : "clear") + " · playbackState " + ps +
+      " · category " + asT + " · owner " + (owner ? "held" : "none") + " · metadata " + (md ? "set" : "clear") + " · playbackState " + ps +
       (bad.length ? "\n  " + bad.join("\n  ") : "");
   };
   window.DEV.grow = function () { if (!ISLE) buildIsle(); var cur = []; ISLE.tiles.forEach(function (k) { var a = k.split(","); cur.push([+a[0], +a[1]]); }); var n = 0; cur.forEach(function (p) { [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { var k = tkey(p[0] + d[0], p[1] + d[1]); if (!ISLE.tiles.has(k)) { ISLE.tiles.add(k); n++; } }); }); ISLE._p0 = null; ISLE._p1 = null; ISLE._out = null; ISLE._stamp = (ISLE._stamp || 1) + 1; return "island grew by " + n + " tiles → " + ISLE.tiles.size + " total (rebaking coast, seamless)"; }; // DEV: expand the island one ring → rebake the coast (correct by construction)
@@ -21208,6 +21258,7 @@
   Object.assign(I18N.ru, { "Turn me upright": "Поверни меня вертикально" }); // the portrait-lock line (B4 law: EN source + RU dict in the same edit)
   // @SEC:BOOT — init(): boot ORDER is a contract (load → world → master tick → nav wiring → renderAll → openJourney → start screen → i18n observe). Appending is safe; reordering is not.
   function init() {
+    audioIdle(); // FIRST, before anything can touch a bus: opening ALTER must not interrupt the music the phone is already playing, and must not claim a lock-screen slot (see audioClaim at @SEC:AUDIO)
     load(); try { TTS.applyVoice(); } catch (e) {} loadFairy(); loadWorld(); treeFit(); requestAnimationFrame(treeLoop); guardianFit(); setupJoy(); setupZoom(); requestAnimationFrame(drawGuardian);
     try { devInit(); } catch (e) {}
     try { buildRotGuard(); } catch (e) {}
