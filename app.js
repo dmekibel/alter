@@ -5768,8 +5768,40 @@
     // HOLD-AT-HOME: pin against leftover upward momentum; release on a real pull, on any downward move, or when the 450ms is up.
     if (_wHold && !_wTouch) {
       if (nw >= _wHold.until || world.scrollTop > _wHold.y + 0.5 || _wHold.y - world.scrollTop > 120) _wHold = null;
-      else if (world.scrollTop < _wHold.y - 0.5) { world.scrollTop = _wHold.y; _wLastSt = _wHold.y; _wLastT = nw; return; }
+      else if (world.scrollTop < _wHold.y - 0.5) { _wSelfW = _wHold.y; world.scrollTop = _wHold.y; _wLastSt = _wHold.y; _wLastT = nw; return; }
     }
+    // WAS THIS EVENT OURS? Consume the mark exactly once. `dev` is how far the column actually sits from what we last
+    // wrote: near zero means the engine is hearing its own echo, and anything else during an animation is the USER.
+    var _dev = _wSelfW >= 0 ? world.scrollTop - _wSelfW : null;
+    _wSelfW = -1;
+    var _self = _dev !== null && Math.abs(_dev) < 1.5;
+    // BEHIND A FLAG, and deliberately OFF by default. This is the right fix on paper — it restores what the design
+    // specifies and it explains both of David's symptoms — but it rewrites the hottest path of the engine he has just
+    // called "much, much better", and the preview could not verify it: the Browser pane keeps going hidden, which
+    // freezes requestAnimationFrame and strands every tween mid-flight (three attempts, three frozen runs). Shipping an
+    // unverified rewrite of @SEC:WORLD-MOTION as the default is exactly how this surface got rebuilt three times. So it
+    // ships as scroll-test mode 12, for the only instrument that can actually judge it: his phone.
+    if (_wSelfFix && _wAnim) {
+      // THE USER WINS, ALWAYS. If the column has moved against the direction the spring is travelling, iOS's own
+      // momentum is pushing back — so the spring stands down and hands the gesture its real velocity, instead of the two
+      // of them writing scrollTop in the same frame (the "it tries to slow itself down and then jumps" David reported).
+      // 12px, not the design's 1.5. A `scroll` event is dispatched a frame or more AFTER the write that caused it, so by
+      // the time we read the mark the tween has usually written again and the difference is our own lag, not a finger.
+      // At 1.5 that noise read as opposition and killed the tween on its first frame — the journey door stopped moving
+      // at all (caught in preview). A finger genuinely fighting a spring moves the column far more than 12px.
+      if (_dev !== null && Math.abs(_dev) >= 12 && (_dev < 0 ? -1 : 1) !== (_wDown ? 1 : -1)) {
+        _wStop = true; _wV = _dev / 16; _wDir = _dev < 0 ? -1 : 1;
+      }
+      _wLastSt = world.scrollTop; _wLastT = nw;
+      var _dA = world.scrollTop - wHomeY();
+      try { tcScrub(_dA / wSpan()); } catch (e) {}
+      try { hcScrub(_dA); } catch (e) {}
+      if (_wCssSnap) { try { wSnapRegion(world, _dA); } catch (e) {} }
+      try { if (JLINE) jcScrub(Math.max(0, Math.min(1, -_dA / (world.clientHeight || 1)))); } catch (e) {}
+      wScrub();
+      return;                                                            // …and NEVER derive a gesture from our own animation
+    }
+    if (_wSelfFix && _self) { _wLastSt = world.scrollTop; _wLastT = nw; wScrub(); return; } // our own write, nothing animating (a hold pin, a landing) — paint, do not measure
     if (!_wAnim && (!_wLastT || nw - _wLastT > 220)) { _wStartTop = _wLastSt == null ? world.scrollTop : _wLastSt; _wFlung = false; _wPk = 0; } // 220ms of silence = a NEW gesture: re-anchor its start, re-arm the fling catch
     if (_wLastT) {
       var dt = Math.max(1, nw - _wLastT);
@@ -6338,6 +6370,15 @@
   var _wV = 0, _wLastSt = null, _wLastT = 0, _wDir = 0, _wPk = 0, _wStartTop = 0, _wFlung = false;
   var _wAnim = false, _wStop = false, _wUp = false, _wDown = false, _wHold = null, _wTouch = 0, _wSnapT = 0, _wNoSnap = 0, _wLastD = null;
   var _magT = 0, _magRaf = 0, _magAnim = 0, _magHold = 0;
+  // ===== OUR OWN SCROLL WRITES, MARKED (David on device 2026-08-27: "the big pink button flickers on and off… and I'm
+  // scrolling quickly and it starts going quickly and then it tries to slow itself down, and in the process it does a
+  // jittery jump"). Both symptoms are ONE omission in the original port: the design's engine marks every scrollTop IT
+  // writes and ignores those events (`selfW`, seven places in Journey Scroll v22); this app's port dropped it entirely.
+  // Without it the engine reads its own spring as if it were a finger — velocity and DIRECTION are derived from the
+  // spring's own motion, which is what flips the cascade back and forth under the pink board — and, worse, it can never
+  // notice the user's momentum OPPOSING the spring, so iOS's scroll and ours both write scrollTop at once and fight:
+  // exactly "it tries to slow itself down and jumps". Set immediately before each of our writes, consumed once.
+  var _wSelfW = -1, _wSelfFix = false;   // the consumer is mode 12; the marks above are inert until it is on
   function wNow() { try { return performance.now(); } catch (e) { return Date.now(); } }
   // THE THREE ANCHORS. Home is worldHomeTarget() (NOT home.offsetTop) so the spring lands exactly where the boot landing did.
   // ===== THE ANCHOR CACHE — and this is very probably THE transition chop (David 2026-08-27; his own scroll-test data
@@ -6499,9 +6540,9 @@
       if (_wStop) { _wAnim = false; return; }
       var dt = Math.min(34, nw - last); last = nw;                      // a backgrounded tab can hand us a huge dt; clamp so it can't explode
       for (var s = 0; s < dt; s += 2) { var h2 = Math.min(2, dt - s); v += (-k * (x - to) - c * v) * h2; x += v * h2; }
-      if ((_wDown && x > to) || (!_wDown && x < to)) { w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; } // CROSSED the target = done. This is what makes overshoot impossible (notes 20/28)
-      w.scrollTop = x;
-      if (Math.abs(x - to) < 0.4 && Math.abs(v) < 0.02) { w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; }
+      if ((_wDown && x > to) || (!_wDown && x < to)) { _wSelfW = to; w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; } // CROSSED the target = done. This is what makes overshoot impossible (notes 20/28)
+      _wSelfW = x; w.scrollTop = x;
+      if (Math.abs(x - to) < 0.4 && Math.abs(v) < 0.02) { _wSelfW = to; w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; }
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -6524,7 +6565,7 @@
       if (_wStop) { _wAnim = false; return; }
       var p = Math.min(1, (nw - t0) / D);
       var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-      w.scrollTop = from + (to - from) * e;
+      _wSelfW = from + (to - from) * e; w.scrollTop = from + (to - from) * e;
       if (p < 1) requestAnimationFrame(tick); else { _wAnim = false; hcMaybeIn(); }
     };
     requestAnimationFrame(tick);
@@ -21296,13 +21337,15 @@
     { k: "jlx-nopara", n: "8 · sky PARALLAX off" },
     { k: "jlx-nocascade jlx-nopara", n: "9 · cascades AND parallax off" },
     { k: "jlx-native", n: "10 · NATIVE transitions (no JS spring) — FEEL A/B" },
-    { k: "jlx-snap", n: "11 · OS SNAP magnet (native + your own momentum)" }
+    { k: "jlx-snap", n: "11 · OS SNAP magnet (native + your own momentum)" },
+    { k: "jlx-selffix", n: "12 · engine ignores its OWN scrolling (jitter + flicker)" }
   ];
   var _jlxI = 0, _jlxRaf = 0;
   function jlxApply() {
     var b = document.body; JLX_MODES.forEach(function (m) { m.k.split(" ").forEach(function (c) { if (c) b.classList.remove(c); }); });
     var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
     _wNativeSnap = mode.k.indexOf("jlx-native") >= 0;   // this one is a JS behaviour, not a paint class
+    _wSelfFix = mode.k.indexOf("jlx-selffix") >= 0;
     _wCssSnap = mode.k.indexOf("jlx-snap") >= 0;        // …and this one stands the JS spring down entirely, so the OS is the only thing snapping
     if (!_wCssSnap) { _wSnapOn = null; document.body.classList.remove("jlx-snapon"); }
     else { _wSnapOn = null; try { var _sw = el("tfWorld"); if (_sw) wSnapRegion(_sw, _sw.scrollTop - wHomeY()); } catch (e) {} } // prime it: switching mode on while already parked fires no scroll event, so the band would stay unset until the first move
