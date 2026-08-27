@@ -1856,7 +1856,11 @@
     radial-gradient(circle at 28% 22%, rgba(255,242,249,.5) 0 1.6px, transparent 2.4px) 0 0/150px 210px,
     radial-gradient(circle at 72% 64%, rgba(255,224,242,.34) 0 1.2px, transparent 1.9px) 0 0/96px 128px,
     linear-gradient(0deg, rgba(58,15,36,0) 0 30%, rgba(30,18,52,.45) 58%, rgba(20,32,63,.6) 82%, rgba(9,13,30,.78) 100%); }
-  #jrnyLine{ --ss:inset 0 4px 0 #ffffff0f,inset 0 -6px 0 #00000038,0 6px 0 #00000061,inset 0 0 0 999px #10060e80;
+  /* --ss lost its fourth layer, `inset 0 0 0 999px #10060e80` — the dark wash over every stone's texture. A 999px inset
+     SPREAD on a 74px circle is a shadow the engine has to compute and clip for every stone it rasters, and there are 226
+     of them; the identical pixels come free as the topmost BACKGROUND layer instead (jlLockedStone prepends it, and it
+     lands in the same place in the paint order: above the texture, below the two remaining insets and below the icon). */
+  #jrnyLine{ --ss:inset 0 4px 0 #ffffff0f,inset 0 -6px 0 #00000038,0 6px 0 #00000061;
     --tex:radial-gradient(#16051021 0 1px, #0000 1.6px), repeating-linear-gradient(45deg, #ffffff0a 0 1px, #0000 1px 4px);
     --gl:linear-gradient(115deg,#0000 24%,#ffb4d68c 36%,#ffe096a6 44%,#ffffffd9 50%,#a0f5d7a6 56%,#96c8ff8c 64%,#0000 76%);
     max-width:362px; margin-left:auto; margin-right:auto; display:flex; flex-direction:column; align-items:center; padding:120px 0 60px; perspective:900px; }
@@ -1965,6 +1969,14 @@
      failed to do in time during a fling and left the whole deep line blank (the v1377 void). Nothing here can fail late:
      visibility is a paint flag, and app.js reveals a row a full viewport before it can be reached (jlObserve, 1400px). */
   #jrnyLine .jl-far{ visibility:hidden; }
+  /* …AND THE ROWS THAT DO PAINT GET THEIR OWN LAYER (David on device 2026-08-27, v1379 still choppy — measured off his
+     recording: roughly every SECOND frame is a duplicate during a scroll, so the phone is producing ~15fps of new frames,
+     while desktop Chrome reports no main-thread blocking at all. A gap that shape is raster, not JavaScript). Each stone's
+     fill is one of David's designed repeating-conic / repeating-radial textures, and without a layer of its own the
+     compositor re-evaluates that gradient every time the tile it sits in is re-rastered — which during a fling is
+     constantly, and again for every row the paint window reveals. Promoted, the texture is rastered ONCE and thereafter
+     only moved. Scoped to rows inside the window so the count stays ~40 small layers, never 272. */
+  #jrnyLine .jl-lstone-row:not(.jl-far) > .jl-lstone{ will-change:transform; }
   /* CONTENT-VISIBILITY IS GONE (David's device video 2026-08-26: scrolled past chapter one the whole line was a VOID —
      starfield and puck, no stones, no gates — while the same depth rendered fine in desktop Chrome). iOS Safari was
      failing to materialize the skipped subtrees during scroll in a 26,000px scroller, and once enough rows in a tile
@@ -4386,6 +4398,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1379"></script>
+  <script src="app.js?v=1380"></script>
 </body>
 </html>

@@ -6032,7 +6032,7 @@
     // kept intact, so flipping the flag back restores the frame's jitter exactly; only the emission stops. The glisten
     // (mPass) is untouched, and so is every banner effect.
     var jit = JL_JITTER ? ("animation:" + JL_JITV[k % 3] + " " + (9 + 0.8 * (k % 7)).toFixed(1) + "s ease-in-out infinite;animation-delay:" + jd.toFixed(1) + "s;") : "";
-    var st = jlAdd(row, "span", "jl-lstone jl-fx", "background:" + c.tex + ";" + jit);
+    var st = jlAdd(row, "span", "jl-lstone jl-fx", "background:linear-gradient(rgba(16,6,14,.502),rgba(16,6,14,.502))," + c.tex + ";" + jit); // the leading layer IS the old `inset 0 0 0 999px #10060e80` wash, to the byte (#10060e80 = rgba(16,6,14,.502)) — same pixels, one less shadow layer per stone (see --ss in index.html)
     jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
     jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
     return row;
@@ -6084,7 +6084,7 @@
     _jlFarIO = new IntersectionObserver(function (ents) {
       _jlFarSeen = true;
       for (var i = 0; i < ents.length; i++) ents[i].target.classList.toggle("jl-far", !ents[i].isIntersecting); // no deferral either way: this is one class flip, and a row must never be invisible when it arrives
-    }, { root: w, rootMargin: "1400px 0px" });
+    }, { root: w, rootMargin: "1800px 0px" });   // widened from 1400: every reveal costs a first raster, so fewer enter/leave flips per fling is itself a saving, and 1800px is still only ~2 viewports of extra paint
     for (var f = 0; f < rows.length; f++) _jlFarIO.observe(rows[f]);
     _jlFarT = setTimeout(function () { if (!_jlFarSeen && el("jrnyCol")) { try { console.warn("[alter] jlObserve: no paint-window entries — showing the whole line"); } catch (e) {} jlNearAll(); } }, 1500); // the same deadman law as the wake observer: never ship an invisible line
     _jlIO = new IntersectionObserver(function (ents) {
@@ -6914,6 +6914,23 @@
     } catch (e) { return ""; }
   }
   function stkEmblemReady(fn) { try { if (document.fonts && document.fonts.ready && document.fonts.ready.then) { document.fonts.ready.then(fn, fn); return; } } catch (e) {} fn(); } // the icon font is a CDN webfont; the first emblem waits for it rather than baking a box into the card
+  // THE CARD IS ONE CIRCLE, IN THE ACT'S OWN COLOUR, ON BLACK (David on device 2026-08-27: "could we show the color of
+  // the circle in the stack… so let's say I'm doing the morning stack, the orange circle on the top, and then if you go
+  // to the next activity, for example the breathing, it turns into the teal circle. Let's make it a fully black
+  // background so that it perfectly molds with the island above"). This SUPERSEDES the v1373 deck emblem on the lock
+  // screen (face + two shards + glyph): at Dynamic Island size that grammar reads as mush, and the black ground is the
+  // point — the artwork has to disappear into the island's own black so only the coloured dot shows. The deck emblem
+  // itself is untouched everywhere it actually belongs (the shelf, the dose card); this is the card's own recipe.
+  function stkActCirclePNG(hue, done) {
+    try {
+      var SZ = 512, cv = document.createElement("canvas"); cv.width = cv.height = SZ;
+      var x = cv.getContext("2d"); if (!x) { done(null); return; }
+      x.fillStyle = "#000"; x.fillRect(0, 0, SZ, SZ);                 // pure black, not the app's #14060f: it must mould into the island, and the island is black
+      x.beginPath(); x.arc(SZ / 2, SZ / 2, SZ * 0.34, 0, Math.PI * 2);
+      x.fillStyle = hue || "#ff5fa0"; x.fill();
+      cv.toBlob(function (b) { done(b ? URL.createObjectURL(b) : null); }, "image/png");
+    } catch (e) { try { done(null); } catch (e2) {} }
+  }
   function stkEmblemPNG(hue, ti, shards, done) { // → done(blobURL) or done(null); the caller falls back to the manifest icons on null
     try {
       var SZ = 512, S = 300, cv = document.createElement("canvas"); cv.width = cv.height = SZ;
@@ -13155,7 +13172,7 @@
     // the cue strikes + the tone's level curve are planted on the context clock beside the spoken clips that already were.
     var _bwTok = {}; _breathSession++; KEEPALIVE.start(_bwTok); bwPlant();
     MEDIASESSION.claim(_bwTok, "Breathe", null); MEDIASESSION.state("playing"); MEDIASESSION.pos(totalMs / 1000, 0);
-    stkEmblemReady(function () { if (done) return; stkEmblemPNG(BREATH_HUE, "ti-lungs", stkShards(BREATH_HUE, []), function (u) { if (done || MEDIASESSION.owner() !== _bwTok) { if (u) { try { URL.revokeObjectURL(u); } catch (e) {} } return; } MEDIASESSION.meta("Breathe", u ? [{ src: u, sizes: "512x512", type: "image/png" }] : null); MEDIASESSION.art(u); }); }); // this surface has no transport, so it claims the card's NAME and clock only — no action handlers, because there is no real pause behind them to keep honest
+    stkEmblemReady(function () { if (done) return; stkActCirclePNG(BREATH_HUE, function (u) { if (done || MEDIASESSION.owner() !== _bwTok) { if (u) { try { URL.revokeObjectURL(u); } catch (e) {} } return; } MEDIASESSION.meta("Breathe", u ? [{ src: u, sizes: "512x512", type: "image/png" }] : null); MEDIASESSION.art(u); }); }); // this surface has no transport, so it claims the card's NAME and clock only — no action handlers, because there is no real pause behind them to keep honest
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); TTS.stop();
       schedSrcs.forEach(function (s) { try { s.stop(); } catch (e) {} });
@@ -15420,12 +15437,11 @@
     function msSync() { MEDIASESSION.state(playing ? "playing" : "paused"); MEDIASESSION.pos(total, curElapsed()); }
     function msArt() { // the stack's own emblem in the canonical deck grammar: the CURRENT act's hue on the face with its glyph, the other acts' hues as the two shards behind it
       var a = acts && acts[curAct], L = acts || actBars || [];
-      var hue = (a && a.color) || col, ti = (a && a.icon) || (L[0] && L[0].icon) || opts.ti || "ti-stack-2", key = hue + "|" + ti;
+      var hue = (a && a.color) || col, key = hue;                    // keyed on the COLOUR alone now — the card is one circle, so a new act repaints it only when its hue actually differs
       if (key === _msArtK) return; _msArtK = key;
-      var steps = L.map(function (q) { return { c: q.color || col }; }); if (!steps.length) steps = [{ c: col }];
       stkEmblemReady(function () {
         if (done) return;
-        stkEmblemPNG(hue, ti, stkShards(hue, steps), function (u) {
+        stkActCirclePNG(hue, function (u) {
           if (done || MEDIASESSION.owner() !== _msTok || key !== _msArtK) { if (u) { try { URL.revokeObjectURL(u); } catch (e) {} } return; } // a later act already claimed the card — drop this render rather than paint the past onto it
           _msArtA = u ? [{ src: u, sizes: "512x512", type: "image/png" }] : null; msPaint(); MEDIASESSION.art(u);
         });
