@@ -6021,7 +6021,7 @@
   function jlBanner(c) { // a locked chapter's GATE, wearing exactly the ladder rungs that chapter has earned
     var row = document.createElement("div"); row.className = "jl-lock";
     var card = jlAdd(row, "div", "jl-lock-card" + ((c.fx & JL_FX_GLOW) ? " jl-lit jl-fx" : ""));
-    jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : ""), "background:" + c.tex + ";");
+    jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : ""), "background:" + c.tex + ";" + (jlIsRay(c) ? "animation-delay:-" + (((c.ch * 23) % 90) + 5) + "s;" : ""));
     if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
     if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl jl-glis"), "span", "jl-fx");
     if (c.fx & JL_FX_INGLOW) jlAdd(card, "span", "jl-l-inglow");
@@ -6053,7 +6053,7 @@
     // pixels, one less shadow layer per stone (see --ss in index.html).
     var WASH = "linear-gradient(rgba(16,6,14,.502),rgba(16,6,14,.502))";
     var ray = jlIsRay(c);                                               // "the stones themselves need to spin too, also slowly" (David 2026-08-27)
-    var st = jlAdd(row, "span", "jl-lstone jl-fx", (ray ? "" : "background:" + WASH + "," + c.tex + ";") + jit);
+    var st = jlAdd(row, "span", "jl-lstone jl-fx" + (ray ? " jl-rayst" : ""), (ray ? "" : "background:" + WASH + "," + c.tex + ";") + jit);
     if (ray) {
       // A STONE CANNOT SPIN ITS OWN BACKGROUND — rotating the element would carry the icon round with it. So the fill
       // moves onto a layer of its own that turns underneath a still glyph. The wash rides WITH it (a uniform sheet looks
@@ -6061,7 +6061,12 @@
       // square's inscribed circle does not change when you turn it. DOM order carries the paint order here: texture,
       // then the icon (positioned, so it lifts above the texture), then the glisten sweeping over both — which is the
       // same stacking the non-ray stones have always had.
-      jlAdd(st, "span", "jl-lstone-tex jl-fx", "background:" + WASH + "," + c.tex + ";");
+      // …and a NEGATIVE delay so it is already mid-turn when you arrive (David: "it should already feel like it's already
+      // spinning once you arrive at it"). Rows wake with `animation:none` lifted, which restarts the keyframes from 0deg
+      // — visible as a start. Seeding each chapter at its own offset means a stone is never caught at the top of its
+      // cycle, exactly the trick the glisten's phase chain already uses.
+      jlAdd(st, "span", "jl-lstone-tex jl-fx", "background:" + WASH + "," + c.tex + ";animation-delay:-" + (((c.ch * 17) % 110) + 3) + "s;");
+      jlAdd(st, "span", "jl-lstone-sheen");
       jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
       jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
       return row;

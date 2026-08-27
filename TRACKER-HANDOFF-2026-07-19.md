@@ -3,6 +3,17 @@
 
 ---
 
+## STATUS UPDATE (2026-08-27 (9), the spin regression undone): v1387
+David on v1386. Mode 11 "almost perfect" now — a slow swipe that keeps contact is "pretty great", home→journey "looks pretty great", journey→home "looks good". But v1386's spin introduced a REAL visual regression and he named it exactly: "the spinning destroyed what the stone looks like… it gets rid of the little highlight above, a little shadow below, and the symbol on it", "makes it less square", and "the animation doesn't start instant — it should already feel like it's already spinning once you arrive".
+**Root cause, all three:** `--ss`'s two INSET shadows paint above an element's background but BELOW its children. The moment the fill became a child layer it covered them — precisely the missing highlight and inner shadow. And v1386 spun a 104% SQUARE inside a border-radius clip, so the engine re-clipped a rotating layer every frame, which is what softened the edge ("less square").
+**Fixed:** the fill layer is now the CIRCLE ITSELF (`inset:0; border-radius:50%`) — a circle's silhouette is unchanged by rotation, so there is nothing to re-clip. A ray stone keeps only the OUTER drop shadow on itself and wears the two insets on a still `.jl-lstone-sheen` ABOVE the fill and BELOW the glyph — same pixels, same order as every other stone. Verified: ray stone = 1 outer shadow + a 2-inset sheen, plain stone = 3 layers unchanged, order tex→sheen→icon→glisten, icon visible.
+**"Already spinning on arrival":** rows wake by having `animation:none` lifted, which restarts the keyframes at 0deg — visible as a start. Both spins now carry a per-chapter NEGATIVE delay (the same trick the glisten's phase chain uses), so a stone is never caught at the top of its cycle. Verified awake: `mSpin 110s, delay -107s`, transform already mid-turn.
+**STILL OPEN, mode 11 only (told him plainly rather than quietly shipping around it):** the cascade glitches he listed — home appearing twice from the tools, the four hero tiles not animating in from the journey, and the folders behaving oddly on a 20-30% pull-and-release — are all one cause: the cascades' arming is coupled to the JS spring (`_wAnim`), and mode 11 stands the spring down. Making mode 11 the default requires decoupling cascade arming from the spring — real @SEC:WORLD-MOTION work, not a patch, and it is the next job.
+**ALSO OPEN, and probably not fixable:** "a gentle swipe you let go of is a little too fast, it doesn't follow the finger speed." CSS scroll-snap's settle animation is browser-controlled — there is no API to tune its duration or easing. Honest answer: with the OS driving, we get its speed.
+**Gates 97/97 both sizes · ratchet flat. ONE move — David:** fresh.html (v1387): do the stones look right again (highlight, inner shadow, glyph) and do they read as already turning when you arrive?
+
+---
+
 ## STATUS UPDATE (2026-08-27 (8), his four corrections): v1386
 David on v1385, four precise notes — all four addressed.
 **(1) "The spinning ray patterns spin too fast."** 34s → **90s** per revolution on the gates.
