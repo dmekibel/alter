@@ -5700,6 +5700,17 @@
       world.addEventListener("touchcancel", function () { wTouch(false); }, { passive: true });
       world.addEventListener("pointerdown", function (e) { if (e && e.pointerType !== "mouse") wTouch(true); }, { passive: true }); // Apple Pencil / non-touch pointers land here, not on touchstart
       world.addEventListener("pointerup", function (e) { if (e && e.pointerType !== "mouse") wTouch(false); }, { passive: true });
+      // ---- FINGER CAPTURE (David 2026-08-27: "record my actual interaction with the screen with my thumb… where I click,
+      // where I scroll, how fast… correlate that with the actual scrolling"). The engine's writes were already traced, but a
+      // write is only half the story: the question is what the scroller DID with the gesture it was given. These three put
+      // the finger's own timeline into the SAME buffer as the writes, so the report can lay release velocity against the
+      // commit that followed it and the reversal that followed that. Log-only and passive: they never preventDefault, never
+      // touch _wTouch, and never run a line of work while the trace is off (the _wtOn gate is first on the move handler,
+      // which is the one that fires at frame rate).
+      world.addEventListener("touchstart", function (e) { if (!_wtOn) return; var t = e.touches && e.touches[0]; if (t) wtLog("td", t.clientY, t.clientX); }, { passive: true });
+      world.addEventListener("touchmove", function (e) { if (!_wtOn) return; var t = e.touches && e.touches[0]; if (t) wtLog("tm", t.clientY); }, { passive: true });
+      world.addEventListener("touchend", function (e) { if (!_wtOn) return; var t = e.changedTouches && e.changedTouches[0]; if (t) wtLog("tu", t.clientY); }, { passive: true });
+      world.addEventListener("touchcancel", function (e) { if (!_wtOn) return; var t = e.changedTouches && e.changedTouches[0]; if (t) wtLog("tu", t.clientY); }, { passive: true });
     }
     return world;
   }
@@ -5768,12 +5779,13 @@
     // HOLD-AT-HOME: pin against leftover upward momentum; release on a real pull, on any downward move, or when the 450ms is up.
     if (_wHold && !_wTouch) {
       if (nw >= _wHold.until || world.scrollTop > _wHold.y + 0.5 || _wHold.y - world.scrollTop > 120) _wHold = null;
-      else if (world.scrollTop < _wHold.y - 0.5) { _wSelfW = _wHold.y; world.scrollTop = _wHold.y; _wLastSt = _wHold.y; _wLastT = nw; return; }
+      else if (world.scrollTop < _wHold.y - 0.5) { _wSelfW = _wHold.y; world.scrollTop = _wHold.y; wtLog("pin", _wHold.y); _wLastSt = _wHold.y; _wLastT = nw; return; }
     }
     // WAS THIS EVENT OURS? Consume the mark exactly once. `dev` is how far the column actually sits from what we last
     // wrote: near zero means the engine is hearing its own echo, and anything else during an animation is the USER.
     var _dev = _wSelfW >= 0 ? world.scrollTop - _wSelfW : null;
     _wSelfW = -1;
+    wtLog("ev", world.scrollTop, _dev == null ? "" : _dev, _wAnim ? 1 : 0);
     var _self = _dev !== null && Math.abs(_dev) < 1.5;
     // BEHIND A FLAG, and deliberately OFF by default. This is the right fix on paper — it restores what the design
     // specifies and it explains both of David's symptoms — but it rewrites the hottest path of the engine he has just
@@ -6519,6 +6531,19 @@
   // is a FEEL change and only his phone can judge it: it ships OFF, behind scroll-test mode 10, as an A/B he can flip in
   // two taps. If native feels better on the device, the spring's physics come out and this becomes the road.
   var _wNativeSnap = false, _wNatT = 0, _wCssSnap = false, _wSnapOn = null, _wNoKill = false;
+  // ---- SCROLL TRACE (David 2026-08-27 "maybe we need better on the phone test"). Every writer and every observed
+  // scroll event, ring-buffered while armed, rendered as a copyable report — the phone names the backjump, its author,
+  // and the platform behaviours JS can only measure in situ (does the kill toggle sync the read? how old is the event
+  // at commit?). The devDesignAuditOverlay precedent: instrument first, guess never. Costs one array push per event
+  // while armed, nothing when off.
+  var _wtOn = false, _wtBuf = [], _wt0 = 0;
+  function _wtN(n) { return (n == null || n === "") ? "" : Math.round(n); } // "" is how a caller says NO VALUE HERE — onWorldScroll passes it for an event carrying no self-write mark. Math.round("") is 0, which in the report would read as "our own write, landed exactly" and hide the one distinction the trace exists to draw.
+  function wtLog(tag, a, b, c) {
+    if (!_wtOn) return;
+    if (!_wtBuf.length) _wt0 = wNow();
+    _wtBuf.push([Math.round(wNow() - _wt0), tag, _wtN(a), _wtN(b), _wtN(c)]);
+    if (_wtBuf.length > 1200) _wtBuf.splice(0, 300);
+  }
   // ---- KILL THE NATIVE FLING (David device 2026-08-27, three-flick test: "the actual positioning of the scroll jitters").
   // Frame-tracked on his recording: mid-transition the column jumps BACKWARD ~40px for one frame, then continues — the
   // signature of two writers interleaving. The fling catch starts the spring while iOS's momentum fling is still live,
@@ -6527,15 +6552,37 @@
   // scroll events report only the merged result, and its yield rule looks for OPPOSING motion. The platform's one real
   // off-switch is to stop being scrollable for a frame: overflow hidden ends the fling dead, then the spring owns the
   // column alone. One forced reflow, once per commit. Mode 13 turns this off to resurrect the old fight for A/B.
+  // THE RE-ASSERT WAS ITSELF THE BACKWARD WRITE (David device 2026-08-27, "double fail"). v1395 ended the toggle by
+  // writing the main-thread `scrollTop` read straight back onto the column. During a fling that read LAGS the
+  // compositor's visual position by a frame or two, so the re-assert put the column back where the screen had already
+  // left — once per commit, exactly the single-frame backward jump his recordings show. The overflow toggle is the
+  // momentum kill and stays; the write is gone. The before/after pair below is traced so his phone can answer the one
+  // question JS cannot reason about: whether the toggle itself syncs the main-thread read to what is on screen.
   function wKillFling(w) {
     if (_wNoKill) return;
     try {
-      var st = w.scrollTop;
+      var st0 = w.scrollTop;
       w.style.overflowY = "hidden";
       void w.offsetHeight;                        // style must actually apply before it is undone, or iOS ignores the toggle
       w.style.overflowY = "";
-      _wSelfW = st; w.scrollTop = st;             // re-assert, marked as our own write
+      wtLog("kill", st0, w.scrollTop);
     } catch (e) {}
+  }
+  // ---- THE LIVE START (David device 2026-08-27, "double fail... think deeper"). During a fling, iOS's main-thread
+  // scrollTop lags the compositor's visual position by a frame or two. Every commit read that stale value and sprang
+  // from it — writing a position the screen had already left, which paints as the single-frame BACKWARD jump on his
+  // recordings (magnitude ≈ the flick's per-frame travel, which is why it scales with speed and survived every engine
+  // variant: mode 12, the render freeze, the v1395 kill — none of them could see a value JS cannot read). The engine
+  // therefore estimates the visual position instead: the last observed velocity carried forward across the event's age
+  // plus one frame of compositor lead, capped, and only when the column was actually moving. A slight forward
+  // overshoot paints as the fling continuing; a backward write always paints as a snap.
+  function wLiveStart(w) {
+    var st = w.scrollTop;
+    if (_wNoKill) return st;                                          // mode 13: the raw stale start, for the A/B
+    var age = wNow() - (_wLastT || 0);
+    if (!_wLastT || age > 80) return st;                              // at rest (door taps, settle springs): the read is honest
+    var ext = (_wV || 0) * (Math.min(50, age) + 16);
+    return st + Math.max(-140, Math.min(140, ext));
   }
   function wSpringNative(to) {
     var w = el("tfWorld"); if (!w) return;
@@ -6555,7 +6602,8 @@
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } } // leaving upward: the shelf starts folding away NOW, not when we arrive
     if (_wDown && JLINE && _jcShown) { _jcShown = false; clearTimeout(_jcInT); jcCascade(-1); } // …and the mirror image: leaving the sky downward, the line starts folding NOW, not on the seam
     _wAnim = true; _wStop = false;
-    var x = w.scrollTop, v = Math.max(-0.9, Math.min(0.9, _wV || 0));   // seeded with the LIVE gesture velocity, clamped — a flick carries through
+    var x = wLiveStart(w), v = Math.max(-0.9, Math.min(0.9, _wV || 0));   // start from where the screen ACTUALLY is (see wLiveStart), seeded with the LIVE gesture velocity, clamped — a flick carries through
+    wtLog("commit", w.scrollTop, x, to);
     var dir = to > x ? 1 : (to < x ? -1 : 0);
     if ((v > 0 ? 1 : v < 0 ? -1 : 0) !== dir) v *= 0.15;                // pointing the wrong way = mostly discarded, never inverted
     var k = soft ? 0.000055 : 0.00009, c = 2 * Math.sqrt(k) * (soft ? 1.12 : 1.04);
@@ -6564,9 +6612,9 @@
       if (_wStop) { _wAnim = false; return; }
       var dt = Math.min(34, nw - last); last = nw;                      // a backgrounded tab can hand us a huge dt; clamp so it can't explode
       for (var s = 0; s < dt; s += 2) { var h2 = Math.min(2, dt - s); v += (-k * (x - to) - c * v) * h2; x += v * h2; }
-      if ((_wDown && x > to) || (!_wDown && x < to)) { _wSelfW = to; w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; } // CROSSED the target = done. This is what makes overshoot impossible (notes 20/28)
-      _wSelfW = x; w.scrollTop = x;
-      if (Math.abs(x - to) < 0.4 && Math.abs(v) < 0.02) { _wSelfW = to; w.scrollTop = to; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; }
+      if ((_wDown && x > to) || (!_wDown && x < to)) { _wSelfW = to; w.scrollTop = to; wtLog("land", to); _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; } // CROSSED the target = done. This is what makes overshoot impossible (notes 20/28)
+      _wSelfW = x; w.scrollTop = x; wtLog("w", x);
+      if (Math.abs(x - to) < 0.4 && Math.abs(v) < 0.02) { _wSelfW = to; w.scrollTop = to; wtLog("land", to); _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; }
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -6584,14 +6632,15 @@
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } try { wScrub(); } catch (e) {} } // re-read the puck NOW so a tap on it hides it at the tap, never mid-flight at scale 0 (note 16)
     _wAnim = true; _wStop = false;
-    var from = w.scrollTop, t0 = wNow();
+    var from = wLiveStart(w), t0 = wNow();                              // same live-start estimate as wSpring: a tween that begins at the stale read jumps backward on its first frame
+    wtLog("commit", w.scrollTop, from, to);
     var D = dur || Math.max(380, Math.min(760, 320 + Math.abs(to - from) * 0.55));
     var tick = function (nw) {
       if (_wStop) { _wAnim = false; return; }
       var p = Math.min(1, (nw - t0) / D);
       var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
-      _wSelfW = from + (to - from) * e; w.scrollTop = from + (to - from) * e;
-      if (p < 1) requestAnimationFrame(tick); else { _wAnim = false; hcMaybeIn(); }
+      _wSelfW = from + (to - from) * e; w.scrollTop = from + (to - from) * e; wtLog("tw", w.scrollTop);
+      if (p < 1) requestAnimationFrame(tick); else { wtLog("land", to); _wAnim = false; hcMaybeIn(); }
     };
     requestAnimationFrame(tick);
   }
@@ -6708,6 +6757,7 @@
     hcFlush();
   }
   function hcArrive(from) { // from "up" (out of the tools) = bottom-to-top, Planner first (note 4). from "down" (out of the journey) = the exact opposite (note 10).
+    wtLog("casc", 1, 1);
     _hcAnimAt = wNow(); _hcDone = false; _hcState = "in";
     var els = hcEls(), order = from === "up" ? els.slice().reverse() : els;
     // THE ARRIVAL IS THE TOOLS CASCADE IN REVERSE (David device 2026-08-15). Timing and easing are youRowIn's own — .42s at
@@ -6776,6 +6826,7 @@
   // writes every row's start state, ONE forced reflow on the world, pass two assigns every animation. Same visuals, same velocity
   // stretch, same below-mode, same exit delays — only the write/read ordering changed.
   function tcCascade(dir, instant) {
+    wtLog("casc", dir > 0 ? 1 : 0, 2);
     var els = _tcEls || []; if (!els.length) return;
     var f = (_wAnim || !_wPk) ? 1 : Math.max(1, Math.min(2.4, 0.45 / Math.max(0.05, _wPk))); // a slow drag STRETCHES the timing up to 2.4x so the rows keep pace with the finger
     var q = [];
@@ -6847,6 +6898,7 @@
   }
   function jcFlat(n) { if (!n._jcClean) { n._jcClean = 1; n.addEventListener("animationend", function (e) { if (e.target !== n) return; n.style.animation = ""; n.style.opacity = n._jcExit ? "0" : ""; }); } } // e.target guard: animationend BUBBLES and these rows are full of animating children (mJit, mFoil, mSpark, the glints) — an unguarded handler would clear the row on a child's animation, the same trap tcFlat documents
   function jcCascade(dir, instant) {
+    wtLog("casc", dir > 0 ? 1 : 0, 3);
     var els = _jcEls || []; if (!els.length) return;
     var f = (_wAnim || !_wPk) ? 1 : Math.max(1, Math.min(1.8, 0.45 / Math.max(0.05, _wPk))); // v22's velocity scaling, verbatim
     var stag = Math.min(120 * f, 1500 / Math.max(1, els.length));
@@ -21337,6 +21389,84 @@
       navigator.clipboard.writeText(json).then(function () { try { toast("island copied (" + a.length + " tiles) · paste it to me"); } catch (e) {} }).catch(showFallback);
     } else { showFallback(); }
   }
+  // THE PHONE NAMES THE BACKJUMP (David 2026-08-27: "maybe we need better on the phone test"). Four rounds of position-jump
+  // fixes were all reasoned from a Mac that cannot reproduce the fling, because the thing that jumps is a value the main
+  // thread never sees. So the ring buffer above records every writer and every observed event, and this renders it the way
+  // the design audit renders its gates: the REVERSALS lifted to the top and tinted (a backward step of 8px or more between
+  // consecutive positions IS the artefact he sees), then the commits with their extrapolation, the kill's before/after sync,
+  // the cascades, and the raw rows for COPY REPORT. Dev-only surface: no tr(), no copy gates (dev-toast precedent).
+  function devScrollTraceOverlay() {
+    var old = el("devTraceOv"); if (old) { old.remove(); return "closed"; }
+    var rows = _wtBuf.slice(), POS = { ev: 1, w: 1, tw: 1, pin: 1, land: 1 };
+    var revs = [], revTs = [], commits = [], commitTs = [], kills = [], cascs = [], prev = null, lastD = 0;
+    rows.forEach(function (r) {
+      if (r[1] === "commit") { commits.push("commit @+" + r[0] + "ms  raw " + r[2] + "  started " + r[3] + " (ext " + (r[3] - r[2]) + ")  target " + r[4]); commitTs.push(r[0]); }
+      else if (r[1] === "kill") kills.push("kill @+" + r[0] + "ms  pre " + r[2] + " post " + r[3] + " (sync " + (r[3] - r[2]) + ")");
+      else if (r[1] === "casc") cascs.push("casc @+" + r[0] + "ms  " + (r[2] ? "in" : "out") + " " + (r[3] === 1 ? "home" : r[3] === 2 ? "tools" : "sky"));
+      if (!POS[r[1]]) return;                                  // the finger rows (td/tm/tu) are deliberately NOT positions: they are screen coordinates, not scrollTop, and mixing them into this walk would invent reversals out of the sign flip below
+      if (prev) {
+        var d = r[2] - prev[2];
+        // A REVERSAL is a step that opposes the step before it. The first move of a gesture has nothing to oppose, so
+        // lastD starts at 0 and the sign test simply never fires until a direction exists. 8px is the floor: sub-pixel
+        // rounding and the spring's own settle wobble live below it, a one-frame backjump on his recordings lives well above.
+        if (lastD && Math.abs(d) >= 8 && (d < 0 ? -1 : 1) !== (lastD < 0 ? -1 : 1)) {
+          revTs.push(r[0]);                                    // every reversal timestamp is kept for the finger correlation below, even past the 14 the overlay prints
+          if (revs.length < 14) revs.push("REVERSAL @+" + r[0] + "ms  " + prev[1] + " " + prev[2] + " -> " + r[1] + " " + r[2] + "  (" + (d > 0 ? "+" : "") + d + ")");
+        }
+        if (Math.abs(d) >= 1) lastD = d;
+      }
+      prev = r;
+    });
+    // ---- THE FINGER, IN SCROLL SPACE. A thumb dragging UP the glass has a clientY that DECREASES while scrollTop
+    // INCREASES, so the raw coordinate is the mirror of everything else in this report. Negating it once here means the
+    // finger's velocity carries the same sign as _wV, as the commit's extrapolation, and as the reversal deltas — which
+    // is the whole point of capturing it: David can read "released at +1.4px/ms down" against "commit extrapolated +38"
+    // against "reversal -31" on one screen, instead of doing the sign flip in his head (David 2026-08-27, "correlate
+    // that with the actual scrolling"). The gap columns are the correlation itself: how long after his thumb left the
+    // glass the engine committed, and how long after that the column jumped backward.
+    var fingers = [], open = null, pts = [];
+    rows.forEach(function (r) {
+      if (r[1] === "td") { open = r; pts = [[r[0], -r[2]]]; return; }
+      if (!open) return;                                       // a gesture already in progress when the trace was armed: no start, no line
+      if (r[1] === "tm") { pts.push([r[0], -r[2]]); return; }
+      if (r[1] !== "tu") return;
+      pts.push([r[0], -r[2]]);
+      var travel = 0, i;
+      for (i = 1; i < pts.length; i++) travel += Math.abs(pts[i][1] - pts[i - 1][1]);
+      var last = pts[pts.length - 1], j = pts.length - 1;
+      while (j > 0 && last[0] - pts[j - 1][0] <= 60) j--;      // the release is the last ~60ms of the drag, not the whole of it: a slow reposition followed by a flick releases at the flick's speed
+      if (j === pts.length - 1) j = Math.max(0, j - 1);
+      var span = Math.max(1, last[0] - pts[j][0]), v = (last[1] - pts[j][1]) / span;
+      var line = "finger @+" + open[0] + "ms  travel " + Math.round(travel) + "px in " + (r[0] - open[0]) + "ms  release v " + v.toFixed(2) + "px/ms " + (v > 0 ? "down" : "up");
+      var nc = null, nr = null;
+      for (i = 0; i < commitTs.length; i++) if (commitTs[i] >= r[0]) { nc = commitTs[i]; break; }
+      for (i = 0; i < revTs.length; i++) if (revTs[i] >= r[0]) { nr = revTs[i]; break; }
+      if (nc !== null) line += "  -> commit +" + (nc - r[0]) + "ms";
+      if (nr !== null) line += "  -> reversal +" + (nr - r[0]) + "ms";
+      fingers.push(line); open = null; pts = [];
+    });
+    var raw = rows.map(function (r) { return "+" + r[0] + " " + r[1] + " " + r[2] + " " + r[3] + " " + r[4]; }).join("\n");
+    var tail = (fingers.length ? fingers.join("\n") : "no finger gestures captured") + "\n\n" + (commits.length ? commits.join("\n") : "no commits") + "\n\n" + (kills.length ? kills.join("\n") : "no kills") + "\n\n" + (cascs.length ? cascs.join("\n") : "no cascades") + "\n\n---- RAW ----\n" + raw;
+    var body = (revs.length ? revs.join("\n") : "no reversals >= 8px") + "\n\n" + tail;
+    var ver = ""; try { ver = (document.querySelector('script[src*="app.js"]').getAttribute("src").match(/v=(\d+)/) || [])[1] || ""; } catch (e) {}
+    var ov = document.createElement("div"); ov.id = "devTraceOv";
+    ov.setAttribute("style", "position:fixed;inset:0;z-index:9999;background:rgba(16,4,12,.97);color:#ffe3f1;font:600 11px/1.5 -apple-system,monospace;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px calc(env(safe-area-inset-bottom,0px) + 14px);overflow-y:auto;-webkit-overflow-scrolling:touch;white-space:pre-wrap;word-break:break-word;");
+    var head = document.createElement("div"); head.textContent = "SCROLL TRACE · v" + ver + " · " + rows.length + " entries · " + revs.length + " reversals · tap to close";
+    head.setAttribute("style", "font-weight:800;color:#ffc41f;margin-bottom:10px;");
+    ov.appendChild(head);
+    var cp = document.createElement("button"); cp.textContent = "COPY REPORT"; // same one-tap paste as the design audit: the raw rows are the whole point, and no screenshot can carry 1200 of them
+    cp.setAttribute("style", "display:block;margin:0 0 12px;padding:10px 16px;border:none;border-radius:12px;background:#ff4fa0;color:#2a0d1c;font:800 13px 'Baloo 2',sans-serif;");
+    cp.onclick = function (e) { e.stopPropagation(); var full = head.textContent + "\n" + body;
+      var done = function () { cp.textContent = "COPIED"; };
+      try { navigator.clipboard.writeText(full).then(done, function () { try { window.prompt("copy:", full.slice(0, 2000)); } catch (e2) {} }); } catch (e1) { try { window.prompt("copy:", full.slice(0, 2000)); } catch (e2) {} } };
+    ov.appendChild(cp);
+    if (revs.length) { var rd0 = document.createElement("div"); rd0.textContent = revs.join("\n"); rd0.setAttribute("style", "color:#ff6d6d;margin-bottom:10px;"); ov.appendChild(rd0); }
+    var rd = document.createElement("div"); rd.textContent = (revs.length ? "" : "no reversals >= 8px\n\n") + tail; // the tinted block above already printed the reversals; this is the same tail COPY REPORT hands back, minus the duplicate
+    ov.appendChild(rd);
+    ov.onclick = function () { ov.remove(); };
+    document.body.appendChild(ov);
+    return revs.length + " reversals in " + rows.length + " entries";
+  }
   function devDesignAuditOverlay() { // the 74-gate design audit rendered ON-SCREEN (dev menu → screenshot → done): David's phone reports its own numbers, so a preview-passes/device-fails split names its drifting elements without him describing anything. FAIL lines lifted to the top and tinted. Dev-only surface: no tr(), no copy gates (dev-toast precedent).
     var old = el("devAuditOv"); if (old) { old.remove(); return "closed"; }
     var txt = "";
@@ -21380,7 +21510,7 @@
     { k: "jlx-native", n: "10 · NATIVE transitions (no JS spring) — FEEL A/B" },
     { k: "jlx-snap", n: "11 · OS SNAP magnet (native + your own momentum)" },
     { k: "jlx-selffix", n: "12 · engine ignores its OWN scrolling (jitter + flicker)" },
-    { k: "jlx-nokill", n: "13 · momentum kill OFF (the old writer fight)" }
+    { k: "jlx-nokill", n: "13 · stale-start engine (the old backjump)" }
   ];
   var _jlxI = 0, _jlxRaf = 0;
   var JLX_KEY = "alter_jlx";
@@ -21392,7 +21522,7 @@
     var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
     _wNativeSnap = mode.k.indexOf("jlx-native") >= 0;   // this one is a JS behaviour, not a paint class
     _wSelfFix = mode.k.indexOf("jlx-selffix") >= 0;
-    _wNoKill = mode.k.indexOf("jlx-nokill") >= 0;   // mode 13: let the native fling live alongside the spring again (the jitter, on demand)
+    _wNoKill = mode.k.indexOf("jlx-nokill") >= 0;   // mode 13 now reverts BOTH halves of the backjump fix: no momentum kill, and wLiveStart hands back the raw (stale) main-thread read — the A/B that proves whether the extrapolation is what removed the jump
     _wCssSnap = mode.k.indexOf("jlx-snap") >= 0;        // …and this one stands the JS spring down entirely, so the OS is the only thing snapping
     if (!_wCssSnap) { _wSnapOn = null; document.body.classList.remove("jlx-snapon"); }
     else { _wSnapOn = null; try { var _sw = el("tfWorld"); if (_sw) wSnapRegion(_sw, _sw.scrollTop - wHomeY()); } catch (e) {} } // prime it: switching mode on while already parked fires no scroll event, so the band would stay unset until the first move
@@ -21454,12 +21584,14 @@
       ["· · · · · · ·", function () {}],
       ["📐 Design audit (this phone)", devDesignAuditOverlay],
       [(function () { return "🎚 Scroll test: " + JLX_MODES[_jlxI].n; })(), jlxCycle], // tap to cycle a suspect out, scroll the journey, read the fps — the phone naming the cost instead of me guessing at it
+      [(function () { return "📈 Scroll trace: " + (_wtOn ? "ON (do the gesture, then open the report)" : "OFF"); })(), function () { _wtOn = !_wtOn; if (_wtOn) { _wtBuf = []; } try { toast("Scroll trace " + (_wtOn ? "ARMED — do the gesture" : "off")); } catch (e) {} return "keep"; }, function () { return "📈 Scroll trace: " + (_wtOn ? "ON (do the gesture, then open the report)" : "OFF"); }], // arm, flick once, open the report: every writer and every event in order, so the backjump's author is named rather than guessed at
+      ["📈 Scroll trace report", function () { return devScrollTraceOverlay(); }],
 
       [(function () { var k = todayK(), on = blocks(k).some(function (b) { return b && b.id === "devupnext"; }); return on ? "🔵 Up-next face: ON (tap to clear)" : "🔵 Sim: next block due (blue disc)"; })(), function () { var k = todayK(), on = blocks(k).some(function (b) { return b && b.id === "devupnext"; }); try { toast("dev: " + window.DEV.upnext(on ? "off" : undefined)); } catch (e) {} }], // the OTHER half of "simulate evening": the blue stone is the UP-NEXT face (a planned block due within 10 min wearing its domain hue), which is data-driven — the clock sim alone can never reach it
  // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
       [(devSimMin() == null ? "🌆 Sim time: OFF (real clock)" : "🌆 Sim time: " + fmt(devSimMin())), function () { var cur = devSimMin(); var v = window.prompt("Simulate time of day, 24h (e.g. 20 or 22:30). Empty or 'off' = real clock.", cur == null ? "20" : fmt(cur)); if (v === null) return; try { toast("dev: " + window.DEV.hour(v.trim())); } catch (e) {} }], // DEV TIME-SIM (David 2026-08-15): see the evening/night home without waiting for the evening — heroes flip at 20:00, the night face at bedHour() (his profile's bedtime, default 24:00) or before 05:00
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], [" · persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], [" · persona: early (day 3)", function () { devLoadPersona("early"); }], [" · persona: building (week 2)", function () { devLoadPersona("building"); }], [" · persona: established (month 1)", function () { devLoadPersona("established"); }], [" · persona: power (all chapters)", function () { devLoadPersona("power"); }]];
-    acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { var r; try { r = a[1](); } catch (e) {} if (r === "keep") { btn.textContent = "🎚 Scroll test: " + JLX_MODES[_jlxI].n; return; } s.remove(); }; s.appendChild(btn); }); // a row may return "keep" to stay open and relabel itself in place
+    acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { var r; try { r = a[1](); } catch (e) {} if (r === "keep") { btn.textContent = a[2] ? a[2]() : ("🎚 Scroll test: " + JLX_MODES[_jlxI].n); return; } s.remove(); }; s.appendChild(btn); }); // a row may return "keep" to stay open and relabel itself in place — a[2] is its own label thunk (without it every keep-row printed the SCROLL TEST label, which is what the trace toggle would have shown after one tap)
     var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
     document.body.appendChild(s);
   }
