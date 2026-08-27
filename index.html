@@ -1927,11 +1927,19 @@
      `transform` stays free for the rotation itself. Linear ease and a long period — rays should turn like a slow wheel,
      never pulse. */
   .jl-l-tex.jl-spin{ inset:auto; top:50%; left:50%; width:230%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; animation:mSpin 90s linear infinite; }
-  /* the stone's own turning fill (David 2026-08-27: "the stones themselves need to spin too, also slowly"). A square of
-     the circle's diameter covers it at EVERY angle — a square's inscribed circle is unchanged by rotation — so 104% is
-     already generous. The icon that follows it is positioned only so that it lifts above this layer; the glisten after
-     it keeps sweeping over both, exactly as on every other stone. 110s: a full turn takes nearly two minutes. */
-  .jl-lstone-tex{ position:absolute; top:50%; left:50%; width:104%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; border-radius:50%; animation:mSpin 110s linear infinite; }
+  /* THE STONE'S TURNING FILL, and the two things v1386 broke with it (David 2026-08-27: "the spinning destroyed what the
+     stone looks like… it gets rid of the little highlight above, a little shadow below, and the symbol on it", "makes it
+     less square").
+     (a) The layer is the CIRCLE ITSELF, not an oversized square. A circle's silhouette does not change when you turn it,
+         so there is nothing to clip against the parent's radius — v1386 spun a 104% square inside a border-radius clip,
+         and re-clipping a rotating layer every frame is what softened the edge.
+     (b) --ss's two INSET shadows paint above an element's background but BELOW its children, so the moment the fill
+         became a child it covered them: exactly the missing highlight and inner shadow he named. A ray stone therefore
+         keeps only the OUTER drop shadow on itself and wears the two insets on a still sheen layer ABOVE the fill —
+         same pixels, same order (below the glyph, as they always were). */
+  .jl-lstone-tex{ position:absolute; inset:0; border-radius:50%; transform-origin:50% 50%; animation:mSpin 110s linear infinite; }
+  .jl-lstone.jl-rayst{ box-shadow:0 6px 0 #00000061; }
+  .jl-lstone-sheen{ position:absolute; inset:0; border-radius:50%; box-shadow:inset 0 4px 0 #ffffff0f, inset 0 -6px 0 #00000038; pointer-events:none; }
   .jl-lstone-tex ~ i{ position:relative; }
   @keyframes mSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
   .jl-l-grain{ position:absolute; inset:0; pointer-events:none; z-index:4; background:var(--tex); background-size:5px 5px, auto; }
@@ -4459,6 +4467,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1386"></script>
+  <script src="app.js?v=1387"></script>
 </body>
 </html>
