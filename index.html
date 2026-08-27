@@ -1926,7 +1926,13 @@
      spinning layer is therefore a SQUARE wider than the card's diagonal, centred with the `translate` property so
      `transform` stays free for the rotation itself. Linear ease and a long period — rays should turn like a slow wheel,
      never pulse. */
-  .jl-l-tex.jl-spin{ inset:auto; top:50%; left:50%; width:230%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; animation:mSpin 34s linear infinite; }
+  .jl-l-tex.jl-spin{ inset:auto; top:50%; left:50%; width:230%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; animation:mSpin 90s linear infinite; }
+  /* the stone's own turning fill (David 2026-08-27: "the stones themselves need to spin too, also slowly"). A square of
+     the circle's diameter covers it at EVERY angle — a square's inscribed circle is unchanged by rotation — so 104% is
+     already generous. The icon that follows it is positioned only so that it lifts above this layer; the glisten after
+     it keeps sweeping over both, exactly as on every other stone. 110s: a full turn takes nearly two minutes. */
+  .jl-lstone-tex{ position:absolute; top:50%; left:50%; width:104%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; border-radius:50%; animation:mSpin 110s linear infinite; }
+  .jl-lstone-tex ~ i{ position:relative; }
   @keyframes mSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
   .jl-l-grain{ position:absolute; inset:0; pointer-events:none; z-index:4; background:var(--tex); background-size:5px 5px, auto; }
   .jl-l-gl{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:2; mix-blend-mode:overlay; }
@@ -2019,7 +2025,14 @@
      home's TOP to the viewport top, the sky's BOTTOM to the viewport bottom (= wSkyY), the ground's BOTTOM to the bottom
      (= wToolsY, which wMeasurePad already pads to exactly one viewport). The JS spring stands down while this is on —
      two snap models running at once is the bounce the constitution bans. */
-  body.jlx-snap #trackerFull.tf-onepage.tf-onehome #tfWorld{ scroll-snap-type:y proximity; }
+  /* STRICTNESS IS SET FROM JS, PER REGION (David 2026-08-27 on v1385's proximity: "if you swipe kind of hard and let go
+     it's basically fixed, but if you swipe slowly it just kinda gets stuck" and "the journey feels slower to scroll up
+     through, a little clunky"). Both complaints are the same property: `proximity` only snaps when the gesture ENDS near
+     a landing, so a slow drag strands you between zones — and while you are reading UP the line it keeps grabbing at
+     you. Neither strictness is right everywhere, so the app switches it by where you are: MANDATORY across the two
+     transition bands, where a landing is the only legal rest, and NONE the moment you climb past the journey landing,
+     where reading must be free. One class write when the region actually changes; the OS still does all the moving. */
+  body.jlx-snap.jlx-snapon #trackerFull.tf-onepage.tf-onehome #tfWorld{ scroll-snap-type:y mandatory; }
   body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-home{ scroll-snap-align:start; }
   body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-sky{ scroll-snap-align:end; }
   body.jlx-snap #trackerFull.tf-onepage.tf-onehome .tfw-ground{ scroll-snap-align:end; }
@@ -4446,6 +4459,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1385"></script>
+  <script src="app.js?v=1386"></script>
 </body>
 </html>
