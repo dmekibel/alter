@@ -1921,6 +1921,13 @@
   .jl-lock-card{ width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3), inset 0 0 0 999px rgba(16,6,14,.52); overflow:hidden; position:relative; background:#1b0c1a; display:flex; align-items:center; gap:12px; padding:13px 15px; }
   .jl-lock-card.jl-lit{ box-shadow:none; animation:mGlow 4.6s ease-in-out infinite; }
   .jl-l-tex{ position:absolute; inset:-45%; animation:mDrift 13s ease-in-out infinite; }
+  /* …EXCEPT THE RAY PATTERNS, WHICH TURN (David 2026-08-27). The drift layer is a 190% rectangle, which is ample for a
+     slide but NOT for a rotation: at 90° its short side would fall inside the card and the corners would open up. A
+     spinning layer is therefore a SQUARE wider than the card's diagonal, centred with the `translate` property so
+     `transform` stays free for the rotation itself. Linear ease and a long period — rays should turn like a slow wheel,
+     never pulse. */
+  .jl-l-tex.jl-spin{ inset:auto; top:50%; left:50%; width:230%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; animation:mSpin 34s linear infinite; }
+  @keyframes mSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
   .jl-l-grain{ position:absolute; inset:0; pointer-events:none; z-index:4; background:var(--tex); background-size:5px 5px, auto; }
   .jl-l-gl{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:2; mix-blend-mode:overlay; }
   .jl-l-gl > span{ position:absolute; inset:-40% -30%; background:var(--gl); animation:mFoil 6.5s ease-in-out infinite; }
@@ -4439,6 +4446,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1384"></script>
+  <script src="app.js?v=1385"></script>
 </body>
 </html>

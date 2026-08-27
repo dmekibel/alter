@@ -3,6 +3,15 @@
 
 ---
 
+## STATUS UPDATE (2026-08-27 (7), rays turn instead of sliding): v1385
+David: "I like how the patterns are kinda moving left and right, but I don't think that movement really fits for the shapes which have radial lines going outwards — those would make more sense if they just spin within the pattern itself instead of sliding left/right."
+**Built by what the texture IS, not a hand-kept list:** any chapter gate whose fill contains a `conic-gradient` (= rays radiating from a centre) now rotates instead of drifting. **11 of 36** qualify (chapters 3, 9, 10, 11, 12, 17, 20, 23, 27, 31, 32); the other 24 keep David's mDrift exactly as it was. A sliding sun reads as the whole disc wandering off its own axis; turning reads as the thing itself rotating.
+**The geometry mattered:** `.jl-l-tex` is a 190% RECTANGLE — ample for a slide, wrong for a rotation (at 90° its short side falls inside the card and the corners open). The spin variant is a SQUARE wider than the card's diagonal (833px against a 362x74 card, diagonal 369), centred with the `translate` property so `transform` stays free for the rotation. 34s linear — rays should turn like a slow wheel, never pulse.
+**VERIFIED live:** 11 spinning / 24 drifting, an awake gate reads `mSpin 34s running` with its transform matrix genuinely advancing, sleeping gates still carry no animation at all, gates 97/97 both sizes, ratchet flat. **DEVICE-UNTESTED:** the look of the turn on his phone.
+**OPEN — his call in one line:** 11 more chapters use RADIAL gradients that are mostly concentric rings (6, 7, 13, 14, 15, 16, 18, 21, 26, 30, 34). Spinning perfect rings is invisible, so they were left drifting — say the word if any of those read as "rays" to him too.
+
+---
+
 ## STATUS UPDATE (2026-08-27 (6), HIS DATA CLOSED THE CASE): v1384
 **David ran the whole scroll test on device and recorded it (89s, all modes 1-9). The numbers settle four rounds of argument:**
 | mode | fps | worst frame |

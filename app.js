@@ -6020,7 +6020,13 @@
   function jlBanner(c) { // a locked chapter's GATE, wearing exactly the ladder rungs that chapter has earned
     var row = document.createElement("div"); row.className = "jl-lock";
     var card = jlAdd(row, "div", "jl-lock-card" + ((c.fx & JL_FX_GLOW) ? " jl-lit jl-fx" : ""));
-    jlAdd(card, "span", "jl-l-tex jl-fx", "background:" + c.tex + ";");
+    // RAYS SPIN, THEY DO NOT SLIDE (David 2026-08-27: "I like how the patterns are moving left and right, but I don't
+    // think that movement fits the shapes which have radial lines going outwards — those would make more sense if they
+    // just spin within the pattern itself"). A conic gradient IS rays radiating from a centre, and sliding one sideways
+    // reads as the whole sun drifting off its own axis; rotating it reads as the thing turning. Selected by what the
+    // texture actually IS, not by a hand-kept list: any chapter whose fill contains a conic gradient turns instead of
+    // drifting. The other thirty-six-minus-eleven keep David's drift exactly as it was.
+    jlAdd(card, "span", "jl-l-tex jl-fx" + (/conic-gradient/.test(c.tex || "") ? " jl-spin" : ""), "background:" + c.tex + ";");
     if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
     if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl jl-glis"), "span", "jl-fx");
     if (c.fx & JL_FX_INGLOW) jlAdd(card, "span", "jl-l-inglow");
