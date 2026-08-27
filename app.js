@@ -6802,6 +6802,23 @@
     return out;
   }
   function hcCols(bars) { var out = []; [].slice.call(bars.children).forEach(function (c) { if (c.offsetHeight || c.offsetWidth) { c.setAttribute("data-hcs", "1"); out.push(c); } }); return out; } // five day columns then the chevron, in DOM order = left to right
+  // THE FOUR DECK TILES — Morning Stack · Breathe · Meditate · Night Stack, the row David calls "the four tools on the bottom" of the
+  // home screen. They are BOARD, not shelf, and that correction is the whole reason no arrival ever choreographed them (David device
+  // 2026-08-28: "the four tools on the bottom appear to be already there"). The obvious guess is that they are the tools shelf's first
+  // four tiles peeking above the fold — they are not: on the 2c face renderToolbox2 FILTERS TFH_HEROES out of #tbxGridTop (the 2c
+  // dedupe, "the eight stacks are SPLIT, not duplicated"), so the shelf's own first four are Body · Heart · Vision · Build and live in
+  // the GROUND zone. These four are #tfHeroRow's buttons, built by tfhHeroRow into the HOME zone, and nothing in either cascade owned
+  // them. They are therefore driven by the HOME cascade's machinery (hcPlay/hcFlush/hcReset) and never by tcFlat/_tcExit — mixing the
+  // shelf's end-state contract into a home-zone node would give one element two owners for one property, which is the flicker class
+  // this file keeps re-learning. The data-hcs tag buys them the same safety net the strip's columns have: hcReset hands them back to
+  // plain CSS at home, teardownWorld calls hcReset, and index.html's .jlx-nocascade escape hatch already targets [data-hcs].
+  // Re-read on EVERY call, never cached: tfhHeroRow drains and rebuilds this row on every board render (the per-minute sweep), so a
+  // held list would be the stale-shelf bug of 2026-08-15 wearing home-zone clothes.
+  function tcPeek() {
+    if (!tfh2c()) return [];                     // the deck row is a 2c-face block (#tfHeroWrap is display:none elsewhere, and tfhHeroRow no-ops off 2c). Animating a node that isn't laid out fires no animationend, so the exit's opacity:0 would stick with nothing to clear it.
+    var r = el("tfHeroRow"); if (!r) return [];
+    var out = []; [].slice.call(r.children).forEach(function (n) { n.setAttribute("data-hcs", "1"); out.push(n); }); return out;
+  }
   function hcPlay(n, name, dur, delay, ease, keep) { (_hcQ || (_hcQ = [])).push([n, name, dur, delay, ease, !!keep]); }
   function hcFlush() { // BATCHED: every start state written first, ONE forced reflow, then every animation assigned. Writing them interleaved costs a reflow per element and is what made the header "cut" instead of sweep (note 9).
     var q = _hcQ; _hcQ = null; if (!q || !q.length) return;
@@ -6831,6 +6848,14 @@
     var els = hcEls(), order = dirKey === "down" ? els : els.slice().reverse();
     var name = dirKey === "down" ? "homeSinkDown" : "homeSinkUp";
     order.forEach(function (n, i) { hcPlay(n, name, 0.3, i * 40, "cubic-bezier(.45,0,.75,.4)", true); });
+    // …AND THE DECK TILES LEAVE WITH THE BOARD, both ways. They sit below the Planner row, so they take the bottom slot of the mirror:
+    // on an up-exit (toward the journey) they fold FIRST, left to right, ahead of the board's bottom-to-top climb; on a down-exit
+    // (toward the tools) they fold LAST, after the top-to-bottom sink. Both directions are needed and neither is the shelf's business
+    // — the shelf's cascade never touches these nodes (see tcPeek). Without the up-exit David watches them stand there while the
+    // journey slides in; without the down-exit they are still lit on the glide back up from the tools, which is the "already there"
+    // half of his 2026-08-28 report. Same batch, same hcFlush, no extra reflow.
+    var peek = tcPeek(), pBase = dirKey === "down" ? order.length * 40 : 0;
+    peek.forEach(function (n, j) { hcPlay(n, name, 0.3, pBase + j * 30, "cubic-bezier(.45,0,.75,.4)", true); });
     hcFlush();
   }
   function hcArrive(from) { // from "up" (out of the tools) = bottom-to-top, Planner first (note 4). from "down" (out of the journey) = the exact opposite (note 10).
@@ -6844,7 +6869,18 @@
     var name = from === "up" ? "homeRise" : "homeDrop", step = 55, dur = 0.42, t = 0;
     var EASE = "cubic-bezier(.3,1.28,.5,1)";                     // the tools' spring-pop, now the home board's too
     var SWEEP_EASE = "cubic-bezier(.2,.85,.28,1)";               // …except the strip's sweep, which David approved as it is: its keyframe rotates the columns through a 3D perspective, and an overshoot ease on that reads as a wobble rather than a pop
-    order.forEach(function (n) {
+    // THE FOUR DECK TILES ARE A BEAT OF THIS ARRIVAL (David 2026-08-28: "the four tools on the bottom appear to be already there —
+    // instead they should appear in a cascading manner from left to right, after Planner"). Left to right on a 45ms stagger, one step
+    // after the Planner row's own beat, and the rest of the board resumes AFTER the sweep rather than climbing through it — otherwise
+    // the tiles and the stone start on the same frame and the flow stops reading as one line. They take the board's own keyframe
+    // (homeRise / homeDrop), not the shelf's youRowIn: index.html records that homeRise IS youRowIn's spring-pop rewritten in the
+    // translate/scale properties, so the feel is identical while the DIRECTION stays honest to which way the board is being built.
+    // Coming up out of the tools Planner is the first beat, so the tiles follow it immediately; coming down out of the journey Planner
+    // is the last, so the tiles close the arrival — either way they are the bottom of the board and they read as its final sweep.
+    var peek = tcPeek(), peekDone = false;
+    function hcPeekBeat() { peekDone = true; var b = t; peek.forEach(function (p, j) { hcPlay(p, name, dur, b + j * 45, EASE); }); t = b + peek.length * 45; }
+    order.forEach(function (n, i) {
+      if (from === "up" && i === 1 && peek.length && !peekDone) hcPeekBeat();
       if (n.id === "tfHomeBars") { // the strip sweeps; it never rises as one slab
         n.style.animation = ""; n.style.opacity = ""; n._hcExit = false;
         var cols = hcCols(n);
@@ -6854,6 +6890,7 @@
         t += step + cols.length * 26 * 0.5; // the sweep overlaps the next block rather than blocking on it — the board reads as ONE arrival
       } else { hcPlay(n, name, dur * 1.1, t, EASE); t += step; }
     });
+    if (peek.length && !peekDone) hcPeekBeat(); // the "down" arrival closes on the tiles — and a board reduced to a single laid-out block (the i===1 slot never comes round) falls through to the same append rather than losing the beat
     hcFlush();
     clearTimeout(_hcT); _hcT = setTimeout(hcReset, Math.round(t + dur * 1000) + 260);
   }
@@ -6862,6 +6899,29 @@
     if (!_hcArmUp && !_hcArmDown) return;
     if (Math.abs(w.scrollTop - wHomeY()) > 40) return;
     var from = _hcArmUp ? "up" : "down"; _hcArmUp = _hcArmDown = false; hcArrive(from);
+  }
+  // THE BOARD MAY NOT STAND VISIBLE WHILE THE COLUMN IS AWAY (David device 2026-08-28: "you can see the rest circle, and then it
+  // disappears and then it appears again — you shouldn't see it the first time"). hcExit hides these blocks, but the minute tick
+  // REBUILDS them fresh and visible while he is parked in another zone — the exact stale-shelf bug tcResyncSoon fixed for the tools
+  // shelf on 2026-08-15; this is the board's version, and the deck tiles' too. So the board is standing there through the whole return
+  // glide until hcArrive re-hides it and replays it, which is the blink he is describing. Runs only while the state machine says we
+  // are OUT and the column is at least 200px away, and writes ONLY on members that have drifted visible.
+  // THREE THINGS THIS DELIBERATELY WILL NOT DO, each of them a way to break what is finally smooth:
+  //   • it never reads layout — HC_IDS by id and a style-property test, no offsetHeight, no hcEls(). This runs off the one scroll
+  //     listener, and a forced reflow per scroll event on the journey's own read is exactly the chop of the 2026-08-27 rounds.
+  //   • it never interrupts a running exit (`_hcExit` is true for the whole fill) — killing that animation mid-flight would snap the
+  //     block to 0 in one frame, trading a late board for a popping one.
+  //   • it leaves #tfHomeBars alone wherever the scroll-linked strip fade owns that property (wScrub writes it off the 2c face) —
+  //     one element, one writer, one property.
+  var _hcAwayAt = 0;
+  function hcAwayHide(d) {
+    if ((_hcState !== "outUp" && _hcState !== "outDown") || Math.abs(d) < 200) return;
+    var nw = wNow(); if (nw - _hcAwayAt < 250) return; _hcAwayAt = nw;   // a repair, not a per-frame writer: the rebuild it undoes happens once a minute, and the first scrub of the way back is early enough
+    HC_IDS.forEach(function (id) {
+      if (id === "tfHomeBars" && !(WM && tfh2c())) return;
+      var n = el(id); if (n && !n._hcExit && n.style.opacity !== "0") { n.style.animation = "none"; n.style.opacity = "0"; }
+    });
+    tcPeek().forEach(function (n) { if (!n._hcExit && n.style.opacity !== "0") { n.style.animation = "none"; n.style.opacity = "0"; } }); // the deck tiles are board members here too, on BOTH sides: nothing in the shelf's cascade owns them (see tcPeek), so there is no inbound cascade to fight on the tools side
   }
   function hcScrub(d) { // d = travel from home. ARM deep in a zone, PLAY on the way back — that ordering is why the cascade can fire mid-glide instead of after landing (notes 19/24/27).
     var w = el("tfWorld"); if (!w) return;
@@ -6888,6 +6948,7 @@
     if (_hcArmUp && (_wAnim || _wCssSnap) && goHome && up && d < 260) { _hcArmUp = _hcArmDown = false; hcArrive("up"); }
     else if (_hcArmDown && (_wAnim || _wCssSnap) && goHome && down && d > -260) { _hcArmUp = _hcArmDown = false; hcArrive("down"); }
     else if (_hcArmUp || _hcArmDown) { clearTimeout(_hcInT); _hcInT = setTimeout(hcMaybeIn, 20); }     // …or on a 20ms-debounced settle, whichever lands first
+    hcAwayHide(d);                                                                                    // LAST, after the arrival branches: a board that just arrived is state "in" and can never be hidden by this
   }
   // ===== THE TOOLS CASCADE — the shelf's rows, entering bottom-up as you travel down and folding away right-to-left as you leave. =====
   var _tcShown, _tcHard = false, _tcInAt = 0, _tcInT = 0, _tcEls = null;
