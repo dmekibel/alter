@@ -1977,6 +1977,18 @@
      constantly, and again for every row the paint window reveals. Promoted, the texture is rastered ONCE and thereafter
      only moved. Scoped to rows inside the window so the count stays ~40 small layers, never 272. */
   #jrnyLine .jl-lstone-row:not(.jl-far) > .jl-lstone{ will-change:transform; }
+  /* ===== THE ON-DEVICE SCROLL TEST (David 2026-08-27, fourth chop report). The Mac CANNOT reproduce this: the same build
+     measures 76fps with zero blocking in headless Chrome while his phone drops every second frame, so every fix so far has
+     been a hypothesis shipped blind. These classes strip one suspect at a time so the PHONE can answer which layer costs
+     the frames — the same move as the on-device design audit and the Fast-coast toggle. Test-only: nothing sets them
+     unless the dev menu does. ===== */
+  body.jlx-nostars #tfWorldSky.jl-sky{ background-image:linear-gradient(0deg, rgba(58,15,36,0) 0 30%, rgba(30,18,52,.45) 58%, rgba(20,32,63,.6) 82%, rgba(9,13,30,.78) 100%) !important; }
+  body.jlx-flat #jrnyLine .jl-lstone, body.jlx-flat #jrnyLine .jl-lock{ background-image:none !important; background-color:#4a2b46 !important; }
+  body.jlx-noblend #jrnyLine .jl-glis{ display:none !important; }
+  body.jlx-noshadow #jrnyLine .jl-lstone{ box-shadow:none !important; }
+  body.jlx-norows #jrnyLine .jl-lstone-row, body.jlx-norows #jrnyLine .jl-lock{ visibility:hidden !important; }
+  #jlxFps{ position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom,0px) + 96px); z-index:99999;
+    background:#160510e6; color:#fff2f9; font:800 13px/1.25 "Jost",sans-serif; padding:8px 14px; border-radius:12px; text-align:center; pointer-events:none; white-space:pre; }
   /* CONTENT-VISIBILITY IS GONE (David's device video 2026-08-26: scrolled past chapter one the whole line was a VOID —
      starfield and puck, no stones, no gates — while the same depth rendered fine in desktop Chrome). iOS Safari was
      failing to materialize the skipped subtrees during scroll in a 26,000px scroller, and once enough rows in a tile
@@ -4398,6 +4410,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1380"></script>
+  <script src="app.js?v=1381"></script>
 </body>
 </html>
