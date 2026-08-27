@@ -5791,7 +5791,14 @@
         // only decisive flicks did. _wStartTop re-anchors after 220ms of silence, so a second flick from home carries on
         // into the tools exactly as before — what dies is the single unbroken flick that ate the middle zone.
         if (iv > 0 && st > hy - 6 && st < ty - 6 && _wStartTop >= hy - 6) { _wFlung = true; clearTimeout(_wSnapT); wMeasurePad(); wSpring(wToolsY(), false); } // re-read after the pad: a flick must land on the SAME whole-screen tools the snap would
-        else if (iv > 0 && st < hy - 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }   // descending out of the sky: home is the destination, and it is reached at the SAME moment it used to be skipped
+        // DESCENDING OUT OF THE SKY — but only from inside the transition band (David on device 2026-08-27: "if you're up
+        // in the journey and you just do one hard scroll down, it takes you all the way back down to home… it should
+        // just be like scrolling in any other iPhone app, the momentum takes you wherever it goes"). v1379 added this
+        // branch without a floor, so it fired at ANY height above home and turned one downward flick taken deep in the
+        // line into a flight to home. It is the mirror of the upward rule v1378 fixed, and it takes the mirror bound:
+        // the catch belongs to the home↔journey transition, and above the journey landing the phone's own momentum owns
+        // the gesture — the same free-scroll law wSnapIntent already encodes past one viewport.
+        else if (iv > 0 && st < hy - 6 && st >= wSkyY() - 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
         else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wSpring(hy, true); }
         // THE FLING-CATCH LOCK (David on device 2026-08-26: "it's not letting me go any higher in journey past the
         // beginning"). `st <= hy + 6` is true at home AND everywhere ABOVE the landing, so a hard upward flick taken while
