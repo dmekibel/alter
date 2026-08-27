@@ -5810,7 +5810,11 @@
       if (Math.abs(iv) > 0.07) _wDir = iv < 0 ? -1 : 1;
       if (!_wAnim) _wPk = Math.max(_wPk || 0, Math.abs(iv));
       // FLING CATCH: a decisive flick doesn't wait for the settle timer — it commits to the destination immediately. Latched once per gesture.
-      if (!_wAnim && !_wFlung && !_wCssSnap && Math.abs(iv) > (iv < 0 ? 0.55 : 0.85) && !wBusy() && nw >= _wNoSnap) {
+      // NEVER WITH A FINGER ON THE GLASS (David device 2026-08-27, the jitter): while a finger is down the compositor pins
+      // the column to the finger, and a spring launched into that can only fight it — two writers, same direction,
+      // different speeds. The catch now waits for the first momentum event after release, which reads the same iv and
+      // commits with the fling freshly killed — same feel, one writer.
+      if (!_wAnim && !_wFlung && !_wCssSnap && !_wTouch && Math.abs(iv) > (iv < 0 ? 0.55 : 0.85) && !wBusy() && nw >= _wNoSnap) {
         var hy = wHomeY(), ty = wToolsY(), st = world.scrollTop;
         // ONE ZONE PER GESTURE (David on device 2026-08-27: "you might be in the journey, and you might scroll down, and it
         // might skip home and go straight into the tools. That should never happen. And also from the tools up to the
@@ -6514,9 +6518,28 @@
   // `scrollTo({behavior:"smooth"})` is compositor-driven on iOS, but it has a fixed easing and no velocity handoff, so it
   // is a FEEL change and only his phone can judge it: it ships OFF, behind scroll-test mode 10, as an A/B he can flip in
   // two taps. If native feels better on the device, the spring's physics come out and this becomes the road.
-  var _wNativeSnap = false, _wNatT = 0, _wCssSnap = false, _wSnapOn = null;
+  var _wNativeSnap = false, _wNatT = 0, _wCssSnap = false, _wSnapOn = null, _wNoKill = false;
+  // ---- KILL THE NATIVE FLING (David device 2026-08-27, three-flick test: "the actual positioning of the scroll jitters").
+  // Frame-tracked on his recording: mid-transition the column jumps BACKWARD ~40px for one frame, then continues — the
+  // signature of two writers interleaving. The fling catch starts the spring while iOS's momentum fling is still live,
+  // and on iOS the compositor keeps writing its own position for the rest of the fling; both writers travel the same
+  // direction at different speeds, so the paint alternates between their two trajectories. Mode 12 could never see this:
+  // scroll events report only the merged result, and its yield rule looks for OPPOSING motion. The platform's one real
+  // off-switch is to stop being scrollable for a frame: overflow hidden ends the fling dead, then the spring owns the
+  // column alone. One forced reflow, once per commit. Mode 13 turns this off to resurrect the old fight for A/B.
+  function wKillFling(w) {
+    if (_wNoKill) return;
+    try {
+      var st = w.scrollTop;
+      w.style.overflowY = "hidden";
+      void w.offsetHeight;                        // style must actually apply before it is undone, or iOS ignores the toggle
+      w.style.overflowY = "";
+      _wSelfW = st; w.scrollTop = st;             // re-assert, marked as our own write
+    } catch (e) {}
+  }
   function wSpringNative(to) {
     var w = el("tfWorld"); if (!w) return;
+    wKillFling(w);
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } }
     _wAnim = true; _wStop = false; _wV = 0;
@@ -6527,6 +6550,7 @@
   function wSpring(to, soft) {
     if (_wNativeSnap) return wSpringNative(to);
     var w = el("tfWorld"); if (!w) return;
+    wKillFling(w);
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } } // leaving upward: the shelf starts folding away NOW, not when we arrive
     if (_wDown && JLINE && _jcShown) { _jcShown = false; clearTimeout(_jcInT); jcCascade(-1); } // …and the mirror image: leaving the sky downward, the line starts folding NOW, not on the seam
@@ -6550,6 +6574,7 @@
   // ---- a deliberate, eased travel (the HUD hints + the puck). ARMS the arrival cascade rather than playing it, so it fires on arrival (note 23). ----
   function wScrollTo(to, dur) {
     var w = el("tfWorld"); if (!w) return;
+    wKillFling(w);
     // BOTH FLAGS, ALWAYS (David on device 2026-08-27: "clicking the little journey button above the home takes you to
     // journey, but nothing appears — it's just an empty sky"). wSpring sets _wUp AND _wDown; this one only ever set
     // _wUp, so _wDown kept whatever the LAST spring left on it. Land here with a stale _wDown=true and the sky cascade's
@@ -21354,7 +21379,8 @@
     { k: "jlx-nocascade jlx-nopara", n: "9 · cascades AND parallax off" },
     { k: "jlx-native", n: "10 · NATIVE transitions (no JS spring) — FEEL A/B" },
     { k: "jlx-snap", n: "11 · OS SNAP magnet (native + your own momentum)" },
-    { k: "jlx-selffix", n: "12 · engine ignores its OWN scrolling (jitter + flicker)" }
+    { k: "jlx-selffix", n: "12 · engine ignores its OWN scrolling (jitter + flicker)" },
+    { k: "jlx-nokill", n: "13 · momentum kill OFF (the old writer fight)" }
   ];
   var _jlxI = 0, _jlxRaf = 0;
   var JLX_KEY = "alter_jlx";
@@ -21366,6 +21392,7 @@
     var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
     _wNativeSnap = mode.k.indexOf("jlx-native") >= 0;   // this one is a JS behaviour, not a paint class
     _wSelfFix = mode.k.indexOf("jlx-selffix") >= 0;
+    _wNoKill = mode.k.indexOf("jlx-nokill") >= 0;   // mode 13: let the native fling live alongside the spring again (the jitter, on demand)
     _wCssSnap = mode.k.indexOf("jlx-snap") >= 0;        // …and this one stands the JS spring down entirely, so the OS is the only thing snapping
     if (!_wCssSnap) { _wSnapOn = null; document.body.classList.remove("jlx-snapon"); }
     else { _wSnapOn = null; try { var _sw = el("tfWorld"); if (_sw) wSnapRegion(_sw, _sw.scrollTop - wHomeY()); } catch (e) {} } // prime it: switching mode on while already parked fires no scroll event, so the band would stay unset until the first move
