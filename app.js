@@ -15435,6 +15435,24 @@
     function msTitle() { var a = acts && acts[curAct]; return (a && a.name) || opts.title || opts.logTitle || "Session"; }
     function msPaint() { MEDIASESSION.meta(msTitle(), _msArtA); }
     function msSync() { MEDIASESSION.state(playing ? "playing" : "paused"); MEDIASESSION.pos(total, curElapsed()); }
+    // THE LOCK SCREEN'S CLOCK MUST BE RIGHT THE INSTANT IT APPEARS (David on device 2026-08-27: "if you're in the stack
+    // and you close the player, close your phone… it says the correct time of the entire stack, thirty three minutes, but
+    // it assumes you're in the first second, and it takes a bit of time to realize you're on the second or third
+    // activity"). setPositionState is an ANCHOR, not a readout: iOS draws `position + (now - whenYouSetIt)`. We only ever
+    // set it at act boundaries and transport events, so the anchor could be minutes old when the screen actually lit —
+    // and an anchor that old is exactly a clock that starts wrong and then jumps once something re-syncs it. Two cheap
+    // guarantees: re-anchor on the way OUT (visibilitychange fires while our JS can still run, so the card is born with
+    // the true second), and a slow heartbeat while playing so it can never be stale in the first place. Both are torn
+    // down with the session — a leaked interval here would keep writing to a card this player no longer owns.
+    var _msHb = 0, _msVis = null;
+    function msHeartbeat(on) {
+      clearInterval(_msHb); _msHb = 0;
+      if (_msVis) { try { document.removeEventListener("visibilitychange", _msVis); } catch (e) {} _msVis = null; }
+      if (!on) return;
+      _msHb = setInterval(function () { if (done) { clearInterval(_msHb); _msHb = 0; return; } if (MEDIASESSION.owner() === _msTok) msSync(); }, 5000);
+      _msVis = function () { if (!done && document.hidden && MEDIASESSION.owner() === _msTok) msSync(); }; // the last thing we do before the phone goes dark
+      try { document.addEventListener("visibilitychange", _msVis); } catch (e) {}
+    }
     function msArt() { // the stack's own emblem in the canonical deck grammar: the CURRENT act's hue on the face with its glyph, the other acts' hues as the two shards behind it
       var a = acts && acts[curAct], L = acts || actBars || [];
       var hue = (a && a.color) || col, key = hue;                    // keyed on the COLOUR alone now — the card is one circle, so a new act repaints it only when its hue actually differs
@@ -15456,9 +15474,9 @@
         seekforward: function (d) { if (!ready || done) return; seek(_clampAct(curElapsed() + ((d && d.seekOffset) || 15))); msSync(); },
         seekto: function (d) { if (!ready || done || !d || d.seekTime == null) return; seek(_clampAct(d.seekTime)); msSync(); } // the same seek() the ±15 buttons and the scrub release call, so the voice tail re-schedules identically
       });
-      msSync();
+      msSync(); msHeartbeat(true);   // the card is up: keep its anchor fresh, and re-anchor the moment the screen goes dark
     }
-    function msOff() { KEEPALIVE.stop(_msTok); MEDIASESSION.release(_msTok); _msArtA = null; _msArtK = null; audioIdle(); } // audioIdle: the session is over, so hand the audio category back to whatever the phone was playing before us (a PAUSED session deliberately keeps its card and its claim — that is a real session, not a ghost)
+    function msOff() { msHeartbeat(false); KEEPALIVE.stop(_msTok); MEDIASESSION.release(_msTok); _msArtA = null; _msArtK = null; audioIdle(); } // audioIdle: the session is over, so hand the audio category back to whatever the phone was playing before us (a PAUSED session deliberately keeps its card and its claim — that is a real session, not a ghost)
     function breathAudio(s) { // s = a makeBreathClock sample. Called only from paintNow while actually PLAYING, so a scrub-drag, a 2× hold-scan and a paused player are all silent by construction.
       var tk = breathToneKey();
       if (tk !== _bTk) { if (_bTone) { try { _bTone.stop(); } catch (e) {} } _bTone = null; _bTk = tk; if (tk !== "off" && ctx) { try { _bTone = makeBreathSustain(tk, ctx); } catch (e) { _bTone = null; } } } // picked live from the Sound panel the gear opens, so a change lands in the session you are in
@@ -21134,6 +21152,40 @@
     return fails.length + " fails on this device";
   }
   function devToggleSound() { var target = soundMuted() ? 1 : 0; setAudioVol("voice", target); setAudioVol("bg", target); if (!target) { try { TTS.stop(); } catch (e) {} } save(); try { toast("dev: sound " + (target ? "on" : "off")); } catch (e) {} return "sound " + (target ? "on" : "off"); } // zero both buses (voice + bg) → all audio silent live + persists in S.audio; toggles back to full
+  // ===== THE ON-DEVICE SCROLL TEST (David 2026-08-27). Four rounds of chop fixes have all been hypotheses, because the
+  // headless Mac measures 76fps and zero main-thread blocking on the very build his phone renders at ~15. So stop
+  // guessing and let the phone answer: each mode strips ONE suspect, the readout shows live fps, and whichever mode goes
+  // smooth names the layer that actually costs the frames. Same principle as the on-device design audit he asked for.
+  var JLX_MODES = [
+    { k: "", n: "OFF · everything on (the real build)" },
+    { k: "jlx-nostars", n: "1 · sky starfield OFF" },
+    { k: "jlx-flat", n: "2 · stone textures FLAT (no gradients)" },
+    { k: "jlx-noblend", n: "3 · glisten/foil blend layers OFF" },
+    { k: "jlx-noshadow", n: "4 · stone shadows OFF" },
+    { k: "jlx-norows", n: "5 · all rows HIDDEN (sky only)" },
+    { k: "jlx-nostars jlx-flat jlx-noblend jlx-noshadow", n: "6 · everything stripped but the layout" }
+  ];
+  var _jlxI = 0, _jlxRaf = 0;
+  function jlxApply() {
+    var b = document.body; JLX_MODES.forEach(function (m) { m.k.split(" ").forEach(function (c) { if (c) b.classList.remove(c); }); });
+    var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
+    var box = el("jlxFps");
+    if (!_jlxI && box) { box.remove(); if (_jlxRaf) { try { cancelAnimationFrame(_jlxRaf); } catch (e) {} _jlxRaf = 0; } return; } // back to OFF = the meter leaves with it
+    if (!box) { box = document.createElement("div"); box.id = "jlxFps"; document.body.appendChild(box); }
+    box.textContent = mode.n + "\nscroll to measure";
+    if (_jlxRaf) return;
+    var n = 0, t0 = 0, worst = 0, last = 0;
+    (function loop(t) {
+      _jlxRaf = requestAnimationFrame(loop);
+      if (!t0) { t0 = t; last = t; return; }
+      var gap = t - last; last = t; n++; if (gap > worst) worst = gap;
+      if (t - t0 >= 1000) {
+        var f = el("jlxFps"); if (f) f.textContent = JLX_MODES[_jlxI].n + "\n" + Math.round(n * 1000 / (t - t0)) + " fps   ·   worst frame " + Math.round(worst) + "ms";
+        n = 0; t0 = t; worst = 0;
+      }
+    })(0);
+  }
+  function jlxCycle() { _jlxI = (_jlxI + 1) % JLX_MODES.length; jlxApply(); try { toast("Scroll test → " + JLX_MODES[_jlxI].n); } catch (e) {} }
   function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
     function _dj(fn) { return function () { var ss = el("startScreen"); if (ss) { ss.classList.remove("on", "leaving"); } try { leaveHomeForPlayer(); } catch (e) {} document.body.classList.remove("tracker", "overworld"); try { fn(); } catch (e) {} }; } // dev jump: drop the start-screen + home cockpit + overworld overlays (body.overworld floats #screen at z70 OVER the game) so the target surface lands unobstructed
@@ -21154,6 +21206,8 @@
       [(window._jsBlur ? "⚡ Fast coast: ON (tap=off)" : "⚡ Fast coast: OFF (tap=try)"), function () { window._jsBlur = !window._jsBlur; if (ISLE) ISLE._stamp = (ISLE._stamp || 1) + 1; window._isleBakeCache = null; try { toast("Fast coast (JS blur) " + (window._jsBlur ? "ON · claim a tile; should feel snappier. Coast is a touch tighter/blockier." : "OFF · back to the approved look.")); } catch (e) {} }], // David 2026-07-17: JS-blur coast bake skips the GPU getImageData readbacks (the measured per-claim bottleneck) → faster, but slightly tighter/blockier. Device-test toggle: flip it, claim tiles, compare speed + look on the real phone (can't measure either from the headless Mac).
       ["· · · · · · ·", function () {}],
       ["📐 Design audit (this phone)", devDesignAuditOverlay],
+      [(function () { return "🎚 Scroll test: " + JLX_MODES[_jlxI].n; })(), jlxCycle], // tap to cycle a suspect out, scroll the journey, read the fps — the phone naming the cost instead of me guessing at it
+
       [(function () { var k = todayK(), on = blocks(k).some(function (b) { return b && b.id === "devupnext"; }); return on ? "🔵 Up-next face: ON (tap to clear)" : "🔵 Sim: next block due (blue disc)"; })(), function () { var k = todayK(), on = blocks(k).some(function (b) { return b && b.id === "devupnext"; }); try { toast("dev: " + window.DEV.upnext(on ? "off" : undefined)); } catch (e) {} }], // the OTHER half of "simulate evening": the blue stone is the UP-NEXT face (a planned block due within 10 min wearing its domain hue), which is data-driven — the clock sim alone can never reach it
  // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
       [(devSimMin() == null ? "🌆 Sim time: OFF (real clock)" : "🌆 Sim time: " + fmt(devSimMin())), function () { var cur = devSimMin(); var v = window.prompt("Simulate time of day, 24h (e.g. 20 or 22:30). Empty or 'off' = real clock.", cur == null ? "20" : fmt(cur)); if (v === null) return; try { toast("dev: " + window.DEV.hour(v.trim())); } catch (e) {} }], // DEV TIME-SIM (David 2026-08-15): see the evening/night home without waiting for the evening — heroes flip at 20:00, the night face at bedHour() (his profile's bedtime, default 24:00) or before 05:00
