@@ -5778,7 +5778,7 @@
       if (Math.abs(iv) > 0.07) _wDir = iv < 0 ? -1 : 1;
       if (!_wAnim) _wPk = Math.max(_wPk || 0, Math.abs(iv));
       // FLING CATCH: a decisive flick doesn't wait for the settle timer — it commits to the destination immediately. Latched once per gesture.
-      if (!_wAnim && !_wFlung && Math.abs(iv) > (iv < 0 ? 0.55 : 0.85) && !wBusy() && nw >= _wNoSnap) {
+      if (!_wAnim && !_wFlung && !_wCssSnap && Math.abs(iv) > (iv < 0 ? 0.55 : 0.85) && !wBusy() && nw >= _wNoSnap) {
         var hy = wHomeY(), ty = wToolsY(), st = world.scrollTop;
         // ONE ZONE PER GESTURE (David on device 2026-08-27: "you might be in the journey, and you might scroll down, and it
         // might skip home and go straight into the tools. That should never happen. And also from the tools up to the
@@ -6349,11 +6349,21 @@
     tf.classList.toggle("tf-scaled", s > 1.001);
     return s;
   }
-  function wMeasurePad() {
+  // MEMOISED (David's own scroll-test data, 2026-08-27: with ALL ROWS HIDDEN and cascades+parallax OFF his phone still
+  // hitched 28-85ms, which rules out every paint suspect and leaves the transition MACHINERY — and the heaviest thing in
+  // it is right here). wMeasurePad writes padding and then reads getBoundingClientRect on a 26,000px document: a forced
+  // synchronous layout, and it runs at the START of every snap and every fling, i.e. exactly at the start of every
+  // transition he calls choppy. Its INPUTS barely ever change — the viewport, the shelf's height and the deck's height —
+  // so recomputing per transition is pure waste. Same numbers, computed when they can actually differ.
+  var _wPadKey = "";
+  function wMeasurePad(force) {
     var w = el("tfWorld"), g = el("tfWorldGround"); if (!w || !g) return;
     var tbx = g.querySelector(".tbx"); if (!tbx || !tbx.offsetHeight) return;
     var H = w.clientHeight; if (!H) return;
     var hero = el("tfHeroWrap");
+    var key = H + "|" + tbx.offsetHeight + "|" + (hero ? hero.offsetHeight : 0) + "|" + tfScale();
+    if (!force && key === _wPadKey) return;                                     // nothing that feeds the answer has moved — do not touch layout
+    _wPadKey = key;
     var _sc = tfScale();                                                        // the artboard scale (1 unless the face is filling a wider phone)
     var base = safeBottomPx() / _sc + 72;                                       // = the .tfw-ground CSS rule's own padding-bottom. The device inset is REAL px landing inside a scaled frame, so it is divided to stay visually true; the 72 is a design px and scales with the board.
     var C, padT;
@@ -6399,7 +6409,7 @@
   // `scrollTo({behavior:"smooth"})` is compositor-driven on iOS, but it has a fixed easing and no velocity handoff, so it
   // is a FEEL change and only his phone can judge it: it ships OFF, behind scroll-test mode 10, as an A/B he can flip in
   // two taps. If native feels better on the device, the spring's physics come out and this becomes the road.
-  var _wNativeSnap = false, _wNatT = 0;
+  var _wNativeSnap = false, _wNatT = 0, _wCssSnap = false;
   function wSpringNative(to) {
     var w = el("tfWorld"); if (!w) return;
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
@@ -6482,6 +6492,7 @@
     return null;
   }
   function wMaybeSnap() {
+    if (_wCssSnap) return;                                            // the OS owns the landing in mode 11 — never run two snap models at once
     var w = el("tfWorld"); if (!w || !wLive() || _wAnim || _wTouch || wBusy() || wNow() < _wNoSnap) return;
     wMeasurePad();                                                    // the tools landing must be a WHOLE screen before we decide to fly to it
     var to = wSnapIntent();
@@ -6802,7 +6813,7 @@
     if (showGround) { if (ground) ground.style.display = ""; if (TBX2) { try { renderToolbox2(); } catch (e) {} } else renderGroundTools(); } // TBX2: the ground zone IS the Toolbox (Plan + grids + heroes + bento); renderGroundTools stays in the file, unused (flagged in the handoff)
     else if (ground) { ground.style.display = "none"; while (ground.firstChild) ground.removeChild(ground.firstChild); } // tracking face: no shelf
     document.body.classList.add("home-onepage"); // puck-return CSS keys on this: at home the puck fades out (nothing to return from); .puck-away fades it back in once the scroll drifts off the home seam
-    try { wMeasurePad(); } catch (e) {} // the shelf just (re)rendered — re-fit the ground to the viewport before anything measures the column
+    try { wMeasurePad(true); } catch (e) {} // the shelf just (re)rendered — re-fit the ground to the viewport before anything measures the column (FORCED past the memo: a rebuild can hand back identical heights while the inline padding it depends on was wiped)
     // …and re-apply the shelf cascade's resting state to the rows that render just replaced. Driven from the render, not from a
     // scroll: parked at home there IS no scroll, which is exactly how the stale shelf stayed lit for a whole minute at a time.
     // UNCONDITIONAL, not staleness-gated: a single user action can run this render twice (renderAll then renderTrackerFull), and a
@@ -21200,13 +21211,15 @@
     { k: "jlx-nocascade", n: "7 · CASCADES off (rows/shelf/board don't animate in)" },
     { k: "jlx-nopara", n: "8 · sky PARALLAX off" },
     { k: "jlx-nocascade jlx-nopara", n: "9 · cascades AND parallax off" },
-    { k: "jlx-native", n: "10 · NATIVE transitions (no JS spring) — FEEL A/B" }
+    { k: "jlx-native", n: "10 · NATIVE transitions (no JS spring) — FEEL A/B" },
+    { k: "jlx-snap", n: "11 · OS SNAP magnet (native + your own momentum)" }
   ];
   var _jlxI = 0, _jlxRaf = 0;
   function jlxApply() {
     var b = document.body; JLX_MODES.forEach(function (m) { m.k.split(" ").forEach(function (c) { if (c) b.classList.remove(c); }); });
     var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
     _wNativeSnap = mode.k.indexOf("jlx-native") >= 0;   // this one is a JS behaviour, not a paint class
+    _wCssSnap = mode.k.indexOf("jlx-snap") >= 0;        // …and this one stands the JS spring down entirely, so the OS is the only thing snapping
     var box = el("jlxFps");
     if (!_jlxI && box) { box.remove(); if (_jlxRaf) { try { cancelAnimationFrame(_jlxRaf); } catch (e) {} _jlxRaf = 0; } return; } // back to OFF = the meter leaves with it
     if (!box) { box = document.createElement("div"); box.id = "jlxFps"; document.body.appendChild(box); }
@@ -21376,7 +21389,7 @@
       treeFit(); guardianFit(); if (gameOn) worldFit();
       // …and the 2c board's artboard scale + the shelf's measured pad, which are both viewport-derived: without this a rotation
       // (or the keyboard, or iOS's URL bar) leaves the board at the old phone's scale until the next render (2026-08-15).
-      try { wApplyScale(); wMeasurePad(); } catch (e) {} };
+      try { wApplyScale(); wMeasurePad(true); } catch (e) {} };
     window.addEventListener("resize", _onViewport);
     window.addEventListener("orientationchange", _onViewport); // iOS fires this before the resize settles; running both is idempotent and costs one class toggle
     // (removed v640) The settle() overflow-toggle hack is GONE. Body scroll is now permanently locked in CSS (body{height:100vh;overflow:hidden}). Toggling overflow ''→hidden on every visualViewport 'scroll' + 7 timers was a reflow-thrash loop that FOUGHT the layout on every scroll — the "sometimes it fixes itself, lately nothing does" symptom. The real cause was min-height:100dvh (cold-start dvh under-reports + a scrollable body detaches the fixed bottom bars), fixed in index.html. (David 2026-07-02)

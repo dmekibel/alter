@@ -3,6 +3,25 @@
 
 ---
 
+## STATUS UPDATE (2026-08-27 (6), HIS DATA CLOSED THE CASE): v1384
+**David ran the whole scroll test on device and recorded it (89s, all modes 1-9). The numbers settle four rounds of argument:**
+| mode | fps | worst frame |
+|---|---|---|
+| 1 starfield OFF | 60 | 19-37ms |
+| 2 textures FLAT | 60 | 17-36ms |
+| 4 shadows OFF | 49-51 | 52-78ms |
+| 5 **ALL ROWS HIDDEN** | 47-59 | 32-**71ms** |
+| 6 everything stripped | 52-60 | 27-51ms |
+| 8 parallax OFF | 48-52 | 38-60ms |
+| 9 cascades AND parallax OFF | 48-60 | 28-**85ms** |
+**NO MODE FIXES IT.** With the journey line literally invisible (5) and with cascades + parallax off (9) his phone still hitches 28-85ms. Every paint suspect is eliminated: not the textures, not the starfield, not the shadows, not the blend layers, not the cascades, not the parallax. The cost is the TRANSITION MACHINERY — which is exactly what he guessed ("maybe something to do with our magnet feature"). Average fps stays 47-60 while individual frames blow to 50-85ms: not a paint budget problem, a periodic BLOCK.
+**Fix shipped — wMeasurePad is memoised.** It writes padding then reads getBoundingClientRect on a 26,000px document (a forced synchronous layout) and it runs at the START of every snap and every fling — precisely where the long frames land. Its inputs (viewport · shelf height · deck height · scale) barely ever change, so it now recomputes only when one of them actually differs; the render and resize paths pass `force` (a rebuild can hand back identical heights while the inline padding it depends on was wiped).
+**MODE 10 REJECTED BY DAVID, and he is right:** "when I do a gentle flick, it scrolls faster than I flicked it, so it feels unnatural." That is the defining weakness of `scrollTo({behavior:"smooth"})` — a fixed duration with NO velocity handoff.
+**MODE 11 — the answer to both halves: CSS scroll-snap.** iOS runs it on the compositor AND settles it with the momentum the finger actually gave, which is the thing our JS spring hand-rolls at the cost of driving scrollTop every frame. `proximity` (never `mandatory`) keeps deep reading free. The three snap points are the zones themselves and VERIFIED to resolve to the exact landings: home top → 26098 · sky bottom − viewport → 25224 (= wSkyY) · ground bottom − viewport → 26693 (= wToolsY). The JS spring STANDS DOWN when it is on (wMaybeSnap and the fling catch both bail) — two snap models at once is the bounce the constitution bans.
+**Gates 97/97 both sizes · ratchet flat · both door landings verified after the memo. ONE move — David:** fresh.html (v1384) → scroll test → **mode 11** → home↔journey, home↔tools with gentle flicks AND hard ones. If it feels right, the JS spring comes out and CSS snap becomes the engine (a real @SEC:WORLD-MOTION change — his verdict first).
+
+---
+
 ## STATUS UPDATE (2026-08-27 (5), the magnet is the machine): v1383
 David: "feels like even when shutting everything off there is a scroll lag, maybe something to do with our magnet feature. but u judge urself and analyze the video carefully." **HIS VIDEO ARRIVED AS A 0-BYTE FILE** (verified `ls -l`, and the rig produced no frames from it) — told him plainly rather than pretending to have watched it. His hypothesis stands on its own in the code.
 **HE IS RIGHT ABOUT THE MACHINE.** `wSpring` hand-integrates a damped spring and assigns `w.scrollTop = x` on EVERY rAF frame. Driving a native scroller from JS is the one scroll pattern iOS cannot hand to the compositor, and the magnet is the ONE thing live through every transition he calls choppy (and only during transitions — which is exactly why deep-line scrolling was never the complaint). Each of those writes also fires a synchronous scroll event → four scrubs → inline style writes.
