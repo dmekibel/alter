@@ -6509,7 +6509,13 @@
   // ---- a deliberate, eased travel (the HUD hints + the puck). ARMS the arrival cascade rather than playing it, so it fires on arrival (note 23). ----
   function wScrollTo(to, dur) {
     var w = el("tfWorld"); if (!w) return;
-    _wUp = to < w.scrollTop;
+    // BOTH FLAGS, ALWAYS (David on device 2026-08-27: "clicking the little journey button above the home takes you to
+    // journey, but nothing appears — it's just an empty sky"). wSpring sets _wUp AND _wDown; this one only ever set
+    // _wUp, so _wDown kept whatever the LAST spring left on it. Land here with a stale _wDown=true and the sky cascade's
+    // own guard — `u2 > .3 && !shown && up && !(_wAnim && _wDown)` — is false for the whole tween, so the door arrives
+    // at a line that is positioned, on screen, and still at opacity 0. Reproduced in preview: seven rows on screen,
+    // zero lit. The tween is a direction like any other and must declare it like any other.
+    _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } try { wScrub(); } catch (e) {} } // re-read the puck NOW so a tap on it hides it at the tap, never mid-flight at scale 0 (note 16)
     _wAnim = true; _wStop = false;
     var from = w.scrollTop, t0 = wNow();
