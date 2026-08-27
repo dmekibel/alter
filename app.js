@@ -5692,7 +5692,9 @@
       // A FINGER DOWN ALWAYS WINS (notes 14-18/21/22/26 — the "choppy/stutters" family): kill the spring dead, drop the hold, forget the
       // last direction, and re-anchor the gesture's start here. Nothing of ours may be moving while the user is moving it themselves.
       var wTouch = function (on) {
-        if (on) { _wTouch = 1; _wHold = null; _wPk = 0; _wDir = 0; _wFlung = false; _wStop = true; _wAnim = false; _wStartTop = world.scrollTop; clearTimeout(_wSnapT); magnetAbort(); }
+        // _wGen++ is the finger's real kill (v1396 trace): `_wStop = true` only holds until the NEXT engine start clears it,
+        // and any loop still scheduled at that moment comes back to life. Bumping the generation retires them permanently.
+        if (on) { _wTouch = 1; _wHold = null; _wPk = 0; _wDir = 0; _wFlung = false; _wGen++; _wTarget = null; _wStop = true; _wAnim = false; _wStartTop = world.scrollTop; clearTimeout(_wSnapT); magnetAbort(); }
         else { _wTouch = 0; if (WM) wQueueSnap(140); else magnetArm(); }  // momentum keeps firing scroll events after this; the settle timer waits them out
       };
       world.addEventListener("touchstart", function () { wTouch(true); }, { passive: true });
@@ -6385,6 +6387,9 @@
   var MAG_BAND = 56, MAG_MS = 200;    // the legacy band (WM=false path only)
   var _wV = 0, _wLastSt = null, _wLastT = 0, _wDir = 0, _wPk = 0, _wStartTop = 0, _wFlung = false;
   var _wAnim = false, _wStop = false, _wUp = false, _wDown = false, _wHold = null, _wTouch = 0, _wSnapT = 0, _wNoSnap = 0, _wLastD = null;
+  // _wGen is the ENGINE GENERATION TOKEN and _wTarget the flying engine's declared destination — see wSpring for the
+  // trace that made both necessary (David's on-device SCROLL TRACE, v1396).
+  var _wGen = 0, _wTarget = null;
   var _magT = 0, _magRaf = 0, _magAnim = 0, _magHold = 0;
   // ===== OUR OWN SCROLL WRITES, MARKED (David on device 2026-08-27: "the big pink button flickers on and off… and I'm
   // scrolling quickly and it starts going quickly and then it tries to slow itself down, and in the process it does a
@@ -6578,25 +6583,43 @@
   // overshoot paints as the fling continuing; a backward write always paints as a snap.
   function wLiveStart(w) {
     var st = w.scrollTop;
-    if (_wNoKill) return st;                                          // mode 13: the raw stale start, for the A/B
+    // TRACED ON EVERY PATH (v1396: the last paste showed `ext 0` on commits that should have carried a live flick, and
+    // the raw rows could not say WHICH of the three ways out produced it). `ls` names the decision: the read, the
+    // velocity ×100, and the age of the last scroll event in ms. Age is computed before the mode-13 bail so the log
+    // stays meaningful in the A/B arm too; nothing about the returned value changes.
     var age = wNow() - (_wLastT || 0);
-    if (!_wLastT || age > 80) return st;                              // at rest (door taps, settle springs): the read is honest
+    if (_wNoKill) { wtLog("ls", st, Math.round((_wV || 0) * 100), Math.round(age)); return st; } // mode 13: the raw stale start, for the A/B
+    if (!_wLastT || age > 80) { wtLog("ls", st, Math.round((_wV || 0) * 100), Math.round(age)); return st; } // at rest (door taps, settle springs): the read is honest
     var ext = (_wV || 0) * (Math.min(50, age) + 16);
+    wtLog("ls", st, Math.round((_wV || 0) * 100), Math.round(age));
     return st + Math.max(-140, Math.min(140, ext));
   }
   function wSpringNative(to) {
     var w = el("tfWorld"); if (!w) return;
+    var gen = ++_wGen; _wTarget = to;                                   // the generation token (see wSpring): no tick loop here, but the arrival timeout below is a writer and must retire the same way
     wKillFling(w);
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } }
     _wAnim = true; _wStop = false; _wV = 0;
     try { w.scrollTo({ top: to, behavior: "smooth" }); } catch (e) { w.scrollTop = to; }
     clearTimeout(_wNatT);
-    _wNatT = setTimeout(function () { _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); }, 700); // the native scroll gives us no completion event we can trust across engines, so the arrival is timed — long enough for iOS's own easing, short enough that the board still builds on arrival
+    _wNatT = setTimeout(function () { if (gen !== _wGen) return; _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); }, 700); // the native scroll gives us no completion event we can trust across engines, so the arrival is timed — long enough for iOS's own easing, short enough that the board still builds on arrival. Superseded = bail with no side effects: a stale timeout firing mid-flight would clear the LIVE engine's _wAnim and land the board at the wrong place
   }
   function wSpring(to, soft) {
     if (_wNativeSnap) return wSpringNative(to);
     var w = el("tfWorld"); if (!w) return;
+    // ---- ONE ENGINE OWNS THE COLUMN (David's on-device SCROLL TRACE, v1396 — the trace caught the stacking red-handed).
+    // wSpring, wScrollTo and wSpringNative all steer the same scrollTop through the same two flags, and every one of them
+    // OPENS with `_wStop = false`. That single assignment is a resurrection spell: an older tick loop is still scheduled
+    // on rAF, its only exit test is the SHARED `_wStop`, so the newcomer's own start clears the very flag that was
+    // supposed to have killed it and the elder loop resumes writing on the next frame. His trace shows two writers
+    // alternating 220px apart every frame (`tw 26120` @+5430 against `w 25900` @+5431 — a door tween and a spring from an
+    // earlier gesture), and later THREE inside 2ms (`w 26189 / w 26187 / w 26681` @+8367). That is the jitter: not one
+    // engine computing badly, several engines computing correctly toward different targets.
+    // A monotonic generation token cannot be un-set by a newcomer. Bumping it is the kill; each loop closes over the
+    // number it was born with and retires the moment the column belongs to someone else. `_wTarget` rides along because
+    // a flying engine's DESTINATION is the only truthful statement of where the column is going (hcScrub reads it).
+    var gen = ++_wGen; _wTarget = to;
     wKillFling(w);
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } } // leaving upward: the shelf starts folding away NOW, not when we arrive
@@ -6607,14 +6630,24 @@
     var dir = to > x ? 1 : (to < x ? -1 : 0);
     if ((v > 0 ? 1 : v < 0 ? -1 : 0) !== dir) v *= 0.15;                // pointing the wrong way = mostly discarded, never inverted
     var k = soft ? 0.000055 : 0.00009, c = 2 * Math.sqrt(k) * (soft ? 1.12 : 1.04);
-    var last = wNow();
+    var last = wNow(), t0 = wNow();
     var tick = function (nw) {
+      // SUPERSEDED = LEAVE WITHOUT TOUCHING ANYTHING. `_wAnim` and `_wStop` now describe the CURRENT owner, so an elder
+      // loop that clears them would tell the live engine it had finished. It exits silently instead; the newcomer owns
+      // the flags, the column and the arrival.
+      if (gen !== _wGen) return;
       if (_wStop) { _wAnim = false; return; }
       var dt = Math.min(34, nw - last); last = nw;                      // a backgrounded tab can hand us a huge dt; clamp so it can't explode
+      // THE SPRING MUST LAND, NOT CREEP (same v1396 trace). A damped spring approaches asymptotically, and with the old
+      // 0.4px / 0.02 thresholds his commit @+1391 was STILL crawling — 3px from target at +4680, 3.3 seconds of motion
+      // nobody's eye can see. Every millisecond of that tail holds `_wAnim` true, which blocks the fling catch and keeps
+      // the window open for exactly the writer-stacking above. A hard 1500ms cap ends it: at that point the remaining
+      // distance is a handful of pixels and snapping them is invisible, while carrying on is expensive in every way.
+      if (nw - t0 > 1500) { _wSelfW = to; w.scrollTop = to; wtLog("land", to); _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; }
       for (var s = 0; s < dt; s += 2) { var h2 = Math.min(2, dt - s); v += (-k * (x - to) - c * v) * h2; x += v * h2; }
       if ((_wDown && x > to) || (!_wDown && x < to)) { _wSelfW = to; w.scrollTop = to; wtLog("land", to); _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; } // CROSSED the target = done. This is what makes overshoot impossible (notes 20/28)
       _wSelfW = x; w.scrollTop = x; wtLog("w", x);
-      if (Math.abs(x - to) < 0.4 && Math.abs(v) < 0.02) { _wSelfW = to; w.scrollTop = to; wtLog("land", to); _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; }
+      if (Math.abs(x - to) < 2 && Math.abs(v) < 0.05) { _wSelfW = to; w.scrollTop = to; wtLog("land", to); _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); return; } // 2px / 0.05: a sub-2px residue lands on the same physical pixel, so finishing it early is free
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
@@ -6622,6 +6655,7 @@
   // ---- a deliberate, eased travel (the HUD hints + the puck). ARMS the arrival cascade rather than playing it, so it fires on arrival (note 23). ----
   function wScrollTo(to, dur) {
     var w = el("tfWorld"); if (!w) return;
+    var gen = ++_wGen; _wTarget = to;                                   // the generation token (see wSpring): the tween is an owner like any other, and the trace's 220px alternation was THIS tween against a surviving spring
     wKillFling(w);
     // BOTH FLAGS, ALWAYS (David on device 2026-08-27: "clicking the little journey button above the home takes you to
     // journey, but nothing appears — it's just an empty sky"). wSpring sets _wUp AND _wDown; this one only ever set
@@ -6636,6 +6670,7 @@
     wtLog("commit", w.scrollTop, from, to);
     var D = dur || Math.max(380, Math.min(760, 320 + Math.abs(to - from) * 0.55));
     var tick = function (nw) {
+      if (gen !== _wGen) return;                                        // superseded: exit WITHOUT clearing the shared flags — they belong to whoever took the column (see wSpring)
       if (_wStop) { _wAnim = false; return; }
       var p = Math.min(1, (nw - t0) / D);
       var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
@@ -6800,8 +6835,16 @@
     // MID-GLIDE: 260px out, while the spring is still flying — or, in mode 11, while the OS is doing the flying. Without
     // the second term the board can only arrive on the settle debounce, which is what left David watching home build a
     // beat AFTER he got there ("it looks like home is already there, and it just appears a second time").
-    if (_hcArmUp && (_wAnim || _wCssSnap) && up && d < 260) { _hcArmUp = _hcArmDown = false; hcArrive("up"); }
-    else if (_hcArmDown && (_wAnim || _wCssSnap) && down && d > -260) { _hcArmUp = _hcArmDown = false; hcArrive("down"); }
+    // …but ONLY toward home. Trace 1 (David's device, v1396) printed `casc in home` roughly 65ms after every DEPARTURE
+    // from home: a single backward wobble frame — the native fling's own tick, or one writer of the stack above —
+    // flips this scrub's `up`/`down` read for one event, the arm is still set from the last visit, and the board
+    // cascades in while the column is LEAVING. Two frames of travel cannot be trusted to say where a glide is headed.
+    // While a JS engine is flying, its DECLARED TARGET can: the board may arrive mid-glide only when the thing moving
+    // the column is actually going home. (Mode 11 hands the flying to the OS, which declares nothing, so `_wCssSnap`
+    // keeps the old delta-based read — `!_wAnim` is true there and the target clause never applies.)
+    var goHome = !_wAnim || (_wTarget != null && Math.abs(_wTarget - wHomeY()) < 40);
+    if (_hcArmUp && (_wAnim || _wCssSnap) && goHome && up && d < 260) { _hcArmUp = _hcArmDown = false; hcArrive("up"); }
+    else if (_hcArmDown && (_wAnim || _wCssSnap) && goHome && down && d > -260) { _hcArmUp = _hcArmDown = false; hcArrive("down"); }
     else if (_hcArmUp || _hcArmDown) { clearTimeout(_hcInT); _hcInT = setTimeout(hcMaybeIn, 20); }     // …or on a 20ms-debounced settle, whichever lands first
   }
   // ===== THE TOOLS CASCADE — the shelf's rows, entering bottom-up as you travel down and folding away right-to-left as you leave. =====
@@ -21413,7 +21456,12 @@
           revTs.push(r[0]);                                    // every reversal timestamp is kept for the finger correlation below, even past the 14 the overlay prints
           if (revs.length < 14) revs.push("REVERSAL @+" + r[0] + "ms  " + prev[1] + " " + prev[2] + " -> " + r[1] + " " + r[2] + "  (" + (d > 0 ? "+" : "") + d + ")");
         }
-        if (Math.abs(d) >= 1) lastD = d;
+        // …AGAINST THE LAST REAL TREND. The 1px floor was too generous: the scroll event echoes our own write about a
+        // pixel low (rounding, not motion), so a settling spring lays down a ±1 sawtooth and every tooth became the
+        // "previous direction" the next step was judged against — that alone flagged 14 phantom reversals in David's
+        // v1396 paste and buried the real ones. Anything at or under 2px is noise and cannot set the trend; a reversal
+        // still needs a genuine >= 8px step opposing a genuine trend step.
+        if (Math.abs(d) > 2) lastD = d;
       }
       prev = r;
     });
@@ -21451,7 +21499,10 @@
     var ver = ""; try { ver = (document.querySelector('script[src*="app.js"]').getAttribute("src").match(/v=(\d+)/) || [])[1] || ""; } catch (e) {}
     var ov = document.createElement("div"); ov.id = "devTraceOv";
     ov.setAttribute("style", "position:fixed;inset:0;z-index:9999;background:rgba(16,4,12,.97);color:#ffe3f1;font:600 11px/1.5 -apple-system,monospace;padding:calc(env(safe-area-inset-top,0px) + 14px) 12px calc(env(safe-area-inset-bottom,0px) + 14px);overflow-y:auto;-webkit-overflow-scrolling:touch;white-space:pre-wrap;word-break:break-word;");
-    var head = document.createElement("div"); head.textContent = "SCROLL TRACE · v" + ver + " · " + rows.length + " entries · " + revs.length + " reversals · tap to close";
+    // THE REPORT MUST SELF-IDENTIFY (David 2026-08-27: he ran an entire test session on mode 13 and neither of us knew
+    // until the raw rows were read backwards). A trace whose engine configuration is implicit is a trace that can be
+    // analysed as evidence of the shipped build while it is actually measuring a deliberately broken A/B arm.
+    var head = document.createElement("div"); head.textContent = "SCROLL TRACE · v" + ver + " · mode " + _jlxI + (_wNoKill ? " (STALE-START A/B — fix OFF)" : "") + " · " + rows.length + " entries · " + revs.length + " reversals · tap to close";
     head.setAttribute("style", "font-weight:800;color:#ffc41f;margin-bottom:10px;");
     ov.appendChild(head);
     var cp = document.createElement("button"); cp.textContent = "COPY REPORT"; // same one-tap paste as the design audit: the raw rows are the whole point, and no screenshot can carry 1200 of them
