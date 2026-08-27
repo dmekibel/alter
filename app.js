@@ -5708,6 +5708,22 @@
   // ---- THE OVERLAY SCRUB: puck · the two HUD labels · the TOOLS hint · the Planner pill. DIRECT STYLE WRITES ONLY.
   // (design perf note: the prototype's remaining per-frame cost was re-rendering on a scroll-scrub state — in the real app these are
   // four opacity assignments on a passive listener, so a scroll never touches the renderer.) ----
+  // EVERY WRITE BELOW GOES THROUGH wPut (David on device 2026-08-27: "feels like even when shutting everything off there
+  // is a scroll lag, maybe something to do with our magnet feature" — and he is right about the machine). The magnet's
+  // spring is the ONE thing running through every transition he calls choppy, and it drives `scrollTop` from JavaScript on
+  // every rAF frame — the one scroll pattern iOS cannot hand to the compositor. Each of those writes fires a synchronous
+  // scroll event, which runs four scrubs, which used to re-assign ~11 inline styles WHETHER OR NOT THE VALUE CHANGED.
+  // An identical assignment still dirties style on WebKit, so a transition was paying a style recalc per element per
+  // frame for values that were mostly constant (a clamped opacity of "0" rewritten sixty times a second). wPut compares
+  // first and writes only on a real change; the visual result is identical by construction.
+  var _wPutC = null;
+  function wPut(n, prop, val) {
+    if (!n) return;
+    if (!_wPutC) _wPutC = new WeakMap();
+    var m = _wPutC.get(n); if (!m) { m = {}; _wPutC.set(n, m); }
+    if (m[prop] === val) return;
+    m[prop] = val; n.style[prop] = val;
+  }
   function wScrub() {
     var world = el("tfWorld"); if (!world) return;
     var home = WM ? wHomeY() : worldHomeTop();
@@ -5725,11 +5741,11 @@
       // still lit, sitting on top of "Close the day"). The downward `tp` behaviour below is UNTOUCHED; this only adds
       // v22's own upward rule — the hint dies over the first 30% of the pull and stops taking taps at 20%. _jcU is
       // jcScrub's already-computed travel fraction (0 at home, 1 at the landing), so the two never disagree.
-      var hj = el("tfHudJourney"); if (hj) { var jo = Math.min(1 - Math.min(1, tp / 70), Math.max(0, 1 - (_jcU || 0) / 0.3)); hj.style.opacity = String(jo); hj.style.translate = "0 " + (-tp) + "px"; hj.style.pointerEvents = (tp > 40 || (_jcU || 0) > 0.2) ? "none" : ""; } // the JOURNEY invitation is spent the moment you head down — or up
-      var hh = el("tfHudHome"); if (hh) { var ho = (_wDir || 0) < 0 ? 0 : Math.max(0, Math.min(1, (tp - 150) / 140)); hh.style.opacity = String(ho); hh.style.translate = "0 " + (((1 - ho) * 14).toFixed(1)) + "px"; hh.style.pointerEvents = ho > 0.5 ? "auto" : "none"; } // …and HOME takes its place, gone again the instant you turn back
-      var th = el("tfToolsHint"); if (th) th.style.opacity = String(1 - Math.min(1, tp / 110));
+      var hj = el("tfHudJourney"); if (hj) { var jo = Math.min(1 - Math.min(1, tp / 70), Math.max(0, 1 - (_jcU || 0) / 0.3)); wPut(hj, "opacity", String(jo)); wPut(hj, "translate", "0 " + (-tp) + "px"); wPut(hj, "pointerEvents", (tp > 40 || (_jcU || 0) > 0.2) ? "none" : ""); } // the JOURNEY invitation is spent the moment you head down — or up
+      var hh = el("tfHudHome"); if (hh) { var ho = (_wDir || 0) < 0 ? 0 : Math.max(0, Math.min(1, (tp - 150) / 140)); wPut(hh, "opacity", String(ho)); wPut(hh, "translate", "0 " + (((1 - ho) * 14).toFixed(1)) + "px"); wPut(hh, "pointerEvents", ho > 0.5 ? "auto" : "none"); } // …and HOME takes its place, gone again the instant you turn back
+      var th = el("tfToolsHint"); if (th) wPut(th, "opacity", String(1 - Math.min(1, tp / 110)));
       var pw = document.querySelector(".tbx-planwrap");
-      if (pw) { var po = 1 - Math.max(0, Math.min(1, (tp - 230) / 70)); pw.style.opacity = String(po); pw.style.pointerEvents = tp > 260 ? "none" : ""; } // note 3: the Planner must not still be sitting there once you're in the tools
+      if (pw) { var po = 1 - Math.max(0, Math.min(1, (tp - 230) / 70)); wPut(pw, "opacity", String(po)); wPut(pw, "pointerEvents", tp > 260 ? "none" : ""); } // note 3: the Planner must not still be sitting there once you're in the tools
     } else {
       away = Math.abs(world.scrollTop - home) > vh * 0.4; // legacy: drifted >40% of a viewport off the home seam → show the return
     }
@@ -5740,8 +5756,8 @@
     var bars = el("tfHomeBars");
     if (bars && !(WM && tfh2c())) {
       var fp = Math.max(0, Math.min(1, dev / (vh * 0.34))); // 0 at home, fully faded ~1/3 viewport up
-      bars.style.opacity = fp > 0 ? String(1 - fp) : "";
-      bars.style.transform = fp > 0 ? ("translateY(" + (-10 * fp).toFixed(1) + "px)") : "";
+      wPut(bars, "opacity", fp > 0 ? String(1 - fp) : "");
+      wPut(bars, "transform", fp > 0 ? ("translateY(" + (-10 * fp).toFixed(1) + "px)") : "");
     }
   }
   // ---- THE ONE SCROLL LISTENER: velocity + direction + the fling catch, then the three scrubs, then the settle timer. ----
@@ -6377,7 +6393,24 @@
   function wLive() { var tf = el("trackerFull"), w = el("tfWorld"); return !!(WM && ONEPAGE && w && _worldPositioned && tf && tf.classList.contains("tf-onepage") && tf.classList.contains("tf-onehome")); }
   function wBusy() { return !!(_tbxOpenStack || _tbxOpenCat || _tfhOpen); } // an open dose card / category panel / face card OWNS the column: no snapping, no cascading under it (the design's _stackOpen)
   // ---- THE SPRING: a damped spring integrated in 2ms substeps. While it runs it is the SINGLE authority on scrollTop. ----
+  // THE MAGNET, HANDED TO THE COMPOSITOR (David 2026-08-27: "maybe something to do with our magnet feature"). wSpring
+  // below is a hand-integrated spring that assigns `scrollTop` on EVERY rAF frame — the one scroll pattern iOS cannot
+  // run off the main thread, and it is live for the entire length of every transition he calls choppy. The native
+  // `scrollTo({behavior:"smooth"})` is compositor-driven on iOS, but it has a fixed easing and no velocity handoff, so it
+  // is a FEEL change and only his phone can judge it: it ships OFF, behind scroll-test mode 10, as an A/B he can flip in
+  // two taps. If native feels better on the device, the spring's physics come out and this becomes the road.
+  var _wNativeSnap = false, _wNatT = 0;
+  function wSpringNative(to) {
+    var w = el("tfWorld"); if (!w) return;
+    _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
+    if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } }
+    _wAnim = true; _wStop = false; _wV = 0;
+    try { w.scrollTo({ top: to, behavior: "smooth" }); } catch (e) { w.scrollTop = to; }
+    clearTimeout(_wNatT);
+    _wNatT = setTimeout(function () { _wAnim = false; _wV = 0; wHoldAtHome(to); hcMaybeIn(); }, 700); // the native scroll gives us no completion event we can trust across engines, so the arrival is timed — long enough for iOS's own easing, short enough that the board still builds on arrival
+  }
   function wSpring(to, soft) {
+    if (_wNativeSnap) return wSpringNative(to);
     var w = el("tfWorld"); if (!w) return;
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } } // leaving upward: the shelf starts folding away NOW, not when we arrive
@@ -6690,7 +6723,7 @@
     // the old code parked translateY(-50px) scale(1.08) on the whole 26,000px column at u2=0 and left it there through
     // every home→tools scroll as well.
     var foot = el("jrnyFoot");
-    if (foot) foot.style.transform = (u2 <= 0.02 || u2 >= 0.98) ? "" : ("translateY(" + Math.round(-(1 - u2) * 50) + "px) scale(" + (1 + (1 - u2) * 0.08).toFixed(3) + ")");
+    if (foot) wPut(foot, "transform", (u2 <= 0.02 || u2 >= 0.98) ? "" : ("translateY(" + Math.round(-(1 - u2) * 50) + "px) scale(" + (1 + (1 - u2) * 0.08).toFixed(3) + ")")); // through wPut too: at both rest states this clears the SAME value every scroll event, and an identical write still dirties style
     if (!_jcEls.length) return;
     if (_jcShown === undefined) { _jcShown = false; jcCascade(-1, true); }
     var up = (_wDir || 0) < 0, down = !up;
@@ -21166,12 +21199,14 @@
     { k: "jlx-nostars jlx-flat jlx-noblend jlx-noshadow", n: "6 · everything stripped but the layout" },
     { k: "jlx-nocascade", n: "7 · CASCADES off (rows/shelf/board don't animate in)" },
     { k: "jlx-nopara", n: "8 · sky PARALLAX off" },
-    { k: "jlx-nocascade jlx-nopara", n: "9 · cascades AND parallax off" }
+    { k: "jlx-nocascade jlx-nopara", n: "9 · cascades AND parallax off" },
+    { k: "jlx-native", n: "10 · NATIVE transitions (no JS spring) — FEEL A/B" }
   ];
   var _jlxI = 0, _jlxRaf = 0;
   function jlxApply() {
     var b = document.body; JLX_MODES.forEach(function (m) { m.k.split(" ").forEach(function (c) { if (c) b.classList.remove(c); }); });
     var mode = JLX_MODES[_jlxI]; mode.k.split(" ").forEach(function (c) { if (c) b.classList.add(c); });
+    _wNativeSnap = mode.k.indexOf("jlx-native") >= 0;   // this one is a JS behaviour, not a paint class
     var box = el("jlxFps");
     if (!_jlxI && box) { box.remove(); if (_jlxRaf) { try { cancelAnimationFrame(_jlxRaf); } catch (e) {} _jlxRaf = 0; } return; } // back to OFF = the meter leaves with it
     if (!box) { box = document.createElement("div"); box.id = "jlxFps"; document.body.appendChild(box); }
