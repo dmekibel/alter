@@ -1942,6 +1942,22 @@
      never pulse. It takes NO bleed border: 230% of the card is already more than twice its diagonal, so a rotation
      cannot reach an edge, and a border here would shrink the padding box and rescale the rays. */
   .jl-l-tex.jl-spin{ inset:auto; border-width:0; top:50%; left:50%; width:230%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; animation:mSpin 90s linear infinite; }
+  /* …AND EXCEPT THE REPEATING-RADIAL FAMILY, WHICH IS PAINTED ON THE BOX AND NEVER SLIDES (David on device 2026-08-28,
+     his third round on the same strip: "chapter seven sixteen twenty six are still broken because you can see they're
+     cut off on the top", after "the top little bit of it is dark BECAUSE IT'S ANIMATED… it moves down, and there's just,
+     like, an empty space above it. Instead the pattern should keep going").
+     WHY THE BLEED ABOVE DID NOT FIX IT: the drift layer animates a TRANSFORM inside a card that is overflow:hidden with a
+     border-radius. WebKit composites that layer and rasterizes it at the CLIPPED bounds, so the pixels outside the card
+     never existed — sliding it on the compositor pulls emptiness in at the top. Both the 33px of overhang and the 40px
+     tiled border ring live outside that same clip, which is why neither of them was ever in the backing store and why
+     the symptom survived v1405 unchanged.
+     THE MECHANISM IS THE DESIGN'S OWN OTHER ONE: recipes/chapter-textures.json paints these same gradients directly on
+     the element (every stone) and animates the ELEMENT with mJitA/B/C. A painted box IS its own clip — there is no
+     outside to slide in — so this family's layer sits at inset:0 with no border and no transform of its own, and the
+     motion moves to the card (app.js jlBanner, behind the same JL_JITTER flag that David used to stop the stones
+     wobbling). The bleed border is REMOVED here rather than kept: it bought nothing against a clipped backing store, and
+     it is the only thing that made this paint tile at all. Everyone else keeps it — see the rule above. */
+  .jl-l-tex.jl-tex-box{ inset:0; border-width:0; animation:none; }
   /* THE STONE'S TURNING FILL, and the two things v1386 broke with it (David 2026-08-27: "the spinning destroyed what the
      stone looks like… it gets rid of the little highlight above, a little shadow below, and the symbol on it", "makes it
      less square").
@@ -1959,10 +1975,29 @@
          is its own edge is what softened v1386. Painting past the clip hands the stone a solid edge to cut. The sheen
          and the glyph are SIBLINGS AFTER this layer, so nothing here can cover the top highlight, the bottom shade or
          the symbol — that ordering is the whole point of them being separate layers. */
-  .jl-lstone-tex{ position:absolute; inset:-4px; border:4px solid transparent; border-radius:50%; transform-origin:50% 50%; animation:mSpin 110s linear infinite; }
+  /* …AND THE ORDER IS DECLARED, NOT INFERRED (David on device 2026-08-28: "the rotating rays still break the stones.
+     They're NOT broken when you're scrolling past them, but when you STOP scrolling, they break. And the spinning ray
+     thing on the stone covers up the rest of the things — the shadows, the highlights, the icon").
+     WHAT v1387 FIXED AND WHAT IT LEFT: that round moved the sheen and the glyph to be siblings AFTER the fill, which is
+     the right DOM order — and DOM order is all it left. Measured in both states, the stone's markup is IDENTICAL awake
+     and asleep; there is no second builder and nothing is re-appended. The ONLY difference is on this line: asleep the
+     row's `.jl-anim-off .jl-fx{ animation:none }` kills mSpin, so this layer has `transform:none`; awake, the scroll-stop
+     wake flush (app.js jlWakeSoon — deferred precisely until the column is STILL, which is why the break arrives when you
+     stop) restarts mSpin and the layer starts carrying a transform. A transform animation promotes it to its own
+     compositor layer, and its three later siblings had z-index `auto` — so whether they paint above a promoted layer was
+     left to WebKit's overlap heuristic instead of a declared order, inside a parent that is `will-change:transform` +
+     `overflow:hidden` + `border-radius:50%` (a rounded-rect clip the compositor has to carry). That heuristic is what
+     loses the highlight, the shade and the symbol, and it can only lose them once the spin is running.
+     THE FIX IS THE DESIGN'S OWN IDIOM, one element up in this same file: every stacked layer on a chapter GATE declares
+     its z (grain 4, sheen/rain 2, inglow/bevel/spark 3, text and lock 5 — all ported verbatim from the design's banner
+     recipes). The stone's stack is the one place the app added layers of its own and did not carry that across. Four
+     numbers, no new nodes, no extra promotion: fill 1 · highlight+shade 2 · symbol 3 · glisten 4, which IS the v1387
+     layering law written down where the compositor has to obey it. Non-ray stones are unaffected — their glyph is static,
+     so z does not apply to it and the overlay glisten still sweeps over it exactly as the design's own stone does. */
+  .jl-lstone-tex{ position:absolute; inset:-4px; border:4px solid transparent; border-radius:50%; z-index:1; transform-origin:50% 50%; animation:mSpin 110s linear infinite; }
   .jl-lstone.jl-rayst{ box-shadow:0 6px 0 #00000061; }
-  .jl-lstone-sheen{ position:absolute; inset:0; border-radius:50%; box-shadow:inset 0 4px 0 #ffffff0f, inset 0 -6px 0 #00000038; pointer-events:none; }
-  .jl-lstone-tex ~ i{ position:relative; }
+  .jl-lstone-sheen{ position:absolute; inset:0; z-index:2; border-radius:50%; box-shadow:inset 0 4px 0 #ffffff0f, inset 0 -6px 0 #00000038; pointer-events:none; }
+  .jl-lstone-tex ~ i{ position:relative; z-index:3; }
   @keyframes mSpin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
   .jl-l-grain{ position:absolute; inset:0; pointer-events:none; z-index:4; background:var(--tex); background-size:5px 5px, auto; }
   .jl-l-gl{ position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:2; mix-blend-mode:overlay; }
@@ -1979,7 +2014,7 @@
      dark wash rides inside --ss's `inset 0 0 0 999px #10060e80`, and the glisten sweeps up the line one stone at a time. */
   .jl-lstone-row{ padding:10px 0; } /* back to the recipe's own padding: the 4px of side "paint room" existed only to keep contain:paint from clipping mJit, and both are gone (see below) */
   .jl-lstone{ width:74px; height:74px; border-radius:50%; position:relative; overflow:hidden; box-shadow:var(--ss); display:flex; align-items:center; justify-content:center; }
-  .jl-lstone-pass{ position:absolute; inset:0; border-radius:50%; overflow:hidden; mix-blend-mode:overlay; }
+  .jl-lstone-pass{ position:absolute; inset:0; z-index:4; border-radius:50%; overflow:hidden; mix-blend-mode:overlay; } /* the glisten sweeps over everything — the top of the declared stack (see .jl-lstone-tex above) */
   .jl-lstone-pass > span{ position:absolute; inset:-30% -40%; background:var(--gl); }
   .jl-lstone > i{ font-size:27px; }
   /* ===== OFF-SCREEN ROWS GO QUIET (David 2026-08-26, the perf correction — 628 infinite effects ticking forever on a
@@ -2087,19 +2122,19 @@
      WHY IT LIVES ON .tf-inner AND NOT IN THE SCROLLER: #tfWorld owns one gesture and one scroll listener (the whole
      subject of @SEC:WORLD-MOTION). The rail is an absolute overlay beside the puck and the door hints, so a finger on it
      can never reach the column underneath and the two can never become two writers racing each other.
-     THE LETTERBOX LAW: the bottom inset is ARTBOARD px inside the 402 column and stays FIXED; the height stretches to
-     the top — extend, never scale (the same law .tfw-home and #jrnyLine already obey).
-     THE BAND STARTS LOW (David on device 2026-08-28: "the side rail should start more on the bottom. Right now, it
-     starts kind of way too high up"). The frame's 168px top is SUPERSEDED by --jr-top, a share of the SCREEN rather
-     than an artboard inset — the rail is a thumb reach, not a drawn element, and a thumb sits where the hand is, not
-     where the artboard is. ONE value moves the whole band; .jr-zone rides it too, so its 13px of overhang can never
-     drift away from the rail it arms.
-     …AND IT IS DIVIDED BY --tfscale, which is the letterbox law applied to a viewport unit rather than an exception to
-     it: .tf-inner is laid out at `100dvh / scale` and then transform-scaled back up, so a raw 42dvh in here would paint
-     at 42 x scale = 46% of David's 956px screen. Dividing first is what makes "42% of the screen" true on every phone,
-     which is the only reading of this number that means anything — it is a reach, and a reach is measured on glass. */
-  .jr-host{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:30; pointer-events:none; --jr-top:42dvh; }
-  .jr-rail{ position:absolute; right:7px; top:calc(var(--jr-top) / var(--tfscale, 1)); bottom:191px; width:8px; opacity:0; transition:opacity .3s ease; }
+     THE LETTERBOX LAW: both insets are ARTBOARD px inside the 402 column and stay FIXED; the height stretches between
+     them — extend, never scale (the same law .tfw-home and #jrnyLine already obey).
+     THE BAND IS THE WHOLE SCREEN (David on device 2026-08-28: "the scroll bar should start almost at the very bottom of
+     the screen and end on the very top. When you get to chapter thirty six, it should be at the very top. When you get
+     to the first chapter, it should be on the very bottom"). This SUPERSEDES both of its predecessors — the frame's
+     fixed 168px top AND the 42dvh share of the screen that replaced it that same morning ("the side rail should start
+     more on the bottom"), together with the 191px bottom the frame drew to keep the pill clear of the puck. A scrollbar
+     for a 26,000px sky reads as DISTANCE, and distance is only honest at full travel: two small insets, one var each,
+     and everything between them belongs to the thumb. The mapping moved with it — app.js jrU pins the two ends of the
+     rail to the two ends of the CHAPTER table (36 at the top, the landing at the bottom), not to the raw scroll range.
+     ONE value moves each end; .jr-zone rides both, so its 13px of overhang can never drift away from the rail it arms. */
+  .jr-host{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:30; pointer-events:none; --jr-top:12px; --jr-bot:14px; }
+  .jr-rail{ position:absolute; right:7px; top:var(--jr-top); bottom:var(--jr-bot); width:8px; opacity:0; transition:opacity .3s ease; }
   .jr-host.jr-on .jr-rail{ opacity:1; }
   /* the pill sits right:-2px INSIDE the box, so its right edge lands 5px from the screen edge (7 - 2) and widening it
      on grab grows it leftward — the edge David drew never moves. Only OPACITY transitions (the frame's own .3s); the
@@ -2131,7 +2166,7 @@
   /* THE GRAB ZONE — invisible, 44px of real thumb, spanning the rail's range ±13px. It takes touches ONLY while the rail
      is awake (which since 2026-08-28 means: only while it is visible at all), and `touch-action:none` is what stops the
      page scrolling under the drag, so all three listeners stay passive and nothing ever calls preventDefault here. */
-  .jr-zone{ position:absolute; right:0; top:calc(var(--jr-top) / var(--tfscale, 1) - 13px); bottom:178px; width:44px; pointer-events:none; touch-action:none; }
+  .jr-zone{ position:absolute; right:0; top:calc(var(--jr-top) - 13px); bottom:calc(var(--jr-bot) - 13px); width:44px; pointer-events:none; touch-action:none; }
   .jr-host.jr-awake .jr-zone{ pointer-events:auto; }
   /* the frame's keyframes, verbatim from recipes/j1-style-block.css (jlAlive = its jpAlive, renamed on collision) */
   @keyframes jGlint{ 0%{ transform:translateX(-135%) rotate(0.001deg); } 55%,100%{ transform:translateX(135%) rotate(0.001deg); } }
@@ -4555,6 +4590,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1405"></script>
+  <script src="app.js?v=1406"></script>
 </body>
 </html>
