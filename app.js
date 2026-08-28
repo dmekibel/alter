@@ -6028,6 +6028,17 @@
   var JL_CNT = [7, 6, 5, 8];                          // stones per chapter, cycling by (ch-2)%4
   var JL_JITV = ["mJitA", "mJitB", "mJitC"], JL_PASSD = [5.4, 5.7, 6];
   var JL_JITTER = false;              // the stones' resting wobble — David killed it on device 2026-08-26; true restores the frame's mJit exactly (see jlLockedStone)
+  // THE DESIGN'S OWN PER-CHAPTER JITTER — variant · seconds · negative delay — read verbatim off recipes/chapter-textures.json
+  // (which is the FIRST STONE of each frame chapter, i.e. the one place the design states an animation for a chapter's
+  // texture rather than for a card layer). Index 0 = chapter 2 … index 15 = chapter 17; 18-36 re-enter the same rotation
+  // at (ch-2)%16, exactly as jlChapters already re-deals every other frame value. Used by the gates of the repeating-radial
+  // family (jlIsRRad), whose texture is painted ON THE BOX and therefore has to wear the box's own animation, not a slide.
+  var JL_TEXJIT = [
+    ["mJitA", "9.0", "0.0"], ["mJitB", "9.0", "-11.9"], ["mJitB", "13.8", "-10.1"], ["mJitA", "12.2", "-6.6"],
+    ["mJitC", "13.0", "-8.2"], ["mJitA", "13.0", "-8.1"], ["mJitA", "12.2", "-6.3"], ["mJitC", "10.6", "-2.8"],
+    ["mJitB", "11.4", "-4.4"], ["mJitC", "11.4", "-4.3"], ["mJitC", "10.6", "-2.5"], ["mJitB", "9.0", "-11.0"],
+    ["mJitA", "9.8", "-0.6"], ["mJitB", "9.8", "-0.5"], ["mJitB", "9.0", "-10.7"], ["mJitA", "13.0", "-7.2"]
+  ];
   var JL_INK = ["#288968", "#972b56", "#aa822c", "#aa5a2b", "#227883", "#aa3f6c"]; // the six icon inks the frame uses, in first-appearance order
   // THE 36-CHAPTER TABLE. Chapters 2-17 ARE the frame (their row in JL_FRAME); 18-36 re-enter the frame's own rotation
   // at index (ch-2)%16 for the text treatment and carry the full ladder, which is what "extrapolate" means here: no hex,
@@ -6047,6 +6058,7 @@
         rb: f[4] || "4.6",                                    // a chapter rotated onto a pre-ladder frame row has no sheen of its own; 4.6 is the frame's dominant
         fx: ch <= 17 ? f[5] : JL_FX_FULL,
         ic: ch <= 17 ? f[6] : JL_INK[(ch - 2) % 6],
+        jit: JL_TEXJIT[ch <= 17 ? ch - 2 : (ch - 2) % 16],   // the design's jitter for this chapter's texture, re-dealt by the same rotation as everything else on this line
         cnt: JL_CNT[(ch - 2) % 4], i0: (ch - 2) % 12 });
     }
     _jlChaps = out; return out;
@@ -6140,8 +6152,14 @@
   function jlBanner(c) { // a locked chapter's GATE, wearing exactly the ladder rungs that chapter has earned
     var row = document.createElement("div"); row.className = "jl-lock";
     row.dataset.jch = c.ch;                                   // …and the gate is that chapter's detent (see jlToday's note)
-    var card = jlAdd(row, "div", "jl-lock-card" + ((c.fx & JL_FX_GLOW) ? " jl-lit jl-fx" : ""));
-    jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : ""), "background:" + c.tex + ";" + (jlIsRay(c) ? "animation-delay:-" + (((c.ch * 23) % 90) + 5) + "s;" : ""));
+    var rrad = jlIsRRad(c), lit = !!(c.fx & JL_FX_GLOW);       // the repeating-radial family: painted on the box, never slid (see jlIsRRad for David's three rounds on it)
+    var card = jlAdd(row, "div", "jl-lock-card" + (lit ? " jl-lit jl-fx" : "") + (rrad ? " jl-jitcard" + (lit ? "" : " jl-fx") : ""));
+    // …and the family's motion rides the CARD, exactly where the design puts it on a stone — the painted box wobbles as
+    // one piece, so nothing can slide out from under a clip. Behind JL_JITTER with the stones, and OFF with them. The lit
+    // chapters keep mGlow FIRST in the same shorthand: an inline `animation` outranks the .jl-lit rule, so composing is
+    // the only way both survive (a bare assignment here would silently delete the ch12+ aura).
+    if (rrad && JL_JITTER && c.jit) card.style.animation = (lit ? "mGlow 4.6s ease-in-out infinite, " : "") + c.jit[0] + " " + c.jit[1] + "s ease-in-out infinite " + c.jit[2] + "s";
+    jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : (rrad ? " jl-tex-box" : "")), "background:" + c.tex + ";" + (jlIsRay(c) ? "animation-delay:-" + (((c.ch * 23) % 90) + 5) + "s;" : ""));
     if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
     if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl jl-glis"), "span", "jl-fx");
     if (c.fx & JL_FX_INGLOW) jlAdd(card, "span", "jl-l-inglow");
@@ -6172,8 +6190,24 @@
     // the leading background layer IS the old `inset 0 0 0 999px #10060e80` wash, to the byte (rgba(16,6,14,.502)) — same
     // pixels, one less shadow layer per stone (see --ss in index.html).
     var WASH = "linear-gradient(rgba(16,6,14,.502),rgba(16,6,14,.502))";
+    // …AND THE WASH IS A LAYER, SO IT HAS TO TAKE A SLOT IN EVERY PER-LAYER LIST (found while rebuilding this machinery,
+    // 2026-08-28). Four chapters carry their own `background-size` / `background-position` inside c.tex — 6 and 13 (the
+    // 36px/46px dot fields) and 10 and 27 (the checkers, whose `0 0, 15px 15px, 0 0` IS the checkerboard). Prepending the
+    // wash made the stone FOUR layers while the size list stayed three, and a short list REPEATS: the third gradient was
+    // handed the first entry back and the checkers' second square silently went `auto`. One `auto,` / `0 0,` in front and
+    // the design's own list lines up again. Gates paint from c.tex untouched, so this is the stone path only.
+    function jlTexFor(tex) {
+      var p = String(tex).split(";"), out = "background:" + WASH + "," + p[0] + ";";
+      for (var i = 1; i < p.length; i++) {
+        var s = p[i].trim(); if (!s) continue;
+        if (/^background-size\s*:/i.test(s)) out += "background-size:auto," + s.replace(/^background-size\s*:/i, "") + ";";
+        else if (/^background-position\s*:/i.test(s)) out += "background-position:0 0," + s.replace(/^background-position\s*:/i, "") + ";";
+        else out += s + ";";
+      }
+      return out;
+    }
     var ray = jlIsRay(c);                                               // "the stones themselves need to spin too, also slowly" (David 2026-08-27)
-    var st = jlAdd(row, "span", "jl-lstone jl-fx" + (ray ? " jl-rayst" : ""), (ray ? "" : "background:" + WASH + "," + c.tex + ";") + jit);
+    var st = jlAdd(row, "span", "jl-lstone jl-fx" + (ray ? " jl-rayst" : ""), (ray ? "" : jlTexFor(c.tex)) + jit);
     if (ray) {
       // A STONE CANNOT SPIN ITS OWN BACKGROUND — rotating the element would carry the icon round with it. So the fill
       // moves onto a layer of its own that turns underneath a still glyph. The wash rides WITH it (a uniform sheet looks
@@ -6185,7 +6219,7 @@
       // spinning once you arrive at it"). Rows wake with `animation:none` lifted, which restarts the keyframes from 0deg
       // — visible as a start. Seeding each chapter at its own offset means a stone is never caught at the top of its
       // cycle, exactly the trick the glisten's phase chain already uses.
-      jlAdd(st, "span", "jl-lstone-tex jl-fx", "background:" + WASH + "," + c.tex + ";animation-delay:-" + (((c.ch * 17) % 110) + 3) + "s;");
+      jlAdd(st, "span", "jl-lstone-tex jl-fx", jlTexFor(c.tex) + "animation-delay:-" + (((c.ch * 17) % 110) + 3) + "s;");
       jlAdd(st, "span", "jl-lstone-sheen");
       jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
       jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
@@ -6212,6 +6246,32 @@
   // and a wrong guess here is a design error, not a bug.
   var JL_RAYS = { 9: 1, 11: 1, 12: 1, 17: 1, 23: 1, 32: 1 };
   function jlIsRay(c) { return !!(c && JL_RAYS[c.ch]); }
+  // ---- THE REPEATING-RADIAL FAMILY, AND WHY IT GETS ITS OWN GATE MECHANISM (David on device 2026-08-28: "chapter seven
+  // sixteen twenty six are still broken because you can see they're cut off on the top" — the third round on the same
+  // symptom, after "chapter seven… the top little bit of it is dark BECAUSE IT'S ANIMATED. Chapter thirty four is the
+  // same issue. It moves down, and there's just, like, an empty space above it. Instead the pattern should keep going").
+  // WHO IS IN IT: every chapter whose texture LEADS with a `repeating-radial-gradient`. Derived from JL_TEX itself rather
+  // than typed as a list, so editing a texture can never leave the family behind — it reads 7 · 16 · 18 · 21 · 26 · 30 · 34,
+  // and every chapter David has ever flagged for this (7 and 34 in the v1404 round, 7/16/26 now) is in it.
+  // WHAT WAS WRONG, and it is a compositing fact, not a geometry one: .jl-l-tex animates a TRANSFORM (mDrift) inside a
+  // card that is `overflow:hidden` + `border-radius:18px`. WebKit promotes that layer and gives its backing store the
+  // CLIPPED bounds — so the pixels outside the card were never rasterized, and translating the layer on the compositor
+  // slides emptiness in at the top. Geometrically the layer already overhangs the card by 33px against a 12px drift, and
+  // it still cut, which is exactly why the v1405 bleed (a 40px transparent border tiled past the padding box) changed
+  // nothing on his phone: that ring lives outside the same clip, so it is not in the backing store either. A radial
+  // pattern whose centre sits BELOW the box (ch7 `at 50% 130%`, ch26 `at 50% 178%`, ch34 `at 50% 130%`) puts its brightest
+  // ring nearest the top edge, which is why this family is where an empty strip is legible and the others hide it.
+  // THE FIX IS THE DESIGN'S OWN OTHER MECHANISM. The design paints these same gradients TWO ways: on a 190% layer it
+  // slides (the gate), and on the element itself it jitters (every stone — recipes/chapter-textures.json). The second one
+  // cannot cut, because the painted box IS the clip: there is no outside to slide in. So the family's gate texture moves
+  // to `inset:0`, the bleed border comes off (it bought nothing here and it is the only thing that made the paint tile),
+  // and the motion becomes the design's own jitter on the CARD — wired here, behind the same JL_JITTER flag David used to
+  // stop the stones wobbling, so the one flag still means one thing across the whole line.
+  var _jlRRad = null;
+  function jlIsRRad(c) {
+    if (!_jlRRad) { _jlRRad = {}; for (var i = 0; i < JL_TEX.length; i++) if (/^\s*repeating-radial-gradient/.test(JL_TEX[i])) _jlRRad[i + 1] = 1; }
+    return !!(c && _jlRRad[c.ch]);
+  }
   function jlRows() {
     var col = el("jrnyCol"); if (!col) return [];
     var out = [], k = col.children;
@@ -7174,16 +7234,15 @@
   // NOT BUILT, deliberately, and each is David's own switch: the "back to where I am" return chip (`returnChip` false in
   // his file), the grabbed-state world dim (`worldDim` false), and the frame's haptic tick — an installed iOS PWA has no
   // vibration API at all, so that one is named and skipped rather than faked.
-  // THE BAND'S TOP IS A SHARE OF THE SCREEN, not an artboard inset (David on device 2026-08-28: "the side rail should
-  // start more on the bottom. Right now, it starts kind of way too high up"). SUPERSEDES the frame's fixed 168px, which
-  // is why it is written as a fraction here and as --jr-top in the .jr-rail rule: one number, two readers, no drift.
-  // The BOTTOM stays the frame's 191 artboard px — that end was never wrong, and it is what keeps the pill clear of the
-  // puck. The height still stretches between them (LAW 1: extend, never scale) and jrBox() measures it, so nothing in
-  // the travel math is written down twice.
-  var JR_TOP_VH = 0.42, JR_BOT = 191;
-  // …in ARTBOARD px, which is what the CSS resolves to: .tf-inner lays out at 100dvh/scale and is scaled back up, so
-  // 42% of the glass is 42% of the viewport DIVIDED by the scale. The one place designAudit and DEV.jrShow may quote it.
-  function jrTopPx() { return (window.innerHeight || 0) * JR_TOP_VH / (tfScale() || 1); }
+  // THE BAND IS THE WHOLE SCREEN (David on device 2026-08-28: "the scroll bar should start almost at the very bottom of
+  // the screen and end on the very top. When you get to chapter thirty six, it should be at the very top. When you get to
+  // the first chapter, it should be on the very bottom"). SUPERSEDED, both of them: the frame's fixed 168px top and the
+  // 42dvh share of the screen that replaced it earlier the same day ("the side rail should start more on the bottom"),
+  // and with them the frame's 191px bottom that held the pill clear of the puck. A scrollbar for a 26,000px sky is a
+  // reading of DISTANCE, and distance only reads true at full travel. Two small artboard insets, one --jr-* var each in
+  // the .jr-rail rule: one number, two readers, no drift. The height stretches between them (LAW 1: extend, never scale)
+  // and jrBox() measures it, so nothing in the travel math is written down twice.
+  var JR_TOP = 12, JR_BOT = 14;
   var JR_PILL_H = 48, JR_PILL_HG = 52;             // rest / grabbed pill height. travel = railHeight - whichever is live.
   var JR_WAKE_MS = 900;                            // …after the last sky scroll event, the pill fades back out
   var _jrHost = null, _jrRail = null, _jrPill = null, _jrDot = null, _jrZone = null;
@@ -7258,15 +7317,28 @@
       if (list.length && Math.abs(list[list.length - 1].y - raw[j].y) < 1) list[list.length - 1] = raw[j];
       else list.push(raw[j]);
     }
-    _jrDet = { list: list, dot: dot, sky: sky };
+    // THE TWO ENDS OF THE RAIL ARE THE TWO ENDS OF THE CHAPTER TABLE (David on device 2026-08-28: "when you get to
+    // chapter thirty six, it should be at the very top. When you get to the first chapter, it should be on the very
+    // bottom"). SUPERSEDES the raw scroll range (st / sky): the sky's 0 is not a chapter, it is the blank above the head
+    // of the line, so mapping to it parked the thumb short of the top at the very moment the line ran out. y0 = the
+    // deepest chapter's own landing (36, the first row), y1 = chapter 1 / the journey landing (the last row, which is
+    // where the collapse above leaves the foot). Linear between, clamped outside — one domain, read by the scrub, the
+    // drag, the dot and the audit alike, so none of them can invent a second idea of where the ends are.
+    _jrDet = { list: list, dot: dot, sky: sky, y0: list[0].y, y1: list[list.length - 1].y };
     return _jrDet;
   }
+  // …and the ONE conversion, both ways. u = 0 at chapter 36's landing, 1 at chapter 1 / the journey landing.
+  function jrU(st, d) { d = d || _jrDet; if (!d) return 0; var span = d.y1 - d.y0; return span > 0 ? Math.max(0, Math.min(1, (st - d.y0) / span)) : 0; }
+  function jrScrollFor(u, d) { d = d || _jrDet; if (!d) return 0; return d.y0 + Math.max(0, Math.min(1, u)) * (d.y1 - d.y0); }
+  // …and the ONE visibility line, as a pure decision on a scrollTop so the scrub and the audit can never hold two
+  // different ideas of where the rail begins to exist (David 2026-08-28 — see the note at its call site in jrScrub).
+  function jrOnAt(st) { var a = wAnchors(); return st < a.sky - a.vh; }
   function jrPlaceDot() { // repositioned when the rail is built or the line moves — never per scroll frame (it cannot move while you scroll: it marks where you ARE, not where you are looking)
     if (!_jrDot) return;
     var d = jrDetents(), b = jrBox();
     if (!d || !b || d.dot == null) { _jrDot.style.display = "none"; _jrDotY = -999; return; }
     _jrDot.style.display = "";
-    var u = Math.max(0, Math.min(1, d.dot / (d.sky || 1)));
+    var u = jrU(d.dot, d);                                    // the dot rides the SAME chapter domain as the thumb — a marker on a different scale than the thing it marks is a lie
     _jrDotY = Math.round(u * b.t + Math.round(JR_PILL_H / 2) - 4);       // the frame's own centring math: chapterTop + round(pillH/2) - 4
     _jrDot.style.transform = "translateY(" + _jrDotY + "px)";
   }
@@ -7289,17 +7361,22 @@
     var host = _jrHost; if (!host) return;
     var w = el("tfWorld"); if (!w) return;
     var st = w.scrollTop;
-    // VISIBLE ONLY IN THE SKY. At home and down in the tools it is gone outright — opacity 0, and the grab zone dead with
-    // it (the .jr-awake rule is what arms that zone, and this drops the class). The 40px of slack keeps it lit while the
-    // landing settles rather than blinking off on the last pixel of the arrival.
-    var on = _jrForce ? true : (!!wLive() && st <= wSkyY() + 40);
+    // IT DOES NOT EXIST AT THE JOURNEY'S BEGINNING (David on device 2026-08-28: "when you're scrolling from the home up
+    // to the journey, the scroll bar should not be seen… it should not be there at all until you start scrolling up
+    // THROUGH the journey"). SUPERSEDES the old `st <= wSkyY() + 40` band, which lit the rail the moment the landing came
+    // into view — so the arrival at the journey came with a scrollbar already sitting there before a single chapter had
+    // moved. The line is now one viewport ABOVE the landing: the same one-viewport idiom the settle magnet uses to let go
+    // of a reader (wSnapIntent's `d < -w.clientHeight`, one viewport above HOME), measured from the landing instead —
+    // below it you are arriving, above it you are reading, and only the reader gets a scrollbar. At or below the line it
+    // is hidden however hard the column is moving; scroll activity may only wake a rail that is already allowed to exist.
+    var on = _jrForce ? true : (!!wLive() && jrOnAt(st));    // jrOnAt reads the CACHED anchors, never w.clientHeight: this runs per scroll event and a fresh layout read here is the thrash wAnchors exists to kill
     if (on !== _jrOn) {
       _jrOn = on; host.classList.toggle("jr-on", on);
       if (!on) { jrDrop(); host.classList.remove("jr-awake"); clearTimeout(_jrWakeT); }
     }
     if (!on) return;
-    var b = jrBox(); if (!b) return;
-    var sky = wSkyY(), u = sky > 0 ? Math.max(0, Math.min(1, st / sky)) : 0;
+    var b = jrBox(), d = _jrDet || jrDetents(); if (!b || !d) return; // both are caches invalidated together (wAnchorsDirty); a rebuild costs one pass per invalidation, never one per frame
+    var u = jrU(st, d);                                       // chapter 36's landing → 0, chapter 1 / the journey landing → 1 (jrU), never the raw scroll range
     var py = Math.round(u * (_jrDrag ? b.tg : b.t));
     wPut(_jrPill, "transform", "translateY(" + py + "px)"); // through wPut for the same reason every other scrub write is: an identical assignment still dirties style on WebKit, and this one fires per frame of every transition
     jrDotVis(py, _jrDrag ? JR_PILL_HG : JR_PILL_H);
@@ -7333,7 +7410,7 @@
     // snap engine for the rest of the session (magnetHold's own idiom, for exactly this reason).
     _wNoSnap = wNow() + 500;
     var k = r.height / b.h;                                  // visual px per artboard px — the 2c face is one uniform transform-scale, so this one ratio converts the whole gesture
-    var u0 = Math.max(0, Math.min(1, w.scrollTop / (d.sky || 1)));
+    var u0 = jrU(w.scrollTop, d);                            // the same chapter-end domain the pill is drawn on, so the grab can never start half a thumb from where it looks
     var mid = r.top + (u0 * b.tg + JR_PILL_HG / 2) * k, cap = (JR_PILL_HG / 2) * k;
     // KEEP THE GRAB OFFSET, CLAMPED TO THE THUMB. Land on the pill and nothing jumps; land above or below it in the 44px
     // zone and the pill's nearest edge comes to the finger and no further. The alternative — mapping the finger to the
@@ -7348,7 +7425,7 @@
     if (!g || !w || !b || !d) return;
     var local = (clientY - g.off - g.top) / g.k;             // finger → the rail's own artboard px
     var u = Math.max(0, Math.min(1, (local - JR_PILL_HG / 2) / (b.tg || 1)));
-    var y = u * d.sky;                                       // …and straight to scrollTop. No nearest-gate search: the pill goes where the thumb is and the column comes with it.
+    var y = jrScrollFor(u, d);                               // …and straight to scrollTop, across the CHAPTER domain (top of the rail = chapter 36, bottom = chapter 1 / the landing — the same two ends the pill is drawn between). No nearest-gate search: the pill goes where the thumb is and the column comes with it.
     _wNoSnap = wNow() + 500;
     if (Math.abs(w.scrollTop - y) >= 0.5) { _wSelfW = y; w.scrollTop = y; wtLog("jr", y); } // MARKED, like every other write this app makes to the column
     // The pill is written HERE off the value we just wrote rather than waiting for our own scroll event, so the two can
@@ -20895,7 +20972,9 @@
     var r = getComputedStyle(_jrRail), p = getComputedStyle(_jrPill), d = getComputedStyle(_jrDot), gp = getComputedStyle(_jrPill.firstChild);
     var b = jrBox() || {}, det = jrDetents();
     return { forced: !!_jrForce, awake: _jrHost.classList.contains("jr-awake"),
-      railInset: r.top + " / " + r.right + " / " + r.bottom, railTopLaw: "42% of the screen = " + Math.round(jrTopPx()) + " artboard px here (scale " + (tfScale() || 1) + ")", railSize: _jrRail.offsetWidth + "x" + _jrRail.offsetHeight, railZ: getComputedStyle(_jrHost).zIndex,
+      railInset: r.top + " / " + r.right + " / " + r.bottom, railTopLaw: "full screen: top " + JR_TOP + " · bottom " + JR_BOT + " artboard px (SUPERSEDES 42dvh/168 top and the 191 bottom)", railSize: _jrRail.offsetWidth + "x" + _jrRail.offsetHeight, railZ: getComputedStyle(_jrHost).zIndex,
+      domain: det ? ("ch" + det.list[0].ch + " @ " + Math.round(det.y0) + " (pill top) → ch" + det.list[det.list.length - 1].ch + " @ " + Math.round(det.y1) + " (pill bottom)") : "no table",
+      hiddenBelow: Math.round(wSkyY() - (wAnchors().vh || 0)) + " — at or below this scrollTop the rail does not exist, however hard the column is moving",
       pill: _jrPill.offsetWidth + "x" + _jrPill.offsetHeight, pillRight: p.right, pillRadius: p.borderRadius, pillBg: p.backgroundColor, pillOpacity: p.opacity, pillZ: p.zIndex, pillShadow: p.boxShadow, pillGap: p.rowGap,
       grip: _jrPill.firstChild.offsetWidth + "x" + _jrPill.firstChild.offsetHeight, gripBg: gp.backgroundColor, gripRadius: gp.borderRadius,
       dot: _jrDot.offsetWidth + "x" + _jrDot.offsetHeight, dotBg: d.backgroundColor, dotOpacity: d.opacity, dotRight: d.right, dotZ: d.zIndex, dotTravelY: _jrDotY,
@@ -20903,15 +20982,15 @@
       zone: _jrZone.offsetWidth + "x" + _jrZone.offsetHeight + " @ top " + getComputedStyle(_jrZone).top, zoneArmed: getComputedStyle(_jrZone).pointerEvents,
       travelRest: b.t, travelGrab: b.tg, gates: det ? det.list.length : 0, dotY: det ? Math.round(det.dot) : null, skyY: Math.round(wSkyY()) };
   };
-  window.DEV.jrDetents = function () { var d = jrDetents(); if (!d) return "no gate table (open home; the line has to be built)"; return { sky: Math.round(d.sky), youAreHere: Math.round(d.dot), gates: d.list.map(function (a) { return a.ch + ":" + Math.round(a.y); }) }; };
+  window.DEV.jrDetents = function () { var d = jrDetents(); if (!d) return "no gate table (open home; the line has to be built)"; return { sky: Math.round(d.sky), youAreHere: Math.round(d.dot), railTop: "ch" + d.list[0].ch + " @ " + Math.round(d.y0), railBottom: "ch" + d.list[d.list.length - 1].ch + " @ " + Math.round(d.y1), gates: d.list.map(function (a) { return a.ch + ":" + Math.round(a.y); }) }; };
   // WHERE THE THUMB LANDS, with no touch event anywhere near it. u = where it sits down the rail (0 top, 1 floor) → the
   // scrollTop the drag writes. Since 2026-08-28 that is a straight line, not a gate search, and this probe is the proof:
   // it runs the same `u * sky` the shipped jrTo runs, so a detent creeping back into the drag shows up here as a kink.
   window.DEV.jrLand = function (u) {
     var d = jrDetents(); if (!d) return "no gate table";
     u = Math.max(0, Math.min(1, +u || 0));
-    var y = u * d.sky;
-    return { u: u, scrollTop: Math.round(y), isLanding: Math.abs(y - d.sky) < 1, nearestGate: (function () { var best = null, bd = 1e9; d.list.forEach(function (a) { var dd = Math.abs(a.y - y); if (dd < bd) { bd = dd; best = a; } }); return best ? best.ch + " (" + Math.round(bd) + "px away — the drag does NOT go there)" : "none"; })() };
+    var y = jrScrollFor(u, d);
+    return { u: u, scrollTop: Math.round(y), domain: "ch" + d.list[0].ch + " @ " + Math.round(d.y0) + " → ch" + d.list[d.list.length - 1].ch + " @ " + Math.round(d.y1), isLanding: Math.abs(y - d.y1) < 1, nearestGate: (function () { var best = null, bd = 1e9; d.list.forEach(function (a) { var dd = Math.abs(a.y - y); if (dd < bd) { bd = dd; best = a; } }); return best ? best.ch + " (" + Math.round(bd) + "px away — the drag does NOT go there)" : "none"; })() };
   };
   window.DEV.you = function () { youMenu(); return "you menu"; };
   window.DEV.vital = function () { characterCard(); return "the vital (PARKED 2026-08-20 — unhooked from the gear, not deleted; David is redesigning it)"; };
@@ -21377,19 +21456,37 @@
           chk("line hidden at home rest", !_lit.length, _lit.length ? _lit.length + " of " + (_jcEls || []).length + " landing rows lit" : "all " + (_jcEls || []).length + " landing rows at opacity 0", "every landing-screen row computes opacity 0 — the cascade is the only thing that lights them");
         }
       }
-      // ===== THE JOURNEY RAIL'S GEOMETRY (2026-08-28, grep JRAIL). STYLE-based, never rect-based, deliberately: the
-      // bottom inset and the pill's size are absolute px the artboard transform cannot touch, the same law the line's own
-      // gates above are built on. The TOP is the one deliberate exception — it is 42% of the glass, so the gate computes
-      // what that resolves to on the phone it is running on (jrTopPx) rather than asserting a constant, and it was run at
-      // both 402x874 and 440x956. The rail lives and dies with the world overlays, so a run with no rail SKIPS.
+      // ===== THE JOURNEY RAIL'S GEOMETRY (2026-08-28, grep JRAIL). STYLE-based, never rect-based, deliberately: the two
+      // insets and the pill's size are absolute px the artboard transform cannot touch, the same law the line's own gates
+      // above are built on — and since the band went full-screen there is no viewport-unit exception left in here at all.
+      // The rail lives and dies with the world overlays, so a run with no rail SKIPS.
       if (_jrRail && _jrPill && _jrDot) {
         var _jrcs = getComputedStyle(_jrRail), _jrps = getComputedStyle(_jrPill), _jrds = getComputedStyle(_jrDot);
-        var _jrR = parseFloat(_jrcs.right), _jrT = parseFloat(_jrcs.top), _jrB = parseFloat(_jrcs.bottom), _jrPR = parseFloat(_jrps.right), _jrExp = jrTopPx();
-        // THE BAND STARTS LOW. The frame's fixed top:168 is SUPERSEDED (David on device 2026-08-28: "it starts kind of
-        // way too high up") by 42dvh/scale — 42% of the GLASS, so it lands under the thumb on any phone instead of at an
-        // artboard inset. 2px of tolerance because `dvh` is the dynamic viewport height and innerHeight is the visual
-        // one; in an installed PWA there is no URL bar between them, and the gate prints both numbers either way.
-        chk("rail box right 7 · top 42dvh/scale · bottom " + JR_BOT, Math.abs(_jrR - 7) <= 0.5 && Math.abs(_jrT - _jrExp) <= 2 && Math.abs(_jrB - JR_BOT) <= 0.5 && _jrRail.offsetWidth === 8, _jrcs.top + " (42% of " + H + " at scale " + _AS.toFixed(4) + " = " + Math.round(_jrExp) + " artboard px) / " + _jrcs.right + " / " + _jrcs.bottom + " · " + _jrRail.offsetWidth + "px wide (" + _jrRail.offsetHeight + " tall here)", "top 42% of the SCREEN (SUPERSEDES the frame's 168px artboard inset) · right 7 · bottom 191 · width 8 — the bottom is FIXED and the height stretches up to the band's top");
+        var _jrR = parseFloat(_jrcs.right), _jrT = parseFloat(_jrcs.top), _jrB = parseFloat(_jrcs.bottom), _jrPR = parseFloat(_jrps.right);
+        // THE BAND IS THE WHOLE SCREEN. SUPERSEDES BOTH earlier tops — the frame's fixed 168px artboard inset and the
+        // 42dvh/scale share of the glass that replaced it that morning — and the frame's 191px bottom with them (David
+        // on device 2026-08-28: "the scroll bar should start almost at the very bottom of the screen and end on the very
+        // top"). Two small artboard insets now, asserted as constants because that is exactly what they are.
+        chk("rail box right 7 · top " + JR_TOP + " · bottom " + JR_BOT, Math.abs(_jrR - 7) <= 0.5 && Math.abs(_jrT - JR_TOP) <= 0.5 && Math.abs(_jrB - JR_BOT) <= 0.5 && _jrRail.offsetWidth === 8, _jrcs.top + " / " + _jrcs.right + " / " + _jrcs.bottom + " · " + _jrRail.offsetWidth + "px wide (" + _jrRail.offsetHeight + " tall here)", "top " + JR_TOP + " · right 7 · bottom " + JR_BOT + " · width 8 — full screen (SUPERSEDES the 42dvh/168px top AND the frame's 191px bottom); the height stretches between the two insets");
+        // THE TWO ENDS ARE THE TWO CHAPTERS, not the raw scroll range. Asserted as a pure decision on jrU — no scroll
+        // writes, no landing screenshots: the preview fires no scroll event for a programmatic scrollTop, so a positional
+        // test here would prove nothing, while the map itself is the thing David named.
+        var _jrd = jrDetents();
+        if (_jrd) {
+          var _u0 = jrU(_jrd.y0, _jrd), _u1 = jrU(_jrd.y1, _jrd), _uMid = jrU((_jrd.y0 + _jrd.y1) / 2, _jrd);
+          var _uHi = jrU(_jrd.y0 - 4000, _jrd), _uLo = jrU(_jrd.y1 + 4000, _jrd);
+          chk("rail maps CHAPTER end to CHAPTER end", _u0 === 0 && _u1 === 1 && Math.abs(_uMid - 0.5) < 0.001 && _uHi === 0 && _uLo === 1,
+            "ch" + _jrd.list[0].ch + " @ " + Math.round(_jrd.y0) + " → u " + _u0 + " · ch" + _jrd.list[_jrd.list.length - 1].ch + " @ " + Math.round(_jrd.y1) + " → u " + _u1 + " · midpoint u " + _uMid.toFixed(3) + " · clamped outside (" + _uHi + " / " + _uLo + ")",
+            "pill at the very TOP exactly when the column is parked at chapter 36's landing and at the very BOTTOM at chapter 1 / the journey landing (David 2026-08-28) — linear between, clamped outside; SUPERSEDES the raw st/sky range");
+        } else out.push("SKIP · rail chapter-end mapping · no gate table (the line is not built)");
+        // …AND IT DOES NOT EXIST AT THE JOURNEY'S BEGINNING (David: "when you're scrolling from the home up to the
+        // journey, the scroll bar should not be seen… it should not be there at all until you start scrolling up THROUGH
+        // the journey"). Same pure-decision form: the visibility line is arithmetic on two cached anchors, so the gate
+        // reads the line rather than watching a rail that DEV.jrShow may be pinning on.
+        var _jra = wAnchors(), _jrLine = _jra.sky - _jra.vh;
+        chk("rail hidden at and below the landing screen", _jrLine > 0 && !jrOnAt(_jra.sky) && !jrOnAt(_jra.sky - 40) && !jrOnAt(_jrLine) && jrOnAt(_jrLine - 1) && !jrOnAt(_jra.home),
+          "jrOnAt: landing " + Math.round(_jra.sky) + " → hidden · landing−40 → hidden · the line " + Math.round(_jrLine) + " → hidden · one px above it → visible · home " + Math.round(_jra.home) + " → hidden",
+          "one full viewport ABOVE the journey landing before the rail may exist — the same one-viewport idiom the settle magnet lets go on (wSnapIntent d < -clientHeight); SUPERSEDES the old wSkyY()+40 band that lit it during the arrival");
         chk("rail pill 10x48, INVISIBLE at rest", _jrPill.offsetWidth === 10 && _jrPill.offsetHeight === 48 && Math.abs(parseFloat(_jrps.borderRadius) - 5) <= 0.5 && (_jrHost.classList.contains("jr-awake") || +_jrps.opacity === 0), _jrPill.offsetWidth + "x" + _jrPill.offsetHeight + " r" + _jrps.borderRadius + " · opacity " + _jrps.opacity + (_jrHost.classList.contains("jr-awake") ? " (awake)" : " (rest)"), "10x48, radius 5 — and rest opacity 0, not the frame's .31 (David 2026-08-28: it appears when you scroll and leaves when you stop)");
         chk("rail dot sits UNDER the pill", (+_jrds.zIndex || 0) < (+_jrps.zIndex || 0), "dot z " + _jrds.zIndex + " · pill z " + _jrps.zIndex, "the you-are-here dot must never paint over the thumb (David 2026-08-28: \"you can see the dot appearing over it\") — z below it, and jrScrub blanks it inside the pill's span");
         chk("rail pill right edge 5px from the screen edge", isFinite(_jrPR) && Math.abs((_jrR + _jrPR) - 5) <= 0.5, "rail right " + _jrcs.right + " · pill right " + _jrps.right + " = " + Math.round((_jrR + _jrPR) * 10) / 10 + "px", "7 + (-2) = 5px — the pill OVERHANGS its box, so widening it on grab grows it leftward and its right edge never moves");
@@ -21400,7 +21497,7 @@
       // so the layer has to paint at least that far past the card on every side — and the gradient has to stay at its OLD
       // size while it does, or every pattern in the line silently rescales. Both halves are asserted: the PADDING box is
       // still 190% of the card (background-origin sizes the gradient to it) and the BORDER box overhangs it by 40px.
-      var _jlt = document.querySelector("#jrnyLine .jl-lock-card > .jl-l-tex:not(.jl-spin)");
+      var _jlt = document.querySelector("#jrnyLine .jl-lock-card > .jl-l-tex:not(.jl-spin):not(.jl-tex-box)");
       if (_jlt && _jlt.parentNode) {
         var _jc = _jlt.parentNode, _jts = getComputedStyle(_jlt), _jbw = parseFloat(_jts.borderTopWidth) || 0;
         var _padH = _jlt.offsetHeight - 2 * _jbw, _padW = _jlt.offsetWidth - 2 * (parseFloat(_jts.borderLeftWidth) || 0);
@@ -21408,6 +21505,51 @@
           "border " + _jbw + "px · padding box " + Math.round(_padW) + "x" + Math.round(_padH) + " vs the card's 190% (" + Math.round(_jc.offsetWidth * 1.9) + "x" + Math.round(_jc.offsetHeight * 1.9) + ")",
           "the gradient still renders at the old 190% padding box (so nothing rescales) and paints 40px further out (so the 22x12 drift can never expose an edge)");
       } else out.push("SKIP · chapter texture bleed · no drifting gate texture in the DOM (the line is not built)");
+      // ===== …AND THE REPEATING-RADIAL FAMILY IS PAINTED ON THE BOX AND NEVER SLIDES (David on device 2026-08-28, his
+      // third round on the same strip: "chapter seven sixteen twenty six are still broken because you can see they're cut
+      // off on the top"). The rule is mechanical, so the gate is too: for EVERY member of the family in the DOM, the
+      // texture layer must be the card exactly (inset 0, no border → the painted box is its own clip, so there is nothing
+      // outside it to slide in) and must carry NO animation of its own — a transform on that layer inside an
+      // overflow:hidden card is the whole bug, because WebKit rasterizes a composited layer at the clipped bounds and
+      // then slides emptiness in. Its motion lives on the CARD instead (jlBanner, behind JL_JITTER).
+      // ===== A RAY STONE'S LAYERS ARE ORDERED BY DECLARED z, IN BOTH STATES (David on device 2026-08-28: "the rotating
+      // rays still break the stones… when you STOP scrolling, they break. And the spinning ray thing on the stone covers
+      // up the rest of the things — the shadows, the highlights, the icon"). The whole class only appears once mSpin is
+      // running, and mSpin only starts at the scroll-stop wake flush — so a gate that reads the stone in ONE state can
+      // never see it. This one toggles .jl-anim-off (the single thing that differs between moving and stopped, measured)
+      // and asserts the same declared order on both sides, then puts the row back exactly as it found it.
+      var _rst = document.querySelector("#jrnyLine .jl-lstone.jl-rayst");
+      if (_rst) {
+        var _rrow = _rst.closest(".jl-lstone-row"), _rwas = _rrow && _rrow.classList.contains("jl-anim-off");
+        var _rread = function () {
+          var k = [].slice.call(_rst.children), z = k.map(function (n) { return getComputedStyle(n).zIndex; });
+          var names = k.map(function (n) { return (n.className || n.tagName).toString().split(" ")[0]; });
+          var num = z.map(function (v) { return v === "auto" ? -1 : +v; });
+          return { names: names.join(" → "), z: z.join(" "), anim: getComputedStyle(k[0]).animationName,
+            ok: names[0] === "jl-lstone-tex" && names[1] === "jl-lstone-sheen" && k[2].tagName === "I" && names[3] === "jl-lstone-pass" &&
+                num[0] > 0 && num[0] < num[1] && num[1] < num[2] && num[2] < num[3] };
+        };
+        if (_rrow) _rrow.classList.remove("jl-anim-off");
+        var _rAwake = _rread();
+        if (_rrow) _rrow.classList.add("jl-anim-off");
+        var _rSleep = _rread();
+        if (_rrow) _rrow.classList.toggle("jl-anim-off", !!_rwas);   // …and the row goes back exactly as it was found
+        chk("ray stone layers ordered by DECLARED z (awake AND asleep)", _rAwake.ok && _rSleep.ok && _rAwake.z === _rSleep.z,
+          "awake: " + _rAwake.names + " z " + _rAwake.z + " (spin " + _rAwake.anim + ") · asleep: z " + _rSleep.z + " (spin " + _rSleep.anim + ")",
+          "fill 1 · highlight+shade 2 · symbol 3 · glisten 4, identical in both states — the v1387 layering law written where the compositor must obey it. z:auto left the order to WebKit's overlap heuristic, which only breaks once mSpin is promoted (i.e. the moment the scroll-stop wake flush runs)");
+      } else out.push("SKIP · ray stone layer order · no ray stone in the DOM (the line is not built)");
+      var _jbx = [].slice.call(document.querySelectorAll("#jrnyLine .jl-lock-card > .jl-l-tex.jl-tex-box"));
+      if (_jbx.length) {
+        var _jbad = _jbx.filter(function (n) {
+          var s = getComputedStyle(n), p = n.parentNode;
+          return !((parseFloat(s.borderTopWidth) || 0) === 0 && s.animationName === "none" &&
+            Math.abs(n.offsetHeight - p.offsetHeight) <= 0.5 && Math.abs(n.offsetWidth - p.offsetWidth) <= 0.5);
+        });
+        var _jbCh = _jbx.map(function (n) { var r = n.closest(".jl-lock"); return r ? r.dataset.jch : "?"; }).join(" ");
+        chk("repeating-radial chapters painted ON the box, no drift", !_jbad.length,
+          _jbx.length + " gates (ch " + _jbCh + ") · first: " + _jbx[0].offsetWidth + "x" + _jbx[0].offsetHeight + " vs card " + _jbx[0].parentNode.offsetWidth + "x" + _jbx[0].parentNode.offsetHeight + " · border " + getComputedStyle(_jbx[0]).borderTopWidth + " · animation " + getComputedStyle(_jbx[0]).animationName + (_jbad.length ? " · " + _jbad.length + " FAIL" : ""),
+          "every repeating-radial gate texture is exactly its card (inset 0, border 0) with animation:none — a painted box cannot expose an edge, which is the only mechanism that survives WebKit clipping a composited layer to the card");
+      } else out.push("SKIP · repeating-radial gates · none in the DOM (the line is not built)");
     }
     // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The
     // board is one uniform scale of a 402x874 artboard, so with the sentinel above passing, every artboard px in this report renders at
