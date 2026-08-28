@@ -1920,13 +1920,28 @@
   .jl-lock{ padding:16px 0 8px; width:100%; }
   .jl-lock-card{ width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3), inset 0 0 0 999px rgba(16,6,14,.52); overflow:hidden; position:relative; background:#1b0c1a; display:flex; align-items:center; gap:12px; padding:13px 15px; }
   .jl-lock-card.jl-lit{ box-shadow:none; animation:mGlow 4.6s ease-in-out infinite; }
-  .jl-l-tex{ position:absolute; inset:-45%; animation:mDrift 13s ease-in-out infinite; }
+  /* THE DRIFT LAYER BLEEDS PAST ITS OWN BOX (David on device 2026-08-28: "chapter seven… the top little bit of it is
+     dark — because it's animated. Chapter thirty four is the same issue. It moves down, and there's just, like, an empty
+     space above it. Instead the pattern should keep going").
+     THE MECHANISM, and it is the whole reason for the transparent border: a background paints only inside its own element,
+     so a layer that TRANSLATES can only ever show what was inside it when it was painted. Making the element bigger is
+     the fix — but these are David's gradients and most of them are sized in PERCENTAGES of the box, so growing the box
+     would rescale every pattern in the line. `background-origin` defaults to the PADDING box: keep the padding box at
+     exactly the old 190% (inset -45% - 40px, then 40px of border back), and every gradient renders at its old size, in
+     its old place, at its old scale — while `background-clip` (border-box, also the default) paints it, tiled by the
+     default `background-repeat`, 40px further out on every side. 40 > the 22x12 the drift ever travels, so no edge can
+     reach the card. Bit-identical paint, infinite pattern, and the drift stays a composited translate — no repaint.
+     WHY NOT ANIMATE background-position INSTEAD (the other way to tile forever): chapters 10 and 27 carry their own
+     per-layer `background-position` inline (`0 0, 15px 15px, 0 0` — that offset IS their checkerboard), and a CSS
+     animation outranks inline style, so it would flatten both of them. */
+  .jl-l-tex{ position:absolute; inset:calc(-45% - 40px); border:40px solid transparent; animation:mDrift 13s ease-in-out infinite; }
   /* …EXCEPT THE RAY PATTERNS, WHICH TURN (David 2026-08-27). The drift layer is a 190% rectangle, which is ample for a
      slide but NOT for a rotation: at 90° its short side would fall inside the card and the corners would open up. A
      spinning layer is therefore a SQUARE wider than the card's diagonal, centred with the `translate` property so
      `transform` stays free for the rotation itself. Linear ease and a long period — rays should turn like a slow wheel,
-     never pulse. */
-  .jl-l-tex.jl-spin{ inset:auto; top:50%; left:50%; width:230%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; animation:mSpin 90s linear infinite; }
+     never pulse. It takes NO bleed border: 230% of the card is already more than twice its diagonal, so a rotation
+     cannot reach an edge, and a border here would shrink the padding box and rescale the rays. */
+  .jl-l-tex.jl-spin{ inset:auto; border-width:0; top:50%; left:50%; width:230%; aspect-ratio:1; translate:-50% -50%; transform-origin:50% 50%; animation:mSpin 90s linear infinite; }
   /* THE STONE'S TURNING FILL, and the two things v1386 broke with it (David 2026-08-27: "the spinning destroyed what the
      stone looks like… it gets rid of the little highlight above, a little shadow below, and the symbol on it", "makes it
      less square").
@@ -1936,8 +1951,15 @@
      (b) --ss's two INSET shadows paint above an element's background but BELOW its children, so the moment the fill
          became a child it covered them: exactly the missing highlight and inner shadow he named. A ray stone therefore
          keeps only the OUTER drop shadow on itself and wears the two insets on a still sheen layer ABOVE the fill —
-         same pixels, same order (below the glyph, as they always were). */
-  .jl-lstone-tex{ position:absolute; inset:0; border-radius:50%; transform-origin:50% 50%; animation:mSpin 110s linear infinite; }
+         same pixels, same order (below the glyph, as they always were).
+     (c) …and it carries the same 2026-08-28 bleed as the gate's drift layer, for the same reason and in the same way:
+         4px of transparent border with the padding box pinned at the stone's own 74px, so the fill paints 4px past the
+         parent's clip at the SAME scale. A rotating circle cannot open a gap the way a sliding rectangle can — its
+         silhouette does not change — but its rim then coincides exactly with the clip it turns inside, and a rim that
+         is its own edge is what softened v1386. Painting past the clip hands the stone a solid edge to cut. The sheen
+         and the glyph are SIBLINGS AFTER this layer, so nothing here can cover the top highlight, the bottom shade or
+         the symbol — that ordering is the whole point of them being separate layers. */
+  .jl-lstone-tex{ position:absolute; inset:-4px; border:4px solid transparent; border-radius:50%; transform-origin:50% 50%; animation:mSpin 110s linear infinite; }
   .jl-lstone.jl-rayst{ box-shadow:0 6px 0 #00000061; }
   .jl-lstone-sheen{ position:absolute; inset:0; border-radius:50%; box-shadow:inset 0 4px 0 #ffffff0f, inset 0 -6px 0 #00000038; pointer-events:none; }
   .jl-lstone-tex ~ i{ position:relative; }
@@ -2065,40 +2087,51 @@
      WHY IT LIVES ON .tf-inner AND NOT IN THE SCROLLER: #tfWorld owns one gesture and one scroll listener (the whole
      subject of @SEC:WORLD-MOTION). The rail is an absolute overlay beside the puck and the door hints, so a finger on it
      can never reach the column underneath and the two can never become two writers racing each other.
-     THE LETTERBOX LAW: these are ARTBOARD px inside the 402 column. top 168 and bottom 191 are FIXED and the height
-     stretches between them on a taller phone — extend, never scale (the same law .tfw-home and #jrnyLine already obey). */
-  .jr-host{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:30; pointer-events:none; }
-  .jr-rail{ position:absolute; right:7px; top:168px; bottom:191px; width:8px; opacity:0; transition:opacity .3s ease; } /* 874-168-191 = the frame's own 515px rail */
+     THE LETTERBOX LAW: the bottom inset is ARTBOARD px inside the 402 column and stays FIXED; the height stretches to
+     the top — extend, never scale (the same law .tfw-home and #jrnyLine already obey).
+     THE BAND STARTS LOW (David on device 2026-08-28: "the side rail should start more on the bottom. Right now, it
+     starts kind of way too high up"). The frame's 168px top is SUPERSEDED by --jr-top, a share of the SCREEN rather
+     than an artboard inset — the rail is a thumb reach, not a drawn element, and a thumb sits where the hand is, not
+     where the artboard is. ONE value moves the whole band; .jr-zone rides it too, so its 13px of overhang can never
+     drift away from the rail it arms.
+     …AND IT IS DIVIDED BY --tfscale, which is the letterbox law applied to a viewport unit rather than an exception to
+     it: .tf-inner is laid out at `100dvh / scale` and then transform-scaled back up, so a raw 42dvh in here would paint
+     at 42 x scale = 46% of David's 956px screen. Dividing first is what makes "42% of the screen" true on every phone,
+     which is the only reading of this number that means anything — it is a reach, and a reach is measured on glass. */
+  .jr-host{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:30; pointer-events:none; --jr-top:42dvh; }
+  .jr-rail{ position:absolute; right:7px; top:calc(var(--jr-top) / var(--tfscale, 1)); bottom:191px; width:8px; opacity:0; transition:opacity .3s ease; }
   .jr-host.jr-on .jr-rail{ opacity:1; }
   /* the pill sits right:-2px INSIDE the box, so its right edge lands 5px from the screen edge (7 - 2) and widening it
      on grab grows it leftward — the edge David drew never moves. Only OPACITY transitions (the frame's own .3s); the
      grab widening is instant, because a transition there is a feel nobody designed. */
-  .jr-pill{ position:absolute; right:-2px; top:0; width:10px; height:48px; border-radius:5px; background:hsl(334 100% 65%);
+  .jr-pill{ position:absolute; right:-2px; top:0; z-index:2; width:10px; height:48px; border-radius:5px; background:hsl(334 100% 65%);
     box-shadow:inset 0 1px 0 rgba(255,242,249,.2), inset 0 -1px 0 rgba(0,0,0,.28), 0 3px 6px rgba(0,0,0,.45);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; opacity:.31; transition:opacity .3s ease; }
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; opacity:0; pointer-events:none; transition:opacity .3s ease; }
   .jr-grip{ width:5px; height:2px; border-radius:1px; background:rgba(22,5,16,.45); }
-  .jr-host.jr-awake .jr-pill{ opacity:.86; }                       /* awake = David's pillOpacity; rest = round(.86*36)/100 = .31 */
+  /* IT LIVES ONLY WHILE THE COLUMN MOVES (David on device 2026-08-28: "it should only appear once you start scrolling
+     and disappear once you stop scrolling"). The frame's .31 resting pill is SUPERSEDED by nothing at all — rest is
+     opacity 0. .86 while sky scroll events flow, then jrScrub's own 900ms decay takes it back out. The grab zone is
+     armed by the same .jr-awake class, so "grab only while awake" now reads "grab only while you can see it". */
+  .jr-host.jr-awake .jr-pill{ opacity:.86; }                       /* awake = David's pillOpacity */
   .jr-host.jr-grab .jr-pill{ width:13px; height:52px; border-radius:7px; gap:4px; opacity:.86;
     box-shadow:inset 0 2px 0 rgba(255,242,249,.2), inset 0 -2px 0 rgba(0,0,0,.28), 0 3px 6px rgba(0,0,0,.45); }
   .jr-host.jr-grab .jr-grip{ width:7px; }
   /* s4: scroll away from where you actually are and the rail leaves this behind at your chapter. Quiet by construction —
-     its .42 is its own, not the pill's, so it neither wakes nor sleeps with the thumb. */
-  .jr-dot{ position:absolute; right:1px; top:0; width:7px; height:7px; border-radius:50%; background:#ff4fa0; opacity:.42; }
-  /* THE LANDING CHIP — drawn only while a finger is on the rail. `translate` carries David's chipShiftY so `transform`
-     stays free for the position write (the same translate-not-transform idiom the line's rows and the HUD labels use). */
-  .jr-chip{ position:absolute; right:12px; top:0; display:none; flex-direction:column; gap:3px; align-items:flex-start;
-    padding:2px 9px; background:rgba(20,7,17,.9); border:2px solid #160510; border-radius:12px; box-shadow:0 3px 0 #160510;
-    translate:0 2px; white-space:nowrap; }
-  .jr-host.jr-grab .jr-chip{ display:flex; }
-  .jr-chip-book{ font-size:8.5px; font-weight:800; letter-spacing:1.8px; }
-  .jr-chip-row{ display:flex; align-items:center; gap:3px; }
-  .jr-chip-num{ flex:none; width:26px; height:26px; box-sizing:border-box; border:2px solid #160510; border-radius:9px;
-    display:flex; align-items:center; justify-content:center; font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13.5px; color:#160510; }
-  .jr-chip-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:16.5px; color:#fff2f9; line-height:1; }
-  /* THE GRAB ZONE — invisible, 44px of real thumb, spanning the rail's range ±13px (top 168-13, bottom 191-13). It takes
-     touches ONLY while the rail is awake, and `touch-action:none` is what stops the page scrolling under the drag, so all
-     three listeners stay passive and nothing ever calls preventDefault on this surface. */
-  .jr-zone{ position:absolute; right:0; top:155px; bottom:178px; width:44px; pointer-events:none; touch-action:none; }
+     its .42 is its own, not the pill's, so it neither wakes nor sleeps with the thumb.
+     AND IT NEVER RIDES OVER THE THUMB (David on device 2026-08-28: "you can see the dot appearing over it"). Two guards,
+     because one is not enough: a lower z-index than the pill, so a partial overlap can never paint the dot on top of it,
+     and jrScrub blanks the dot outright while its 7px sit inside the pill's live span — a stacked mark reads as a smudge
+     on the thumb, not as a marker. Both are cheap: the z-index is static and the span test is arithmetic on two numbers
+     the scrub already holds. */
+  .jr-dot{ position:absolute; right:1px; top:0; z-index:1; width:7px; height:7px; border-radius:50%; background:#ff4fa0; opacity:.42; }
+  /* THE LANDING CHIP IS GONE (David on device 2026-08-28: "let's get rid of the thing that says the name of… where
+     you're sliding to, like the numbers and which book"). It was a detached overlay beside the pill — no chapter card,
+     stone or texture ever read it, so removing it cannot touch the line's animations. Deleted with it: .jr-chip*, the
+     four element refs, jrChip/jrBook/jrHue and JR_BOOKS in app.js. */
+  /* THE GRAB ZONE — invisible, 44px of real thumb, spanning the rail's range ±13px. It takes touches ONLY while the rail
+     is awake (which since 2026-08-28 means: only while it is visible at all), and `touch-action:none` is what stops the
+     page scrolling under the drag, so all three listeners stay passive and nothing ever calls preventDefault here. */
+  .jr-zone{ position:absolute; right:0; top:calc(var(--jr-top) / var(--tfscale, 1) - 13px); bottom:178px; width:44px; pointer-events:none; touch-action:none; }
   .jr-host.jr-awake .jr-zone{ pointer-events:auto; }
   /* the frame's keyframes, verbatim from recipes/j1-style-block.css (jlAlive = its jpAlive, renamed on collision) */
   @keyframes jGlint{ 0%{ transform:translateX(-135%) rotate(0.001deg); } 55%,100%{ transform:translateX(135%) rotate(0.001deg); } }
@@ -4522,6 +4555,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1402"></script>
+  <script src="app.js?v=1405"></script>
 </body>
 </html>
