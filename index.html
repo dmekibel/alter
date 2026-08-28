@@ -1958,6 +1958,31 @@
      wobbling). The bleed border is REMOVED here rather than kept: it bought nothing against a clipped backing store, and
      it is the only thing that made this paint tile at all. Everyone else keeps it — see the rule above. */
   .jl-l-tex.jl-tex-box{ inset:0; border-width:0; animation:none; }
+  /* …AND THEY DRIFT AGAIN, BY MOVING THE PATTERN INSTEAD OF THE BOX (David 2026-08-28: "why can't they drift and just
+     extend the texture so that when they do drift, the texture just matches, instead of opening up an empty hole").
+     He is right, and the reason the v1405 extension could not do it is specific: WebKit rasterizes an ANIMATED layer at
+     its clipped bounds, so no amount of extending the box put those pixels in the backing store. Moving the PATTERN has
+     no such limit — `background-position` slides the paint inside a box that never moves, and a repeating gradient tiles
+     infinitely, so there is no edge to expose and no hole to open. Same 22x12 vector, same 13s, same ease-in-out, same
+     0 → 22,12 → 0 round trip as the design's mDrift (recipes/j1-style-block.css), so the motion David approved is
+     unchanged — only its mechanism is. The design attaches NO per-chapter delay to mDrift (only .jl-spin carries one), so
+     none is invented here: the gates drift in lockstep exactly as the design's own sixteen do.
+     TWO SETS, because `background-position` takes a PER-LAYER list and a short list repeats across every layer. Six of
+     the seven are [repeating-radial, <colour>] — the colour is a background-COLOR, not a moving layer, so one shared
+     value is safe. Chapter 16 is the exception: three real paint layers, and only the first tiles. Its base
+     `linear-gradient(115deg,#6a2848,#35142c)` is box-sized and would wrap, opening a hard seam where its dark end meets
+     its light start — the very artifact this pass removes — and its warm focal glow at 64% 46% is drawn to sit there. So
+     only layer one moves. app.js picks the set by counting the layers, and designAudit FAILS if a family card's layer
+     count and its keyframe set ever disagree, so a new texture cannot drift the wrong stack silently.
+     PERF, named so it can be killed in one line: background-position animates on the MAIN THREAD (a repaint per frame),
+     unlike the composited transform it replaces. Acceptable here because the pause machinery already covers it — the
+     layer carries .jl-fx, so `.jl-anim-off .jl-fx{animation:none}` destroys it off-screen and the .jl-far paint window
+     stops the row painting at all — the boxes are 362x74, and the drift is a 13s crawl. IF DAVID REPORTS CHOP, THE FLAG
+     TO KILL IS `JL_TEXDRIFT` in app.js: false puts these seven back to a static painted box, nothing else changes. */
+  @keyframes jlTexDrift{ 0%,100%{ background-position:0 0; } 50%{ background-position:22px 12px; } }
+  @keyframes jlTexDrift3{ 0%,100%{ background-position:0 0, 0 0, 0 0; } 50%{ background-position:22px 12px, 0 0, 0 0; } }
+  .jl-l-tex.jl-tex-box.jl-tex-drift{ animation:jlTexDrift 13s ease-in-out infinite; }
+  .jl-l-tex.jl-tex-box.jl-tex-drift3{ animation:jlTexDrift3 13s ease-in-out infinite; }
   /* THE STONE'S TURNING FILL, and the two things v1386 broke with it (David 2026-08-27: "the spinning destroyed what the
      stone looks like… it gets rid of the little highlight above, a little shadow below, and the symbol on it", "makes it
      less square").
@@ -2132,8 +2157,15 @@
      for a 26,000px sky reads as DISTANCE, and distance is only honest at full travel: two small insets, one var each,
      and everything between them belongs to the thumb. The mapping moved with it — app.js jrU pins the two ends of the
      rail to the two ends of the CHAPTER table (36 at the top, the landing at the bottom), not to the raw scroll range.
+     …AND "THE TOP" MEANS UNDER THE GEMS, NOT THE GLASS (David 2026-08-28, second look: "The scroll bar is much better,
+     but when I said the top of the screen, I did not mean literally the top of the screen. I don't think this should go
+     higher than the gems"). MEASURED in the running board at his own 402x874: the HUD counter row — the leaf chip and
+     the gem count together — lays out at top 54 and BOTTOMS AT 86 artboard px (the gems chip itself ends at x 382, and
+     the rail's own 8px column starts at 387, so the two sit side by side with 5px between them: exactly why the pill
+     riding past 86 read as climbing over the counter). 86 + an 8px gap = 94, which is what --jr-top now holds. The
+     BOTTOM stays 14 and the chapter mapping is untouched — chapter 36 simply parks the pill at this new top edge.
      ONE value moves each end; .jr-zone rides both, so its 13px of overhang can never drift away from the rail it arms. */
-  .jr-host{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:30; pointer-events:none; --jr-top:12px; --jr-bot:14px; }
+  .jr-host{ position:absolute; left:0; right:0; top:0; bottom:0; z-index:30; pointer-events:none; --jr-top:94px; --jr-bot:14px; }
   .jr-rail{ position:absolute; right:7px; top:var(--jr-top); bottom:var(--jr-bot); width:8px; opacity:0; transition:opacity .3s ease; }
   .jr-host.jr-on .jr-rail{ opacity:1; }
   /* the pill sits right:-2px INSIDE the box, so its right edge lands 5px from the screen edge (7 - 2) and widening it
@@ -4590,6 +4622,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1406"></script>
+  <script src="app.js?v=1407"></script>
 </body>
 </html>
