@@ -5708,6 +5708,20 @@
             wtLog("tv", Math.round(_wTv * 100));
           }
           if (WM) wQueueSnap(140); else magnetArm();  // momentum keeps firing scroll events after this; the settle timer waits them out
+          // THE ARRIVAL MUST BE ASKED FOR ONE LAST TIME WHEN THE FINGER LETS GO (David device 2026-08-28: "going down
+          // from journey to home SOMETIMES makes the [story strip] disappear… going up from tools to home, the top bar
+          // also disappears"). Reproduced headlessly, both directions: drag the column back until it is PARKED ON HOME
+          // and only then lift. hcMaybeIn is the settle arrival, and it refuses to run while `_wTouch` is set; it is
+          // re-scheduled from ONE place, hcScrub's 20ms debounce, which runs off scroll events — and a column already
+          // parked on home fires no more of them. touchend then queues wMaybeSnap, which computes a target it is
+          // ALREADY sitting on (`Math.abs(scrollTop - to) < 0.5`) and returns without springing, so the `hcMaybeIn()`
+          // that every spring landing calls never happens either. The board stays flattened at the exit's opacity:0
+          // with `_hcState` stuck on "outUp"/"outDown" — which also disables the at-home hcReset below (see hcScrub),
+          // so nothing recovers it until you leave home entirely. Lifting the finger is exactly the instant the
+          // `_wTouch` guard stops applying, so ask again here. hcMaybeIn is fully self-guarded (needs an arm, needs no
+          // finger, needs no spring, needs to be within 40px of home), and 160ms sits AFTER the 140ms snap decision, so
+          // a gesture that is actually leaving has already had its spring committed and `_wAnim` turns this into a no-op.
+          if (WM) { clearTimeout(_hcInT); _hcInT = setTimeout(hcMaybeIn, 160); }
         }
       };
       world.addEventListener("touchstart", function (e) { wTouch(true); var _t0 = e.touches && e.touches[0]; if (_t0) { _wTvY = _t0.clientY; _wTvT = wNow(); _wTv = 0; } }, { passive: true }); // …and seed the finger-velocity tracker in the same instant the gesture is declared (the tracker below)
@@ -5771,10 +5785,20 @@
     var away;
     if (WM) {
       var tp = Math.max(0, Math.min(300, d));                            // the design's 0-300 downward-travel scrub
-      var zn = d < -300 ? "sky" : (d > wSpan() / 2 ? "ground" : "home");
+      // THE PUCK IS SPENT BY 60% OF THE WAY HOME (David device 2026-08-28: "the home button disappears a little too
+      // late"). The design ramps it as an opacity: `clamp((u-0.5)/0.35)` over the downward travel u. The app renders it
+      // as a class, so that ramp is a pair of THRESHOLDS — and the two halves of the trip had drifted apart:
+      //   BEFORE  sky side: visible while d < -300      → at his 874px sky that is 300/874, gone only for the last 34%
+      //           ground side: visible while tp > 66    → 66/595, gone only for the last 11% — it rides in with the board
+      //   AFTER   sky side: visible while d < -vh*0.40  → gone for the last 40%, i.e. spent by 60% of the way home
+      //           ground side: same 40% floor whenever the column is NOT travelling away (_wDir <= 0)
+      // LEAVING home is deliberately untouched: a real downward gesture reads _wDir > 0, which keeps the old 66px
+      // wake-up, and the sky still lights the puck the whole way up. Only the approach tightens.
+      var PUCK_IN = 0.40;                                                  // the last 40% of either travel is a bare board
+      var zn = d < -(vh * PUCK_IN) ? "sky" : (d > wSpan() / 2 ? "ground" : "home");
       // PUCK: shown in the sky always; otherwise shown when you're away from home — but NEVER while moving up, so it is already
       // gone before you could watch it scale to nothing (note 16). Hidden outright under an open card.
-      away = zn === "sky" ? true : (wBusy() || (_wDir || 0) < 0 ? false : (zn !== "home" || tp > 66));
+      away = zn === "sky" ? true : (wBusy() || (_wDir || 0) < 0 ? false : (zn !== "home" || tp > ((_wDir || 0) > 0 ? 66 : wSpan() * PUCK_IN)));
       // The two centre labels are tp-LINKED IN BOTH AXES (design values): the JOURNEY hint's TAP dies at 40px of downward travel while its fade only completes at 70, and it rides up with the scroll (jnyOffY = -tp). HOME rises into its seat from 14px below as it fades in. Written to the separate CSS `translate` PROPERTY, never transform, because .tfh-hint's centering lives in transform:translate(-50%,-50%) — same translate-not-transform idiom as the home cascade (see the homeRise keyframes comment in index.html).
       // …AND IT IS SPENT ON THE WAY UP TOO (David's device 2026-08-26: at the journey landing the JOURNEY chevron was
       // still lit, sitting on top of "Close the day"). The downward `tp` behaviour below is UNTOUCHED; this only adds
@@ -6959,7 +6983,18 @@
     if (d < -ch * 0.55) _hcArmDown = true;                               // deep in the journey → it comes from above
     if (down && d > 150 && _tcShown && _hcState !== "outDown") { _hcState = "outDown"; _hcArmUp = true; hcExit("down"); }
     else if (up && d < -80 && _hcState !== "outUp") { _hcState = "outUp"; _hcArmDown = true; hcExit("up"); }
-    if (Math.abs(d) < 14 && _hcState !== "outDown" && _hcState !== "outUp" && wNow() - _hcAnimAt > 1900) hcReset(); // parked at home, nothing recent → plain CSS
+    // PARKED AT HOME, NOTHING RECENT → plain CSS. The `_hcState !== "out*"` test used to gate the whole line, which
+    // made this net USELESS in the one case that needs it: a board still flying the away flag while the column sits ON
+    // home is not an exit in progress, it is a MISSED ARRIVAL (the touchend case above, and any other road home that
+    // never got its hcArrive). Flattened at opacity:0, it was then locked that way — the exit had hidden it and the
+    // only thing that clears it, hcReset, refused to run because of the very flag the missed arrival left behind. So
+    // the stale flag is now CLEARED here rather than obeyed: at home, still, silent for 1900ms, we are home. The
+    // 1900ms + still-column guards keep it off every live cascade (an exit or an arrival stamps _hcAnimAt), and when
+    // _hcState is already "in" this line behaves exactly as it did before.
+    if (Math.abs(d) < 14 && wNow() - _hcAnimAt > 1900) {
+      if ((_hcState === "outUp" || _hcState === "outDown") && !_wTouch && !_wAnim) { _hcState = "in"; _hcArmUp = _hcArmDown = false; _hcDone = false; }
+      if (_hcState !== "outDown" && _hcState !== "outUp") hcReset();
+    }
     // MID-GLIDE: 260px out, while the spring is still flying — or, in mode 11, while the OS is doing the flying. Without
     // the second term the board can only arrive on the settle debounce, which is what left David watching home build a
     // beat AFTER he got there ("it looks like home is already there, and it just appears a second time").
