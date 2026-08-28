@@ -6159,7 +6159,7 @@
     // chapters keep mGlow FIRST in the same shorthand: an inline `animation` outranks the .jl-lit rule, so composing is
     // the only way both survive (a bare assignment here would silently delete the ch12+ aura).
     if (rrad && JL_JITTER && c.jit) card.style.animation = (lit ? "mGlow 4.6s ease-in-out infinite, " : "") + c.jit[0] + " " + c.jit[1] + "s ease-in-out infinite " + c.jit[2] + "s";
-    jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : (rrad ? " jl-tex-box" : "")), "background:" + c.tex + ";" + (jlIsRay(c) ? "animation-delay:-" + (((c.ch * 23) % 90) + 5) + "s;" : ""));
+    jlAdd(card, "span", "jl-l-tex jl-fx" + (jlIsRay(c) ? " jl-spin" : (rrad ? " jl-tex-box" + jlTexDriftClass(c) : "")), "background:" + c.tex + ";" + (jlIsRay(c) ? "animation-delay:-" + (((c.ch * 23) % 90) + 5) + "s;" : ""));
     if (c.fx & JL_FX_GRAIN) jlAdd(card, "span", "jl-l-grain");
     if (c.fx & JL_FX_GLFOIL) jlAdd(jlAdd(card, "span", "jl-l-gl jl-glis"), "span", "jl-fx");
     if (c.fx & JL_FX_INGLOW) jlAdd(card, "span", "jl-l-inglow");
@@ -6271,6 +6271,38 @@
   function jlIsRRad(c) {
     if (!_jlRRad) { _jlRRad = {}; for (var i = 0; i < JL_TEX.length; i++) if (/^\s*repeating-radial-gradient/.test(JL_TEX[i])) _jlRRad[i + 1] = 1; }
     return !!(c && _jlRRad[c.ch]);
+  }
+  // …AND THE FAMILY DRIFTS AGAIN, BY MOVING THE PATTERN NOT THE BOX (David 2026-08-28: "why can't they drift and just
+  // extend the texture so that when they do drift, the texture just matches, instead of opening up an empty hole").
+  // The full rationale, the 22x12/13s vector and the perf note live at the .jl-tex-drift rules in index.html. THIS is the
+  // kill switch it names: false = the seven go back to a static painted box and nothing else changes.
+  var JL_TEXDRIFT = true;
+  // The paint list, split at TOP-LEVEL commas only (every one of these gradients is full of commas inside its own
+  // parens). Returns exactly the layers the browser will compute, colour slot included — a trailing bare colour becomes
+  // a `none` image layer, which is why it can be counted but never has to move.
+  function jlTexLayers(tex) {
+    var s = String(tex).split(";")[0], out = [], d = 0, cur = "";
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      if (ch === "(") d++; else if (ch === ")") d--;
+      if (ch === "," && d === 0) { out.push(cur.trim()); cur = ""; } else cur += ch;
+    }
+    if (cur.trim()) out.push(cur.trim());
+    return out;
+  }
+  // WHICH KEYFRAME SET A CARD MAY USE, decided by its own layer stack rather than by chapter number — the one shared
+  // value is legal ONLY when nothing after the first layer paints (a bare colour), because a short background-position
+  // list REPEATS across every layer and would drag a box-sized base gradient into a wrapped seam. Anything else takes the
+  // explicit per-layer list. An unrecognised stack gets NO drift rather than a guess, and designAudit says so out loud.
+  function jlTexDriftClass(c) {
+    if (!JL_TEXDRIFT) return "";
+    var L = jlTexLayers(c.tex), paints = function (x) { return /gradient\(|url\(/.test(x); };
+    if (L.length < 2) return "";
+    var restStill = true;
+    for (var i = 1; i < L.length; i++) if (paints(L[i])) restStill = false;
+    if (restStill) return " jl-tex-drift";                    // [repeating-radial, <colour>] — ch7 · 18 · 21 · 26 · 30 · 34
+    if (L.length === 3) return " jl-tex-drift3";              // three real layers, only the first tiles — ch16
+    return "";
   }
   function jlRows() {
     var col = el("jrnyCol"); if (!col) return [];
@@ -7242,7 +7274,11 @@
   // reading of DISTANCE, and distance only reads true at full travel. Two small artboard insets, one --jr-* var each in
   // the .jr-rail rule: one number, two readers, no drift. The height stretches between them (LAW 1: extend, never scale)
   // and jrBox() measures it, so nothing in the travel math is written down twice.
-  var JR_TOP = 12, JR_BOT = 14;
+  // …AND THE TOP STOPS AT THE GEMS (David 2026-08-28, second look: "when I said the top of the screen, I did not mean
+  // literally the top of the screen. I don't think this should go higher than the gems"). MEASURED on his 402x874 board:
+  // the HUD counter row bottoms at 86 artboard px; 86 + an 8px gap = 94. The chapter mapping is untouched — chapter 36
+  // now simply parks the pill at 94 instead of 12. See the .jr-rail comment in index.html for the full measurement.
+  var JR_TOP = 94, JR_BOT = 14;
   var JR_PILL_H = 48, JR_PILL_HG = 52;             // rest / grabbed pill height. travel = railHeight - whichever is live.
   var JR_WAKE_MS = 900;                            // …after the last sky scroll event, the pill fades back out
   var _jrHost = null, _jrRail = null, _jrPill = null, _jrDot = null, _jrZone = null;
@@ -21463,11 +21499,17 @@
       if (_jrRail && _jrPill && _jrDot) {
         var _jrcs = getComputedStyle(_jrRail), _jrps = getComputedStyle(_jrPill), _jrds = getComputedStyle(_jrDot);
         var _jrR = parseFloat(_jrcs.right), _jrT = parseFloat(_jrcs.top), _jrB = parseFloat(_jrcs.bottom), _jrPR = parseFloat(_jrps.right);
-        // THE BAND IS THE WHOLE SCREEN. SUPERSEDES BOTH earlier tops — the frame's fixed 168px artboard inset and the
-        // 42dvh/scale share of the glass that replaced it that morning — and the frame's 191px bottom with them (David
-        // on device 2026-08-28: "the scroll bar should start almost at the very bottom of the screen and end on the very
-        // top"). Two small artboard insets now, asserted as constants because that is exactly what they are.
-        chk("rail box right 7 · top " + JR_TOP + " · bottom " + JR_BOT, Math.abs(_jrR - 7) <= 0.5 && Math.abs(_jrT - JR_TOP) <= 0.5 && Math.abs(_jrB - JR_BOT) <= 0.5 && _jrRail.offsetWidth === 8, _jrcs.top + " / " + _jrcs.right + " / " + _jrcs.bottom + " · " + _jrRail.offsetWidth + "px wide (" + _jrRail.offsetHeight + " tall here)", "top " + JR_TOP + " · right 7 · bottom " + JR_BOT + " · width 8 — full screen (SUPERSEDES the 42dvh/168px top AND the frame's 191px bottom); the height stretches between the two insets");
+        // THE BAND RUNS FROM THE GEMS TO THE FLOOR. SUPERSEDES all three earlier tops — the frame's fixed 168px artboard
+        // inset, the 42dvh/scale share of the glass that replaced it that morning, and the 12px "literally the top" that
+        // replaced THAT — and the frame's 191px bottom with them (David 2026-08-28: "the scroll bar should start almost
+        // at the very bottom of the screen and end on the very top", then "I don't think this should go higher than the
+        // gems"). The top is asserted against the thing it was measured from — the HUD counter row's own bottom edge,
+        // read live — so the gate re-derives David's rule on whatever phone it runs on instead of trusting a constant
+        // that was true once at 402x874. 1.5px of slack for the row's sub-pixel layout.
+        var _jrGem = document.querySelector("#trackerFull .tfh-gems"), _jrGemB = null;
+        try { if (_jrGem) _jrGemB = _jrGem.getBoundingClientRect().bottom / (_AS || 1); } catch (e) {}
+        var _jrTopOK = Math.abs(_jrT - JR_TOP) <= 0.5 && (_jrGemB == null || (_jrT >= _jrGemB + 4 && _jrT <= _jrGemB + 14));
+        chk("rail box right 7 · top " + JR_TOP + " (just under the gems) · bottom " + JR_BOT, Math.abs(_jrR - 7) <= 0.5 && _jrTopOK && Math.abs(_jrB - JR_BOT) <= 0.5 && _jrRail.offsetWidth === 8, _jrcs.top + " / " + _jrcs.right + " / " + _jrcs.bottom + " · " + _jrRail.offsetWidth + "px wide (" + _jrRail.offsetHeight + " tall here)" + (_jrGemB == null ? " · gems row not on this face" : " · gems row bottoms at " + Math.round(_jrGemB) + ", rail starts " + Math.round(_jrT - _jrGemB) + "px below it"), "top " + JR_TOP + " = the HUD counter row's bottom (86) + an 8px gap — the rail may NOT climb past the gems (SUPERSEDES the 42dvh/168px top and the 12px full-glass top); right 7 · bottom " + JR_BOT + " · width 8");
         // THE TWO ENDS ARE THE TWO CHAPTERS, not the raw scroll range. Asserted as a pure decision on jrU — no scroll
         // writes, no landing screenshots: the preview fires no scroll event for a programmatic scrollTop, so a positional
         // test here would prove nothing, while the map itself is the thing David named.
@@ -21540,15 +21582,27 @@
       } else out.push("SKIP · ray stone layer order · no ray stone in the DOM (the line is not built)");
       var _jbx = [].slice.call(document.querySelectorAll("#jrnyLine .jl-lock-card > .jl-l-tex.jl-tex-box"));
       if (_jbx.length) {
+        // …and the drift is BACK, as a background-position slide (David 2026-08-28: "why can't they drift and just extend
+        // the texture… instead of opening up an empty hole"). So the gate no longer demands animation:none — it demands
+        // the box still BE the card, that whatever animates is one of the two pattern-drift sets and NEVER a transform
+        // (a transform is the promoted-layer bug this whole family exists to escape), and that each card's keyframe set
+        // matches its own layer count, so a per-layer list can never end up dragging a base gradient into a wrapped seam.
+        var _jok = { "none": 1, "jlTexDrift": 1, "jlTexDrift3": 1 };
         var _jbad = _jbx.filter(function (n) {
           var s = getComputedStyle(n), p = n.parentNode;
-          return !((parseFloat(s.borderTopWidth) || 0) === 0 && s.animationName === "none" &&
+          // …counted off backgroundPosition, NOT backgroundImage: the computed image list is full of nested parens, so a
+          // top-level comma split of it is a lie (it reads 13 layers for ch16). The position list is one normalised
+          // `Npx Npx` pair per layer with no parens at all, so its commas ARE the layer boundaries.
+          var layers = s.backgroundPosition.split(",").length;
+          var wantSet = n.classList.contains("jl-tex-drift3") ? 3 : 0;    // the 3-layer list is legal only on a 3-layer stack
+          return !((parseFloat(s.borderTopWidth) || 0) === 0 && _jok[s.animationName] && s.transform === "none" &&
+            (!wantSet || layers === wantSet) &&
             Math.abs(n.offsetHeight - p.offsetHeight) <= 0.5 && Math.abs(n.offsetWidth - p.offsetWidth) <= 0.5);
         });
-        var _jbCh = _jbx.map(function (n) { var r = n.closest(".jl-lock"); return r ? r.dataset.jch : "?"; }).join(" ");
-        chk("repeating-radial chapters painted ON the box, no drift", !_jbad.length,
-          _jbx.length + " gates (ch " + _jbCh + ") · first: " + _jbx[0].offsetWidth + "x" + _jbx[0].offsetHeight + " vs card " + _jbx[0].parentNode.offsetWidth + "x" + _jbx[0].parentNode.offsetHeight + " · border " + getComputedStyle(_jbx[0]).borderTopWidth + " · animation " + getComputedStyle(_jbx[0]).animationName + (_jbad.length ? " · " + _jbad.length + " FAIL" : ""),
-          "every repeating-radial gate texture is exactly its card (inset 0, border 0) with animation:none — a painted box cannot expose an edge, which is the only mechanism that survives WebKit clipping a composited layer to the card");
+        var _jbCh = _jbx.map(function (n) { var r = n.closest(".jl-lock"); return r ? r.dataset.jch + ":" + getComputedStyle(n).animationName.replace("jlTexDrift", "drift") : "?"; }).join(" ");
+        chk("repeating-radial chapters painted ON the box, drift moves the PATTERN", !_jbad.length,
+          _jbx.length + " gates (ch " + _jbCh + ") · first: " + _jbx[0].offsetWidth + "x" + _jbx[0].offsetHeight + " vs card " + _jbx[0].parentNode.offsetWidth + "x" + _jbx[0].parentNode.offsetHeight + " · border " + getComputedStyle(_jbx[0]).borderTopWidth + " · transform " + getComputedStyle(_jbx[0]).transform + (_jbad.length ? " · " + _jbad.length + " FAIL" : ""),
+          "every repeating-radial gate texture is exactly its card (inset 0, border 0), animates only jlTexDrift/jlTexDrift3 (background-position, so the pattern slides and tiles forever) and carries NO transform — and the 3-layer list only ever lands on a 3-layer stack");
       } else out.push("SKIP · repeating-radial gates · none in the DOM (the line is not built)");
     }
     // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The
