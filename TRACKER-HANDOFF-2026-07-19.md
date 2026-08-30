@@ -3,6 +3,21 @@
 
 ---
 
+## STATUS UPDATE (2026-08-30 (2), the card unfolds and the rocks sit still): v1411
+7b chapter card (JCC anchor) + the ten-fix device round in one ship. Root causes worth remembering: banner patterns
+poured raw into circles cropped wrong (JSROCKFIT remaps anchors/stops/tiles per stone size); ANY animating square layer
+inside a circular clip rasterizes as an octagon on WebKit (JSTATIC: rock paint never animates; supersedes the Aug-27
+slow-spin ask, restore path kept behind jlIsRay); the open card displaced home/tools via the STALE _wAnchor cache, not
+geometry (JSCARDGEOM: wAnchorsDirty on open/close; stone cards close on pane-leave inside existing wScrub); the streak
+strip vanished because its repair rule only ran on scroll events that never arrive when parked (HCPARKED timer + gate);
+the close-ritual dusk tint leaked app-wide from enterStage("pm") with no exit (PMDUSK: scoped + cleared). Locked glyphs
+now wear canon hues via the R28 table. Home puck: NO regression (475-prop diff vs v1407) — David to clarify which
+element he meant. Verb inventory: 9 of 19 stone-card doors land on pre-story-run-era flows (Round-3 replacement list in
+the fix report). Chapter card intentionally does NOT close on pane-leave (David's verdict named stones only) — flagged.
+DEVICE-UNTESTED: pane-leave close feel, arrival glint, parked streak repair, octagon fix on real iOS, 440x956 card.
+ONE MOVE David: retest the 10 fixes on device + answer (a) which element had the black outline, (b) may ray stones stay
+static. ONE MOVE Claude: chapter-one copy verdict -> design prompt Round 1.
+
 ## STATUS UPDATE (2026-08-30, the stones wear the chapter): v1410 (Fable-orchestrated, Opus-built)
 Rounds 27/28 canon port from the design handoff bundle (_design-sync/stones-build-2026-08-30/): 8 stone types on the
 JLINE trail (6f law: chapter rock + hued glyph + dark ray-center), selection ring replaces resting chrome, done coin,
