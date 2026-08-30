@@ -1896,7 +1896,7 @@
      THE CAPS: max-height cannot animate to `auto` (the design's own fixed bug), so --jccb / --jccd carry a REAL pixel cap
      measured off the content by app.js (jccSetCaps); the design's own 980px / 260px stay here as the fallbacks.
      THE CHEVRON opens to rotate(0.001deg), never 0deg — the design's own fixed snap bug. ===== */
-  .jl-today{ padding:0 0 4px; width:100%; }
+  .jl-today{ padding:0 0 4px; width:100%; transition:padding-bottom .46s cubic-bezier(.22,.9,.3,1); } /* the cushion below rides the SAME curve as the body it belongs to, so the row grows as one thing instead of stepping 92px and then unfolding (grep JSCARDROOM) */
   .jl-today-card{ width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3); overflow:hidden; position:relative;
     background:repeating-linear-gradient(0deg, color-mix(in srgb, var(--jcch,#8a5cf0) 5%, transparent) 0 1.5px, transparent 1.5px 16px), repeating-linear-gradient(90deg, color-mix(in srgb, var(--jcch,#8a5cf0) 5%, transparent) 0 1.5px, transparent 1.5px 16px), linear-gradient(180deg, color-mix(in srgb, var(--jcch,#8a5cf0) 25%, #1e0d1a), color-mix(in srgb, var(--jcch,#8a5cf0) 13%, #17091a) 70%); }
   .jcc-face{ width:100%; box-sizing:border-box; border:none; border-radius:0; padding:13px 15px; margin:0; font:inherit; text-align:left; cursor:pointer; overflow:hidden; position:relative; display:flex; align-items:center; gap:12px; font-family:"Jost",sans-serif;
@@ -1920,6 +1920,16 @@
   .jl-today.jcc-on .jcc-chev{ transform:rotate(0.001deg); }
   .jcc-body{ overflow:hidden; max-height:0; transition:max-height .46s cubic-bezier(.22,.9,.3,1); }
   .jl-today.jcc-on .jcc-body{ max-height:var(--jccb,980px); }
+  /* THE CHAPTER CARD'S ROOM UNDER IT (grep JSCARDROOM — David on device 2026-08-31: "chapter one opens downward and gets
+     covered by the home button"). The stone card has had this cushion since 2026-08-30 (.jst-row.jst-open, 96px); the
+     banner was ported without it, which is why HIS complaint is about chapter one. MEASURED, not copied: the fixed
+     #guardPuck occupies the bottom 16 + env(safe-area-inset-bottom) + 17.5vw of the screen — 86px in the preview, 120px
+     on his phone — and at the journey landing the open banner's body ended 123px above the home seam, i.e. 3px above the
+     puck's top edge. The cushion is inside the ROW, so it grows the sky and pushes the landing down with it: every px
+     here lifts the card's last line by a px at the landing, and 96 puts ~100px of air between it and the puck. Same
+     mechanism, same number, same law as the stone card, and it exists only while the card is open — landing geometry at
+     rest is byte-identical, which is what keeps designAudit's landing gates untouched. */
+  .jl-today.jcc-on{ padding-bottom:96px; }
   .jcc-bodyin{ padding:13px 14px; display:flex; flex-direction:column; gap:12px; }
   .jcc-why{ font-family:"Baloo 2",sans-serif; font-weight:700; font-size:16.5px; line-height:1.3; color:#e8cbdb; text-wrap:pretty; }
   .jcc-why > b.jcc-key{ font-weight:800; }   /* the keyword's meaning hue is written inline — it is the one thing that varies (app.js jccWhyInto) */
@@ -4780,6 +4790,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1411"></script>
+  <script src="app.js?v=1412"></script>
 </body>
 </html>

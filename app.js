@@ -5846,6 +5846,12 @@
     var world = el("tfWorld"); if (!world) return;
     if (!WM || !wLive()) { wScrub(); return; }                           // pre-landing (or WM off): paint the overlays, arm nothing
     var nw = wNow();
+    // THE CARDS LEAVE FIRST (grep JSCARDGEOM). The pane-leave law lives on wScrub, which this function calls LAST — so on
+    // a real fling every commit below was taken while the card was still open and the column still card-height too tall,
+    // and the spring flew to a home that no longer existed by the time it landed. Same event, wrong order. It is asked
+    // here, before the fling catch and before the settle timer, and it is a pure decision on (dev, vh) with a `nothing is
+    // open` guard first — one property read per event when no card is open, which is always, except while reading one.
+    try { jsPaneScrub(wHomeY() - world.scrollTop, wAnchors().vh); } catch (e) {}
     // HOLD-AT-HOME: pin against leftover upward momentum; release on a real pull, on any downward move, or when the 450ms is up.
     if (_wHold && !_wTouch) {
       if (nw >= _wHold.until || world.scrollTop > _wHold.y + 0.5 || _wHold.y - world.scrollTop > 120) _wHold = null;
@@ -5926,7 +5932,11 @@
         // line into a flight to home. It is the mirror of the upward rule v1378 fixed, and it takes the mirror bound:
         // the catch belongs to the home↔journey transition, and above the journey landing the phone's own momentum owns
         // the gesture — the same free-scroll law wSnapIntent already encodes past one viewport.
-        else if (iv > 0 && st < hy - 6 && st >= wSkyY() - 6) { _wFlung = true; clearTimeout(_wSnapT); wtLog("path", 1); wSpring(hy, true); }
+        // …and its floor rises by the READING DEADBAND while a card is open (grep JSREADBAND): inside the band a downward
+        // flick is a reading gesture, so the catch stands down and the phone's own momentum carries it. If the flick was
+        // genuinely leaving, it clears the band on that momentum and this same branch fires a few events later — the
+        // deadband delays the commit, it never blocks it. wReadBand is 0 with nothing open, so this reads as it shipped.
+        else if (iv > 0 && st < hy - 6 && st >= wSkyY() + wReadBand() - 6) { _wFlung = true; clearTimeout(_wSnapT); wtLog("path", 1); wSpring(hy, true); }
         else if (iv < 0 && st > hy + 6) { _wFlung = true; clearTimeout(_wSnapT); wtLog("path", 1); wSpring(hy, true); }
         // THE FLING-CATCH LOCK (David on device 2026-08-26: "it's not letting me go any higher in journey past the
         // beginning"). `st <= hy + 6` is true at home AND everywhere ABOVE the landing, so a hard upward flick taken while
@@ -6419,7 +6429,14 @@
   // height. The cache never heard about it, so the magnet kept parking the column at the OLD home y: a landing that is
   // now one card-height ABOVE the real home seam, which renders as the tail of the journey plus a band of empty sky
   // above the board. Every open, every close, both cards: tell the cache. One assignment, no layout read, no scroll write.
-  function jsGeomDirty() { try { wAnchorsDirty(); } catch (e) {} }
+  //   …AND v1411's ONE-SHOT INVALIDATION WAS STILL NOT ENOUGH (David on device 2026-08-31, the second round on the same
+  // symptom: "if you have the open open, then you scroll down to home, everything is shifted off. Same thing with chapter
+  // one"). A card does not change the column's height at an instant — .jsc-wrap and .jcc-body animate max-height over
+  // .46s, so the home zone SLIDES for 460ms. Invalidating once at the toggle just means the NEXT read (on a real fling,
+  // the next scroll event, ~16ms in) re-caches a MID-COLLAPSE home and freezes it there. The whole law now lives in one
+  // place — wGeomChanged at @SEC:WORLD-MOTION — which invalidates, keeps the anchors uncached until the column has
+  // finished moving, and lets a home-seeking engine follow the seam instead of a number it wrote down.
+  function jsGeomDirty() { try { wGeomChanged(); } catch (e) {} }
   function jsCloseCard(row) {
     var r = row || _jsOpen; if (!r) return;
     var w = r.querySelector(".jsc-wrap"); if (w) w.classList.remove("on");
@@ -6428,15 +6445,23 @@
     if (_jsOpen === r) _jsOpen = null;
     jsGeomDirty();
   }
-  // …AND LEAVING THE JOURNEY CLOSES IT (David's verdict, 2026-08-30): "return shows it closed, heights restored". Driven
-  // from wScrub — the ONE scrub the ONE scroll listener already runs — so this adds no listener and writes no scrollTop
-  // (the v1397 one-engine rule). THE THRESHOLD IS A DEPARTURE, NOT AN ARRIVAL, and that is deliberate: a card can only be
-  // opened at the landing (dev ≈ one viewport), so firing at 0.9 of a viewport means the collapse begins in the first
-  // ~90px of downward travel, while the card is still ON SCREEN. Its own .46s settle then reads as the card closing
-  // behind you — which is the design's own animation — instead of a height change happening above the fold, where the
-  // same collapse would shift the whole world under a moving finger. By the time home arrives the heights are restored
-  // and the anchors have been recomputed.
-  function jsPaneScrub(dev, vh) { if (_jsOpen && dev < vh * 0.9) jsCloseCard(); }
+  // …AND LEAVING THE JOURNEY CLOSES IT — BOTH CARDS (David's verdict 2026-08-30 for the stones, extended to the chapter
+  // card 2026-08-31: "same thing with chapter one" — one law, no per-surface flag). "Return shows it closed, heights
+  // restored." Driven from wScrub AND, since the shift round, from the HEAD of onWorldScroll — so the heights are already
+  // on their way down when that same event's fling catch or settle magnet picks a target. Ordering was half the bug: the
+  // pane-leave law used to run only inside wScrub, which onWorldScroll calls LAST, so every commit in that event was
+  // taken with the card still open and the column still card-height too tall. No listener, no scrollTop write (v1397).
+  //   THE THRESHOLD IS THE READING DEADBAND'S OWN EDGE, not a fixed 0.9 of a viewport (grep JSREADBAND). Inside the band
+  //   the journey still owns the gesture — you are reading — so a card that collapsed at 0.9 would fold under a finger
+  //   that never asked to leave. It closes at exactly the px where the magnet begins handing off to home: one boundary,
+  //   one meaning. That is still a DEPARTURE and not an arrival, so the collapse begins while the card is on screen and
+  //   its own .46s settle reads as the card closing behind you, which is the design's own animation.
+  function jsPaneScrub(dev, vh) {
+    if (!_jsOpen && !_jccOpen) return;
+    if (dev >= vh - wReadBand(vh)) return;
+    jsCloseCard(); jccCloseCard();
+  }
+  function jsCardOpen() { return !!(_jsOpen || _jccOpen); } // "expanded content is open" — the stone card or the chapter card. The ONE question the deadband asks (grep JSREADBAND).
   // OPEN/CLOSE. The ONLY layout write is the card's own max-height inside the row — nothing writes scrollTop, nothing
   // touches the column's padding, and nothing listens to the scroller (SCROLL LAW, the v1397 one-engine rule).
   function jsToggleCard(row) {
@@ -6691,12 +6716,24 @@
     var h = inn.offsetHeight - rendered + target;               // the body WITHOUT any fold, plus the folds that will be open
     body.style.setProperty("--jccb", (h > 40 ? h + 10 : 980) + "px");
   }
+  var _jccOpen = null;  // the ONE open chapter card's row — tracked, never queried, so the scroll path can ask "is anything expanded?" without touching the DOM
   function jccToggle(row) {
     if (!row) return;
     var open = !row.classList.contains("jcc-on");
     if (open) jccSetCaps(row, null, false);                     // measure BEFORE the class lands, so the transition has its real target from the first frame
     row.classList.toggle("jcc-on", open);
+    _jccOpen = open ? row : (_jccOpen === row ? null : _jccOpen);
     jsGeomDirty();                                              // the banner grows inside the sky, so the home/tools landings move with it (grep JSCARDGEOM — the same stale-anchor bug the stone card had)
+  }
+  // THE PANE-LEAVE LAW, THE CHAPTER CARD'S HALF (David 2026-08-31: "same thing with chapter one" — the verdict that
+  // supersedes v1411's stones-only reading). Its OPEN DIVES close with it: "heights restored" means the banner's own
+  // height, not a half-unfolded one, and a dive left open would leak its fold into the next arrival's geometry.
+  function jccCloseCard() {
+    var r = _jccOpen; if (!r) return;
+    r.classList.remove("jcc-on");
+    [].slice.call(r.querySelectorAll(".jcc-dive.jcc-dopen")).forEach(function (d) { d.classList.remove("jcc-dopen"); });
+    _jccOpen = null;
+    jsGeomDirty();
   }
   function jccToggleDive(wrap) {
     if (!wrap) return;
@@ -6889,7 +6926,7 @@
     col = document.createElement("div"); col.id = "jrnyCol"; line.appendChild(col);
     // built in the FRAME'S OWN bottom-up data order (its file is column-reverse, index 0 = the line's foot), then
     // appended in reverse so index 0 lands at the foot of a normal-flow column. Same rows, same order, no column-reverse.
-    _jsOpen = null;                                            // the old card's row is about to be thrown away
+    _jsOpen = null; _jccOpen = null;                           // the old cards' rows are about to be thrown away — a held reference would keep the deadband open over a line that no longer has one
     var rows = [];
     rows.push(jlDivider("BOOK ONE", "The Climb", "#ff4fa0"));
     rows.push(jlToday(JS_CH_NOW, JL_NAME[JS_CH_NOW - 1]));
@@ -7068,6 +7105,62 @@
   // something that CAN move them says otherwise (wAnchorsDirty: every render, every pad write, resize, teardown).
   var _wAnchor = null;
   function wAnchorsDirty() { _wAnchor = null; _jrBox = null; _jrDet = null; } // the JOURNEY RAIL's railHeight and its chapter→scrollTop table are measured off the same column and go stale on exactly the same events (grep JRAIL) — one invalidation, so the two can never disagree about where the landing is
+  // ===== THE GEOMETRY IS NOT AN INSTANT, IT IS A HALF-SECOND (grep JSCARDGEOM — David on device 2026-08-31, the SECOND
+  // round on the same symptom: "if you have the open open, then you scroll down to home, everything is shifted off").
+  // v1411 invalidated the cache on every card open and close, and its static round-trip came back byte-identical — and
+  // his phone still shifted. Both halves of that fix answer the wrong question. A card does not change the column's
+  // height at a point in time: .jsc-wrap and .jcc-body animate max-height over .46s, so for 460ms the home zone SLIDES.
+  // Proved with a pure-decision probe (preview timers are frozen, so the collapse was stepped by hand — DEV.cardRoundTrip
+  // now runs it as a gate): invalidate at the close, then take the read one frame later, which is exactly what a real
+  // fling's next scroll event does, and the cache freezes a mid-collapse home — 25831 where the settled seam is 25711.
+  // wHomeY() went on answering 25831 after the collapse had finished, so the magnet parked 120px past the seam. That IS
+  // the shift. And a correct cache alone would not have saved it: wSpring closes over its target, so a commit taken in
+  // the same event as the close still flies to the OPEN home and lands a whole card-height too low.
+  // TWO LINES OF LAW, both inside the one engine (v1397), neither a new listener nor a new writer:
+  //   1. while the column's height is settling the anchors are COMPUTED, never remembered — the cache is skipped exactly
+  //      the way wAnchors already skips a column that is not laid out yet;
+  //   2. an engine flying to HOME follows the home anchor instead of a number it wrote down (wSpring / wScrollTo).
+  // …plus one backstop for the case the first two cannot cover: a flight that FINISHES before the collapse does, leaving
+  // the column parked on a seam that then keeps moving. wGeomSettled corrects exactly that residue and nothing else.
+  var _wGeomHot = 0, _wGeomT = 0;
+  var WGEOM_MS = 520;                                     // the cards' own .46s transition plus a frame of slack
+  function wGeomChanged() {                               // "a card just started growing or collapsing" — the ONE door, called by jsGeomDirty
+    wAnchorsDirty();
+    _wGeomHot = wNow() + WGEOM_MS;
+    clearTimeout(_wGeomT); _wGeomT = setTimeout(wGeomSettled, WGEOM_MS + 40);
+  }
+  function wGeomHot() { return wNow() < _wGeomHot; }
+  function wGeomSettled() {
+    _wGeomT = 0; _wGeomHot = 0;
+    wAnchorsDirty();
+    var w = el("tfWorld");
+    if (!w || !wLive() || _wTouch || _wAnim || wBusy()) return;
+    // ONLY the residue this window can leave. Not wMaybeSnap: that door reads intent, and intent this long after the
+    // gesture is stale — its `down` tie-break could answer TOOLS for a column sitting just below home. The question here
+    // is narrower and answerable: the engine last committed to HOME, the column is near it but not on it, so the seam
+    // moved out from under a flight that had already landed. Anything else is a legitimate rest position and none of
+    // this timer's business.
+    var hy = wHomeY(), off = w.scrollTop - hy;
+    if (_wTarget == null || Math.abs(_wTarget - hy) > 60) return;
+    if (Math.abs(off) < 0.5 || Math.abs(off) > 400) return;
+    _wHold = null;                                        // armed at the mid-collapse home; onWorldScroll's pin would re-assert that y and fight the correction
+    wtLog("path", 3);                                     // path 3 = the geometry re-settle (1 = the fling catch, 2 = the settle magnet)
+    wSpring(hy, true);
+  }
+  // ===== THE READING DEADBAND (grep JSREADBAND — David 2026-08-31: "can we leave some more edge room in the journey to
+  // scroll down without the app thinking you're trying to go to home? Kinda like Safari pull-to-reload: pull a little,
+  // nothing happens; pull far enough, it reloads"). While expanded content is open the journey keeps the gesture for a
+  // band below its landing: the magnet simply LETS GO there, exactly as it already does above the landing (wSnapIntent's
+  // free-scroll rule), so a pull inside the band leaves the column where the finger put it and no handoff fires. Past the
+  // band the shipped law resumes unchanged and the pull commits to home — that is the "far enough". Distance, never
+  // velocity: a flick inside the band runs on the phone's own momentum and only commits once it has carried past it.
+  // ZERO WHEN NOTHING IS OPEN, which is what keeps every landing gate in designAudit byte-identical.
+  var WREAD_F = 0.18, WREAD_MIN = 110, WREAD_MAX = 210;   // ≈157px at David's 874, bounded so a short or a tall phone both get a band you can feel and never one that eats the transition
+  function wReadBand(vh) {
+    if (!jsCardOpen()) return 0;
+    var h = vh || wAnchors().vh || 874;                   // the CACHED viewport, never a fresh clientHeight: this is called from the scroll path
+    return Math.round(Math.max(WREAD_MIN, Math.min(WREAD_MAX, h * WREAD_F)));
+  }
   function wAnchors() {
     if (_wAnchor) return _wAnchor;
     var w = el("tfWorld");
@@ -7078,7 +7171,11 @@
     // so an early caller (a scrub during boot) can read clientHeight 0 — and freezing that gives a sky landing one pixel
     // above home, which is a JOURNEY DOOR THAT DOES NOTHING. Caught in preview before shipping: the door stopped moving
     // the column at all. Compute-and-return while the column is unmeasurable, and only remember it once it is real.
-    if (!vh || !hy) return a;
+    // …AND NEVER CACHE A MEASUREMENT THAT IS STILL MOVING, for the same reason (grep JSCARDGEOM). A card's max-height
+    // transition slides the home zone for 460ms; a value frozen anywhere inside that window is a landing that does not
+    // exist by the time anything flies to it. Uncached costs one layout read per scroll event, bounded to half a second
+    // and only after a card toggle — the cache exists for the OTHER 99% of the time, which is untouched.
+    if (!vh || !hy || wGeomHot()) return a;
     _wAnchor = a;
     return _wAnchor;
   }
@@ -7275,6 +7372,10 @@
     // number it was born with and retires the moment the column belongs to someone else. `_wTarget` rides along because
     // a flying engine's DESTINATION is the only truthful statement of where the column is going (hcScrub reads it).
     var gen = ++_wGen; _wTarget = to;
+    // IS THIS FLIGHT GOING HOME? Then it follows the home ANCHOR, not the number it was handed (grep JSCARDGEOM). A card
+    // collapsing under a flight moves the seam by its whole height, and a spring that closed over the old one lands a
+    // card-height too far down — David's "everything is shifted off". Asked once, here, so the tick stays a pure test.
+    var seekHome = Math.abs(to - wHomeY()) < 1.5;
     wKillFling(w);
     _wUp = to < w.scrollTop; _wDown = to > w.scrollTop;
     if (_wUp) { _wDir = -1; if (_tcShown) { _tcShown = false; clearTimeout(_tcInT); tcCascade(-1); } } // leaving upward: the shelf starts folding away NOW, not when we arrive
@@ -7292,6 +7393,10 @@
       // the flags, the column and the arrival.
       if (gen !== _wGen) return;
       if (_wStop) { _wAnim = false; return; }
+      // RE-AIM WHILE THE COLUMN IS STILL SETTLING. The spring integrates toward `to`, so moving it is free — the target
+      // only ever travels TOWARD us (a collapse shortens the trip), so the crossing test below stays honest and the
+      // landing is the settled seam rather than the one that existed at commit.
+      if (seekHome && wGeomHot()) { var _nt = wHomeY(); if (Math.abs(_nt - to) > 0.5) { to = _nt; _wTarget = to; } }
       var dt = Math.min(34, nw - last); last = nw;                      // a backgrounded tab can hand us a huge dt; clamp so it can't explode
       // THE SPRING MUST LAND, NOT CREEP (same v1396 trace). A damped spring approaches asymptotically, and with the old
       // 0.4px / 0.02 thresholds his commit @+1391 was STILL crawling — 3px from target at +4680, 3.3 seconds of motion
@@ -7311,6 +7416,7 @@
   function wScrollTo(to, dur) {
     var w = el("tfWorld"); if (!w) return;
     var gen = ++_wGen; _wTarget = to;                                   // the generation token (see wSpring): the tween is an owner like any other, and the trace's 220px alternation was THIS tween against a surviving spring
+    var seekHome = Math.abs(to - wHomeY()) < 1.5;                       // …and the same home-follows rule as wSpring (grep JSCARDGEOM): the puck's tap home with a card open is the tween's version of the shift
     wKillFling(w);
     // BOTH FLAGS, ALWAYS (David on device 2026-08-27: "clicking the little journey button above the home takes you to
     // journey, but nothing appears — it's just an empty sky"). wSpring sets _wUp AND _wDown; this one only ever set
@@ -7327,6 +7433,13 @@
     var tick = function (nw) {
       if (gen !== _wGen) return;                                        // superseded: exit WITHOUT clearing the shared flags — they belong to whoever took the column (see wSpring)
       if (_wStop) { _wAnim = false; return; }
+      // RE-AIM AND REBASE. Unlike the spring, a tween's position is computed from a FIXED (from, to) pair, so moving `to`
+      // alone would step the column by the eased fraction of the change. Both ends move together — from = where we
+      // actually are, the clock restarts — which is continuous in position and converges as the collapse slows.
+      if (seekHome && wGeomHot()) {
+        var _nt = wHomeY();
+        if (Math.abs(_nt - to) > 0.5) { var _rem = Math.max(160, D - (nw - t0)); from = w.scrollTop; to = _nt; _wTarget = to; t0 = nw; D = _rem; }
+      }
       var p = Math.min(1, (nw - t0) / D);
       var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
       _wSelfW = from + (to - from) * e; w.scrollTop = from + (to - from) * e; wtLog("tw", w.scrollTop);
@@ -7348,7 +7461,11 @@
     // FREE-SCROLL INSIDE THE JOURNEY. The design's sky is one screen, so its snap could own the whole of it; the app's sky is the WHOLE
     // trail (thousands of px). Past one viewport up you are no longer transitioning between zones, you are READING the journey — the
     // magnet lets go entirely, or it would drag you back down out of the trail on every pause.
-    if (d < -w.clientHeight) return null;
+    // …AND THE READING DEADBAND MOVES THAT EDGE DOWN WHILE A CARD IS OPEN (grep JSREADBAND, David 2026-08-31). Same rule,
+    // same sentence: past this line you are reading, not transitioning, so the magnet lets go. An open card simply makes
+    // "reading" reach a band further down, because the card grew INTO the space between the landing and the seam and its
+    // last lines sit in the fixed puck's band. `wReadBand` is 0 with nothing open, so this is byte-identical at rest.
+    if (d < -(w.clientHeight - wReadBand(w.clientHeight))) return null;
     var v = _wV || 0;
     var down = Math.abs(v) > 0.25 ? v > 0 : (_wDir || 0) >= 0;          // slow-drag tie-break: fall back to the last detected direction, default down
     if (d > 0 && st < ty - 0.5) return (down && _wStartTop < hy - 40) ? hy : (down ? ty : hy); // between home and the shelf: commit to whichever way you were going — unless this gesture BEGAN up in the sky, in which case home is the end of its one zone (the same one-zone law the fling catch enforces; without it a slow drag out of the journey coasts through home into the tools)
@@ -21979,6 +22096,15 @@
         var _cvBad = jlRows().filter(function (n) { var v = getComputedStyle(n).contentVisibility; return v && v !== "visible" && v !== "normal" && v !== ""; });
         chk("rows never use content-visibility", !_cvBad.length, _cvBad.length ? _cvBad.length + " row(s) skipping (" + getComputedStyle(_cvBad[0]).contentVisibility + ")" : "all " + _jlN + " rows render normally", "no row may skip its own layout: iOS Safari blanked the deep line when it did (David's device video 2026-08-26)");
       }
+      // ===== THE CARD LAWS, AT REST (grep JSCARDGEOM + JSREADBAND, 2026-08-31). Two sentences, both about the state this
+      // audit actually measures — the idle home — and both there to catch the way this class of bug ships: a mechanism
+      // that is correct while a card is open and forgets to be inert when none is. Nothing here opens a card (that is
+      // DEV.cardRoundTrip's and DEV.readBand's job, and an audit that mutated the line would be measuring its own edit).
+      var _jsAnyOpen = !!(document.querySelector("#jrnyLine .jst-open") || document.querySelector("#jrnyLine .jl-today.jcc-on") || jsCardOpen());
+      chk("no card is open at home rest", !_jsAnyOpen, _jsAnyOpen ? "a card is still expanded" : "line closed, tracker clear", "the pane-leave law: arriving at home means every stone card and the chapter card are shut and their heights returned (David 2026-08-30/31)");
+      var _jsBand = wReadBand();
+      var _jsAnchor = wHomeY(), _jsSeam = (el("tfWorldHome") || {}).offsetTop;
+      chk("the reading deadband is 0 with nothing open", _jsBand === 0 && Math.abs(_jsAnchor - _jsSeam) < 0.5, "band " + _jsBand + "px · anchor " + Math.round(_jsAnchor) + " vs seam " + Math.round(_jsSeam), "0px and an anchor ON the seam — the deadband may only exist while a card is expanded, so every landing gate above stays byte-identical (JSREADBAND)");
       // THE FOOT ROWS PAUSE TOO. The old rule was keyed `#jrnyCol > .jl-anim-off`, and since the parallax split a foot row
       // is a GRANDCHILD — so the twenty-one rows nearest the landing, the ones most worth pausing, never were. The ch30
       // probe above sits in #jrnyCol and could never have caught it; this reads a row from the other container.
@@ -22256,42 +22382,105 @@
     host.insertBefore(head, host.firstChild);
     return (fails.length ? "FAIL (" + fails.length + ")\n  " + fails.join("\n  ") : "ALL PASS · 36 chapters x 3 sizes (" + (rows * 3) + " rocks) + " + live.length + " live rocks in the DOM · circle · every layer parsed · anchors inside the disc · tiles ≤ d/3 · nothing animating");
   };
-  // ===== THE CARD ROUND-TRIP (grep JSCARDGEOM — the fix-round Verify step, 2026-08-30). David's symptom was geometric:
-  // with a card open, "home and tools are displaced, with empty space". So the check is geometric too, and it is a pure
-  // DECISION — no scroll writes, no rAF, no landing screenshots (the preview freezes rAF whenever its pane is hidden,
-  // which is exactly how the last three rounds of this class shipped wrong). Open a card, prove the world grew AND that
-  // the anchor cache heard about it; then run the pane-leave law and prove every number came back byte-identical.
+  // ===== THE CARD ROUND-TRIP (grep JSCARDGEOM — the fix-round Verify step, 2026-08-30; extended 2026-08-31 to BOTH cards
+  // and to the mid-collapse step that the first version missed). David's symptom was geometric: with a card open, "home
+  // and tools are displaced, with empty space" — and after v1411 "everything is STILL shifted off". So the check is
+  // geometric too, and it is a pure DECISION — no scroll writes, no rAF, no landing screenshots (the preview freezes rAF
+  // and every timer whenever its pane is hidden, which is exactly how the last three rounds of this class shipped wrong).
+  //   WHAT THE FIRST VERSION COULD NOT SEE, and why it passed while his phone failed: it suppressed the transitions and
+  // measured only the two ENDPOINTS. The bug lives strictly between them. A real fling's next scroll event lands ~16ms
+  // into a 460ms collapse and takes its anchor read THERE, and v1411's one-shot invalidation let that read be CACHED —
+  // freezing home at a value that stops existing 444ms later. So step three below parks the collapsing card at a quarter
+  // height by hand (the only honest way to say "mid-collapse" where timers are frozen), takes exactly the read that
+  // event would take, lets the collapse finish, and demands that the anchor followed.
   window.DEV.cardRoundTrip = function (sel) {
     var w = el("tfWorld"), h = el("tfWorldHome"); if (!w || !h) return "SKIP · the one-page world is not built";
     // DEFAULTS TO THE NOW-STONE, because that is the card David opened when he found this: it is the tallest card on the
     // line (the big stone's own row), so it displaces the most and is the strictest case. Pass a selector for any other.
     var row = document.querySelector(sel || "#jrnyLine .jl-next.jst-row") || document.querySelector("#jrnyLine .jst-row"); if (!row) return "SKIP · no live stone on the line";
+    var today = document.querySelector("#jrnyLine .jl-today");        // …AND THE CHAPTER CARD OPENS WITH IT (David 2026-08-31: "same thing with chapter one") — both open at once is the strictest displacement the line can produce
     function geom() { return { sh: w.scrollHeight, homeTop: h.offsetTop, sky: (document.querySelector(".tfw-sky") || {}).offsetHeight, anchor: wHomeY() }; }
-    // TRANSITIONS OFF WHILE MEASURING, or every number is a lie. .jsc-wrap animates max-height AND margin-bottom over
-    // .46s, so a read taken the instant the class lands catches the card at zero height and calls the growth 85px when it
-    // is really 200. Suppressed on the probed row only, forced through one reflow, and put back before returning.
-    var wrap = row.querySelector(".jsc-wrap"), prevT = wrap ? wrap.style.transition : "";
+    // TRANSITIONS OFF WHILE MEASURING THE ENDPOINTS, or every number is a lie. .jsc-wrap animates max-height AND
+    // margin-bottom over .46s (the banner animates its body and its cushion), so a read taken the instant the class lands
+    // catches the card at zero height and calls the growth 85px when it is really 200. Suppressed on the probed nodes
+    // only, forced through one reflow, and put back before returning.
+    var wrap = row.querySelector(".jsc-wrap"), body = today ? today.querySelector(".jcc-body") : null;
+    var prevT = wrap ? wrap.style.transition : "", prevB = body ? body.style.transition : "", prevR = today ? today.style.transition : "";
     var before = geom(), notes = [];
     if (wrap) wrap.style.transition = "none";
+    if (body) body.style.transition = "none";
+    if (today) today.style.transition = "none";
     jsToggleCard(row);
+    if (today) jccToggle(today);
     void w.offsetWidth;
     var open = geom();
     var grew = open.homeTop - before.homeTop;
-    if (grew <= 0) notes.push("opening the card did not move the home zone (grew " + grew + "px) — the card is not taking layout space");
+    if (grew <= 0) notes.push("opening the cards did not move the home zone (grew " + grew + "px) — they are not taking layout space");
     if (open.anchor !== open.homeTop) notes.push("the anchor cache says home is at " + open.anchor + " but the home zone is at " + open.homeTop + " — a stale anchor is the displacement bug itself");
     // THE PANE-LEAVE LAW, driven at its own function rather than by moving the column: jsPaneScrub is a pure decision on
-    // (dev, vh), so it can be asserted without touching scrollTop at all.
+    // (dev, vh), so it can be asserted without touching scrollTop at all. dev 0 = parked at home = fully departed.
     jsPaneScrub(0, w.clientHeight || 874);
+    // …and the close must OPEN THE SETTLE WINDOW, because that flag is what a flight committed in this same event reads
+    // to know it must keep re-aiming (wSpring / wScrollTo). Without it the spring flies to the open home and lands a
+    // card-height low — the half of the shift a correct anchor cache on its own cannot reach.
+    if (!wGeomHot()) notes.push("the close did not open the settle window — a spring committed in this same event would go on flying to the OPEN home");
+    // ---- THE MID-COLLAPSE READ. This is the v1411 miss, and it is the whole of the second round's bug.
+    var mid = Math.max(20, Math.round(grew / 4)), midAnchor = null, midTop = null;
+    if (wrap) { wrap.style.maxHeight = mid + "px"; void w.offsetWidth; midTop = h.offsetTop; midAnchor = wHomeY(); wrap.style.maxHeight = ""; }
     void w.offsetWidth;
     var closed = geom();
     if (wrap) wrap.style.transition = prevT;
-    if (document.querySelector("#jrnyLine .jst-open")) notes.push("a card is still open after leaving the pane");
+    if (body) body.style.transition = prevB;
+    if (today) today.style.transition = prevR;
+    if (document.querySelector("#jrnyLine .jst-open")) notes.push("a stone card is still open after leaving the pane");
+    if (document.querySelector("#jrnyLine .jl-today.jcc-on")) notes.push("the chapter card is still open after leaving the pane");
     ["sh", "homeTop", "sky"].forEach(function (k) { if (closed[k] !== before[k]) notes.push(k + " " + closed[k] + " ≠ " + before[k] + " (drifted " + (closed[k] - before[k]) + "px)"); });
-    if (closed.anchor !== closed.homeTop) notes.push("the anchor cache did not follow the close (" + closed.anchor + " vs " + closed.homeTop + ")");
+    if (closed.anchor !== closed.homeTop) notes.push("the anchor FROZE at a mid-collapse home (" + closed.anchor + " vs the settled " + closed.homeTop + ") — the magnet would park " + (closed.anchor - closed.homeTop) + "px past the seam, which IS David's shift");
     return (notes.length ? "FAIL\n  " + notes.join("\n  ") : "PASS") +
       "\n  closed home@" + before.homeTop + " sky " + before.sky + " scrollH " + before.sh +
-      "\n  open   home@" + open.homeTop + " sky " + open.sky + " scrollH " + open.sh + " (card took " + grew + "px, anchor " + open.anchor + ")" +
+      "\n  open   home@" + open.homeTop + " sky " + open.sky + " scrollH " + open.sh + " (both cards took " + grew + "px, anchor " + open.anchor + ")" +
+      "\n  mid    home@" + midTop + " (the read a fling's next event takes " + mid + "px into the collapse) anchor " + midAnchor +
       "\n  back   home@" + closed.homeTop + " sky " + closed.sky + " scrollH " + closed.sh + " (anchor " + closed.anchor + ")";
+  };
+  // ===== THE READING DEADBAND, AS A DECISION (grep JSREADBAND — David 2026-08-31, "kinda like Safari pull-to-reload").
+  // Nothing here touches scrollTop or waits for a frame: it feeds wSnapIntent hypothetical rest positions through the
+  // same harness DEV.wIntent uses, once with the line closed and once with a card open, and asserts the three sentences
+  // the feature actually promises — with nothing open the decision is byte-identical to the shipped one; with a card open
+  // the journey keeps a measurable band below its landing; past that band the handoff to home still fires.
+  window.DEV.readBand = function () {
+    var w = el("tfWorld"); if (!w || !wLive()) return "SKIP · the one-page world is not live";
+    var row = document.querySelector("#jrnyLine .jl-next.jst-row") || document.querySelector("#jrnyLine .jst-row"); if (!row) return "SKIP · no live stone on the line";
+    var vh = w.clientHeight, notes = [], DOWN = 0.6;                    // 0.6 px/ms = a plain, explicit downward gesture (the rules read > 0.25)
+    function at(d) { return DEV.wIntent(d, "sky", DOWN).zone; }         // …taken from a gesture that BEGAN in the sky, which is the only way a card can be open
+    var wasOpen = jsCardOpen();
+    if (wasOpen) { jsCloseCard(); jccCloseCard(); }
+    // 1 · NOTHING OPEN — the shipped decision, byte for byte. Above the landing the magnet has always let go (reading the
+    // trail); AT the landing and below, an explicit downward pull has always committed to home. That second line is the
+    // one David is complaining about, and it must survive untouched for everyone who has no card open.
+    var b0 = wReadBand(vh);
+    if (b0 !== 0) notes.push("with nothing open the band must be 0, got " + b0);
+    var shut = { above: at(-vh - 40), landing: at(-vh), inside: at(-vh + 60) };
+    if (shut.above !== "free") notes.push("closed: above the landing the magnet must free-scroll, got " + shut.above);
+    if (shut.landing !== "home") notes.push("closed: AT the landing an explicit pull must still commit home, got " + shut.landing + " — the deadband must not leak into the closed line");
+    if (shut.inside !== "home") notes.push("closed: 60px below the landing an explicit pull must commit home, got " + shut.inside);
+    // 2 · A CARD OPEN — the band appears, and only there. The far side is EXACTLY the band: one px past it and the
+    // handoff is the shipped one again ("pull far enough, it reloads").
+    jsToggleCard(row);
+    var b1 = wReadBand(vh);
+    var open = { landing: at(-vh), inband: at(-vh + Math.round(b1 * 0.5)), edge: at(-vh + b1 - 8), past: at(-vh + b1) };
+    if (b1 < 80) notes.push("an open card must buy a band worth feeling, got " + b1 + "px");
+    if (open.landing !== "free") notes.push("open: at the landing, got " + open.landing);
+    if (open.inband !== "free") notes.push("open: HALF WAY INTO THE BAND a downward pull must do nothing, got " + open.inband + " — this is David's \"the app thinks you're trying to go to home\"");
+    if (open.edge !== "free") notes.push("open: still inside the band at " + (b1 - 8) + "px, got " + open.edge);
+    if (open.past !== "home") notes.push("open: at the band's far edge the pull must commit home, got " + open.past + " — a deadband with no far side is a trap");
+    // 3 · the fling catch takes the same floor, so a flick inside the band is momentum, not a commit.
+    var flingFloor = wSkyY() + wReadBand() - 6;
+    if (!(flingFloor > wSkyY() + 80)) notes.push("the fling catch's floor did not rise with the band (" + Math.round(flingFloor - wSkyY()) + "px)");
+    jsCloseCard(); jccCloseCard();
+    if (wasOpen) jsToggleCard(row);
+    return (notes.length ? "FAIL\n  " + notes.join("\n  ") : "PASS") +
+      "\n  closed band 0 · -40 " + shut.above + " · landing " + shut.landing + " · +60 " + shut.inside +
+      "\n  open   band " + b1 + "px · landing " + open.landing + " · +" + Math.round(b1 * 0.5) + " " + open.inband + " · +" + (b1 - 8) + " " + open.edge + " · +" + b1 + " " + open.past;
   };
   // THE PHANTOM NOW-PLAYING CARD (David on device 2026-08-26: "the iOS player card shows while nothing is playing").
   // Asserts the honest invariant rather than a screenshot of it: with NO session live, the silent carrier must not be
