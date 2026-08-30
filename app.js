@@ -1653,6 +1653,25 @@
     if (pf.lowEnergy) { nodes = nodes.filter(function (n) { if (n.done) return true; var k = n.key || ""; return !(k.indexOf("hab:") === 0 || k.indexOf("chtask:") === 0); }); }
     return nodes;
   }
+  // THE FOCAL LADDER, one copy for the whole app (hoisted out of drawJourney 2026-08-30 for the JLINE stone port). One
+  // braid priority (canon: ritual > course > goal > habit), with the energy-first override on top. Both the old #jpTrail
+  // and the JLINE stones ask THIS which undone node is "the now", so the big stone and the trail's cur node are the same
+  // node by construction.
+  function jpLeadW(n) {
+    if (n._lead) return 100;                                                   // regulate-first when depleted (Johnson Step 1)
+    if (n.key === "litopen") return 95;                                        // the liturgy's OPEN — the day's first beat (state first, story second)
+    if (n.key === "litaim") return 92;                                         // the liturgy's AIM — one arrow, right after the open
+    if (n.key === "am") return 90;                                             // open the day on purpose, first
+    if (n._aimed) return 85;                                                   // last night's aim
+    if (n.key === "pm") return (hourNow() >= 17) ? 80 : 15;        // close the day — only LEADS in the evening; in the morning it just waits its turn
+    if (n.key === "onething") return 70;                                       // your one thing
+    if (n.key && (n.key.indexOf("goalst:") === 0 || n.key.indexOf("goalm:") === 0 || n.key.indexOf("goalhit:") === 0)) return 60; // a goal's next move
+    if (n.key === "plan") return 50;                                           // plan your day
+    if (n.key === "litgap") return 46;                                         // the day's lesson slot (§1 LESSON) — after the aim, before the pile
+    if (n.key && n.key.indexOf("chtask:") === 0) return 45;                    // the chapter practice
+    if (n.key && n.key.indexOf("hab:") === 0) return 20;                       // a small habit
+    return 30;
+  }
   function prefersReducedMotion() { return false; } // David wants animations to ALWAYS play — even with iOS "Reduce Motion" on (v659); that setting was making the app look static
   // @SEC:MOTION — portal reveal + block cascade + spring tokens (paint-time only; never disturbs scroll/pinch).
   // PORTAL REVEAL (v648): punch a surface open through a circle growing from a focal point (e.g. the now-line). clip-path only → paint-time, never disturbs scroll/pinch. One-shot; clears itself on animationend.
@@ -1889,7 +1908,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov,.jr-zone"; // .jr-zone (2026-08-28): the journey rail's 44px grab strip — a finger there belongs to the rail drag, never to the pane swipe. // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov,.jr-zone,.jst-stone,.jsc-wrap"; // .jst-stone/.jsc-wrap (JSTONE 2026-08-30): the journey line's live stones and the open stone card — a finger on a stone or inside its card belongs to that card, never to the pane swipe. // .jr-zone (2026-08-28): the journey rail's 44px grab strip — a finger there belongs to the rail drag, never to the pane swipe. // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -2279,22 +2298,10 @@
       } catch (e) {}
       return null;
     }
-    // SEQUENCER (David 2026-07-01): the focal step = the most important UNDONE move for your state, not just the first in the list. One braid priority (canon: ritual > course > goal > habit), with the energy-first override on top.
-    function _leadW(n) {
-      if (n._lead) return 100;                                                   // regulate-first when depleted (Johnson Step 1)
-      if (n.key === "litopen") return 95;                                        // the liturgy's OPEN — the day's first beat (state first, story second)
-      if (n.key === "litaim") return 92;                                         // the liturgy's AIM — one arrow, right after the open
-      if (n.key === "am") return 90;                                             // open the day on purpose, first
-      if (n._aimed) return 85;                                                   // last night's aim
-      if (n.key === "pm") return (hourNow() >= 17) ? 80 : 15;        // close the day — only LEADS in the evening; in the morning it just waits its turn
-      if (n.key === "onething") return 70;                                       // your one thing
-      if (n.key && (n.key.indexOf("goalst:") === 0 || n.key.indexOf("goalm:") === 0 || n.key.indexOf("goalhit:") === 0)) return 60; // a goal's next move
-      if (n.key === "plan") return 50;                                           // plan your day
-      if (n.key === "litgap") return 46;                                         // the day's lesson slot (§1 LESSON) — after the aim, before the pile
-      if (n.key && n.key.indexOf("chtask:") === 0) return 45;                    // the chapter practice
-      if (n.key && n.key.indexOf("hab:") === 0) return 20;                       // a small habit
-      return 30;
-    }
+    // SEQUENCER (David 2026-07-01): the focal step = the most important UNDONE move for your state, not just the first in
+    // the list. HOISTED to jpLeadW (just under jpNodes) so the JLINE stones and this trail can never disagree about which
+    // node is "the now" — two copies of this ladder is exactly how two surfaces drift apart.
+    var _leadW = jpLeadW;
     var curIdx = -1, _bw = -1; for (var i = 0; i < real.length; i++) { if (real[i].done) continue; var _w = _leadW(real[i]); if (_w > _bw) { _bw = _w; curIdx = i; } } // highest-priority undone = the one focal step
     var allDone = curIdx < 0;
     var sub = el("jpSub"); if (sub) sub.textContent = (allDone ? "Today complete. beautiful" : doneN === 0 ? "Your day's ahead · one step at a time" : doneN + " of " + total + " today"); // endowed progress: never a cold "0 of N", always forward-framed (canon, David 2026-07-01) // version tag so we can confirm which build is actually loaded (David 2026-07-02)
@@ -5956,7 +5963,14 @@
   // THE ROW TOTAL, derived not guessed: 130 frame rows (ch-1 block 9 + ch2-17's 16 gates and 104 stones + the BOOK TWO
   // divider) + 19 generated gates + 122 generated stones + the BOOK THREE divider = 272. (SPEC-ADDENDUM-36 says 271; its
   // own count cycle [7,6,5,8] over ch18-36 sums to 122, not 121 — arithmetic slip in the addendum, flagged to David.)
-  var JL_ROWS = 272;
+  // THE ROW TOTAL, split at the head since the JSTONE port (2026-08-30). Everything from the BOOK TWO divider's chapters
+  // down is fixed frame geometry — 16 frame gates + 104 frame stones + 19 generated gates + 122 generated stones + the two
+  // book dividers = 263 rows. The chapter-one HEAD is now live (the BOOK ONE divider + the TODAY banner + one row per
+  // jpNodes() node), so the total is a function, not a constant. The old fixed 272 = 263 + 2 + the 7 mock head rows.
+  var JL_TAIL_ROWS = 263;
+  var _jlHeadN = 7;                          // how many live head rows the line currently carries (7 = the JL_CH1 fallback)
+  function jlRowTotal() { return JL_TAIL_ROWS + 2 + _jlHeadN; }
+  var JL_ROWS = 272;                         // kept for the handoffs/gates that quote the frame's own original count
   var JL_NAME = [
     "The Spark", "Who You Are", "Your Hours", "The Engine", "The Steady Hand", "The Wall", "The Long Game", "The Craft", "Your People", "The Deep Water", "The Weather", "The Summit", "The Still Point", "The Watcher", "The Forge", "The Portrait", "The Bellows", "The Undertow",
     "Your Own Words", "The Hearth", "The Dream Door", "The Quiet Power", "The Open Hand", "The Return", "The Nest", "The Tide", "The Crossroads", "The New Ground", "The Two of You", "The Long Watch", "The Fallow", "The Arena", "The Empty Room", "The Roots", "The Harvest", "The Lantern"
@@ -6229,6 +6243,208 @@
     jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
     return row;
   }
+  // ===== JSTONE — THE LIVE STONES + THE STONE CARD (grep anchor JSTONE). Round 27 canon `6f` (hued glyphs on the chapter
+  // pattern) + turn 8 (the card across all 8 types) + Round 28's per-chapter colour law. Source of truth:
+  // _design-sync/stones-build-2026-08-30/design_handoff_stone_card/ — README.md is the spec, the two .dc.html prototypes
+  // are the running artifacts. This replaces the hardcoded JL_CH1 head of the line (six mock stones) with the REAL
+  // jpNodes() list, so the chapter-one block on the journey line is the same content the old #jpTrail renders.
+  //   THE LAW (6f): the rock always wears the CHAPTER's pattern (JL_TEX, the app's own source); the TYPE identity lives in
+  //   the glyph hue and everything that follows from it — the label, the selection ring, the card wash, the verb button.
+  //   THE PIN, and why it needs no scroll compensation here: the card is appended INSIDE the stone's own row, after the
+  //   stone. #jrnyCol is a normal-flow column (the prototype's scroller is column-reverse, which is the only reason ITS
+  //   logic class writes scrollTop), so growing a row downward moves only what is below it — the tapped stone's own
+  //   offset from the top of the column is untouched, and scrollTop never has to move. The scroll engine (wScrub/jcScrub)
+  //   is not touched by this feature, and no listener is added to the column. `overflow-anchor:none` on #jrnyLine keeps a
+  //   scroll-anchoring browser from "helpfully" compensating for the growth and undoing the pin.
+  var JS_SOFT = "radial-gradient(circle at 50% 50%, rgba(255,255,255,.30) 0, rgba(255,242,249,.16) 13px, transparent 32px)"; // the soft white core — never a sharp dot
+  var JS_CH_NOW = 1;   // the chapter the live head belongs to. ONE constant: jlToday's banner and the stones' hue table read the same number, so a chapter advance can never colour the stones for one chapter and title the card for another.
+  // the 8 canon types. `ic` = the Tabler glyph (webfont 3.31.0, the same build the design bundle links); `hk` = the key
+  // the Round 28 override table uses for this hue family (ti-calendar-check is not one of the sweep's seven, so it tunes
+  // with its family's ti-map-2 blue rather than silently ignoring every per-chapter correction); `kick` = the kicker word.
+  var JS_TYPE = {
+    practice:  { ic: "lungs",              hk: "lungs",              hue: "#ff4fa0",            kick: "PRACTICE" },
+    longprac:  { ic: "lungs",              hk: "lungs",              hue: "#ff4fa0",            kick: "LONG PRACTICE" },
+    lesson:    { ic: "player-play-filled", hk: "player-play-filled", hue: "#ffc83d",            kick: "LESSON" },
+    worksheet: { ic: "scribble",           hk: "scribble",           hue: "#34d39a",            kick: "WORKSHEET" },
+    planned:   { ic: "calendar-check",     hk: "map-2",              hue: "#36b3f0",            kick: "PLANNED" },
+    plan:      { ic: "map-2",              hk: "map-2",              hue: "#36b3f0",            kick: "PLANNED" },
+    reflect:   { ic: "moon-stars",         hk: "moon-stars",         hue: "#ff5fa0",            kick: "REFLECT" },
+    card:      { ic: "cards",              hk: "cards",              hue: "hsl(272 100% 78%)",  kick: "THE CARD" },
+    settle:    { ic: "leaf",               hk: "leaf",               hue: "#2ab8c4",            kick: "SETTLE" }
+  };
+  // Round 28's OVERRIDES, transcribed verbatim from its logic class (the colour table David tuned chapter by chapter).
+  var JS_OVR = {
+    2:  { "lungs": "#ff3d7d", "moon-stars": "#ff4d80", "cards": "#a04dff" },
+    3:  { "cards": "#a04dff" },
+    4:  { "lungs": "#f545d8", "moon-stars": "#ff58c2", "cards": "#a04dff" },
+    9:  { "scribble": "#3ce07f" },
+    10: { "cards": "#d06aff" },
+    14: { "player-play-filled": "#f4c94f" },
+    15: { "lungs": "#ff44b8", "moon-stars": "#ff58c2", "player-play-filled": "#ffe08a" },
+    16: { "lungs": "#ff3d6a", "player-play-filled": "#ffe08a" },
+    25: { "player-play-filled": "#ffe08a", "cards": "#a04dff", "map-2": "#45c2ff", "leaf": "#29d9e8" },
+    26: { "lungs": "#ff85b8", "cards": "#dcb5ff", "player-play-filled": "#ffd257" },
+    27: { "player-play-filled": "#e8c470" },
+    28: { "player-play-filled": "#e8c470" },
+    29: { "player-play-filled": "#e8c470" },
+    30: { "lungs": "#ff3d7d", "moon-stars": "#ff4d80" },
+    31: { "player-play-filled": "#e8c470" },
+    32: { "cards": "#d06aff" },
+    33: { "cards": "#d06aff", "player-play-filled": "#e8c470" },
+    34: { "cards": "#d06aff" },
+    35: { "cards": "#9a4dff" },
+    36: { "player-play-filled": "#f2c258", "cards": "#c98aff" }
+  };
+  function jsHue(t, ch) { var o = JS_OVR[ch]; return (o && o[t.hk]) || t.hue; }
+  function jsRock(ch) { var tex = JL_TEX[Math.max(0, Math.min(JL_TEX.length - 1, (ch || 1) - 1))]; return JS_SOFT + ", " + tex; } // the chapter's own texture, straight off the app's existing table (never re-typed from the handoff)
+  // WHICH TYPE A LIVE NODE IS. Keyed off the node's own key — the same keys jpNodes() emits and drawJourney's ladder reads
+  // — so a new node kind lands on a deliberate type rather than on whatever its title happens to contain.
+  function jsMinsOf(n) { try { var d = jpDurations(n); return (d && d.length) ? d[0] : 0; } catch (e) { return 0; } }
+  function jsTypeOf(n) {
+    var k = String((n && n.key) || "");
+    if (k === "settle" || k === "away") return "settle";
+    if (k === "reflect") return "card";                                          // reflectCard IS the design's "the card" (a question, three taps)
+    if (k === "pm") return "reflect";                                            // close the day
+    if (k === "litgap") return "lesson";                                         // the liturgy's lesson slot — it runs runLesson()
+    if (k.indexOf("chtask:") === 0 || k === "rxfund" || k === "cb2" || k === "doorway") return "worksheet";
+    if (k === "plan" || k === "litaim" || k === "am" || k === "now") return "plan";
+    if (k.indexOf("blk:") === 0 || k === "onething" || k.indexOf("goal") === 0) return "planned";
+    if (k.indexOf("hab:") === 0) return "practice";                              // a small basic is a practice, never a "long" one
+    var m = jsMinsOf(n);
+    return m >= 9 ? "longprac" : "practice";                                     // ceremonies + tools: the design splits practice from LONG PRACTICE at 9 minutes
+  }
+  // the kicker's tail. A planned block says WHEN (the design's "PLANNED · TONIGHT 9:30"), everything else says how long.
+  // Every string here is either the design's own token or a number the app already owns — no line is authored.
+  function jsKick(n, t) {
+    if (n.done) { var dm = 0; try { dm = jpNodeMins(n); } catch (e) {} return tr("DONE") + (dm ? " · " + dm + " " + tr("MIN") : ""); }
+    if (String(n.key || "").indexOf("blk:") === 0) { var hhmm = /(\d{1,2}:\d{2})/.exec(n.line || ""); if (hhmm) return tr(t.kick) + " · " + hhmm[1]; }
+    var m = jsMinsOf(n);
+    return tr(t.kick) + (m ? " · " + m + " " + tr("MIN") : "");
+  }
+  // the primary verb, chosen by what the tap actually DOES, using only the verbs in the design's own type table
+  // (Start / Watch / Open / Start early / Close it / See the card / Again). A node with no act gets NO button.
+  function jsVerb(n, ty) {
+    var k = String(n.key || ""), m = jsMinsOf(n), suf = m ? " · " + m + " " + tr("min") : "";
+    if (n.done) return { t: tr("Again") + suf, i: "rotate-clockwise" };
+    if (ty === "lesson") return { t: tr("Watch") + suf, i: "player-play-filled" };
+    if (ty === "card") return { t: tr("See the card"), i: "cards" };
+    if (k === "pm") return { t: tr("Close it"), i: "moon-stars" };
+    if (ty === "worksheet" || ty === "plan") return { t: tr("Open"), i: "arrow-right" };
+    if (k.indexOf("blk:") === 0) { var hm2 = /(\d{1,2}):(\d{2})/.exec(n.line || ""); if (hm2 && (+hm2[1] * 60 + +hm2[2]) > (new Date().getHours() * 60 + new Date().getMinutes())) return { t: tr("Start early"), i: "player-play-filled" }; }
+    if (ty === "longprac") return { t: tr("Start"), i: "player-play-filled" };
+    return { t: tr("Start") + suf, i: "player-play-filled" };
+  }
+  var _jsOpen = null;   // the ONE open card's row (only the open stone wears the selection ring)
+  function jsCloseCard(row) {
+    var r = row || _jsOpen; if (!r) return;
+    var w = r.querySelector(".jsc-wrap"); if (w) w.classList.remove("on");
+    r.classList.remove("jst-open");
+    var st = r.querySelector(".jst-stone"); if (st) st.classList.remove("jst-sel");
+    if (_jsOpen === r) _jsOpen = null;
+  }
+  // OPEN/CLOSE. The ONLY layout write is the card's own max-height inside the row — nothing writes scrollTop, nothing
+  // touches the column's padding, and nothing listens to the scroller (SCROLL LAW, the v1397 one-engine rule).
+  function jsToggleCard(row) {
+    if (!row) return;
+    var w = row.querySelector(".jsc-wrap"); if (!w) return;
+    if (row === _jsOpen) { jsCloseCard(row); return; }
+    if (_jsOpen) jsCloseCard(_jsOpen);
+    var card = w.firstElementChild ? w.querySelector(".jsc-card") : null;
+    var h = card ? card.offsetHeight : 0;                       // measurable through max-height:0/overflow:hidden — layout is unaffected by either
+    w.style.setProperty("--jsch", (h > 40 ? h + 10 : 400) + "px"); // +10 = room for the card's own 0 6px 0 sticker shadow
+    w.classList.add("on");
+    row.classList.add("jst-open");
+    var st = row.querySelector(".jst-stone"); if (st) st.classList.add("jst-sel");
+    _jsOpen = row;
+  }
+  // ---- the card (Round 27 turn 8, per-type tinted). 300w · mix(hue 12%, #2c081a) · 3px #160510 · r22 · 0 6px 0 · pad 15 16 16.
+  function jsCard(n, ty, hue) {
+    var wrap = document.createElement("div"); wrap.className = "jsc-wrap";
+    var fill = "color-mix(in srgb, " + hue + " 12%, #2c081a)";
+    jlAdd(wrap, "span", "jsc-tail", "background:" + fill + ";");
+    var card = jlAdd(wrap, "div", "jsc-card", "background:" + fill + ";");
+    var t = JS_TYPE[ty];
+    var kick = jlAdd(card, "span", "jsc-kick", "color:" + (n.done ? "#28cf86" : hue) + ";");
+    if (n.done) jlAdd(kick, "i", "ti ti-check");
+    jlAdd(kick, "span").textContent = jsKick(n, t);
+    jlAdd(card, "span", "jsc-title").textContent = tr(n.title || "");
+    if (n.line) jlAdd(card, "span", "jsc-line").textContent = tr(n.line);
+    if (typeof n.act === "function") {                          // NO DEAD BUTTONS: a node with no action gets no primary verb
+      var row = jlAdd(card, "div", "jsc-row");
+      var v = jsVerb(n, ty);
+      var b = jlAdd(row, "button", "jsc-btn", "background:" + hue + ";");
+      jlAdd(b, "i", "ti ti-" + v.i);
+      jlAdd(b, "span").textContent = v.t;
+      b.onclick = function (e) { if (e) e.stopPropagation(); jsCloseCard(); try { n.act(); } catch (err) {} jsRefreshSoon(); };
+      if (!n.done) {                                            // "Later" simply closes the card this round (the shelf is a later round, so a Details button would be dead)
+        var g = jlAdd(row, "button", "jsc-ghost", "border:2.5px solid color-mix(in srgb, " + hue + " 55%, transparent);color:color-mix(in srgb, " + hue + " 40%, #cfc0cc);");
+        jlAdd(g, "i", "ti ti-calendar-plus");
+        jlAdd(g, "span").textContent = tr("Later");
+        g.onclick = function (e) { if (e) e.stopPropagation(); jsCloseCard(); };
+      }
+    }
+    return wrap;
+  }
+  // ---- ONE stone. `big` = the now-stone (the focal undone node): it keeps the line's existing .jl-next-disc box so every
+  // landing y and the "next stone 110px content-box" gate stay exactly where they are, and grows to 126 outer while its
+  // card is open — the design's own 126 selected size. Resting trail stones are the .jl-disc 84px box, unchanged.
+  function jsStoneRow(n, big) {
+    var ty = jsTypeOf(n), t = JS_TYPE[ty], hue = jsHue(t, JS_CH_NOW);
+    var row = document.createElement("div"); row.className = big ? "jl-next jst-row" : "jl-stone jst-row";
+    if (!big) row.style.translate = (JL_TXC[(_jsTx++) % 8]) + "px 0";   // the frame's own zig-zag, on `translate` so the cascade keeps `transform`
+    var col = jlAdd(row, "div", big ? "jl-next-in" : "jl-stone-in");
+    var st = jlAdd(col, "button", (big ? "jl-next-disc jl-fx jst-big" : "jl-disc") + " jst-stone", "background:" + jsRock(JS_CH_NOW) + ";--jsring:linear-gradient(180deg, " + hue + ", " + hue + " 50%, color-mix(in srgb, #160510 14%, " + hue + "));");
+    st.type = "button";
+    jlAdd(st, "span", "jst-ring");
+    jlAdd(st, "span", "jst-bev");
+    if (big) jlAdd(jlAdd(st, "span", "jst-glint"), "span", "jl-fx");    // the 3.4s sheen rides the big stone (design: glint on big stones and banners)
+    jlAdd(st, "span", "jst-rays");                                      // the dark ray-center kills the bright core under the glyph (unlocked stones only)
+    jlAdd(st, "i", "ti ti-" + t.ic + " jst-g", "color:" + hue + ";" + (big ? "font-size:52px;" : ""));
+    if (n.done) jlAdd(jlAdd(st, "span", "jst-coin"), "i", "ti ti-check");
+    var lab = jlAdd(col, "span", big ? "jl-next-lab" : "jl-stone-lab", "color:" + hue + ";");
+    if (big) jlAdd(lab, "span", "jl-next-t", "color:" + hue + ";").textContent = tr(n.title || "");
+    else lab.textContent = tr(n.title || "");
+    col.appendChild(jsCard(n, ty, hue));
+    st.onclick = function (e) { if (e) e.stopPropagation(); jsToggleCard(row); };
+    return row;
+  }
+  var _jsTx = 0;
+  // the live head, in the line's own bottom-up data order: what you have DONE sits nearest the TODAY banner, the focal
+  // stone is the big one above it, and what is still ahead climbs above that — the same past→now→future climb the old
+  // trail assembles, and the same reading order as the 6f canon phone.
+  var _jsNodeErr = 0;
+  function jsLiveNodes() {
+    var out = [];
+    // …and SAY SO if the engine throws. An empty list silently falls back to the JL_CH1 mock head, which looks like a
+    // working line — exactly the class of failure that hides for weeks. Warned once, never spammed.
+    try { out = (jpNodes() || []).filter(function (n) { return n && n.title; }); }
+    catch (e) { out = []; if (!_jsNodeErr) { _jsNodeErr = 1; try { console.warn("[alter] JSTONE: jpNodes() threw — the line is on its JL_CH1 fallback head", e); } catch (e2) {} } }
+    return out;
+  }
+  function jsSig(nodes) { var s = "c" + JS_CH_NOW; for (var i = 0; i < nodes.length; i++) s += "|" + (nodes[i].key || "?") + (nodes[i].done ? "1" : "0"); return s; }
+  // …and the line catches up after a verb. Every node act ends in drawJourney(), which redraws the OLD #jpTrail and knows
+  // nothing about the sky, so without this the stone you just completed would keep its undone face until the next full
+  // render. renderJourneyLine is idempotent and signature-gated, so this is a no-op unless something actually changed.
+  // Deferred behind jlBusy() for the same reason the wake queue is: never rebuild 270 rows under a moving finger.
+  var _jsRefT = 0;
+  function jsRefreshSoon() {
+    clearTimeout(_jsRefT);
+    _jsRefT = setTimeout(function () {
+      if (typeof jlBusy === "function" && jlBusy()) { jsRefreshSoon(); return; }
+      try { renderJourneyLine(); wAnchorsDirty(); } catch (e) {}
+    }, 420);
+  }
+  function jsHeadRows(nodes) {
+    _jsTx = 0;
+    var done = [], rest = [], focal = null, bw = -1;
+    for (var i = 0; i < nodes.length; i++) { if (nodes[i].done) continue; var w = jpLeadW(nodes[i]); if (w > bw) { bw = w; focal = nodes[i]; } }
+    for (var j = 0; j < nodes.length; j++) { var n = nodes[j]; if (n === focal) continue; (n.done ? done : rest).push(n); }
+    var rows = [];
+    for (var d = 0; d < done.length; d++) rows.push(jsStoneRow(done[d], false));
+    if (focal) rows.push(jsStoneRow(focal, true));
+    for (var r = 0; r < rest.length; r++) rows.push(jsStoneRow(rest[r], false));
+    return rows;
+  }
   // ---- OFF-SCREEN ROWS GO QUIET (David 2026-08-26). ONE observer for the whole line, stored like _jcEls so a rebuild can
   // never leak a second one. Root is #tfWorld with the frame's own 120px margin (recipes/j1-script.js wireAnim), and it
   // toggles ONLY the row-level .jl-anim-off class — the CSS behind it pauses .jl-fx descendants and cannot reach the
@@ -6330,6 +6546,7 @@
   // void). visibility is a paint flag with no layout work to fail at, and the 1400px margin means a row is made visible
   // more than a viewport before it can be reached at any realistic fling speed.
   var _jlFarIO = null, _jlFarSeen = false, _jlFarT = 0;
+  var _jlSig = "";   // JSTONE: the live head's node signature — the line rebuilds only when this changes (see renderJourneyLine)
   function jlNearAll() { var r = jlRows(); for (var i = 0; i < r.length; i++) r[i].classList.remove("jl-far"); }
   function jlUnpauseAll() { var r = jlRows(); for (var i = 0; i < r.length; i++) r[i].classList.remove("jl-anim-off"); }
   function jlObserve(col) {
@@ -6395,21 +6612,34 @@
     try { jlSkyBitmap(sky); } catch (e) {}   // the starfield as two pre-rendered tiles instead of two live gradient layers (see jlSkyBitmap); on any failure the CSS gradients stay exactly as they were
     var lab = el("tfWorldSkyLabel"); if (lab && lab.parentNode) lab.parentNode.removeChild(lab); // the line opens on its own BOOK ONE divider; the frame draws no "Your journey" caption
     var line = el("jrnyLine"), col = el("jrnyCol");
+    // THE LIVE HEAD (JSTONE). Read the node list ONCE per render and reduce it to a signature; the line is rebuilt only
+    // when that signature actually changes (a node completes, appears or leaves), which is a handful of times a day.
+    var _liveN = jsLiveNodes(), _sig = jsSig(_liveN);
     // BUILD-ONCE, counted across BOTH containers. col.children is 252 since the parallax split (251 deep rows + the
-    // foot), so counting it against JL_ROWS made this guard fail forever and the whole line was rebuilt on every render —
+    // foot), so counting it against the total made this guard fail forever and the whole line was rebuilt on every render —
     // which re-armed the observer constantly and left every row born-paused, i.e. a permanently dark journey.
-    if (line && col && jlRows().length === JL_ROWS) { if (!_jlIO || !_jlFarIO) jlObserve(col); return line; } // reused: only re-arm what a teardown could have invalidated
+    if (line && col && jlRows().length === jlRowTotal() && _jlSig === _sig) { if (!_jlIO || !_jlFarIO) jlObserve(col); return line; } // reused: only re-arm what a teardown could have invalidated
     if (!line) { line = document.createElement("div"); line.id = "jrnyLine"; sky.insertBefore(line, sky.firstChild); }
     while (line.firstChild) line.removeChild(line.firstChild);
     col = document.createElement("div"); col.id = "jrnyCol"; line.appendChild(col);
     // built in the FRAME'S OWN bottom-up data order (its file is column-reverse, index 0 = the line's foot), then
     // appended in reverse so index 0 lands at the foot of a normal-flow column. Same rows, same order, no column-reverse.
+    _jsOpen = null;                                            // the old card's row is about to be thrown away
     var rows = [];
     rows.push(jlDivider("BOOK ONE", "The Climb", "#ff4fa0"));
-    rows.push(jlToday(1, JL_NAME[0]));
-    rows.push(jlStone(JL_CH1[0][0], JL_CH1[0][1], JL_CH1[0][2], JL_CH1[0][3], JL_CH1[0][4]));  // Intro, done
-    rows.push(jlNext("lungs", "Again tonight", "up next \u00b7 one minute"));
-    for (var s = 1; s < JL_CH1.length; s++) rows.push(jlStone(JL_CH1[s][0], JL_CH1[s][1], JL_CH1[s][2], JL_CH1[s][3], JL_CH1[s][4]));
+    rows.push(jlToday(JS_CH_NOW, JL_NAME[JS_CH_NOW - 1]));
+    // THE HEAD IS LIVE (JSTONE, 2026-08-30): the six hardcoded JL_CH1 mock stones are replaced by the real jpNodes() list,
+    // rendered as canon 6f stones. JL_CH1 + jlStone + jlNext stay in the file as the FALLBACK for the one case that must
+    // never show an empty chapter \u2014 jpNodes() returning nothing (a state so early or so broken there is no day yet).
+    var head = _liveN.length ? jsHeadRows(_liveN) : null;
+    if (head) { for (var hs = 0; hs < head.length; hs++) rows.push(head[hs]); }
+    else {
+      rows.push(jlStone(JL_CH1[0][0], JL_CH1[0][1], JL_CH1[0][2], JL_CH1[0][3], JL_CH1[0][4]));  // Intro, done
+      rows.push(jlNext("lungs", "Again tonight", "up next \u00b7 one minute"));
+      for (var s = 1; s < JL_CH1.length; s++) rows.push(jlStone(JL_CH1[s][0], JL_CH1[s][1], JL_CH1[s][2], JL_CH1[s][3], JL_CH1[s][4]));
+    }
+    _jlHeadN = rows.length - 2;                                // the head total the row-count guard and designAudit both read
+    _jlSig = _sig;
     var k = 0;
     jlChapters().forEach(function (c) {
       if (c.ch === 13) rows.push(jlDivider("BOOK TWO", "The Deep", "#2a9fe0"));
@@ -21385,7 +21615,7 @@
       var _jlL = el("jrnyLine"), _jlC = el("jrnyCol"), _jlS = el("tfWorldSky"), _jss0 = function (n) { return getComputedStyle(n); };
       var _jlRows = (typeof jlRows === "function") ? jlRows() : [];   // spans #jrnyCol AND #jrnyFoot since the parallax pass — col.children is no longer the row list
       var _jlN = _jlRows.length;
-      chk("journey line rows", _jlN === JL_ROWS, _jlN + " rows", JL_ROWS + " = the frame's 130 (ch 1-17) + 19 generated gates + 122 generated stones + the BOOK THREE divider");
+      chk("journey line rows", _jlN === jlRowTotal(), _jlN + " rows", jlRowTotal() + " = 263 fixed frame rows + the BOOK ONE divider + the TODAY banner + " + _jlHeadN + " LIVE head rows (one per jpNodes node since the JSTONE port; the frame's own fixed total was " + JL_ROWS + ")");
       chk("sky wears the line's paint (not the old trail)", !!(_jlS && _jlS.classList.contains("jl-sky")) && !el("tfWorldSkyLabel") && !(el("jpTrail") && el("jpTrail").parentNode === _jlS), (_jlS && _jlS.classList.contains("jl-sky") ? "jl-sky" : "no jl-sky") + (el("tfWorldSkyLabel") ? " + the old caption" : "") + (el("jpTrail") && el("jpTrail").parentNode === _jlS ? " + #jpTrail adopted" : ""), "jl-sky, no \"Your journey\" caption, #jpTrail still home in #jpScroll");
       if (_jlL) { var _jlcs = getComputedStyle(_jlL);
         // BOTH SIDES IN LAYOUT PX. _nr divides the rect back through the artboard scale, which is the whole reason this

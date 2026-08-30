@@ -2087,6 +2087,80 @@
      constantly, and again for every row the paint window reveals. Promoted, the texture is rastered ONCE and thereafter
      only moved. Scoped to rows inside the window so the count stays ~40 small layers, never 272. */
   #jrnyLine .jl-lstone-row:not(.jl-far) > .jl-lstone{ will-change:transform; }
+  /* ===== JSTONE — THE LIVE STONES + THE STONE CARD (Round 27 canon 6f + turn 8 · Round 28 colour law, ported 2026-08-30).
+     Source: _design-sync/stones-build-2026-08-30/design_handoff_stone_card/. app.js @ grep JSTONE builds the DOM; every
+     value that REPEATS across stones lives here, and only the per-node hue/rock is written inline — the same split the
+     .jl-* row recipes above already use.
+     THE PIN: the card is a child of the stone's own row, appended AFTER the stone, and #jrnyCol is a normal-flow column.
+     Growing the row therefore moves only what is below it — the tapped stone's own offset from the top of the column
+     never changes and nothing has to write scrollTop (the prototype's scroller is column-reverse, which is the only
+     reason ITS logic class compensates). `overflow-anchor:none` on the line keeps a scroll-anchoring browser from
+     "correcting" for that growth and undoing the pin. ===== */
+  #jrnyLine{ overflow-anchor:none; }
+  /* the line is look-only by default (the rule at the top of this block); the stones and the card opt back IN */
+  #jrnyLine .jst-stone, #jrnyLine .jsc-card, #jrnyLine .jsc-btn, #jrnyLine .jsc-ghost{ pointer-events:auto; }
+  .jst-stone{ padding:0; font:inherit; cursor:pointer; position:relative; -webkit-tap-highlight-color:transparent; }
+  /* RESTING TRAIL STONE — the .jl-disc 84px box, unchanged in size. Its two bevel insets move OFF the element and onto
+     .jst-bev so the selection ring can cut them off (6f layer 3); the drop + glow stay here. Identical pixels at rest:
+     an inset shadow on a layer at inset:0 paints exactly where the same inset shadow on the element itself does. */
+  .jl-disc.jst-stone{ border:0; box-shadow:0 9px 20px rgba(0,0,0,.5), 0 0 26px var(--jglow,transparent); }
+  /* THE NOW-STONE keeps the line's own box model — 110px content-box + a 4px border = 118 outer — because the "next stone
+     110px content-box" gate and every landing y below it are locked to that number (see the .jl-next-disc note above).
+     The border goes TRANSPARENT and the rock paints under it (background-clip is border-box by default), so it reads as a
+     solid 118 rock at rest and the border is free to BECOME the 4px selection ring when the card opens — selection chrome
+     replacing resting chrome, per the design law, instead of stacking on top of it. CONFLICT, flagged to David: the
+     canon's resting now-stone is 110 OUTER; this app ships 118 and its landings are measured off it. The SELECTED size
+     (126 outer) is exact. */
+  .jl-next-disc.jst-stone{ border:4px solid transparent; background-clip:border-box; box-shadow:0 10px 22px rgba(0,0,0,.5), 0 0 58px rgba(176,122,255,.55);
+    transition:width .46s cubic-bezier(.34,1.56,.64,1), height .46s cubic-bezier(.34,1.56,.64,1); }
+  .jl-next-disc.jst-stone.jst-sel{ width:118px; height:118px; }   /* 118 content + 8 border = the design's 126 selected stone */
+  /* the layers, bottom to top: ring (1) · bevel · rays · glyph (2) · coin (3). On the big stone every full-bleed layer is
+     pulled out to the BORDER box with inset:-4px, because an absolutely positioned child is laid out against the padding
+     box and would otherwise float 4px inside the rim. */
+  .jst-ring{ position:absolute; inset:0; border-radius:50%; padding:3px; background:var(--jsring,transparent); pointer-events:none; z-index:1; opacity:0; transition:opacity .2s;
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+  .jst-stone.jst-sel > .jst-ring{ opacity:1; }
+  .jst-big > .jst-ring{ inset:-4px; padding:4px; }               /* the ring lands exactly on the border band the resting stone leaves transparent */
+  .jst-bev{ position:absolute; inset:0; border-radius:50%; pointer-events:none; box-shadow:inset 0 5px 0 rgba(255,255,255,.22), inset 0 -7px 0 rgba(0,0,0,.28); }
+  .jst-stone.jst-sel > .jst-bev{ inset:3px; }                    /* inside the ring, so the ring cuts the highlight off */
+  .jst-big > .jst-bev{ inset:-4px; box-shadow:inset 0 5px 0 rgba(255,255,255,.22), inset 0 -8px 0 rgba(0,0,0,.28); }
+  .jst-big.jst-sel > .jst-bev{ inset:0; }
+  /* THE DARK RAY-CENTER (6f layer 4) — kills the bright core under the glyph, radially mask-feathered so it has no edge.
+     Verbatim from the README; the opacity is the design's locked default (its tuner's 50). */
+  .jst-rays{ position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:.5;
+    background:repeating-conic-gradient(from 0deg at 50% 50%, #221030 0 10deg, #1c0d28 10deg 20deg, #221030 20deg 30deg, #1c0d28 30deg 40deg, #221030 40deg 50deg, transparent 50deg 60deg);
+    -webkit-mask:radial-gradient(circle at 50% 50%, #000 0, rgba(0,0,0,.75) 20%, rgba(0,0,0,.32) 36%, transparent 56%);
+    mask:radial-gradient(circle at 50% 50%, #000 0, rgba(0,0,0,.75) 20%, rgba(0,0,0,.32) 36%, transparent 56%); }
+  .jst-big > .jst-rays{ inset:-4px; }
+  .jst-glint{ position:absolute; inset:-2px; border-radius:50%; overflow:hidden; pointer-events:none; }
+  .jst-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.55) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite; }
+  .jst-big > .jst-glint{ inset:-6px; }
+  .jst-stone > i.jst-g{ position:relative; z-index:2; text-shadow:0 2px 4px rgba(0,0,0,.6), 0 0 11px rgba(0,0,0,.45); }
+  /* the done coin — "green on ink" is the canon variant; z above the ring */
+  .jst-coin{ position:absolute; right:-4px; bottom:-2px; width:30px; height:30px; border-radius:50%; background:#241322; border:2.5px solid #160510; box-shadow:0 3px 0 #160510; display:flex; align-items:center; justify-content:center; z-index:3; }
+  .jst-coin > i{ font-size:16px; color:#28cf86; }
+  .jst-big > .jst-coin{ width:36px; height:36px; right:-2px; bottom:0; }
+  .jst-big > .jst-coin > i{ font-size:19px; }
+  /* ---- THE STONE CARD. Opens with the design's own two curves: the settle curve on the height, the spring on the pop. */
+  .jsc-wrap{ width:300px; max-width:100%; position:relative; z-index:5; margin-top:4px; max-height:0; margin-bottom:-4px; overflow:hidden; opacity:0;
+    transform:scale(.6) translateY(-18px); transform-origin:top center; pointer-events:none;
+    transition:max-height .46s cubic-bezier(.22,.9,.3,1), margin-bottom .46s cubic-bezier(.22,.9,.3,1), transform .46s cubic-bezier(.34,1.56,.64,1), opacity .3s; }
+  .jsc-wrap.on{ max-height:var(--jsch,400px); margin-bottom:0; overflow:visible; opacity:1; transform:scale(1) translateY(0); pointer-events:auto; }
+  /* the tail: 28px square rotated 45°, BORDER-BOX (without it the bordered half bulges — the design's own fixed bug) */
+  .jsc-tail{ position:absolute; top:-13px; left:50%; margin-left:-14px; width:28px; height:28px; z-index:2; box-sizing:border-box; transform:rotate(45deg); border-left:3px solid #160510; border-top:3px solid #160510; border-radius:5px 0 0 0; }
+  .jsc-card{ position:relative; border:3px solid #160510; border-radius:22px; box-shadow:0 6px 0 #160510; padding:15px 16px 16px; display:flex; flex-direction:column; gap:9px; text-align:left; }
+  .jsc-kick{ display:flex; align-items:center; gap:6px; font-size:9.5px; font-weight:800; letter-spacing:2.2px; text-transform:uppercase; }
+  .jsc-kick > i{ font-size:12px; }
+  .jsc-title{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:21px; line-height:1.05; color:#fff2f9; }
+  .jsc-line{ font-size:13px; font-weight:600; color:#c0aed4; line-height:1.45; text-wrap:pretty; }
+  .jsc-row{ display:flex; align-items:center; gap:9px; padding-top:3px; }
+  .jsc-btn{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:7px; height:44px; box-sizing:border-box; white-space:nowrap; border-radius:16px; border:2.5px solid #160510; box-shadow:0 5px 0 #160510; cursor:pointer; font-family:"Jost",sans-serif; font-size:14.5px; font-weight:800; color:#160510; }
+  .jsc-btn > i{ font-size:13px; color:#160510; }
+  .jsc-btn:active{ transform:translateY(4px); box-shadow:0 1px 0 #160510; }
+  .jsc-ghost{ flex:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; height:44px; box-sizing:border-box; white-space:nowrap; border-radius:16px; background:rgba(255,242,249,.05); padding:0 14px; cursor:pointer; font-family:"Jost",sans-serif; font-size:13px; font-weight:800; }
+  .jsc-ghost > i{ font-size:14px; }
+  .jsc-ghost:active{ transform:translateY(2px); }
   /* ===== THE ON-DEVICE SCROLL TEST (David 2026-08-27, fourth chop report). The Mac CANNOT reproduce this: the same build
      measures 76fps with zero blocking in headless Chrome while his phone drops every second frame, so every fix so far has
      been a hypothesis shipped blind. These classes strip one suspect at a time so the PHONE can answer which layer costs
@@ -4622,6 +4696,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1407"></script>
+  <script src="app.js?v=1410"></script>
 </body>
 </html>
