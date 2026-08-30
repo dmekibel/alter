@@ -1884,15 +1884,78 @@
   .jl-div-lab{ display:flex; align-items:baseline; gap:7px; }
   .jl-div-book{ font-size:9px; font-weight:800; letter-spacing:2.4px; }
   .jl-div-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; line-height:1; color:#fff2f9; }
-  /* TODAY banner (h 67) */
+  /* ===== JCC — THE CHAPTER CARD (Round 26 canon `7b` "Mini chapters", ported 2026-08-30). The TODAY banner IS this card.
+     Source: _design-sync/stones-build-2026-08-30/design_handoff_chapter_card/. app.js @ grep JCC builds the DOM; the ONE
+     value it writes here is --jcch, the chapter's hue. Every px/hex below was MEASURED off the running prototype (#7b), not
+     read off its source: shell 362 wide · r18 · `0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3)` · face 62.41 tall at pad 13 15 ·
+     body pad 13 14 / gap 12 · dive row 32 tall · fold pad `10px 2px 2px 38px`.
+     THE SPLIT: .jl-today-card is now the SHELL — radius, sticker shadow, overflow clip, and the hue-washed BODY ground.
+     .jcc-face is the lattice button inside it (radius 0; the shell's overflow rounds it).
+     THE BODY GROUND is the README's W=18 LOCKED formula, verbatim: the two 1.5/16px hue lattices at 5%, over a 180deg
+     mix of W+7% (=25) into #1e0d1a and max(W-5,0)% (=13) into #17091a at 70%.
+     THE CAPS: max-height cannot animate to `auto` (the design's own fixed bug), so --jccb / --jccd carry a REAL pixel cap
+     measured off the content by app.js (jccSetCaps); the design's own 980px / 260px stay here as the fallbacks.
+     THE CHEVRON opens to rotate(0.001deg), never 0deg — the design's own fixed snap bug. ===== */
   .jl-today{ padding:0 0 4px; width:100%; }
-  .jl-today-card{ width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3); overflow:hidden; position:relative; background:repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), linear-gradient(115deg, #8a5cf0, color-mix(in srgb, #8a5cf0 78%, #14060f)); display:flex; align-items:center; gap:12px; padding:13px 15px; }
-  .jl-today-glint{ position:absolute; inset:-2px; border-radius:16px; overflow:hidden; pointer-events:none; }
-  .jl-today-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.32) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite; }
+  .jl-today-card{ width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3); overflow:hidden; position:relative;
+    background:repeating-linear-gradient(0deg, color-mix(in srgb, var(--jcch,#8a5cf0) 5%, transparent) 0 1.5px, transparent 1.5px 16px), repeating-linear-gradient(90deg, color-mix(in srgb, var(--jcch,#8a5cf0) 5%, transparent) 0 1.5px, transparent 1.5px 16px), linear-gradient(180deg, color-mix(in srgb, var(--jcch,#8a5cf0) 25%, #1e0d1a), color-mix(in srgb, var(--jcch,#8a5cf0) 13%, #17091a) 70%); }
+  .jcc-face{ width:100%; box-sizing:border-box; border:none; border-radius:0; padding:13px 15px; margin:0; font:inherit; text-align:left; cursor:pointer; overflow:hidden; position:relative; display:flex; align-items:center; gap:12px; font-family:"Jost",sans-serif;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), linear-gradient(115deg, var(--jcch,#8a5cf0), color-mix(in srgb, var(--jcch,#8a5cf0) 78%, #14060f)); }
+  .jl-today-glint{ position:absolute; inset:-2px; overflow:hidden; pointer-events:none; }
+  /* ===== THE RESTING FRAME OF A GLINT IS OFF-SCREEN, NOT MID-SWEEP (grep JGLINTREST — David on device 2026-08-30, coming
+     up from home: "the now-stone shows a frozen diagonal reflection for a moment, then it vanishes and normal shimmer
+     starts"). Every row on the line is BORN with .jl-anim-off, whose rule is `animation:none !important` — and a sheen
+     span with no animation has no transform either, so it renders where its box sits: dead centre across the disc, a
+     hard diagonal band. That still image is what he sees on arrival; the "vanish" is the wake removing .jl-anim-off and
+     the keyframes snapping to their own 0% (translateX(-135%), i.e. off to the left). THE FIX IS ONE DECLARATION: give
+     the resting span the keyframe's own first frame, so asleep and frame-0 are the same pixels and the wake is
+     invisible. No JS, no restart hook, nothing for the scroll engine to hear. All three glints share the bug and the
+     fix — the banner's, the fallback next-stone's and the live now-stone's. ===== */
+  .jl-today-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.32) 50%, transparent 56%); transform:translateX(-135%) rotate(0.001deg); animation:jGlint 3.4s ease-in-out infinite; }
   .jl-card-mid{ position:relative; z-index:5; flex:1; display:flex; flex-direction:column; gap:2px; }
+  .jcc-face .jl-card-mid{ gap:4px; }   /* the 7b face's own gap — it is what makes the collapsed face 62.41 tall, exactly as the prototype renders it */
   .jl-today-kick{ font-size:9.5px; font-weight:800; letter-spacing:2.2px; color:#fff2f9; text-shadow:0 2px 0 rgba(22,5,16,.4); }
   .jl-today-name{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:21px; color:#fff2f9; line-height:1.02; text-shadow:0 2px 0 rgba(22,5,16,.4); }
-  .jl-today-ico{ position:relative; font-size:22px; color:#fff2f9; filter:drop-shadow(0 2px 0 rgba(22,5,16,.35)); }
+  .jcc-chev{ position:relative; z-index:5; flex:none; font-size:20px; color:#fff2f9; filter:drop-shadow(0 2px 0 rgba(22,5,16,.35)); transform:rotate(-90deg); transition:transform .3s; }
+  .jl-today.jcc-on .jcc-chev{ transform:rotate(0.001deg); }
+  .jcc-body{ overflow:hidden; max-height:0; transition:max-height .46s cubic-bezier(.22,.9,.3,1); }
+  .jl-today.jcc-on .jcc-body{ max-height:var(--jccb,980px); }
+  .jcc-bodyin{ padding:13px 14px; display:flex; flex-direction:column; gap:12px; }
+  .jcc-why{ font-family:"Baloo 2",sans-serif; font-weight:700; font-size:16.5px; line-height:1.3; color:#e8cbdb; text-wrap:pretty; }
+  .jcc-why > b.jcc-key{ font-weight:800; }   /* the keyword's meaning hue is written inline — it is the one thing that varies (app.js jccWhyInto) */
+  .jcc-rule{ height:1.5px; background:rgba(255,242,249,.22); border-radius:1px; }
+  .jcc-kick{ font-size:9.5px; font-weight:800; letter-spacing:2.2px; color:#8fa2e8; }
+  /* 12px BETWEEN DIVES, and it is measured not chosen: in the prototype each dive block is a DIRECT child of the body's
+     own `gap:12px` column, so the rows breathe by exactly that. Wrapping them in .jcc-dives (which the app does, so the
+     section can be omitted whole when a chapter has none) has to re-declare the same gap or the rows go flush. */
+  .jcc-dives{ display:flex; flex-direction:column; gap:12px; }
+  .jcc-dive{ display:flex; flex-direction:column; }
+  .jcc-drow{ width:100%; box-sizing:border-box; border:none; background:none; padding:0; margin:0; font:inherit; font-family:"Jost",sans-serif; text-align:left; cursor:pointer; display:flex; align-items:center; gap:10px; }
+  /* CONTENT-BOX, and it is the design's own box model: the prototype has no universal border-box reset, so its 28px coin
+     with a 2px border renders 32 OUTER (measured). This app resets to border-box globally, which would silently shrink
+     every dive coin by 4px — the same trap the now-stone's .jl-next-disc note calls out. */
+  .jcc-coin{ box-sizing:content-box; width:28px; height:28px; flex:none; border-radius:50%; border:2px solid #160510; display:flex; align-items:center; justify-content:center; }
+  .jcc-coin > i{ color:#160510; }   /* 12-14px, per dive — the glyph size is written inline because it varies (the prototype's flask is 14, its play/calendar coins are 12) */
+  .jcc-dtx{ flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .jcc-dt{ font-size:13.5px; font-weight:700; color:#f0d9e5; line-height:1.25; }
+  .jcc-ds{ font-size:10.5px; font-weight:600; color:#9a6a86; line-height:1.3; }
+  .jcc-dgold{ flex:none; display:flex; align-items:center; gap:5px; font-size:11px; font-weight:800; color:#ffc41f; }   /* GOLD = EARNED ONLY */
+  .jcc-dgold > i{ font-size:13px; }
+  .jcc-dchev{ flex:none; font-size:13px; color:#8a6d85; transform:rotate(-90deg); transition:transform .3s; }
+  .jcc-dive.jcc-dopen .jcc-dchev{ transform:rotate(0.001deg); }
+  .jcc-dbody{ overflow:hidden; max-height:0; transition:max-height .46s cubic-bezier(.22,.9,.3,1); }
+  .jcc-dive.jcc-dopen > .jcc-dbody{ max-height:var(--jccd,260px); }
+  .jcc-dbodyin{ padding:10px 2px 2px 38px; display:flex; flex-direction:column; gap:10px; }
+  .jcc-dline{ font-size:12px; font-weight:600; color:#c9a3b8; line-height:1.45; text-wrap:pretty; }
+  .jcc-pills{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .jcc-pill{ display:inline-flex; align-items:center; gap:6px; height:32px; box-sizing:border-box; border-radius:999px; border:2px solid #160510; box-shadow:0 3px 0 #160510; padding:6px 12px; margin:0; cursor:pointer; font-family:"Jost",sans-serif; font-size:12px; font-weight:800; color:#160510; }
+  .jcc-pill > i{ font-size:10px; color:#160510; }
+  .jcc-pill:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  .jcc-ghost{ display:inline-flex; align-items:center; gap:6px; height:28px; box-sizing:border-box; border-radius:999px; border:2px solid transparent; box-shadow:0 4px 0 #160510; padding:6px 12px; margin:0; cursor:pointer; font-family:"Jost",sans-serif; font-size:12px; font-weight:800; }
+  .jcc-ghost > i{ font-size:12px; }   /* border-colour = the own hue, fill = that hue at 12%, text/icon = the lightened hue — all three written inline by app.js */
+  .jcc-ghost:active{ transform:translateY(2px); box-shadow:0 1px 0 #160510; }
+  /* the line is look-only by default (#jrnyLine > * pointer-events:none); the card opts back IN, like the stones do */
+  #jrnyLine .jcc-face, #jrnyLine .jcc-drow, #jrnyLine .jcc-pill, #jrnyLine .jcc-ghost{ pointer-events:auto; }
   /* the open chapter-one stones (row h 138). The row's translateX rides the separate CSS `translate` PROPERTY, never
      transform — the cascade owns transform, and the frame's own composite:add has no CSS-keyframe equivalent. Same
      translate-not-transform idiom the home HUD labels already use (see wScrub). */
@@ -1908,7 +1971,7 @@
   .jl-next-in{ display:flex; flex-direction:column; align-items:center; gap:13px; }
   .jl-next-disc{ box-sizing:content-box; width:110px; height:110px; border-radius:50%; background:repeating-linear-gradient(45deg, #f5c343 0 14px, #b08a1e 14px 28px); border:4px solid rgba(255,236,170,.32); box-shadow:0 8px 0 rgba(70,45,0,.45), 0 0 58px rgba(255,196,31,.65); display:flex; align-items:center; justify-content:center; position:relative; animation:jlAlive 2.8s cubic-bezier(.22,.9,.3,1) infinite; }
   .jl-next-glint{ position:absolute; inset:-2px; border-radius:50%; overflow:hidden; pointer-events:none; }
-  .jl-next-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.55) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite; }
+  .jl-next-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.55) 50%, transparent 56%); transform:translateX(-135%) rotate(0.001deg); animation:jGlint 3.4s ease-in-out infinite; } /* the resting frame IS keyframe 0 — see JGLINTREST above */
   .jl-next-disc > i{ font-size:46px; color:#fff; }
   .jl-next-lab{ display:flex; flex-direction:column; align-items:center; gap:3px; }
   .jl-next-t{ font-family:"Baloo 2",sans-serif; font-size:20px; font-weight:800; color:#fff2f9; text-shadow:0 2px 6px rgba(0,0,0,.45); }
@@ -2134,7 +2197,7 @@
     mask:radial-gradient(circle at 50% 50%, #000 0, rgba(0,0,0,.75) 20%, rgba(0,0,0,.32) 36%, transparent 56%); }
   .jst-big > .jst-rays{ inset:-4px; }
   .jst-glint{ position:absolute; inset:-2px; border-radius:50%; overflow:hidden; pointer-events:none; }
-  .jst-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.55) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite; }
+  .jst-glint > span{ position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.55) 50%, transparent 56%); transform:translateX(-135%) rotate(0.001deg); animation:jGlint 3.4s ease-in-out infinite; }
   .jst-big > .jst-glint{ inset:-6px; }
   .jst-stone > i.jst-g{ position:relative; z-index:2; text-shadow:0 2px 4px rgba(0,0,0,.6), 0 0 11px rgba(0,0,0,.45); }
   /* the done coin — "green on ink" is the canon variant; z above the ring */
@@ -2146,7 +2209,21 @@
   .jsc-wrap{ width:300px; max-width:100%; position:relative; z-index:5; margin-top:4px; max-height:0; margin-bottom:-4px; overflow:hidden; opacity:0;
     transform:scale(.6) translateY(-18px); transform-origin:top center; pointer-events:none;
     transition:max-height .46s cubic-bezier(.22,.9,.3,1), margin-bottom .46s cubic-bezier(.22,.9,.3,1), transform .46s cubic-bezier(.34,1.56,.64,1), opacity .3s; }
-  .jsc-wrap.on{ max-height:var(--jsch,400px); margin-bottom:0; overflow:visible; opacity:1; transform:scale(1) translateY(0); pointer-events:auto; }
+  /* ===== THE OPEN CARD'S CLEARANCE (grep JSCARDROOM — David on device 2026-08-30: opening the now-stone's card "covers
+     the ch-1 banner below and runs off-screen; scrolling to see it triggers the pane handoff to home").
+     TWO GAPS, both layout, nothing that touches the scroll engine:
+     (1) THE CARD → NEXT ROW gap. At rest the wrap carries margin-bottom:-4px so a closed card takes no space at all; the
+         open state used to hand that straight back to 0, which butts the card's 22px shell and its 0 6px 0 sticker
+         shadow against the next row — on the last done stone, that next row IS the chapter-one TODAY banner. 20px is the
+         card's own bottom padding (16) plus its shadow (6), rounded to the line's rhythm: the shadow lands on sky, never
+         on the banner.
+     (2) THE ROOM UNDER IT. An open row also takes a 96px cushion, so the card's bottom is followed by a screen's worth of
+         quiet before anything else — you can read the whole card at the journey landing without pulling the column down
+         into the band where the magnet hands off to home. It is exactly the mechanism the card already uses (a row that
+         grows), applied below instead of above, and it exists only while a card is open, so the landing geometry at rest
+         is byte-identical to the shipped one. The LINE's own padding is untouched — designAudit locks it at 120/60. ===== */
+  .jsc-wrap.on{ max-height:var(--jsch,400px); margin-bottom:20px; overflow:visible; opacity:1; transform:scale(1) translateY(0); pointer-events:auto; }
+  .jst-row.jst-open{ padding-bottom:96px; }
   /* the tail: 28px square rotated 45°, BORDER-BOX (without it the bordered half bulges — the design's own fixed bug) */
   .jsc-tail{ position:absolute; top:-13px; left:50%; margin-left:-14px; width:28px; height:28px; z-index:2; box-sizing:border-box; transform:rotate(45deg); border-left:3px solid #160510; border-top:3px solid #160510; border-radius:5px 0 0 0; }
   .jsc-card{ position:relative; border:3px solid #160510; border-radius:22px; box-shadow:0 6px 0 #160510; padding:15px 16px 16px; display:flex; flex-direction:column; gap:9px; text-align:left; }
@@ -3987,7 +4064,14 @@
   @keyframes hearthFlick{ 0%,100%{ opacity:.55; } 42%{ opacity:.8; } 58%{ opacity:.45; } 71%{ opacity:.72; } }
   .hearth-glow{ position:absolute; left:50%; bottom:14%; width:340px; height:230px; transform:translateX(-50%); background:radial-gradient(50% 60% at 50% 100%, rgba(255,138,58,.34), rgba(255,95,40,.12) 55%, transparent 75%); animation:hearthFlick 2.8s ease-in-out infinite; pointer-events:none; }
   .mirror-sheen{ position:absolute; inset:0; background:linear-gradient(105deg, transparent 42%, rgba(200,180,230,.07) 49%, rgba(255,255,255,.10) 50%, rgba(200,180,230,.07) 51%, transparent 58%); pointer-events:none; }
-  #trackerFull.room-dusk::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(58,28,66,.30), rgba(120,62,74,.26)); pointer-events:none; z-index:0; } /* Base Camp at dusk — a tint on the existing Close, not a new surface */
+  /* Base Camp at dusk — a tint on the existing Close, not a new surface. QUARANTINED TO THE STAGE (grep PMDUSK, David
+     round 2 2026-08-30: the close "repaints the background to a different color across home, tools and journey — and it
+     sticks"). #trackerFull is the container for ALL of them, so an ::after at inset:0 on it is a full-app wash the
+     moment the class outlives the flow. `.tf-staged` is the positive statement that a guided stage is actually being
+     drawn — it is set and cleared by renderTrackerFull from TF_MODE, and every one-page world face (home · tools ·
+     journey) explicitly drops it and wears .tf-onehome instead. So a stale class can no longer paint anything: the tint
+     is now structurally unable to reach a JLINE surface, whatever forgets to remove it. */
+  #trackerFull.room-dusk.tf-staged::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(58,28,66,.30), rgba(120,62,74,.26)); pointer-events:none; z-index:0; }
 
   /* ============================================================
      R3 COMPASS ROSE (David 2026-07-21) — the 4-button bottom bar dies; home is the center of the world.
@@ -4696,6 +4780,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1410"></script>
+  <script src="app.js?v=1411"></script>
 </body>
 </html>

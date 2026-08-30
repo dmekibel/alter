@@ -1908,7 +1908,7 @@
   // @SEC:CAROUSEL — 3-pane slider (Planner | Journey | Game) + gesture arbitration.
   // @CONTRACT: PANE_GUARD below is a REGISTRY — every new interactive element (button, drag handle, slider, chip) MUST add its selector or the pane-swipe steals its horizontal gestures. Silent failure, only visible on device.
   // ===== 3-PANE CAROUSEL (David 2026-06-30): Apple-Photos finger-following slide between Planner | Journey | Game. The current pane + the incoming neighbour move TOGETHER under the thumb and snap on release — no crossfade, no mid-swipe redraw (that was the v679 jank). The planner's chrome (#nav + #liveDock) are separate fixed siblings, so the planner pane slides as a GROUP; journey/game carry their own chrome inside, so they slide as one element. Vertical scroll / pinch / taps still belong to the pane (we only hijack a committed HORIZONTAL gesture, and bail on a 2nd finger or an interactive target). =====
-  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov,.jr-zone,.jst-stone,.jsc-wrap"; // .jst-stone/.jsc-wrap (JSTONE 2026-08-30): the journey line's live stones and the open stone card — a finger on a stone or inside its card belongs to that card, never to the pane swipe. // .jr-zone (2026-08-28): the journey rail's 44px grab strip — a finger there belongs to the rail drag, never to the pane swipe. // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
+  var PANE_GUARD = ".ym-ov,.calblk,.grip,.gript,.calx,.live-stop,.jp-bub,.jp-durchip,.jp-ckbtn,.jp-hmbtn,.jc-cta,.ld-grab,.ld-stop,.ld-b,.ld-sw,input,textarea,button,.tf-chip,.scope-b,#joy,#gameNav,#gnToggle,.tf-axis-peek,.tf-axis-proxy,.sed-ov,.pk-ov,.pz-card,.pz-col,.pz-cell,.pz-cols,.pz-mgrid,.pz-save,.pz-trash,.pz-d,#groveSheet,#groveFlower,#groveCoins,.gv-road,.gv-row,.gv-card,#virtueSheet,#vrRelight,.vr-row,.vr-card,.vr-craft,.vr-pick,.vr-opt,#goalSheet,.go-row,.go-card,.go-carve,.go-in,.go-steps,#storeSheet,.st-tabs,.st-grid,.st-item,.ps-ov,.jr-zone,.jst-stone,.jsc-wrap,.jcc-face,.jcc-drow,.jcc-pill,.jcc-ghost,.jcc-body"; // .jcc-* (JCC 2026-08-30): the chapter card's face, its dive rows, its pills and the whole unfolded body — a finger on the card belongs to the card, never to the pane swipe. // .jst-stone/.jsc-wrap (JSTONE 2026-08-30): the journey line's live stones and the open stone card — a finger on a stone or inside its card belongs to that card, never to the pane swipe. // .jr-zone (2026-08-28): the journey rail's 44px grab strip — a finger there belongs to the rail drag, never to the pane swipe. // .sed-ov/.pk-ov (2026-07-27): the Session Editor + Activity Picker are their OWN full-screen surfaces with horizontal rails and a drag-to-reorder list — the pane swipe must never take a finger inside them. .pz-* (2026-08-03): the W/M plan-mode board — its picker cards and day wells are drag-to-place targets, so a horizontal finger there belongs to the drag, never to the carousel. #grove*/.gv-* (2026-08-12): the grove sheet sits over the game pane and THE ROAD is a horizontal snap-scroller — a finger inside it belongs to the ladder, never to the pane swipe
   var PANE_ORDER = ["planner", "journey", "game"];
   // Day 4 (David 2026-07-02, EPIC-AUDIT): simpleMode clamps the carousel to Journey|Game — she never swipes into the planner. curPaneName() defensively redirects "planner" to "journey" if simpleMode is on (boot always lands on journey; this is just a safety net for that invariant).
   function activePaneOrder() { return (S.profile && S.profile.simpleMode) ? ["journey", "game"] : PANE_ORDER; }
@@ -4031,6 +4031,15 @@
     tfCatchUpClose(); // any render clears the card first; only the idle branch re-adds it while the claim state holds
     if (tile) { tile.style.border = ""; tile.onclick = null; tile.style.cursor = ""; tile.style.removeProperty("background"); tile.style.removeProperty("color"); } // reset off-plan border + any prior tap wiring before a state re-paints the disc. removeProperty (not = "") because the idle-with-a-plan disc paints its stripes !important to beat the tf-home pink — a plain reassignment in another face would lose to it.
     tf.classList.remove("st-onplan", "st-break", "st-off", "st-idle", "st-claim", "st-night", "st-upnext", "tf-nextsheet", "tf-home", "tf-onehome", "tf-2c", "tfh-cardopen"); // ONE-HOME: clear the shared frame class too (HOME 2c rides on tf-2c, re-added by the calm faces only); each full-screen face re-adds it via renderHomeFrame(). st-upnext (FP3 §2b) is an idle SUB-state and must never survive into another face.
+    // …AND THE DUSK TINT DIES WITH THE STAGE (grep PMDUSK — David round 2, 2026-08-30: closing the day "repaints the
+    // background to a different color across home, tools and journey — and it sticks"). `room-dusk` is the Base Camp
+    // dusk wash (ROOMS v1, §6): enterStage("pm") puts it on #trackerFull and ONLY exitStage takes it off — so every way
+    // out of the close that is not the commit door (the pane swipe, the puck, a re-render, backing out) left a
+    // full-surface ::after tint sitting on the container that holds home, the tools and the whole journey line. Cleared
+    // here, on the one dispatcher every full-screen face passes through, so it cannot outlive the face that set it.
+    // The close flow itself is untouched: enterStage still paints it, exitStage still clears it, and the CSS below now
+    // also refuses to render it anywhere but a staged cockpit — a mechanism, not a promise.
+    if (TF_MODE !== "pm") tf.classList.remove("room-dusk");
     document.body.classList.remove("home-pane"); // HOME-AS-PANE (David 2026-07-20): only the idle-home face re-adds this → the bottom nav lifts ABOVE the cockpit so home "contains the buttons"; every other cockpit face (tracking/guided/claim/night) keeps the full overlay
     renderTrackTools(false); // default hidden; regulation-tool row retired from every face (DECLUTTER 2026-07-21) — kept as a no-op guard so the row never leaks back onto a tracking face
     var _tns0 = el("tfNextSheet"); if (_tns0) _tns0.style.display = "none"; // only the idle-with-plan branch re-shows the docked time sheet
@@ -5830,6 +5839,7 @@
       wPut(bars, "transform", fp > 0 ? ("translateY(" + (-10 * fp).toFixed(1) + "px)") : "");
     }
     try { jrScrub(); } catch (e) {} // THE JOURNEY RAIL rides here too (grep JRAIL): it is a fifth overlay, so it belongs on the one scrub the one scroll listener already runs — never on a watcher of its own
+    try { jsPaneScrub(dev, vh); } catch (e) {} // …and so does the open stone card's pane-leave law (grep JSCARDGEOM): leaving the journey closes it. A single class removal behind an `if (_jsOpen)` guard — no layout read, no scroll write, nothing added to the listener
   }
   // ---- THE ONE SCROLL LISTENER: velocity + direction + the fling catch, then the three scrubs, then the settle timer. ----
   function onWorldScroll() {
@@ -6132,15 +6142,22 @@
     jlAdd(row, "span", "jl-div-rule", "background:" + accent + "33;");
     return row;
   }
+  // THE TODAY BANNER *IS* THE CHAPTER CARD (Round 26 canon `7b`, ported 2026-08-30 — the recipe and the body it unfolds
+  // live in the JCC region below). The row's shell keeps the 18px radius + sticker shadow it always had and now also
+  // carries the hue-washed BODY ground; the FACE is a button inside it wearing the chapter-hue lattice. The old trailing
+  // ti-sparkles is replaced by the design's chevron — 7b is the canon for this surface, and the glyph it draws is a chevron.
   function jlToday(ch, name) {
     var row = document.createElement("div"); row.className = "jl-today";
     row.dataset.jch = ch;                                     // the RAIL's detent table reads the chapters off the line itself (jrDetents), never off the rendered text — a kicker reword must never move a landing
-    var card = jlAdd(row, "div", "jl-today-card");
-    jlAdd(jlAdd(card, "span", "jl-today-glint"), "span", "jl-fx");
-    var mid = jlAdd(card, "span", "jl-card-mid");
+    var card = jlAdd(row, "div", "jl-today-card", "--jcch:" + jccHue(ch) + ";"); // the ONE value app.js writes here: the chapter's hue. Every px/hex of the 7b recipe lives in .jcc-* (index.html).
+    var face = jlAdd(card, "button", "jcc-face"); face.type = "button";
+    jlAdd(jlAdd(face, "span", "jl-today-glint"), "span", "jl-fx");
+    var mid = jlAdd(face, "span", "jl-card-mid");
     jlAdd(mid, "span", "jl-today-kick").textContent = tr("TODAY \u00b7 CHAPTER") + " " + ch;
     jlAdd(mid, "span", "jl-today-name").textContent = tr(name);
-    jlAdd(card, "i", "ti ti-sparkles jl-today-ico");
+    jlAdd(face, "i", "ti ti-chevron-down jcc-chev");
+    card.appendChild(jccBody(ch));
+    face.onclick = function (e) { if (e) e.stopPropagation(); jccToggle(row); };
     return row;
   }
   function jlStone(icon, label, tx, hue, glow) {
@@ -6190,7 +6207,7 @@
   // glisten phase were reverse-derived from all 104 frame stones and reproduce every one of them exactly (checked against
   // recipes/row-table.json), which is the only reason the same generator is allowed to run past chapter 17. k = the
   // stone's index along the whole line, so the shine travels UP it one stone at a time instead of flashing in lockstep.
-  function jlLockedStone(c, icon, tx, k) {
+  function jlLockedStone(c, icon, tx, k, j) {
     var row = document.createElement("div"); row.className = "jl-lstone-row";
     row.style.translate = tx + "px 0";
     var jd = -((k * 1.7) % 12);                                          // frame: 0.0, -1.7, -3.4 … wrapping at 12s
@@ -6220,27 +6237,31 @@
       }
       return out;
     }
-    var ray = jlIsRay(c);                                               // "the stones themselves need to spin too, also slowly" (David 2026-08-27)
-    var st = jlAdd(row, "span", "jl-lstone jl-fx" + (ray ? " jl-rayst" : ""), (ray ? "" : jlTexFor(c.tex)) + jit);
-    if (ray) {
-      // A STONE CANNOT SPIN ITS OWN BACKGROUND — rotating the element would carry the icon round with it. So the fill
-      // moves onto a layer of its own that turns underneath a still glyph. The wash rides WITH it (a uniform sheet looks
-      // identical at every angle), and a square of the circle's own diameter is enough at any rotation, because a
-      // square's inscribed circle does not change when you turn it. DOM order carries the paint order here: texture,
-      // then the icon (positioned, so it lifts above the texture), then the glisten sweeping over both — which is the
-      // same stacking the non-ray stones have always had.
-      // …and a NEGATIVE delay so it is already mid-turn when you arrive (David: "it should already feel like it's already
-      // spinning once you arrive at it"). Rows wake with `animation:none` lifted, which restarts the keyframes from 0deg
-      // — visible as a start. Seeding each chapter at its own offset means a stone is never caught at the top of its
-      // cycle, exactly the trick the glisten's phase chain already uses.
-      jlAdd(st, "span", "jl-lstone-tex jl-fx", jlTexFor(c.tex) + "animation-delay:-" + (((c.ch * 17) % 110) + 3) + "s;");
-      jlAdd(st, "span", "jl-lstone-sheen");
-      jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
-      jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
-      return row;
-    }
-    jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;");
-    jlAdd(st, "i", "ti ti-" + icon, "color:" + c.ic + ";");
+    // ===== A STONE'S ROCK NEVER ANIMATES (grep JSTATIC). David on device 2026-08-30: chapters 9 · 11 · 12 · 23 go
+    // "rounded octagon, spinning rays, little circle, icon gone — FINE UNTIL THE ANIMATION STARTS". That sentence is the
+    // whole diagnosis. The ray path used to hang the fill on `.jl-lstone-tex`, a SQUARE layer at inset:-4px carrying
+    // `mSpin`, inside a circular `overflow:hidden` clip. WebKit promotes an animating layer and rasterizes it at its
+    // CLIPPED bounds — an axis-aligned box — so once the layer turns, its corners fall outside the pixels that were ever
+    // painted and get cut at 45°: that IS the "rounded octagon", and it is the same compositing fact the gates' own
+    // repeating-radial family was rewritten for (jlIsRRad). Nothing about it is fixable by re-layering, because the
+    // rotation is the thing that destroys the backing store.
+    // THE RULE, and it is absolute (the 2026-08-30 fix spec): rock patterns are STATIC. No drift, no spin, no glint on a
+    // stone's rock layer, ever — breathing may animate transform/scale and nothing else. So the six ray chapters take the
+    // ordinary path: the texture is painted ON the stone, where the painted box is its own clip and there is no outside
+    // to slide or turn in. SUPERSEDES David's 2026-08-27 "the stones themselves need to spin too" — his newer device
+    // verdict names the spin as the breakage, and the newer word wins (FRAME-WINS ORDER, rule 1). `jlIsRay`, `mSpin`,
+    // `.jl-lstone-tex` and `.jl-rayst` all stay: the GATES still spin (a banner is a rectangle, not a clipped circle),
+    // and that is the only surface that ever needed it.
+    var st = jlAdd(row, "span", "jl-lstone jl-fx", jlTexFor(jsRockAt(c.tex, 74)) + jit);   // JSROCKFIT: the banner pattern, fitted to this 74px circle — an out-of-box anchor re-centred, a full-bleed ramp fitted inside the disc, a big tile scaled to a field
+    jlAdd(jlAdd(st, "span", "jl-lstone-pass jl-glis"), "span", "jl-fx", "animation:mPass " + pd + "s ease-in-out infinite;animation-delay:" + gd.toFixed(2) + "s;"); // the glisten is an OVERLAY sweep, not the rock: it composites above the fill and has never been part of a symptom
+    // …AND THE GLYPH KEEPS A HUE (David 2026-08-30: "I thought we established the icons have multicolor"). The frame's
+    // six dark inks (JL_INK, still live for anything that wants them) read as de-hued under the locked wash, and the
+    // canon is explicit — "glyph stays visible above the wash, never glyph-less" and never colourless. So a locked stone
+    // wears one of the seven CANON TYPE HUES, dealt by its own position in the chapter and run through Round 28's
+    // per-chapter override table, exactly like a live stone: every hex is David's, the per-chapter corrections he tuned
+    // still apply, and each chapter's ladder reads as the multicolour set he is asking for. The wash stays a background
+    // layer UNDER the glyph, unchanged, at the depth he already approved.
+    jlAdd(st, "i", "ti ti-" + icon, "color:" + jsHueK(JS_HKORD[((c.i0 || 0) + (j || 0)) % JS_HKORD.length], c.ch) + ";");
     return row;
   }
   // ===== JSTONE — THE LIVE STONES + THE STONE CARD (grep anchor JSTONE). Round 27 canon `6f` (hued glyphs on the chapter
@@ -6295,8 +6316,64 @@
     35: { "cards": "#9a4dff" },
     36: { "player-play-filled": "#f2c258", "cards": "#c98aff" }
   };
+  // the seven hue keys Round 28's table tunes, and their base hues — ONE table, so a stone, a dive coin and a locked
+  // glyph can never disagree about what "the worksheet green" is. Every hex is the canon's own (README turn 8).
+  var JS_HK = { "lungs": "#ff4fa0", "player-play-filled": "#ffc83d", "scribble": "#34d39a", "map-2": "#36b3f0", "moon-stars": "#ff5fa0", "cards": "hsl(272 100% 78%)", "leaf": "#2ab8c4" };
+  var JS_HKORD = ["lungs", "player-play-filled", "scribble", "map-2", "moon-stars", "cards", "leaf"];
+  function jsHueK(hk, ch) { var o = JS_OVR[ch]; return (o && o[hk]) || JS_HK[hk] || "#ff4fa0"; }
   function jsHue(t, ch) { var o = JS_OVR[ch]; return (o && o[t.hk]) || t.hue; }
-  function jsRock(ch) { var tex = JL_TEX[Math.max(0, Math.min(JL_TEX.length - 1, (ch || 1) - 1))]; return JS_SOFT + ", " + tex; } // the chapter's own texture, straight off the app's existing table (never re-typed from the handoff)
+  // ===== THE STONE NORMALIZER (grep JSROCKFIT) — David on device 2026-08-30: chapters 7 · 18 · 26 · 34 read as an
+  // "empty/black top" on a stone, and 33 as "only two stripes". THE CLASS, NOT THE CHAPTERS: JL_TEX is a table of BANNER
+  // patterns. Every one of them was drawn for a 362x62 card, and a banner's geometry does not survive being poured into
+  // a 74-126px circle. Two facts, and each names one of the two symptoms:
+  //   (a) AN ANCHOR OUTSIDE THE BOX. ch7/18/34 centre their ellipse `at 50% 130%`, ch26 `at 50% 178%`, ch21 `at 50% 118%`,
+  //       ch23 its conic `at 4% 50%`. On a wide short banner that anchor sits just off the bottom edge and you read the
+  //       arcs' broad sweep; on a circle the centre is a stone-and-a-half away, so the TOP of the disc lands in whichever
+  //       band happens to fall there — a `transparent` one, i.e. the bare base colour. That IS the "empty/black top".
+  //   (b) A FULL-BLEED RAMP ON A CIRCLE. ch33/24/4 are single `linear-gradient`s whose stops are PERCENTAGES of the
+  //       gradient line, so the outermost facets live in the box's CORNERS — which `border-radius:50%` throws away.
+  //       Seven facets become "only two stripes".
+  // THE RULE is the fix spec's own two operations and nothing more: re-centre an out-of-box anchor onto the stone's own
+  // centre, fit a percentage ramp into the circle's inscribed span, and scale a px `background-size` TILE down so a small
+  // circle shows a field of it instead of two cells. Colours, angles, layer order, and every px-stop repeating gradient
+  // (the pinstripes, the facet stripes, the dust fields' own stops) are David's and stay untouched, byte for byte.
+  // Banners keep the RAW texture — a 362px card is the pattern's native home and nothing here runs on that path.
+  var JS_ANCH = /\bat\s+(-?[\d.]+)%\s+(-?[\d.]+)%/;                 // `at X% Y%` — the only anchor form in the whole table
+  function jsFitNum(s, f) { return String(s).replace(/(-?[\d.]+)px/g, function (m, n) { return (Math.round(+n * f * 100) / 100) + "px"; }); }
+  function jsFitLayer(L) {
+    // (a) RE-CENTRE. 15/85 rather than 0/100: an anchor at 4% or 118% is a banner decision, one at 64% 46% is a designed
+    // off-centre highlight that reads fine on a disc, and the band between them is where that line actually falls.
+    var m = JS_ANCH.exec(L);
+    if (m && (+m[1] < 15 || +m[1] > 85 || +m[2] < 15 || +m[2] > 85)) L = L.replace(JS_ANCH, "at 50% 50%");
+    // (b) FIT THE RAMP. A NON-repeating linear-gradient with % stops paints across the whole gradient line, whose length
+    // on a square box is d·(|sinA|+|cosA|) — but only the middle `d` of it survives the circle. Map the design's 0→1 onto
+    // that visible window and every facet lands inside the disc. Vertical/horizontal ramps have a factor of 1 and are
+    // untouched by construction, which is why ch24's 180deg column comes out identical.
+    if (/^linear-gradient\(/.test(L) && /[\d.]+%/.test(L)) {
+      var a = /^linear-gradient\(\s*(-?[\d.]+)deg/.exec(L), A = a ? (+a[1]) * Math.PI / 180 : Math.PI;
+      var span = Math.abs(Math.sin(A)) + Math.abs(Math.cos(A));
+      if (span > 1.001) {
+        var lo = (1 - 1 / span) / 2, k = 1 / span;
+        L = L.replace(/([\d.]+)%/g, function (mm, p) { return (Math.round((lo + (+p / 100) * k) * 1000) / 10) + "%"; });
+      }
+    }
+    return L;
+  }
+  function jsRockAt(tex, px) {
+    var parts = String(tex).split(";"), head = parts[0], out = "";
+    var L = jlTexLayers(head);
+    for (var i = 0; i < L.length; i++) out += (i ? ", " : "") + jsFitLayer(L[i]);
+    // (c) THE TILE. Four chapters carry their own px `background-size` (6 · 13's dot fields, 10 · 27's checkers). A 46px
+    // tile on a 74px stone is two cells and a crop; a third of the diameter is a FIELD, which is what the banner shows.
+    // Never scaled UP — a pattern already finer than that is left exactly as drawn. The `background-position` that IS the
+    // checkerboard (10 · 27) rides the same factor, or the two squares would stop interlocking.
+    var big = 0, j;
+    for (j = 1; j < parts.length; j++) if (/^\s*background-size/i.test(parts[j])) (parts[j].match(/([\d.]+)px/g) || []).forEach(function (v) { big = Math.max(big, parseFloat(v)); });
+    var f = big > 0 ? Math.min(1, (px / 3) / big) : 1;
+    for (j = 1; j < parts.length; j++) { var s = parts[j].trim(); if (!s) continue; out += ";" + (f < 1 ? jsFitNum(s, f) : s); }
+    return out;
+  }
+  function jsRock(ch, px) { var tex = JL_TEX[Math.max(0, Math.min(JL_TEX.length - 1, (ch || 1) - 1))]; return JS_SOFT + ", " + jsRockAt(tex, px || 84); } // the chapter's own texture, straight off the app's existing table (never re-typed from the handoff), fitted to the circle it is about to be poured into
   // WHICH TYPE A LIVE NODE IS. Keyed off the node's own key — the same keys jpNodes() emits and drawJourney's ladder reads
   // — so a new node kind lands on a deliberate type rather than on whatever its title happens to contain.
   function jsMinsOf(n) { try { var d = jpDurations(n); return (d && d.length) ? d[0] : 0; } catch (e) { return 0; } }
@@ -6335,13 +6412,31 @@
     return { t: tr("Start") + suf, i: "player-play-filled" };
   }
   var _jsOpen = null;   // the ONE open card's row (only the open stone wears the selection ring)
+  // ===== AN OPEN CARD OWNS HEIGHT, SO IT OWNS THE ANCHORS (grep JSCARDGEOM — David on device 2026-08-30: with a card
+  // open, "home and tools are displaced, with empty space"). THE ROOT CAUSE IS THE ANCHOR CACHE, not the card. The three
+  // landings live in `_wAnchor`, computed once from worldHomeTarget() and reused until something says otherwise (see
+  // wAnchorsDirty) — and opening a card grows a row INSIDE the sky, which moves the home zone down by exactly the card's
+  // height. The cache never heard about it, so the magnet kept parking the column at the OLD home y: a landing that is
+  // now one card-height ABOVE the real home seam, which renders as the tail of the journey plus a band of empty sky
+  // above the board. Every open, every close, both cards: tell the cache. One assignment, no layout read, no scroll write.
+  function jsGeomDirty() { try { wAnchorsDirty(); } catch (e) {} }
   function jsCloseCard(row) {
     var r = row || _jsOpen; if (!r) return;
     var w = r.querySelector(".jsc-wrap"); if (w) w.classList.remove("on");
     r.classList.remove("jst-open");
     var st = r.querySelector(".jst-stone"); if (st) st.classList.remove("jst-sel");
     if (_jsOpen === r) _jsOpen = null;
+    jsGeomDirty();
   }
+  // …AND LEAVING THE JOURNEY CLOSES IT (David's verdict, 2026-08-30): "return shows it closed, heights restored". Driven
+  // from wScrub — the ONE scrub the ONE scroll listener already runs — so this adds no listener and writes no scrollTop
+  // (the v1397 one-engine rule). THE THRESHOLD IS A DEPARTURE, NOT AN ARRIVAL, and that is deliberate: a card can only be
+  // opened at the landing (dev ≈ one viewport), so firing at 0.9 of a viewport means the collapse begins in the first
+  // ~90px of downward travel, while the card is still ON SCREEN. Its own .46s settle then reads as the card closing
+  // behind you — which is the design's own animation — instead of a height change happening above the fold, where the
+  // same collapse would shift the whole world under a moving finger. By the time home arrives the heights are restored
+  // and the anchors have been recomputed.
+  function jsPaneScrub(dev, vh) { if (_jsOpen && dev < vh * 0.9) jsCloseCard(); }
   // OPEN/CLOSE. The ONLY layout write is the card's own max-height inside the row — nothing writes scrollTop, nothing
   // touches the column's padding, and nothing listens to the scroller (SCROLL LAW, the v1397 one-engine rule).
   function jsToggleCard(row) {
@@ -6356,6 +6451,7 @@
     row.classList.add("jst-open");
     var st = row.querySelector(".jst-stone"); if (st) st.classList.add("jst-sel");
     _jsOpen = row;
+    jsGeomDirty();
   }
   // ---- the card (Round 27 turn 8, per-type tinted). 300w · mix(hue 12%, #2c081a) · 3px #160510 · r22 · 0 6px 0 · pad 15 16 16.
   function jsCard(n, ty, hue) {
@@ -6393,7 +6489,7 @@
     var row = document.createElement("div"); row.className = big ? "jl-next jst-row" : "jl-stone jst-row";
     if (!big) row.style.translate = (JL_TXC[(_jsTx++) % 8]) + "px 0";   // the frame's own zig-zag, on `translate` so the cascade keeps `transform`
     var col = jlAdd(row, "div", big ? "jl-next-in" : "jl-stone-in");
-    var st = jlAdd(col, "button", (big ? "jl-next-disc jl-fx jst-big" : "jl-disc") + " jst-stone", "background:" + jsRock(JS_CH_NOW) + ";--jsring:linear-gradient(180deg, " + hue + ", " + hue + " 50%, color-mix(in srgb, #160510 14%, " + hue + "));");
+    var st = jlAdd(col, "button", (big ? "jl-next-disc jl-fx jst-big" : "jl-disc") + " jst-stone", "background:" + jsRock(JS_CH_NOW, big ? 118 : 84) + ";--jsring:linear-gradient(180deg, " + hue + ", " + hue + " 50%, color-mix(in srgb, #160510 14%, " + hue + "));"); // the rock is FITTED to this stone's own diameter (JSROCKFIT): the resting 84 trail disc and the 118 now-stone, the two sizes the rock is actually painted at (the selected 126 is the same element grown by 8px of ring, not a repaint)
     st.type = "button";
     jlAdd(st, "span", "jst-ring");
     jlAdd(st, "span", "jst-bev");
@@ -6445,6 +6541,175 @@
     for (var r = 0; r < rest.length; r++) rows.push(jsStoneRow(rest[r], false));
     return rows;
   }
+  // ===== JCC — THE CHAPTER CARD (grep anchor JCC). Round 26 canon `7b` ("Mini chapters"). Source of truth:
+  // _design-sync/stones-build-2026-08-30/design_handoff_chapter_card/ — README.md is the spec, `Round 26 - The Chapter
+  // Card.dc.html` #7b is the running artifact (LAW 8: it was OPENED and MEASURED, not read — every number below and in the
+  // .jcc-* block came off the live prototype: shell 362 wide / r18 / `0 5px 0 #160510, 0 0 24px rgba(0,0,0,.3)`, face
+  // 62.41 tall at pad 13 15, body pad 13 14 gap 12, dive row 32 tall, fold pad `10px 2px 2px 38px`).
+  //   WHAT IT IS: the line's TODAY banner unfolds in place into the chapter's why-line, its DEEP DIVES (each dive its own
+  //   mini chapter that unfolds too — several may be open at once) and nothing else. The why-text is PLAIN and always
+  //   visible when the card is open; it has no toggle of its own. That is 7b's whole verdict.
+  //   THE PIN + THE SCROLL LAW, identical to JSTONE's: the body grows INSIDE the banner's own row, and the banner is the
+  //   second row from the FOOT of a normal-flow column, so only the BOOK ONE divider below it moves. Nothing writes
+  //   scrollTop, no listener is added to the scroller, and `overflow-anchor:none` on #jrnyLine already keeps a
+  //   scroll-anchoring browser from "correcting" the growth away. Child-append only — no innerHTML wipe (ratchet law).
+  //   THE CAPS, AND WHY THEY ARE MEASURED: `max-height` cannot animate to `auto` (the design's own fixed bug), so every
+  //   collapsible needs a REAL pixel cap — but a hard-coded one clips the moment a why-line or an idea runs long. So the
+  //   cap is read off the content (jccSetCaps); the design's own 980px / 260px stay in index.html as the fallbacks.
+  var JCC_HUE = "#8a5cf0";   // the head chapter's own hue, verbatim from JL_TEX[0]'s `linear-gradient(115deg, #8a5cf0, #6a3fd0)` — the same hue the banner's face has always painted. OWED (one line, with the why-table below): the 36-chapter canon carries no per-chapter face hue, so this is a constant for exactly as long as JS_CH_NOW is.
+  function jccHue(ch) { return JCC_HUE; }
+  // WHICH CHAPTER'S WORDS. The line is titled off the 36-chapter canon (JL_NAME) but the only per-chapter PROSE the app
+  // owns is the 8-landmark arc (JP_CHAPTERS / JP_LESSON / WS_REG). JS_CH_NOW's law is that one number titles the banner,
+  // colours the stones AND names the card — so the card reads the same index, clamped. GAP, flagged to David: the 36
+  // chapters have names and textures but no why-lines and no dives; this card is honest for chapter 1 and needs a
+  // 36-chapter prose table before JS_CH_NOW can ever move.
+  function jccChapterIdx() { return Math.max(0, Math.min(JP_CHAPTERS.length - 1, JS_CH_NOW - 1)); }
+  // ---- THE WHY-LINE'S BOLDED KEYWORDS, IN MEANING HUES. The design authors 1-2 per chapter by hand; the app has no
+  // per-chapter keyword table, so they are found MECHANICALLY instead of invented: any word the app's OWN registry already
+  // gives a meaning to (the five supercategories minus "Other", the eight domains minus "Drift") is bolded in that entry's
+  // own registry hue, first two, never overlapping. A why-line with no registry word renders plain — the honest degrade.
+  // Colours come only from the registry (DESIGN AUTHORITY LAW 4); no word is added, removed or reworded.
+  var _jccKeys = null;
+  function jccKeyMap() {
+    if (_jccKeys) return _jccKeys;
+    var m = [];
+    try { SUPERCAT.forEach(function (c) { if (c.k !== "other") m.push([c.l, c.c]); }); } catch (e) {}
+    try { Object.keys(DOM).forEach(function (k) { if (k !== "drift") m.push([DOM[k].l, DOM[k].c]); }); } catch (e) {}
+    _jccKeys = m; return m;
+  }
+  function jccWhyInto(host, s) {
+    var map = jccKeyMap(), hits = [];
+    for (var i = 0; i < map.length; i++) {
+      var mt = null;
+      try { mt = new RegExp("\\b" + map[i][0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").exec(s); } catch (e) {}
+      if (mt) hits.push({ at: mt.index, len: mt[0].length, c: map[i][1] });
+    }
+    hits.sort(function (a, b) { return a.at - b.at; });
+    var use = [], end = -1;
+    for (var h = 0; h < hits.length && use.length < 2; h++) { if (hits[h].at > end) { use.push(hits[h]); end = hits[h].at + hits[h].len - 1; } }
+    var p = 0;
+    for (var u = 0; u < use.length; u++) {
+      if (use[u].at > p) jlAdd(host, "span").textContent = s.slice(p, use[u].at);
+      jlAdd(host, "b", "jcc-key", "color:" + use[u].c + ";").textContent = s.slice(use[u].at, use[u].at + use[u].len);
+      p = use[u].at + use[u].len;
+    }
+    if (p < s.length) jlAdd(host, "span").textContent = s.slice(p);
+  }
+  // ---- THE DIVES ARE REAL OR THEY ARE NOT THERE (no empty scaffolding, no invented content). The app has NO per-chapter
+  // dive library — no theory clips, no lengths, nothing to say "Play · 4m" about. The two go-deeper items a chapter
+  // actually owns are its GUIDE (JP_LESSON: a headline + the idea, opened by chapterSheet — the same door the old trail's
+  // banner opens) and its guided WORKSHEET (WS_REG: a real run through runWorksheet, a real done-flag in wsDone). Both are
+  // rendered from their own data; nothing is added to reach the design's four rows.
+  //   NO "Add to calendar" GHOST THIS ROUND, and the reason is not that a path is missing: addSuggested(k, {title, mins,
+  //   domain}) lands a block on the day in ONE call. Neither dive carries a real DURATION, so every ghost tap would put a
+  //   guessed length on David's real timeline. Flagged rather than guessed.
+  var _jccDiveErr = 0;
+  function jccDives(ci) {
+    try { return jccDivesRaw(ci); }
+    catch (e) { if (!_jccDiveErr) { _jccDiveErr = 1; try { console.warn("[alter] JCC: the chapter's dive data threw — the card opens on its why-line alone", e); } catch (e2) {} } return []; } // a content failure must never take the 272-row line down with it
+  }
+  function jccDivesRaw(ci) {
+    var out = [], les = JP_LESSON[ci], ws = wsFor(ci);
+    // THE ROW IS COIN-HEIGHT (32) AND THE SUBLINE IS A PHRASE, never a sentence — every subline in the prototype is four
+    // to six words. JP_LESSON's headline is a full sentence, so it goes INSIDE the fold as the hook it is, above the idea;
+    // the row keeps its title alone and its designed rhythm. Nothing is dropped and nothing is reworded.
+    if (les && les.idea) out.push({
+      ic: "flask", gs: 14, hue: DOM.focus.c,                              // the prototype's own first-dive coin: ti-flask at 14px on the focus blue
+      t: tr("The idea"), s: "", lines: [les.headline ? tr(les.headline) : "", tr(les.idea)],
+      done: false, verb: tr("Open"), vi: "arrow-right",
+      act: function () { try { chapterSheet(ci); } catch (e) {} }
+    });
+    if (ws) {
+      var wd = wsDone(ws.id), b0 = (ws.beats || [])[0] || {};
+      out.push({
+        ic: String(ws.ic || "ti-scribble").replace(/^ti-/, ""), gs: 12,   // the worksheet's OWN glyph; its hue is the stone canon's worksheet type, run through Round 28's per-chapter table so a dive coin and a worksheet stone can never disagree
+        hue: jsHue(JS_TYPE.worksheet, JS_CH_NOW),
+        t: tr(ws.title), s: b0.sub ? tr(b0.sub) : "", lines: [b0.say ? tr(b0.say) : ""],
+        done: wd, verb: wd ? tr("Again") : tr("Open"), vi: wd ? "rotate-clockwise" : "arrow-right",
+        act: function () { try { runWorksheet(ws); } catch (e) {} }
+      });
+    }
+    return out;
+  }
+  function jccBody(ch) {
+    var ci = jccChapterIdx(), chp = JP_CHAPTERS[ci];
+    var body = document.createElement("div"); body.className = "jcc-body";
+    var inn = jlAdd(body, "div", "jcc-bodyin");
+    if (chp && chp.why) { var wsp = jlAdd(inn, "span", "jcc-why"); try { jccWhyInto(wsp, tr(chp.why)); } catch (e) { wsp.textContent = tr(chp.why); } } // the emphasis is a nicety; the sentence is not
+
+    var dives = jccDives(ci);
+    if (dives.length) {                                        // no dives → no kicker and no rule: the section simply is not there
+      jlAdd(inn, "span", "jcc-rule");
+      jlAdd(inn, "span", "jcc-kick").textContent = tr("DEEP DIVES");
+      var list = jlAdd(inn, "div", "jcc-dives");
+      for (var i = 0; i < dives.length; i++) list.appendChild(jccDive(dives[i]));
+    }
+    // THE CARD LINE IS NOT DRAWN, and that is a content gap, not an omission of taste: the design's quiet closer promises
+    // a chapter COLLECTIBLE CARD minted by stones, and the app's only mint is the six global BADGES (badgeTick/mintCard) —
+    // nothing per chapter, no "N more stones" to count. Printing the line would promise a thing the app cannot do.
+    return body;
+  }
+  function jccDive(d) {
+    var wrap = document.createElement("div"); wrap.className = "jcc-dive";
+    var row = jlAdd(wrap, "button", "jcc-drow"); row.type = "button";
+    var coin = jlAdd(row, "span", "jcc-coin", "background:" + d.hue + ";");
+    jlAdd(coin, "i", "ti ti-" + d.ic, "font-size:" + d.gs + "px;");
+    var tx = jlAdd(row, "span", "jcc-dtx");
+    jlAdd(tx, "span", "jcc-dt").textContent = d.t;
+    if (d.s) jlAdd(tx, "span", "jcc-ds").textContent = d.s;
+    if (d.done) { var g = jlAdd(row, "span", "jcc-dgold"); jlAdd(g, "i", "ti ti-check"); jlAdd(g, "span").textContent = tr("done"); } // GOLD = EARNED ONLY (DS law); an unfinished dive shows nothing here, because the app has no length to print
+    jlAdd(row, "i", "ti ti-chevron-down jcc-dchev");
+    var fold = jlAdd(wrap, "div", "jcc-dbody"), fi = jlAdd(fold, "div", "jcc-dbodyin");
+    for (var i = 0; i < (d.lines || []).length; i++) if (d.lines[i]) jlAdd(fi, "span", "jcc-dline").textContent = d.lines[i];
+    if (typeof d.act === "function") {
+      var pills = jlAdd(fi, "div", "jcc-pills");
+      // A DONE DIVE HAS NO PRIMARY — only the ghost (done is celebrated, never re-demanded). That is the design's rule and
+      // it is also the app's: jsVerb already answers "Again" for a finished node.
+      var btn = jlAdd(pills, "button", d.done ? "jcc-ghost" : "jcc-pill",
+        d.done ? ("border-color:" + d.hue + ";background:color-mix(in srgb, " + d.hue + " 12%, transparent);color:" + mixHex(d.hue, "#ffffff", 0.4) + ";")
+               : ("background:" + d.hue + ";"));
+      btn.type = "button";
+      jlAdd(btn, "i", "ti ti-" + d.vi);
+      jlAdd(btn, "span").textContent = d.verb;
+      btn.onclick = function (e) { if (e) e.stopPropagation(); try { d.act(); } catch (er) {} };
+    }
+    row.onclick = function (e) { if (e) e.stopPropagation(); jccToggleDive(wrap); };
+    return wrap;
+  }
+  // THE CAPS. A collapsed fold still lays its inner div out at full height (overflow:hidden clips the PAINT, not the
+  // child's box) — the same measurement jsToggleCard already relies on. `pend`/`pendOpen` let a dive be measured with its
+  // NEXT state applied on paper, so the DOM is never put through an intermediate style that the transition could snap on.
+  function jccSetCaps(row, pend, pendOpen) {
+    var body = row.querySelector(".jcc-body"), inn = row.querySelector(".jcc-bodyin"); if (!body || !inn) return;
+    var folds = row.querySelectorAll(".jcc-dbody"), rendered = 0, target = 0;
+    for (var i = 0; i < folds.length; i++) {
+      var host = folds[i].parentNode, kid = folds[i].firstElementChild, nat = kid ? kid.offsetHeight : 0;
+      folds[i].style.setProperty("--jccd", (nat + 6) + "px");
+      rendered += folds[i].offsetHeight;                        // whatever it is RIGHT NOW — mid-animation included
+      if (host === pend ? pendOpen : host.classList.contains("jcc-dopen")) target += nat;
+    }
+    var h = inn.offsetHeight - rendered + target;               // the body WITHOUT any fold, plus the folds that will be open
+    body.style.setProperty("--jccb", (h > 40 ? h + 10 : 980) + "px");
+  }
+  function jccToggle(row) {
+    if (!row) return;
+    var open = !row.classList.contains("jcc-on");
+    if (open) jccSetCaps(row, null, false);                     // measure BEFORE the class lands, so the transition has its real target from the first frame
+    row.classList.toggle("jcc-on", open);
+    jsGeomDirty();                                              // the banner grows inside the sky, so the home/tools landings move with it (grep JSCARDGEOM — the same stale-anchor bug the stone card had)
+  }
+  function jccToggleDive(wrap) {
+    if (!wrap) return;
+    var willOpen = !wrap.classList.contains("jcc-dopen");
+    var row = wrap.closest ? wrap.closest(".jl-today") : null;
+    if (row) jccSetCaps(row, wrap, willOpen);                   // the body's own cap grows with the fold — otherwise an opening dive is clipped by its parent
+    wrap.classList.toggle("jcc-dopen", willOpen);
+    jsGeomDirty();                                              // a dive grows the banner, which grows the sky (grep JSCARDGEOM)
+  }
+  // This round's two new strings, extended in place per the B4 law. "Open", "Again" and "done" are already in the
+  // dictionary and are deliberately NOT repeated — re-declaring a key re-translates that word on every other surface too.
+  // RU flagged for David's pass.
+  Object.assign(I18N.ru, { "DEEP DIVES": "\u041f\u041e\u0413\u0420\u0423\u0416\u0415\u041d\u0418\u042f", "The idea": "\u0418\u0434\u0435\u044f" });
   // ---- OFF-SCREEN ROWS GO QUIET (David 2026-08-26). ONE observer for the whole line, stored like _jcEls so a rebuild can
   // never leak a second one. Root is #tfWorld with the frame's own 120px margin (recipes/j1-script.js wireAnim), and it
   // toggles ONLY the row-level .jl-anim-off class — the CSS behind it pauses .jl-fx descendants and cannot reach the
@@ -6645,7 +6910,7 @@
       if (c.ch === 13) rows.push(jlDivider("BOOK TWO", "The Deep", "#2a9fe0"));
       if (c.ch === 25) rows.push(jlDivider("BOOK THREE", "The Seasons", "#8a5cf0"));
       rows.push(jlBanner(c));
-      for (var j = 0; j < c.cnt; j++) { rows.push(jlLockedStone(c, JL_POOL[(c.i0 + j) % 12], JL_TXC[j % 8], k)); k++; }
+      for (var j = 0; j < c.cnt; j++) { rows.push(jlLockedStone(c, JL_POOL[(c.i0 + j) % 12], JL_TXC[j % 8], k, j)); k++; } // j = the stone's place IN ITS CHAPTER — the glyph-hue rotation reads it (the icon pool already does), while k stays the whole-line index the glisten phase chain needs
     });
     for (var i = rows.length - 1; i >= 0; i--) { rows[i].classList.add("jl-anim-off"); rows[i].classList.add("jl-far"); col.appendChild(rows[i]); } // born quiet AND unpainted; the two observers wake and reveal what you can actually reach (both have deadmen)
     // THE PARALLAX LAYER IS THE FOOT, NOT THE COLUMN (David's device recording of v1375: home↔journey "super slow and
@@ -7317,6 +7582,7 @@
       if ((_hcState === "outUp" || _hcState === "outDown") && !_wTouch && !_wAnim) { _hcState = "in"; _hcArmUp = _hcArmDown = false; _hcDone = false; }
       if (_hcState !== "outDown" && _hcState !== "outUp") hcReset();
     }
+    hcRepairSoon();   // …AND THE SAME DECISION GETS A CLOCK OF ITS OWN (grep HCPARKED) — see hcRepairSoon
     // MID-GLIDE: 260px out, while the spring is still flying — or, in mode 11, while the OS is doing the flying. Without
     // the second term the board can only arrive on the settle debounce, which is what left David watching home build a
     // beat AFTER he got there ("it looks like home is already there, and it just appears a second time").
@@ -7332,6 +7598,31 @@
     else if (_hcArmDown && (_wAnim || _wCssSnap) && goHome && down && d > -260) { _hcArmUp = _hcArmDown = false; hcArrive("down"); }
     else if (_hcArmUp || _hcArmDown) { clearTimeout(_hcInT); _hcInT = setTimeout(hcMaybeIn, 20); }     // …or on a 20ms-debounced settle, whichever lands first
     hcAwayHide(d);                                                                                    // LAST, after the arrival branches: a board that just arrived is state "in" and can never be hidden by this
+  }
+  // ===== THE PARKED REPAIR (grep HCPARKED — David on device 2026-08-30: the IG-story streak strip above home is "visible
+  // during scroll, sometimes fully gone once parked"). THE BUG IS A CLOCK, NOT A ROW COUNT. Every hidden state on the
+  // home board — the strip included, and on the 2c face hcAwayHide hides the strip BY NAME — is cleared by exactly one
+  // function, hcReset, and every road to it runs inside hcScrub, which only ever runs FROM A SCROLL EVENT. The rule
+  // above is already correct ("at home, still, silent for 1900ms, we are home"), but it can only be evaluated by an
+  // event that arrives after those 1900ms have passed — and once the column is parked no further scroll event is ever
+  // fired. So a board whose arrival was missed (an interrupted gesture, the mode-11 native snap, a minute tick that
+  // rebuilt a block while we were away) sits at opacity 0 with nothing scheduled to notice: intermittently, and for the
+  // strip most visibly, because it is cascade block one and the first thing hcAwayHide reaches.
+  // THE FIX IS THE SAME DECISION ON A TIMER. No new listener, no scroll write, no new state: re-run hcScrub's own parked
+  // test 2100ms after the last scroll event, which is precisely when the missing event would have arrived. Every guard
+  // is the existing one — a live cascade stamps _hcAnimAt, a finger sets _wTouch, the spring sets _wAnim — so this can
+  // only ever fire on a column that has genuinely stopped at home with the board still hidden. hcReset is idempotent
+  // (_hcDone), so a redundant run costs one querySelectorAll and writes nothing.
+  var _hcRepT = 0;
+  function hcRepairSoon() {
+    clearTimeout(_hcRepT);
+    _hcRepT = setTimeout(function () {
+      var w = el("tfWorld"); if (!w || !wLive() || _wTouch || _wAnim) return;
+      if (Math.abs(w.scrollTop - wHomeY()) > 14) return;                       // not parked at home — nothing this repair is allowed to touch
+      if (wNow() - _hcAnimAt < 1900) { hcRepairSoon(); return; }               // a cascade is still finishing; ask again rather than cut it off
+      if (_hcState === "outUp" || _hcState === "outDown") { _hcState = "in"; _hcArmUp = _hcArmDown = false; _hcDone = false; }
+      hcReset();
+    }, 2100);
   }
   // ===== THE TOOLS CASCADE — the shelf's rows, entering bottom-up as you travel down and folding away right-to-left as you leave. =====
   var _tcShown, _tcHard = false, _tcInAt = 0, _tcInT = 0, _tcEls = null;
@@ -21784,32 +22075,38 @@
       // outside it to slide in) and must carry NO animation of its own — a transform on that layer inside an
       // overflow:hidden card is the whole bug, because WebKit rasterizes a composited layer at the clipped bounds and
       // then slides emptiness in. Its motion lives on the CARD instead (jlBanner, behind JL_JITTER).
-      // ===== A RAY STONE'S LAYERS ARE ORDERED BY DECLARED z, IN BOTH STATES (David on device 2026-08-28: "the rotating
-      // rays still break the stones… when you STOP scrolling, they break. And the spinning ray thing on the stone covers
-      // up the rest of the things — the shadows, the highlights, the icon"). The whole class only appears once mSpin is
-      // running, and mSpin only starts at the scroll-stop wake flush — so a gate that reads the stone in ONE state can
-      // never see it. This one toggles .jl-anim-off (the single thing that differs between moving and stopped, measured)
-      // and asserts the same declared order on both sides, then puts the row back exactly as it found it.
-      var _rst = document.querySelector("#jrnyLine .jl-lstone.jl-rayst");
-      if (_rst) {
-        var _rrow = _rst.closest(".jl-lstone-row"), _rwas = _rrow && _rrow.classList.contains("jl-anim-off");
-        var _rread = function () {
-          var k = [].slice.call(_rst.children), z = k.map(function (n) { return getComputedStyle(n).zIndex; });
-          var names = k.map(function (n) { return (n.className || n.tagName).toString().split(" ")[0]; });
-          var num = z.map(function (v) { return v === "auto" ? -1 : +v; });
-          return { names: names.join(" → "), z: z.join(" "), anim: getComputedStyle(k[0]).animationName,
-            ok: names[0] === "jl-lstone-tex" && names[1] === "jl-lstone-sheen" && k[2].tagName === "I" && names[3] === "jl-lstone-pass" &&
-                num[0] > 0 && num[0] < num[1] && num[1] < num[2] && num[2] < num[3] };
+      // ===== A STONE'S ROCK IS STATIC, AWAKE AND ASLEEP (grep JSTATIC — David on device 2026-08-30: chapters 9 · 11 · 12
+      // · 23 read as a "rounded octagon, spinning rays, little circle, icon gone — fine UNTIL THE ANIMATION STARTS").
+      // SUPERSEDES the "ray stone layers ordered by declared z" gate, which policed the layering of a spin that no longer
+      // exists on a stone: an animating layer inside a circular overflow:hidden clip is rasterized at its axis-aligned
+      // clipped bounds, so nothing about the ordering could have saved it. The rule is now absolute, so the gate is a
+      // whole-line sweep rather than one sampled stone — EVERY rock in the DOM, in BOTH states, must carry no animation
+      // and no transform of its own, and must own no child layer that paints a background. `.jl-lstone-pass` (the
+      // glisten) is the one legal animated child: it is an overlay sweep with no background-image of its own.
+      // WAKING THE WHOLE LINE would be a 272-row style thrash, so the sweep reads the DECLARED rule (computed style with
+      // the row's own .jl-anim-off honoured) and additionally wakes ONE row to prove the awake state, then restores it.
+      var _rocks = [].slice.call(document.querySelectorAll("#jrnyLine .jl-lstone, #jrnyLine .jst-stone"));
+      if (_rocks.length) {
+        var _rockBad = function (n) {
+          var s = getComputedStyle(n), bad = [];
+          // the now-stone's jlAlive is the ONE legal animation on a rock: it scales, it does not move paint (README:
+          // "breathing animates transform/scale ONLY, never background").
+          if (s.animationName !== "none" && s.animationName !== "jlAlive") bad.push("rock animates " + s.animationName);
+          [].slice.call(n.children).forEach(function (k) {
+            var ks = getComputedStyle(k);
+            if (ks.backgroundImage !== "none" && ks.animationName !== "none") bad.push((k.className || "?").toString().split(" ")[0] + " paints AND animates");
+          });
+          return bad;
         };
-        if (_rrow) _rrow.classList.remove("jl-anim-off");
-        var _rAwake = _rread();
-        if (_rrow) _rrow.classList.add("jl-anim-off");
-        var _rSleep = _rread();
-        if (_rrow) _rrow.classList.toggle("jl-anim-off", !!_rwas);   // …and the row goes back exactly as it was found
-        chk("ray stone layers ordered by DECLARED z (awake AND asleep)", _rAwake.ok && _rSleep.ok && _rAwake.z === _rSleep.z,
-          "awake: " + _rAwake.names + " z " + _rAwake.z + " (spin " + _rAwake.anim + ") · asleep: z " + _rSleep.z + " (spin " + _rSleep.anim + ")",
-          "fill 1 · highlight+shade 2 · symbol 3 · glisten 4, identical in both states — the v1387 layering law written where the compositor must obey it. z:auto left the order to WebKit's overlap heuristic, which only breaks once mSpin is promoted (i.e. the moment the scroll-stop wake flush runs)");
-      } else out.push("SKIP · ray stone layer order · no ray stone in the DOM (the line is not built)");
+        var _rockFails = [];
+        _rocks.forEach(function (n) { var b = _rockBad(n); if (b.length) _rockFails.push((n.closest("[data-jch]") ? "ch" + n.closest("[data-jch]").dataset.jch + " " : "") + b.join(" + ")); });
+        // …and one row proved AWAKE, because .jl-anim-off is what hides a background animation from a computed read.
+        var _wrow = document.querySelector("#jrnyLine .jl-lstone-row.jl-anim-off"), _wwas = !!_wrow, _wAwakeFail = [];
+        if (_wrow) { _wrow.classList.remove("jl-anim-off"); [].slice.call(_wrow.querySelectorAll(".jl-lstone")).forEach(function (n) { var b = _rockBad(n); if (b.length) _wAwakeFail = _wAwakeFail.concat(b); }); if (_wwas) _wrow.classList.add("jl-anim-off"); }
+        chk("stone rocks never animate their paint (awake AND asleep)", !_rockFails.length && !_wAwakeFail.length,
+          _rocks.length + " rocks swept · " + (_rockFails.length ? _rockFails.slice(0, 4).join(" · ") + (_rockFails.length > 4 ? " …+" + (_rockFails.length - 4) : "") : "none animates its background") + (_wrow ? " · woken row: " + (_wAwakeFail.length ? _wAwakeFail.join(" + ") : "still static") : " · no sleeping row to wake"),
+          "no drift, spin or glint on any stone's rock layer, ever — only jlAlive (a transform) is legal. A rotating or sliding layer inside a border-radius:50% overflow:hidden clip is rasterized at its clipped bounds, which is the octagon/lost-icon class David reported on chapters 9 · 11 · 12 · 23");
+      } else out.push("SKIP · stone rock static sweep · no stones in the DOM (the line is not built)");
       var _jbx = [].slice.call(document.querySelectorAll("#jrnyLine .jl-lock-card > .jl-l-tex.jl-tex-box"));
       if (_jbx.length) {
         // …and the drift is BACK, as a background-position slide (David 2026-08-28: "why can't they drift and just extend
@@ -21834,13 +22131,167 @@
           _jbx.length + " gates (ch " + _jbCh + ") · first: " + _jbx[0].offsetWidth + "x" + _jbx[0].offsetHeight + " vs card " + _jbx[0].parentNode.offsetWidth + "x" + _jbx[0].parentNode.offsetHeight + " · border " + getComputedStyle(_jbx[0]).borderTopWidth + " · transform " + getComputedStyle(_jbx[0]).transform + (_jbad.length ? " · " + _jbad.length + " FAIL" : ""),
           "every repeating-radial gate texture is exactly its card (inset 0, border 0), animates only jlTexDrift/jlTexDrift3 (background-position, so the pattern slides and tiles forever) and carries NO transform — and the 3-layer list only ever lands on a 3-layer stack");
       } else out.push("SKIP · repeating-radial gates · none in the DOM (the line is not built)");
+      // ===== A SLEEPING GLINT PARKS OFF-SCREEN, NOT MID-SWEEP (grep JGLINTREST — David 2026-08-30: arriving from home the
+      // now-stone shows "a frozen diagonal reflection for a moment, then it vanishes and normal shimmer starts"). Every
+      // row is born .jl-anim-off, whose rule is `animation:none !important` — so a sheen span with no resting transform
+      // renders its gradient dead centre across the disc. The fix is one declaration, and this is the gate that keeps it:
+      // with the animation off, the span must sit at the keyframe's own frame 0 (translateX(-135%)), i.e. fully outside
+      // its own clip. Read on a SLEEPING row, which is the state the bug lives in.
+      var _glr = document.querySelector("#jrnyLine .jl-anim-off .jst-glint > span, #jrnyLine .jl-anim-off .jl-today-glint > span, #jrnyLine .jl-anim-off .jl-next-glint > span");
+      if (_glr) {
+        var _grs = getComputedStyle(_glr), _gm = /matrix\(([^)]+)\)/.exec(_grs.transform);
+        var _gx = _gm ? parseFloat(_gm[1].split(",")[4]) : 0, _gw = _glr.offsetWidth || 1;
+        chk("a sleeping glint parks off-screen (not mid-sweep)", _grs.animationName === "none" && _gx < -_gw * 0.9,
+          "animation " + _grs.animationName + " · translateX " + Math.round(_gx) + "px of a " + _gw + "px sheen (" + Math.round(_gx / _gw * 100) + "%)",
+          "the resting frame must BE keyframe 0 (translateX(-135%)) — with animation:none and no transform the sheen renders as a static diagonal band across the stone, which is the frozen reflection on arrival");
+      } else out.push("SKIP · sleeping glint rest frame · no sleeping glint in the DOM");
+      // ===== THE OPEN CARD'S CLEARANCE (grep JSCARDROOM). Asserted on a PROBE, not by opening a real card: toggling a
+      // live row would leave a .46s transition running inside the audit and a card open behind the report. The probe
+      // wears the same two classes the real thing does, so it reads the same cascade.
+      var _pr = document.createElement("div"); _pr.className = "jst-row jst-open jl-stone";
+      var _pw = document.createElement("div"); _pw.className = "jsc-wrap on"; _pr.appendChild(_pw);
+      (el("jrnyCol") || document.body).appendChild(_pr);
+      var _prs = getComputedStyle(_pr), _pws = getComputedStyle(_pw);
+      var _prPad = parseFloat(_prs.paddingBottom) || 0, _pwMar = parseFloat(_pws.marginBottom) || 0;
+      if (_pr.parentNode) _pr.parentNode.removeChild(_pr);
+      chk("an open stone card keeps its clearance", Math.abs(_pwMar - 20) <= 0.5 && _prPad >= 90,
+        "card→next-row gap " + _pwMar + "px · row cushion " + _prPad + "px",
+        "20px between the card's sticker shadow and the next row (on the last done stone that row IS the chapter-one banner), and ≥90px of quiet under the open row so the whole card can be read at the landing without pulling the column into the home hand-off band");
     }
+    // ===== THE STREAK STRIP IS VISIBLE AT HOME REST (grep HCPARKED — David on device 2026-08-30: the IG-story strip above
+    // home is "visible during scroll, sometimes fully gone once parked"). The board's hidden states are cleared by exactly
+    // one function whose every caller runs from a scroll event, so a missed arrival left the strip at opacity 0 with
+    // nothing scheduled to notice. Asserted where it matters and nowhere else — parked at home, column still — and it
+    // reads the WHOLE chain the strip's pixels depend on: the block, and the day columns the arrival sweep animates.
+    var _ssW = el("tfWorld"), _ssB = el("tfHomeBars");
+    if (_ssB && _ssW && wLive() && Math.abs(_ssW.scrollTop - wHomeY()) < 40 && !_wTouch && !_wAnim) {
+      var _ssCs = getComputedStyle(_ssB), _ssDark = [].slice.call(_ssB.children).filter(function (c) { return (c.offsetHeight || c.offsetWidth) && +getComputedStyle(c).opacity < 0.9; });
+      chk("streak strip visible at home rest", +_ssCs.opacity > 0.9 && _ssCs.visibility !== "hidden" && _ssB.offsetHeight > 0 && !_ssDark.length,
+        "strip opacity " + _ssCs.opacity + " · " + _ssB.offsetHeight + "px tall · " + _ssB.children.length + " columns, " + _ssDark.length + " dimmed" + (_ssB.style.opacity ? " · inline opacity \"" + _ssB.style.opacity + "\"" : "") + (_ssB.style.animation ? " · inline animation" : ""),
+        "parked at home the strip and every one of its day columns paint at full opacity — no leftover exit fill, no un-cleared hcAwayHide write (the parked repair, hcRepairSoon, is what guarantees it now that the clearing decision no longer depends on a scroll event that never arrives)");
+    } else if (_ssB) out.push("SKIP · streak strip at home rest · not parked at home (the gate asserts a rest state only)");
     // THE GEOMETRY HEADER (2026-08-20): every report says which phone it was taken on, and what the SECOND geometry would render. The
     // board is one uniform scale of a 402x874 artboard, so with the sentinel above passing, every artboard px in this report renders at
     // x(scale) on the other phone and the PROPORTIONS are identical — that projection is what the two runs verify empirically.
     var _other = (Math.abs(W - 440) < 1 && Math.abs(H - 956) < 1) ? { w: 402, h: 874 } : { w: 440, h: 956 };
     var _geo = "GEOMETRY " + W + "x" + H + " · artboard 402x874 · scale " + _AS.toFixed(4) + " · board " + Math.round(402 * _AS) + "px · the other phone (" + _other.w + "x" + _other.h + ") renders these same artboard px at scale " + (Math.min(1.15, Math.max(1, _other.w / 402))).toFixed(4);
     return (ok ? "ALL PASS (" + out.length + ")" : "FAILURES PRESENT") + " · " + _geo + "\n" + out.join("\n");
+  };
+  // ===== THE 36-ROCK SWEEP (grep JSROCKSWEEP — the fix-round Verify step, 2026-08-30). Every chapter's pattern, poured
+  // into a real stone at each of the three sizes a stone is ever painted at (84 trail · 118 now · 126 selected), asserted
+  // AND rendered so the same call answers the machine and the eye. It exists because the last three rounds of this bug
+  // were caught by David on his phone, one or two chapters at a time: a sweep is the only shape of check that can fail on
+  // chapter 29 before he ever scrolls to it.
+  //   WHAT IT ASSERTS, per rock, and why each one is the honest form of "it reads at stone size":
+  //   · CIRCLE — square box, 50% radius. A rock that is not a disc is not a rock.
+  //   · EVERY LAYER PARSED — the computed backgroundImage carries as many layers as the recipe declares. A gradient the
+  //     engine rejects silently becomes `none`, which paints as the base colour: the exact look of the "empty top" bug,
+  //     so a malformed normalisation could otherwise pass by imitating the thing it fixes.
+  //   · ANCHOR INSIDE THE DISC — no `at X% Y%` outside 15-85%. That is the whole (a) class: an anchor a stone-and-a-half
+  //     away puts a transparent band across the top of the circle.
+  //   · TILE ≤ A THIRD — no background-size px larger than the diameter/3, so a tiled field is a field and not two cells.
+  //   · STATIC — no animation on the rock, none on any child that paints (the JSTATIC law, chapters 9 · 11 · 12 · 23).
+  // Call DEV.rockSweep() for the report + the grid; DEV.rockSweep(true) to tear the grid down again.
+  window.DEV.rockSweep = function (close) {
+    var host = el("rockSweep");
+    if (host && host.parentNode) host.parentNode.removeChild(host);
+    if (close === true) return "sweep grid closed";
+    host = document.createElement("div"); host.id = "rockSweep";
+    host.setAttribute("style", "position:fixed;inset:0;z-index:99999;overflow:auto;background:#160510;padding:10px 8px 40px;font:11px/1.3 Jost,sans-serif;color:#c0aed4;");
+    document.body.appendChild(host);
+    // BUILD FIRST, MEASURE SECOND, and that ordering is load-bearing twice over: getComputedStyle on a DETACHED node
+    // returns an empty style (the first cut of this harness "failed" all 108 rocks with 0x0 boxes and one layer — the
+    // harness lying, not the build), and interleaving 108 reads between 108 writes is the write→read→write thrash the
+    // whole world-motion region is written to avoid.
+    var SIZES = [84, 118, 126], fails = [], rows = 0, cells = [];
+    for (var ch = 1; ch <= 36; ch++) {
+      var line = document.createElement("div");
+      line.setAttribute("style", "display:flex;align-items:center;gap:10px;padding:5px 2px;border-bottom:1px solid #2a1730;");
+      var lab = document.createElement("div");
+      lab.setAttribute("style", "width:104px;flex:none;color:#9a6a86;");
+      lab.textContent = ch + " · " + (JL_NAME[ch - 1] || "?");
+      line.appendChild(lab);
+      for (var s = 0; s < SIZES.length; s++) {
+        var px = SIZES[s], rock = jsRock(ch, px === 84 ? 84 : 118);   // 126 is the 118 stone grown by its ring, not a repaint — the same recipe, asserted at the size it actually renders
+        var d = document.createElement("div");
+        d.setAttribute("style", "width:" + px + "px;height:" + px + "px;flex:none;border-radius:50%;background:" + rock + ";box-shadow:inset 0 5px 0 rgba(255,255,255,.22), inset 0 -7px 0 rgba(0,0,0,.28);");
+        line.appendChild(d);
+        cells.push({ ch: ch, px: px, n: d, rock: rock });
+      }
+      host.appendChild(line); rows++;
+    }
+    cells.forEach(function (c) {
+      var d = c.n, px = c.px, rock = c.rock, cs = getComputedStyle(d), bad = [];
+      if (d.offsetWidth !== d.offsetHeight || cs.borderRadius.indexOf("50%") !== 0) bad.push("not a circle (" + d.offsetWidth + "x" + d.offsetHeight + " r" + cs.borderRadius + ")");
+      // layer count: the recipe's own top-level commas vs what the engine kept. backgroundPosition normalises to one
+      // `Npx Npx` pair per layer with no parens in it, so ITS commas are the only trustworthy layer boundaries.
+      var LL = jlTexLayers(String(rock).split(";")[0]);
+      var want = LL.length, got = cs.backgroundPosition.split(",").length;
+      if (want !== got) bad.push("layers " + got + "/" + want);
+      // A `none` IMAGE LAYER IS NOT AUTOMATICALLY A FAILURE — a trailing bare COLOUR (twenty-three of the thirty-six end
+      // in one) computes as exactly that, which is why the first cut of this gate failed every chapter that has a base.
+      // The honest assertion is a COUNT: as many `none` layers as the recipe has non-gradient slots, and not one more.
+      // Matched as whole layers (`^none` or `, none`), never as a substring — "none" also appears inside mask keywords.
+      var wantNone = LL.filter(function (x) { return !/gradient\(|url\(/.test(x); }).length;
+      var gotNone = (cs.backgroundImage.match(/(^|,)\s*none\s*(?=,|$)/g) || []).length;
+      if (gotNone !== wantNone) bad.push(gotNone + " unpainted layer(s), recipe declares " + wantNone + " — a gradient failed to parse");
+      var m, re = /\bat\s+(-?[\d.]+)%\s+(-?[\d.]+)%/g;
+      while ((m = re.exec(rock))) if (+m[1] < 15 || +m[1] > 85 || +m[2] < 15 || +m[2] > 85) bad.push("anchor " + m[1] + "% " + m[2] + "% outside the disc");
+      var tail = String(rock).split(";").filter(function (x) { return /^\s*background-size/i.test(x); })[0];
+      if (tail) (tail.match(/([\d.]+)px/g) || []).forEach(function (v) { if (parseFloat(v) > px / 3 + 0.5) bad.push("tile " + v + " > " + Math.round(px / 3) + "px"); });
+      try { if (d.getAnimations().length) bad.push("the rock animates"); } catch (e) { if (cs.animationName !== "none") bad.push("the rock animates"); }
+      if (bad.length) fails.push("ch" + c.ch + "@" + px + ": " + bad.join(" · "));
+    });
+    // …and the LIVE line's own stones, in the DOM, since those are the ones David actually taps.
+    var live = [].slice.call(document.querySelectorAll("#jrnyLine .jl-lstone, #jrnyLine .jst-stone")), liveBad = [];
+    live.forEach(function (n) {
+      var cs = getComputedStyle(n);
+      if (cs.animationName !== "none" && cs.animationName !== "jlAlive") liveBad.push("a rock animates (" + cs.animationName + ")");
+      [].slice.call(n.children).forEach(function (k) { var ks = getComputedStyle(k); if (ks.backgroundImage !== "none" && ks.animationName !== "none") liveBad.push("a painting child animates (" + ks.animationName + ")"); });
+    });
+    if (liveBad.length) fails.push("LIVE LINE · " + liveBad.slice(0, 3).join(" · ") + (liveBad.length > 3 ? " …+" + (liveBad.length - 3) : ""));
+    var head = document.createElement("div");
+    head.setAttribute("style", "position:sticky;top:0;background:#160510;padding:6px 2px 8px;font-weight:800;color:" + (fails.length ? "#ff4f6a" : "#28cf86") + ";");
+    head.textContent = (fails.length ? "FAIL · " + fails.length : "ALL PASS") + " · " + rows + " chapters x 84/118/126 · " + live.length + " live rocks · DEV.rockSweep(true) to close";
+    host.insertBefore(head, host.firstChild);
+    return (fails.length ? "FAIL (" + fails.length + ")\n  " + fails.join("\n  ") : "ALL PASS · 36 chapters x 3 sizes (" + (rows * 3) + " rocks) + " + live.length + " live rocks in the DOM · circle · every layer parsed · anchors inside the disc · tiles ≤ d/3 · nothing animating");
+  };
+  // ===== THE CARD ROUND-TRIP (grep JSCARDGEOM — the fix-round Verify step, 2026-08-30). David's symptom was geometric:
+  // with a card open, "home and tools are displaced, with empty space". So the check is geometric too, and it is a pure
+  // DECISION — no scroll writes, no rAF, no landing screenshots (the preview freezes rAF whenever its pane is hidden,
+  // which is exactly how the last three rounds of this class shipped wrong). Open a card, prove the world grew AND that
+  // the anchor cache heard about it; then run the pane-leave law and prove every number came back byte-identical.
+  window.DEV.cardRoundTrip = function (sel) {
+    var w = el("tfWorld"), h = el("tfWorldHome"); if (!w || !h) return "SKIP · the one-page world is not built";
+    // DEFAULTS TO THE NOW-STONE, because that is the card David opened when he found this: it is the tallest card on the
+    // line (the big stone's own row), so it displaces the most and is the strictest case. Pass a selector for any other.
+    var row = document.querySelector(sel || "#jrnyLine .jl-next.jst-row") || document.querySelector("#jrnyLine .jst-row"); if (!row) return "SKIP · no live stone on the line";
+    function geom() { return { sh: w.scrollHeight, homeTop: h.offsetTop, sky: (document.querySelector(".tfw-sky") || {}).offsetHeight, anchor: wHomeY() }; }
+    // TRANSITIONS OFF WHILE MEASURING, or every number is a lie. .jsc-wrap animates max-height AND margin-bottom over
+    // .46s, so a read taken the instant the class lands catches the card at zero height and calls the growth 85px when it
+    // is really 200. Suppressed on the probed row only, forced through one reflow, and put back before returning.
+    var wrap = row.querySelector(".jsc-wrap"), prevT = wrap ? wrap.style.transition : "";
+    var before = geom(), notes = [];
+    if (wrap) wrap.style.transition = "none";
+    jsToggleCard(row);
+    void w.offsetWidth;
+    var open = geom();
+    var grew = open.homeTop - before.homeTop;
+    if (grew <= 0) notes.push("opening the card did not move the home zone (grew " + grew + "px) — the card is not taking layout space");
+    if (open.anchor !== open.homeTop) notes.push("the anchor cache says home is at " + open.anchor + " but the home zone is at " + open.homeTop + " — a stale anchor is the displacement bug itself");
+    // THE PANE-LEAVE LAW, driven at its own function rather than by moving the column: jsPaneScrub is a pure decision on
+    // (dev, vh), so it can be asserted without touching scrollTop at all.
+    jsPaneScrub(0, w.clientHeight || 874);
+    void w.offsetWidth;
+    var closed = geom();
+    if (wrap) wrap.style.transition = prevT;
+    if (document.querySelector("#jrnyLine .jst-open")) notes.push("a card is still open after leaving the pane");
+    ["sh", "homeTop", "sky"].forEach(function (k) { if (closed[k] !== before[k]) notes.push(k + " " + closed[k] + " ≠ " + before[k] + " (drifted " + (closed[k] - before[k]) + "px)"); });
+    if (closed.anchor !== closed.homeTop) notes.push("the anchor cache did not follow the close (" + closed.anchor + " vs " + closed.homeTop + ")");
+    return (notes.length ? "FAIL\n  " + notes.join("\n  ") : "PASS") +
+      "\n  closed home@" + before.homeTop + " sky " + before.sky + " scrollH " + before.sh +
+      "\n  open   home@" + open.homeTop + " sky " + open.sky + " scrollH " + open.sh + " (card took " + grew + "px, anchor " + open.anchor + ")" +
+      "\n  back   home@" + closed.homeTop + " sky " + closed.sky + " scrollH " + closed.sh + " (anchor " + closed.anchor + ")";
   };
   // THE PHANTOM NOW-PLAYING CARD (David on device 2026-08-26: "the iOS player card shows while nothing is playing").
   // Asserts the honest invariant rather than a screenshot of it: with NO session live, the silent carrier must not be
