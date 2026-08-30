@@ -3,6 +3,20 @@
 
 ---
 
+## STATUS UPDATE (2026-08-30, the stones wear the chapter): v1410 (Fable-orchestrated, Opus-built)
+Rounds 27/28 canon port from the design handoff bundle (_design-sync/stones-build-2026-08-30/): 8 stone types on the
+JLINE trail (6f law: chapter rock + hued glyph + dark ray-center), selection ring replaces resting chrome, done coin,
+the 300px bubble card (turn-8, per-type tint) with tail, per-chapter hue OVERRIDES (R28) transcribed verbatim. Pin math
+proven: card open/close = 0.00px stone drift, zero scrollTop writes, no new column listeners; overflow-anchor:none guards
+browser re-anchoring. Grep anchor JSTONE. designAudit 107 lines, one FAIL = the pre-existing hidden-pane IO artifact
+(reproduces on stashed build). Conflicts held for David: future-wash .42 (README) vs .5 (R28 proto, built .42);
+bevel readings inverted between protos (built README .22/.28); resting now-stone kept 118 outer for the landing locks
+(126 selected exact); honesty-line bold keyword = un-authored (copy gate pending). Chapter-card 7b build is NEXT (spec
+ready at stones-build-2026-08-30/BUILD-SPEC-chapter-card.md). Twin-history note: local and origin diverged with
+duplicate-content commits (parallel sessions); rejoined via merge b891b65 — if it happens again, merge, never rebase.
+DEVICE-UNTESTED: card spring feel, momentum-scroll pin, now-stone breathing, real-finger tap arbitration.
+ONE MOVE David: open the journey on the phone, tap stones, judge feel + card. ONE MOVE Claude: ship 7b chapter card.
+
 ## STATUS UPDATE (2026-08-28 (21), the compositor's clip + the pattern that keeps going): v1406 → v1407
 **v1406**, four verdicts: (1) ch7/16/26 top-cut ROOT CAUSE (third look): WebKit rasterizes an animated transform layer at its CLIPPED bounds — extended pixels never exist, so the drift slides emptiness in (why v1405's bleed was inert on device). The repeating-radial family (7·16·18·21·26·30·34, derived from JL_TEX) now paints the gradient ON the box, design-mechanism verbatim; bonus: jlTexFor wash-layer misalignment of ch10/27 per-layer background lists fixed. (2) rail hidden at/below the landing screen (exists only past one viewport — the magnet's own line). (3) rail full-height, CHAPTER-domain map (ch36=top, ch1/landing=bottom; jrU/jrScrollFor off jrDetents ends). (4) ray stones broke AT SCROLL-STOP: DOM byte-identical both states (two-builder hypothesis disproven by measurement) — mSpin starts at stillness, promotes the tex layer, and NO stone layer declared z-index → WebKit's overlap heuristic buried sheen/shade/glyph. Fix: declared z 1-4; gate asserts order in BOTH anim states.
 **v1407**, two more: drift RESTORED David's way — background-position (jlTexDrift/3, mDrift's exact 22×12/13s rhythm) moves the PATTERN inside a box that never moves; repeating gradients tile infinitely, no hole possible; ch16's 3-layer stack drifts ring-layer-only (base would seam); kill flag JL_TEXDRIFT if iOS chops (main-thread repaint, pause machinery covers off-screen). Rail top: "not higher than the gems" — measured gems bottom 86 → --jr-top 94; the gate re-derives from the gems row live (4-14px below) so the law survives any phone.

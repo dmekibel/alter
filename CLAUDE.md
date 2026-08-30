@@ -4,6 +4,8 @@ A guardian-angel life-sim PWA (pixel-art planner + tracker + game). Single user:
 
 **`_specs/CANON.md` is the truth index (2026-08-28, born from the lost-journey-plan saga): read it before any design/mechanics/content round — the newest David-verdicted plans often live UNTRACKED in `_design-sync/<topic>-<date>/`, where `_specs/` greps miss them. Its second rule is law: anything David verdicts in chat gets written to disk + one CANON line the same session; a round that ends chat-only is unfinished.**
 
+**`_specs/CANON.md` is the truth index (2026-08-28, born from the lost-journey-plan saga): read it before any design/mechanics/content round — the newest David-verdicted plans often live UNTRACKED in `_design-sync/<topic>-<date>/`, where `_specs/` greps miss them. Its second rule is law: anything David verdicts in chat gets written to disk + one CANON line the same session; a round that ends chat-only is unfinished.**
+
 **The business runs on `@COFOUNDER.md`** (the operator layer: roles, cadence, money rules, the launch state machine). Run `/standup` at session start to orient. This file (CLAUDE.md) is how we BUILD; COFOUNDER.md is how we RUN THE BUSINESS.
 @COFOUNDER.md
 
