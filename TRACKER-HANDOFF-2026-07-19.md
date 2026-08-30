@@ -3,6 +3,17 @@
 
 ---
 
+## STATUS UPDATE (2026-08-31, the reading band): v1412
+The still-alive shift's real root: cards collapse max-height over .46s, v1411 invalidated _wAnchor ONCE, the next
+scroll event (~16ms) re-cached a MID-COLLAPSE home, magnet parked 120px past the seam. Now: wGeomChanged holds anchors
+uncached 520ms, seekHome re-reads wHomeY per frame while hot, wGeomSettled backstops, jsPaneScrub closes BOTH cards
+(chapter card per round-2 verdict) at the HEAD of onWorldScroll. Safari deadband: wReadBand (18vh, 110-210px) widens
+the existing free-scroll boundary only while a card is open; distance never velocity; zero new listeners/writes.
+Chapter card got the 96px puck cushion (was 0px clearance on device geometry). Gates 112 ALL PASS, roundTrip
+byte-identical at the mid-collapse read. DEVICE-UNTESTED: band feel, mid-band rest vs bounce-back (one-line swap if
+David prefers bounce), swipe-home weight, re-aim smoothness. ONE MOVE David: device-test the band + the shift.
+ONE MOVE Claude: chapter-one copy verdict then design Round 1.
+
 ## STATUS UPDATE (2026-08-30 (2), the card unfolds and the rocks sit still): v1411
 7b chapter card (JCC anchor) + the ten-fix device round in one ship. Root causes worth remembering: banner patterns
 poured raw into circles cropped wrong (JSROCKFIT remaps anchors/stops/tiles per stone size); ANY animating square layer
