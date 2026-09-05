@@ -85,3 +85,43 @@ For DEEP/TEACHING surfaces, plain is not enough and clever is death: the winning
 
 ## KILLED — 2026-08-11 (goal-engine round)
 - "is this the whole climb, or the first landing?" — KILLED. Pattern: COY METAPHOR-QUESTION. David: "lame AI speak where you don't actually understand the full meaning... half serious, not clear, not direct language that is super annoying. Never use that." The register itself is banned, not just the line: any nudge dressed as a poetic either-or riddle. Nudges speak plainly and directly ("This goal only has two steps. Add the rest if there's more to it.") or not at all.
+
+- "if your energy is broken, everything else is spray-painting green on brown leaves" (Johnson metaphor, relayed 2026-08-31) → **FORCED/UGLY ANALOGY for our register** — David: "i dont like the leaves phrasing." The energy-gate CONCEPT stays; this image dies.
+
+## KILLED 2026-09-01 (ch1 round 7 — David device read-through)
+- "Feel that drop in your shoulders? That was me, coming back into range." — PATTERN: abstract-guardian-metaphor / AI-random. "Cheesy and weird and random and not specific... abstract AI sounding words." (Overruled its own earlier anchor status — later verdict wins.)
+- "Down [N] in one minute. Here is why that worked when the big plans didn't." — PATTERN: assumed-context. References "big plans" never established in the user's context. "No real writer or no real coach would ever say something like that without real context."
+- "One big change can't move a whole day, and the day is what pulls you back." — PATTERN: over-compressed metaphor-speak. Sentiment approved, delivery killed: "weird broken AI way where the reader doesn't fully understand what you're trying to say."
+- "Researchers followed thousands of New Year's resolutions..." — PATTERN: vague-authority. "Just saying the word researchers is not enough... always better to quote real things." Name the study, the researcher, the year.
+- "The changing stays yours to do. The app just makes every step smaller, and harder to lose." — PATTERN: confusing-AI-compression. (Second kill of this line's family; the first fix only stripped the preamble. Compression itself was the disease.)
+- "Your home base just opened. / This is your home base: today's plan on one screen, your tools one tap down." — PATTERN: function-less copy. Copy with no tutorial job. Every ch1 line must DO something: teach the stack, reveal a surface, cause an action.
+- "Breathe out longer than you breathe in and the heart slows down. The exhale leans on the vagus nerve, your body's own brake line." — PATTERN: science-hint-without-nuance (soft kill). "Kind of vague sounding, doesn't really sound like science." Either cite a real book/study with its real specifics, or say the plain thing in the app's own voice.
+- STANDING LAW from this round: attribution only helps when the name carries weight for THIS user; an unknown name (or a collideable one — Brian Johnson vs Bryan Johnson) can cost more trust than an unattributed plain truth. The app's own voice earns trust by being plainly right.
+
+## KILLED 2026-09-01 (survey chip drafts, ch1 round 12)
+- "rolls off me / sticks with me" · "it feels right / it makes sense" · "wired / steady / heavy" — PATTERN: abstract-label. A chip label must name a concrete recognizable experience, not a poetic axis; if the user has to interpret the label, it's dead.
+- "doing anything about it yet" — PATTERN: pre-judgment framing in a follow-up question.
+- "doing something, want it stronger" — PATTERN: stiff compressed cadence.
+- APPROVED ANCHORS same round (calibrate to these): "just realized it" / "been thinking about it forever" / "tried a few things" — natural speech, zero interpretation needed.
+
+## KILLED 2026-09-01 (journey doorstep, round 22)
+- "There are hundreds of books on how to live better. Breathing, sleep, focus, meditation." — PATTERN: abstract-premise-for-a-skeptic. "Hundreds" means nothing; "live better" is abstract; a skeptic thinks those books are dumb and the line proves it. Open with named science, never with the existence of self-help.
+- "So what reaches you is scraps" — PATTERN: writerly image. "That's a bad phrase."
+- STANDING LAW (David): "the more we talk about science, the better we can deal with the skeptics." The skeptic-facing opener leads with a named, checkable finding.
+
+## KILLED 2026-09-01 (journey manifesto opening v2, round 23)
+- Opening a feature pitch with a named study ("Alia Crum at Harvard told a group of hotel cleaners...") — PATTERN: context-less evidence opener. "You can't start a pitch for a feature in an app with a random Harvard quote. There's just no context for it... nobody wants to read that. They wanna simply understand what's the point." LAW: a pitch opens with the POINT (what this is, why it exists); science supports mid-argument, never leads. "More science" (round 22) meant more real names INSIDE the argument, not science as the door.
+- Over-compressing David's long thesis into a machine summary — PATTERN: shortening that loses his context. When he supplies the argument himself, offer different SPINES for the same material, mostly in his phrases; do not summarize.
+
+## KILLED 2026-09-01 (Spine A refinement, round 26 — David authoring)
+- "reading it feels a little taboo anyway" — bad wording; the true claim: culture made that reading feel cheesy or boring.
+- "Nobody says how, so it never sticks." — "sounds off."
+- "The reading done for you" — wrong claim: the app did not read for the user; it compiled, organized, cut the fluff, saved their time.
+- "taught one small skill at a time and practiced on a real day" — too small: it is theory into practice + a methodology + a teacher who never shames or judges, meets you exactly where you are, never rushes ahead.
+- NOTE: "This journey is the manual" REINSTATED by David over a five-thinker objection — the author outranks the panel.
+- (round 28, David) "with a teacher that meets you exactly where you are" — KILLED: the app calling itself a teacher can read as a human teacher being assigned. Use the journey itself / the guardian as the subject.
+- (round 28, David, his own line) "Knowing what to do, and then actually doing it." — KILLED as the OUTRO: a slogan, not a summary of everything said; a bad close for the journey as a whole. The outro must summarize the whole pitch.
+
+### KILLED 2026-09-04 — UI-inventory copy (tour, tools panel)
+- "This is your toolbox: your stacks, two picks for right now, and boxes for when you need something specific." — David: "this sounds dumb". PATTERN: **UI-INVENTORY COPY** — introducing a room by listing its containers to someone who has not seen them yet. A first-time line says what the room is FOR; furniture names teach nothing and read as the interface narrating its own layout. Written by the Claude Design chat, not by David; it lost to his own line under the DESIGN AUTHORITY LAW.
+- KEPT (David-preferred, shipped v1413): "This is the tools library, where you can stack all the different practices. Breathing, stretching, meditation, and many others."

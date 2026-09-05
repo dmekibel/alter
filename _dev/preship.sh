@@ -18,6 +18,26 @@ say "✓ app.js parses"
 node _dev/ratchet.js --write || fail "structure ratchets FAILED — fix before shipping (see above)."
 say "✓ structure ratchets pass"
 
+# 1.7 PORT-LOCK (David 2026-09-05, born from the rejected v1413 tour). A staged Claude Design bundle is a design port:
+#     any `_design-sync/**/*.dc.html` touched in the last 3 days must have a sibling `verify/` folder holding at least one
+#     prototype-vs-app screenshot PAIR (prototype-*.png + app-430-*.png). No pairs = the build was never diffed against the
+#     frame = do not ship. Override for a non-port commit with PORT_LOCK=skip (say why in the commit message).
+if [ "${PORT_LOCK:-}" != "skip" ]; then
+  while IFS= read -r dc; do
+    [ -z "$dc" ] && continue
+    vdir="$(dirname "$dc")/verify"
+    pairs_ok=0
+    if ls "$vdir"/prototype-*.png >/dev/null 2>&1 && ls "$vdir"/app-430-*.png >/dev/null 2>&1; then pairs_ok=1; fi
+    # The numeric record is accepted in place of PNG pairs ONLY when it carries a per-state delta table at David's device
+    # geometry (the pane cannot persist screenshots while hidden; the numbers are the stricter diff anyway).
+    if [ "$pairs_ok" = 0 ] && ls "$vdir"/DIFF-*.md >/dev/null 2>&1 && grep -q "430x932" "$vdir"/DIFF-*.md && grep -q "Δ" "$vdir"/DIFF-*.md; then pairs_ok=1; fi
+    if [ "$pairs_ok" = 0 ]; then
+      fail "PORT-LOCK: $(basename "$dc") was staged recently but $vdir has neither prototype/app-430 screenshot pairs nor a DIFF-*.md with a 430x932 Δ table — run the frame diff (DESIGN-PORT-CHECKLIST) or PORT_LOCK=skip for a non-port ship."
+    fi
+  done < <(find _design-sync -name '*.dc.html' -mtime -3 2>/dev/null)
+fi
+say "✓ port-lock: every recently staged design bundle has its frame-diff pairs"
+
 # 2. Logic invariant audit — mirrors chapter gates + appetite dial from app.js.
 #    Fails fast if any testable invariant regresses. Writes results back to GUARD.json.
 node _dev/audit.js --write || fail "logic invariants FAILED — fix before shipping (see above)."

@@ -4608,34 +4608,57 @@
   .st-placerow b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.2; }
   .st-placerow span{ font-size:10.5px; font-weight:600; color:#a5718f; line-height:1.4; }
 
-  /* ===== THE GUIDED TOUR (Round 30 · ten beats, ending at the journey door) — David-verdicted 2026-09-04.
-     Round 29 visual language: one dim with ONE cutout at the target's real position, one bubble carrying one
-     guardian line, Back always, Next on reading beats, the gesture itself on gesture beats. No fake screens. ===== */
+  /* ===== THE GUIDED TOUR — ported 1:1 from Claude-Design "Round 30 · Tour Round 2" (2026-09-05).
+     Every value below was pulled from the RUNNING prototype's COMPUTED STYLES, beat by beat, and is recorded in
+     _design-sync/tutorial-2026-09-01/PORT-SPEC-round30.md (EXTRACT). Nothing here is eyeballed or remembered.
+     THE MECHANIC: the design has NO cutout (grep 9999px = 0 hits in Round 29 AND Round 30) — it lays a FLAT scrim
+     rgba(32,10,36,.62) over the screen and RAISES the lit thing above it. ALTER cannot raise: every target lives
+     inside #trackerFull (position:fixed; z-index:90), a stacking context, so a child's z-index is capped far below
+     the overlay. The port punches a hole in the scrim at the target's live rect instead — measured equivalent,
+     because the app's home ground (#1a0712→#140f26) under a .62 scrim of rgba(32,10,36) lands within ~7/255 per
+     channel of the undimmed pixel: the dim's whole visible job is darkening BRIGHT elements, and those behave
+     identically either way. Deviations are named in the spec, never approximated silently. ===== */
   .tour-dim{ position:fixed; inset:0; z-index:90000; pointer-events:none; opacity:0; transition:opacity .3s ease; }
   .tour-dim.on{ opacity:1; }
-  .tour-hole{ position:fixed; left:0; top:0; width:0; height:0; border-radius:24px; box-shadow:0 0 0 9999px rgba(12,4,10,.74); transition:left .34s cubic-bezier(.22,.9,.3,1), top .34s cubic-bezier(.22,.9,.3,1), width .34s cubic-bezier(.22,.9,.3,1), height .34s cubic-bezier(.22,.9,.3,1), border-radius .34s ease; }
-  .tour-dim.nohole .tour-hole{ box-shadow:0 0 0 9999px rgba(12,4,10,.52); }
-  .tour-ring{ position:fixed; border:3px solid rgba(255,143,192,.85); border-radius:24px; pointer-events:none; animation:tourRing 1.9s ease-out infinite; }
-  @keyframes tourRing{ 0%{ transform:scale(.94); opacity:0; } 18%{ opacity:.9; } 100%{ transform:scale(1.22); opacity:0; border-width:1px; } }
-  .tour-bubble{ position:fixed; left:16px; right:16px; z-index:90001; display:flex; flex-direction:column; gap:13px;
-    padding:17px 18px 14px; border-radius:22px; background:#2a1730; border:2.5px solid rgba(255,143,192,.3);
-    box-shadow:0 14px 34px rgba(6,2,6,.55); pointer-events:auto; }
-  .tour-bubble .tour-line{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; line-height:1.3; color:#fff2f9; text-wrap:pretty; }
-  .tour-bubble .tour-line b{ color:#ff8fc0; font-weight:800; }
-  .tour-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .tour-btn{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; color:#f0a9cd; background:none; border:none; padding:6px 4px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
-  .tour-btn.dim{ color:#9a6a86; }
-  .tour-btn.next{ color:#160510; background:#ff4fa0; border-radius:14px; padding:8px 16px; box-shadow:0 3px 0 #a82563; }
+  /* the hole IS the scrim: a 9999px spread paints the whole screen, the box itself is the undimmed window. A 0x0
+     box parked off-screen = a flat dim with nothing lit (beats 1, 6 and 10 of the design's ten). */
+  .tour-hole{ position:fixed; left:-40px; top:-40px; width:0; height:0; border-radius:0; box-shadow:0 0 0 9999px rgba(32,10,36,.62); transition:left .34s cubic-bezier(.22,.9,.3,1), top .34s cubic-bezier(.22,.9,.3,1), width .34s cubic-bezier(.22,.9,.3,1), height .34s cubic-bezier(.22,.9,.3,1), border-radius .34s ease; }
+  /* THE THIN EXPANDING RING — round-29 language, kept in round 30, and ONLY on the three gesture thresholds. */
+  .tour-ring{ position:fixed; box-sizing:border-box; border:3px solid rgba(255,143,192,.8); border-radius:999px; pointer-events:none; animation:tourRingThin 1.9s ease-out infinite; }
+  @keyframes tourRingThin{ 0%{ transform:scale(.92); border-width:3px; opacity:0; } 18%{ opacity:.9; } 100%{ transform:scale(1.3); border-width:1px; opacity:0; } }
+  /* THE BUBBLE — #341226 body, 3px #ff4fa0 rim, 20px radius, 15/18 pad, 10 gap, NO shadow. Width + x/y are set
+     per beat by tourBubblePos (the design pins 296 / 280 / 310 / inset-36 and the tail lands on the target's cx). */
+  .tour-bubble{ position:fixed; z-index:90001; box-sizing:border-box; display:flex; flex-direction:column; gap:10px;
+    width:296px; padding:15px 18px; border-radius:20px; background:#341226; border:3px solid #ff4fa0; pointer-events:auto; }
+  .tour-bubble.wide{ width:310px; } .tour-bubble.narrow{ width:280px; }
+  .tour-line{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; line-height:1.3; color:#fff2f9; text-wrap:pretty; }
+  .tour-line b{ font-weight:800; } /* the highlight COLOUR is per beat (the design tints the word to the thing it names) */
+  .tour-bubble.end{ padding:17px 19px; gap:12px; } .tour-bubble.end .tour-line{ font-size:19px; }
+  .tour-skip{ float:right; margin:1px 0 4px 12px; padding:0; background:none; border:none; cursor:pointer;
+    font-family:"Baloo 2",sans-serif; font-weight:800; font-size:12px; color:rgba(201,164,188,.6); }
+  /* THE TAIL — a 30x14 window clipping a 16x16 square rotated 45deg, wearing the rim on its two facing edges. */
+  .tour-tail{ position:absolute; width:30px; height:14px; overflow:hidden; }
+  .tour-tail i{ position:absolute; left:5px; display:block; width:16px; height:16px; background:#341226; transform:rotate(45deg); }
+  .tour-tail.up{ top:-14px; } .tour-tail.up i{ top:4px; border-left:3px solid #ff4fa0; border-top:3px solid #ff4fa0; }
+  .tour-tail.down{ bottom:-14px; } .tour-tail.down i{ bottom:4px; border-right:3px solid #ff4fa0; border-bottom:3px solid #ff4fa0; }
+  .tour-foot{ display:flex; align-items:center; justify-content:space-between; }
+  .tour-btn{ display:inline-flex; align-items:center; gap:4px; padding:7px 13px; border-radius:14px;
+    background:rgba(255,242,249,.05); border:2.5px solid rgba(201,140,166,.4); cursor:pointer;
+    font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; color:rgba(255,242,249,.62); }
+  .tour-btn.wait{ opacity:.35; pointer-events:none; } /* beat 1: "Back rides every panel; on the first it waits at 35%" */
+  .tour-btn.next{ gap:5px; padding:7px 16px; background:#ff4fa0; border:2.5px solid #160510; box-shadow:0 3px 0 #160510; color:#160510; }
   .tour-btn:active{ transform:translateY(2px); }
-  .tour-btn.next:active{ box-shadow:0 1px 0 #a82563; }
-  .tour-cue{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; color:#ff8fc0; display:inline-flex; align-items:center; gap:6px; }
-  .tour-cue i{ animation:tourNudge 1.5s ease-in-out infinite; }
-  @keyframes tourNudge{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(6px); } }
-  .tour-cue.up i{ animation:tourNudgeUp 1.5s ease-in-out infinite; }
-  @keyframes tourNudgeUp{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
-  .tour-dots{ display:flex; gap:5px; align-items:center; }
-  .tour-dots span{ width:6px; height:6px; border-radius:50%; background:rgba(240,169,205,.26); }
-  .tour-dots span.on{ background:#ff4fa0; }
+  .tour-btn.next:active{ box-shadow:0 1px 0 #160510; }
+  /* THE THUMB — "bottom right where the thumb lives": a 70px track beside the bubble, the circle swiping the
+     gesture the beat is asking for. Track height + alignment + keyframes are the design's, verbatim. */
+  .tour-thumb{ position:fixed; z-index:90001; width:70px; display:flex; justify-content:center; pointer-events:auto; cursor:pointer; }
+  .tour-thumb i{ display:block; box-sizing:content-box; width:46px; height:46px; border-radius:50%; background:rgba(255,143,192,.3); border:3px solid #ff8fc0; }
+  .tour-thumb.up{ height:158px; align-items:flex-end; } .tour-thumb.up i{ animation:thumbSwipeUp 2s ease-in-out infinite; }
+  .tour-thumb.down{ height:150px; align-items:flex-start; } .tour-thumb.down i{ animation:thumbSwipeDown 2s ease-in-out infinite; }
+  .tour-thumb.short{ height:118px; align-items:flex-start; } .tour-thumb.short i{ animation:thumbSwipeDownShort 2s ease-in-out infinite; }
+  @keyframes thumbSwipeUp{ 0%{ transform:translateY(0) scale(.8); opacity:0; } 14%{ transform:translateY(0) scale(1); opacity:1; } 72%{ transform:translateY(-112px) scale(1); opacity:1; } 100%{ transform:translateY(-132px) scale(.92); opacity:0; } }
+  @keyframes thumbSwipeDown{ 0%{ transform:translateY(0) scale(.8); opacity:0; } 14%{ transform:translateY(0) scale(1); opacity:1; } 72%{ transform:translateY(112px) scale(1); opacity:1; } 100%{ transform:translateY(132px) scale(.92); opacity:0; } }
+  @keyframes thumbSwipeDownShort{ 0%{ transform:translateY(0) scale(.8); opacity:0; } 14%{ transform:translateY(0) scale(1); opacity:1; } 72%{ transform:translateY(58px) scale(1); opacity:1; } 100%{ transform:translateY(72px) scale(.92); opacity:0; } }
 </style>
 </head>
 <body>
@@ -4819,6 +4842,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1413"></script>
+  <script src="app.js?v=1415"></script>
 </body>
 </html>

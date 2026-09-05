@@ -1017,6 +1017,7 @@
   // ===== THE LITURGY SHELL (SPEC-FIRST-RUN §1, P2b): OPEN → AIM → LIVE → LESSON → CLOSE as a PURE-derived spine over the existing trail engine — beats read real signals (THE RECORD / blocks / bk.pm), never a parallel day-state machine (the v488/v496 lesson: two day-models fight). S.lit holds only the day's ephemera (sealed line, queued lesson) and rolls at the logical day. =====
   function litState() { var k = todayK(); if (!S.lit || S.lit.k !== k) S.lit = { k: k }; return S.lit; }
   function litGapDue() { var fd = (S.guide || {}).fd; return !!(fd && fd.done && !fd.s3); } // §3: the Gap moves to day 2's lesson slot — it deserves a fresh morning; persists until felt once (Duolingo path, not stale homework)
+  var FD_TRAIL = false; // the July five-stones day-one trail. OFF since 2026-09-05: chapter 1 IS day one. DEV.fd flips it for a probe run only.
   function firstDayNodes() { // ===== DAY 1 = THE FIRST LESSON (rebuilt ground-up, David device notes 2026-07-04): five lessons, five color worlds, ZERO typing — only taps. Each lesson is one real REP of a built organ at starter dose, and each ends by NAMING the mechanism (the deck card deals AFTER it worked — Conway-Smith: reps first, theory after). The arc IS the whole app in miniature: switch the body → choose who you're becoming → do one real thing → close the day. (The GAP moved to day 2's lesson slot — SPEC-FIRST-RUN §3.) First impressions carry the journey. =====
     var fd = (S.guide || {}).fd; if (!fd || fd.done) return null;
     var k = todayK(), nodes = [];
@@ -1399,7 +1400,7 @@
     add(foot, "button", "ob-skip", "not today").onclick = function () { S.guide.fd.s2 = 1; save(); ov.remove(); toast("✦ a rest day is a real answer too."); drawJourney(true); };
   }
   function jpNodes() { // returns the ADAPTIVE ordered node list for today — shaped by your self-help stage (profile/journeyNode) AND your goals (today's AM virtue + one-thing). Each {key,emoji,title,line,color,done,act}.
-    try { var _fd = firstDayNodes(); if (_fd) return _fd; } catch (e) {} // FIVE STONES (F1, David 2026-07-02): a brand-new user's first day is the hand-authored trail; it hatches into this adaptive engine when the last stone completes — same voice, no handover ceremony
+    if (FD_TRAIL) { try { var _fd = firstDayNodes(); if (_fd) return _fd; } catch (e) {} } // FIRST-DAY TRAIL RETIRED (David 2026-09-05 "i never designed that"): the July five stones used to REPLACE the whole node list on day one, so a fresh save saw "Lesson 1..5" instead of chapter 1's stones. FD_TRAIL gates the seam; DEV.fd arms it for a probe.
     var k = todayK(), nodes = [], dm = doneMap(k), planned = (blocks(k) || []).filter(function (b) { return b.title; });
     var pf = profile(), jn = journeyNode(); // pf.lowEnergy = body-first gate · jn = curriculum stage (which guided nodes have unlocked)
     var dormant = ((S.guide||{}).appetiteState||{}).level==='dormant'; // appetite dial: dormant = tracker-only mode, suppress all course nodes (am/pm)
@@ -9501,18 +9502,33 @@
   // scrollTop — one-engine law, @SEC:WORLD-MOTION owns the scroller), or when they tap the lit cue itself.
   // Copy is David-verbatim and gate-1 clean; the garden and planner doors were CUT from the tour by the design round
   // (garden stays hidden until the first gems are earned; the planner is already labeled on home).
-  var TOUR = { on: false, beat: 0, hole: null, bubble: null, dim: null, ring: null, scrollTied: false };
+  // THE PER-BEAT DESIGN DATA (every number below is a COMPUTED value read off the running prototype — the table is
+  // in _design-sync/tutorial-2026-09-01/PORT-SPEC-round30.md §EXTRACT): `w` = the bubble width the design draws
+  // (296 reading · 280 beside the thumb · 310 on the toolbox · inset-36 on the ending), `top` = the design's own
+  // absolute artboard y on the three beats that light nothing, `side`+`gap` = where the bubble parks relative to the
+  // lit thing (and therefore which way the tail points), `pin` = the left margin the design pins the bubble to on
+  // the thumb beats so the swiping circle has its lane, `hi` = the highlighted words WITH the colour the design
+  // tints each one (it tints the word to the thing it names: pink for home-ish, blue for the day/scrolling, purple
+  // for the journey/toolbox/shortcuts), `ring`/`thumb`/`thumbDy` = the threshold ring + swipe circle on the three
+  // gesture beats. `round` makes the hole a circle. Copy is David-verbatim and untouched.
+  var TOUR = { on: false, beat: 0, gen: 0, hole: null, bubble: null, dim: null, ring: null, thumb: null, tail: null, scrollTied: false };
   var TOUR_BEATS = [
-    { id: "home",     line: "This is home. Your day, your tracker, and your practices, all on one screen.", hi: "home", zone: "home", skip: true },
-    { id: "strip",    line: "This strip is your day as you planned it. It fills in as you live it.", target: function () { return el("tfHomeBars"); }, hi: "strip", zone: "home" },
-    { id: "tracker",  line: "This is the time tracker. Tap it whenever you start something, and I keep the time.", target: function () { return document.querySelector("#trackerFull .tf-ring"); }, hi: "time tracker", zone: "home", round: true },
-    { id: "shortcuts",line: "These are your shortcuts. The practices and stacks you use most, pinned to home.", target: function () { return el("tfHeroRow"); }, hi: "shortcuts", zone: "home" },
-    { id: "godown",   line: "Home keeps going below. Scrolling is how you move around. Scroll down, or tap TOOLS.", target: function () { return el("tfToolsHint"); }, gesture: "tools", cue: "Scroll down", dir: "down", zone: "home" },
-    { id: "tools",    line: "This is the tools library, where you can stack all the different practices. Breathing, stretching, meditation, and many others.", hi: "tools library", zone: "tools" },
-    { id: "gohome",   line: "Scroll up to go back, or tap the home button. It always brings you home.", target: function () { return el("tfHudHome"); }, gesture: "home", cue: "Scroll up", dir: "up", zone: "tools" },
-    { id: "settings", line: "Settings live behind this button.", target: function () { return el("tfHudSpark"); }, hi: "Settings", zone: "home", round: true },
-    { id: "goup",     line: "The journey sits above home. Scroll up.", target: function () { return el("tfHudJourney"); }, gesture: "journey", cue: "Scroll up", dir: "up", zone: "home" },
-    { id: "journey",  line: "This is the journey. The manual for living well, taught one small step at a time.", hi: "journey", zone: "journey", end: true }
+    { id: "home",     line: "This is home. Your day, your tracker, and your practices, all on one screen.", hi: [["home", "#ff8fc0"]], zone: "home", skip: true, w: 296, top: 285 },
+    { id: "strip",    line: "This strip is your day as you planned it. It fills in as you live it.", target: function () { return el("tfHomeBars"); }, hi: [["day", "#36b3f0"]], zone: "home", w: 296, side: "below", gap: 38 },
+    { id: "tracker",  line: "This is the time tracker. Tap it whenever you start something, and I keep the time.", target: function () { return document.querySelector("#trackerFull .tf-ring"); }, hi: [["time tracker", "#ff8fc0"]], zone: "home", round: true, w: 296, side: "below", gap: 25 },
+    { id: "shortcuts",line: "These are your shortcuts. The practices and stacks you use most, pinned to home.", target: function () { return el("tfHeroRow"); }, hi: [["shortcuts", "#b07aff"]], zone: "home", w: 296, side: "above", gap: 43 },
+    { id: "godown",   line: "Home keeps going below. Scrolling is how you move around. Scroll down, or tap TOOLS.", target: function () { return el("tfToolsHint"); }, gesture: "tools", zone: "home", hi: [["Scrolling", "#36b3f0"], ["TOOLS", "#ff8fc0"]], w: 280, pin: 20, side: "above", gap: 49, ring: "pill", thumb: "up", thumbDy: 25 },
+    { id: "tools",    line: "This is the tools library, where you can stack all the different practices. Breathing, stretching, meditation, and many others.", hi: [["tools library", "#b07aff"]], zone: "tools", w: 310, top: 340 },
+    // THE HOME BUTTON the design lights bottom-left IS the app's own away-puck (#guardPuck's pink .gpk-disc, 57⌀ at
+    // 25,850 on a 430x932 board — the design's is 62⌀ at 18,794 on 402x874): same affordance, same corner, same job.
+    // The frame lights the disc, hangs the round-29 ring at inset −7 around it, parks the bubble 81px above with the
+    // tail down on the disc's centre, and swipes the thumb DOWN beside it. Fallback to the top HOME threshold only if
+    // the puck is not on screen. NOT PORTED (one-hole limit): the frame ALSO keeps the top HOME threshold lit — a
+    // second cut-out would need a second scrim, and two stacked scrims darken the rest of the board to .86.
+    { id: "gohome",   line: "Scroll up to go back, or tap the home button. It always brings you home.", target: function () { var p = document.querySelector("#guardPuck .gpk-disc"); if (p) { var r = p.getBoundingClientRect(); if (r.width > 2 && r.bottom > 4 && r.top < (window.innerHeight || 800) - 4) return p; } return el("tfHudHome"); }, gesture: "home", zone: "tools", hi: [["home", "#ff8fc0"]], w: 280, pin: 14, side: "above", gap: 81, round: true, ring: "circle", thumb: "down", thumbDy: 0 },
+    { id: "settings", line: "Settings live behind this button.", target: function () { return el("tfHudSpark"); }, hi: [["Settings", "#ff8fc0"]], zone: "home", round: true, w: 280, pin: 14, side: "below", gap: 17 },
+    { id: "goup",     line: "The journey sits above home. Scroll up.", target: function () { return el("tfHudJourney"); }, gesture: "journey", zone: "home", hi: [["journey", "#b07aff"]], w: 280, pin: 14, side: "below", gap: 59, ring: "cue", thumb: "short", thumbDy: 0 },
+    { id: "journey",  line: "This is the journey. The manual for living well, taught one small step at a time.", hi: [["journey", "#b07aff"]], zone: "journey", end: true, mid: true }
   ];
   function tourDone() { return !!(S.tour && S.tour.done); } // purely-additive guarded read → no SCHEMA bump (@SEC:STATE contract)
   function tourMark() { try { S.tour = S.tour || {}; S.tour.done = 1; S.tour.ts = Date.now(); save(); } catch (e) {} }
@@ -9530,8 +9546,9 @@
     var dim = el("tourDim"); if (!dim) { dim = document.createElement("div"); dim.id = "tourDim"; dim.className = "tour-dim"; document.body.appendChild(dim); }
     while (dim.firstChild) dim.removeChild(dim.firstChild); // child-drain, never an innerHTML wipe
     TOUR.dim = dim;
-    TOUR.hole = add(dim, "div", "tour-hole");
-    TOUR.ring = add(dim, "div", "tour-ring"); TOUR.ring.style.display = "none";
+    TOUR.hole = add(dim, "div", "tour-hole");                                   // paint order inside the dim: the hole
+    TOUR.ring = add(dim, "div", "tour-ring"); TOUR.ring.style.display = "none";  // carries the scrim, so the ring…
+    TOUR.thumb = add(dim, "div", "tour-thumb"); add(TOUR.thumb, "i"); TOUR.thumb.style.display = "none"; // …and the thumb must come after it
     var b = el("tourBubble"); if (!b) { b = document.createElement("div"); b.id = "tourBubble"; b.className = "tour-bubble"; document.body.appendChild(b); }
     TOUR.bubble = b;
     if (!TOUR.scrollTied) { var w = el("tfWorld"); if (w) { w.addEventListener("scroll", tourWatch, { passive: true }); TOUR.scrollTied = true; } }
@@ -9548,69 +9565,129 @@
     if (!TOUR.on) return; TOUR.on = false;
     if (finished) tourMark();
     var d = el("tourDim"), b = el("tourBubble");
-    if (d) { d.classList.remove("on"); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 320); }
+    var gen = ++TOUR.gen; if (d) { d.classList.remove("on"); setTimeout(function () { if (TOUR.gen === gen && !TOUR.on && d.parentNode) d.parentNode.removeChild(d); }, 320); } // the fade-out removal must not eat a tour that restarted inside its own 320ms (dev "Redo tour" / DEV.tour() stop-then-start in the same tick used to leave the dim node ripped out from under the live tour)
     if (b && b.parentNode) b.parentNode.removeChild(b);
     var w = el("tfWorld"); if (w && TOUR.scrollTied) { w.removeEventListener("scroll", tourWatch); TOUR.scrollTied = false; }
+    TOUR.hole = TOUR.ring = TOUR.thumb = TOUR.tail = TOUR.bubble = TOUR.dim = null; // the nodes went with the dim; don't hold stale refs across a Redo
   }
   function tourNext() { if (TOUR.beat >= TOUR_BEATS.length - 1) { tourStop(true); return; } TOUR.beat++; tourPaint(); }
   function tourBack() { if (TOUR.beat <= 0) return; TOUR.beat--; tourPaint(); }
-  function tourPlace() { // position the cutout (and its pulse ring) over the live rect of the beat's target
-    var B = TOUR_BEATS[TOUR.beat], hole = TOUR.hole, ring = TOUR.ring; if (!B || !hole) return;
-    var t = B.target ? B.target() : null;
-    if (!t) { // whole-screen beat: no cutout, a lighter dim so the room reads
-      TOUR.dim.classList.add("nohole");
-      hole.style.left = "-20px"; hole.style.top = "-20px"; hole.style.width = "0px"; hole.style.height = "0px";
+  function tourContentBox(t) { // the VISIBLE cue inside a full-width block (#tfToolsHint is 387 wide; its TOOLS
+    // label + chevron are 43x40 in the middle of it). The design's threshold ring wraps that content, never the block.
+    var L = 1e9, T = 1e9, R = -1e9, B = -1e9;
+    try {
+      t.querySelectorAll("*").forEach(function (c) { var r = c.getBoundingClientRect(); if (r.width < 1 || r.height < 1) return; if (r.left < L) L = r.left; if (r.top < T) T = r.top; if (r.right > R) R = r.right; if (r.bottom > B) B = r.bottom; });
+    } catch (e) {}
+    if (L > 1e8) return null;
+    return { l: L, t: T, w: R - L, h: B - T };
+  }
+  function tourLive(B) { // the beat's target, and whether it is actually on screen right now
+    var t = B.target ? B.target() : null; if (!t) return null;
+    var r = t.getBoundingClientRect(), vh = window.innerHeight || 800;
+    if (r.width < 2 || r.bottom < 4 || r.top > vh - 4) return null; // parked elsewhere / not laid out: light nothing rather than a hole over emptiness
+    return { el: t, r: r };
+  }
+  function tourPlace() { // THE LIT THING. The design raises it above a flat scrim; ALTER punches the scrim at the
+    // target's live rect instead (see the CSS header for why, and the spec for the measured equivalence). Zero pad —
+    // the design's raised element is its own box, never an inflated one.
+    var B = TOUR_BEATS[TOUR.beat], hole = TOUR.hole, ring = TOUR.ring, thumb = TOUR.thumb; if (!B || !hole) return;
+    var live = tourLive(B), vw = window.innerWidth || 390;
+    if (!live) {
+      hole.style.left = "-40px"; hole.style.top = "-40px"; hole.style.width = "0px"; hole.style.height = "0px"; // a 0x0 hole still paints the whole scrim (9999px spread) = the design's "dim, nothing lit" beats
       if (ring) ring.style.display = "none";
-      return;
+    } else {
+      var r = live.r, L = Math.round(r.left), T = Math.round(r.top), W = Math.round(r.width), H = Math.round(r.height);
+      hole.style.left = L + "px"; hole.style.top = T + "px"; hole.style.width = W + "px"; hole.style.height = H + "px";
+      hole.style.borderRadius = B.round ? "50%" : "0px";
+      if (B.ring && ring) { // THE THIN EXPANDING RING — only the three gesture thresholds wear it in round 30
+        ring.style.display = "";
+        var g;
+        if (B.ring === "pill") { var c = tourContentBox(live.el) || { l: L, t: T, w: W, h: H }; g = { l: c.l + c.w / 2 - 43, t: c.t + c.h / 2 - 25, w: 86, h: 50 }; } // the design AUTHORS this pill at a fixed 86x50 border box (80x44 + the 3px rim); it is centred on the threshold cue's own content, never derived from it
+        else if (B.ring === "circle") g = { l: L - 7, t: T - 7, w: W + 14, h: H + 14 };                                                                     // the home button's ring: the design's inset:-7px
+        else g = { l: L, t: T + 7, w: W, h: H - 2 };                                                                                                        // the threshold cue's ring: the design's inset 7px 0 -5px
+        ring.style.left = Math.round(g.l) + "px"; ring.style.top = Math.round(g.t) + "px"; ring.style.width = Math.round(g.w) + "px"; ring.style.height = Math.round(g.h) + "px";
+      } else if (ring) ring.style.display = "none";
     }
-    TOUR.dim.classList.remove("nohole");
-    var r = t.getBoundingClientRect(), pad = B.round ? 8 : 12;
-    var vh = window.innerHeight || 800;
-    if (r.width < 2 || r.bottom < 4 || r.top > vh - 4) { // the target is off-screen (the world is parked elsewhere, or the board has not laid out): light nothing rather than a hole over emptiness
-      TOUR.dim.classList.add("nohole"); hole.style.width = "0px"; hole.style.height = "0px"; if (ring) ring.style.display = "none"; return;
+    if (thumb) { // "bottom right where the thumb lives": the design parks the 70px track at centre + 108, level with the bubble
+      if (B.thumb) { thumb.style.display = ""; thumb.className = "tour-thumb " + B.thumb; thumb.style.left = Math.round(vw / 2 + 108) + "px"; thumb.style.top = Math.round((parseFloat(TOUR.bubble && TOUR.bubble.style.top) || 0) + (B.thumbDy || 0)) + "px"; } // the thumb rides even when the threshold itself is under the fold (a 375x812 phone parks #tfToolsHint at y813.6, off screen) — on a gesture beat the swipe IS the instruction, so it must never vanish with the cutout
+      else thumb.style.display = "none";
     }
-    var L = Math.round(r.left - pad), T = Math.round(r.top - pad), W = Math.round(r.width + pad * 2), H = Math.round(r.height + pad * 2);
-    hole.style.left = L + "px"; hole.style.top = T + "px"; hole.style.width = W + "px"; hole.style.height = H + "px";
-    hole.style.borderRadius = B.round ? (Math.round(Math.max(W, H) / 2) + "px") : "24px";
-    if (ring) { ring.style.display = ""; ring.style.left = L + "px"; ring.style.top = T + "px"; ring.style.width = W + "px"; ring.style.height = H + "px"; ring.style.borderRadius = hole.style.borderRadius; }
+  }
+  function tourLine(line, B) { // one flowing guardian line with the design's tinted words inside it. RU degrades
+    // gracefully: try the translated word, then the English one (the RU copy keeps "TOOLS" verbatim), then a
+    // case-insensitive pass; a word that matches nothing simply prints unhighlighted rather than breaking the line.
+    var txt = tr(B.line), marks = [];
+    (B.hi || []).forEach(function (h) {
+      var w = tr(h[0]), i = txt.indexOf(w);
+      if (i < 0) { w = h[0]; i = txt.indexOf(w); }
+      if (i < 0) { var j = txt.toLowerCase().indexOf(String(w).toLowerCase()); if (j >= 0) { i = j; w = txt.substr(j, w.length); } }
+      if (i >= 0) marks.push({ i: i, w: w, c: h[1] });
+    });
+    marks.sort(function (a, b) { return a.i - b.i; });
+    var at = 0;
+    marks.forEach(function (m) {
+      if (m.i < at) return;
+      if (m.i > at) line.appendChild(document.createTextNode(txt.slice(at, m.i)));
+      var bEl = add(line, "b", null, m.w); bEl.style.color = m.c; at = m.i + m.w.length;
+    });
+    if (at < txt.length) line.appendChild(document.createTextNode(txt.slice(at)));
   }
   function tourPaint() {
     var B = TOUR_BEATS[TOUR.beat], b = TOUR.bubble; if (!B || !b) return;
-    while (b.firstChild) b.removeChild(b.firstChild); // child-drain
+    while (b.firstChild) b.removeChild(b.firstChild); // child-drain, never an innerHTML wipe
+    b.className = "tour-bubble" + (B.w === 310 ? " wide" : B.w === 280 ? " narrow" : "") + (B.end ? " end" : "");
+    TOUR.tail = add(b, "span", "tour-tail up"); add(TOUR.tail, "i"); TOUR.tail.style.display = "none"; // absolutely positioned → costs the flex column nothing
     var line = add(b, "div", "tour-line");
-    var txt = tr(B.line), hi = B.hi ? tr(B.hi) : null, cut = hi ? txt.indexOf(hi) : -1;
-    if (cut >= 0) { line.appendChild(document.createTextNode(txt.slice(0, cut))); add(line, "b", null, hi); line.appendChild(document.createTextNode(txt.slice(cut + hi.length))); }
-    else line.textContent = txt;
+    if (B.skip) { var sk = add(line, "button", "tour-skip", tr("Skip")); sk.onclick = function () { tourStop(true); }; } // "Skip lives only on panel 1", floated into the corner of the line itself
+    tourLine(line, B);
     var foot = add(b, "div", "tour-foot");
-    var left = add(foot, "div"); left.style.display = "flex"; left.style.alignItems = "center"; left.style.gap = "12px";
-    if (TOUR.beat > 0) { var back = add(left, "button", "tour-btn dim"); add(back, "i", "ti ti-chevron-left"); add(back, "span", null, tr("Back")); back.onclick = tourBack; }
-    if (B.skip) { var sk = add(left, "button", "tour-btn dim", tr("I'll find my way")); sk.onclick = function () { tourStop(true); }; }
-    var dots = add(foot, "div", "tour-dots");
-    TOUR_BEATS.forEach(function (_, i) { var d = add(dots, "span"); if (i === TOUR.beat) d.className = "on"; });
-    if (B.gesture) { var cue = add(foot, "div", "tour-cue" + (B.dir === "up" ? " up" : "")); add(cue, "span", null, tr(B.cue)); add(cue, "i", "ti ti-chevron-" + (B.dir === "up" ? "up" : "down")); }
-    else { var nx = add(foot, "button", "tour-btn next"); add(nx, "span", null, B.end ? tr("Finish") : tr("Next")); if (!B.end) add(nx, "i", "ti ti-chevron-right"); nx.onclick = function () { if (B.end) tourStop(true); else tourNext(); }; }
-    // the lit thing itself is tappable on a gesture beat (design: "tap the lit thing itself")
-    var t = B.target ? B.target() : null;
-    if (B.gesture && t) { TOUR.hole.style.pointerEvents = "auto"; TOUR.hole.onclick = function () { try { if (B.gesture === "tools") wGoTools(); else if (B.gesture === "journey") wGoJourney(); else wGoHome(); } catch (e) {} }; }
+    var back = add(foot, "button", "tour-btn" + (TOUR.beat ? "" : " wait")); // "Back rides every panel; on the first it waits at 35%"
+    back.appendChild(document.createTextNode("\u2039 " + tr("Back"))); // ONE text node, exactly as the frame draws it ("&lsaquo; Back") — split into two children the flex gap fires and the pill grows 1.2px
+    if (TOUR.beat) back.onclick = tourBack;
+    if (!B.gesture) { // the gesture beats have NO right-hand button — performing the gesture is the button
+      var nx = add(foot, "button", "tour-btn next");
+      nx.appendChild(document.createTextNode(B.end ? tr("Finish") : tr("Next") + " \u203a")); // ditto: the frame's "Next &rsaquo;" is one string
+      nx.onclick = function () { if (B.end) tourStop(true); else tourNext(); };
+    }
+    var live = tourLive(B);
+    if (B.gesture && live) { TOUR.hole.style.pointerEvents = "auto"; TOUR.hole.onclick = tourGo; } // the lit thing itself is tappable
     else { TOUR.hole.style.pointerEvents = "none"; TOUR.hole.onclick = null; }
+    if (TOUR.thumb) TOUR.thumb.onclick = B.gesture ? tourGo : null;
     tourBubblePos(B);
     tourPlace();
-    requestAnimationFrame(tourPlace); // one more frame after layout settles (the world eases between beats)
+    requestAnimationFrame(function () { tourBubblePos(TOUR_BEATS[TOUR.beat]); tourPlace(); }); // one more frame once layout settles (the world eases between beats)
   }
-  function tourBubblePos(B) { // park the bubble away from the lit thing: below it when it sits high, above it when it sits low
-    var b = TOUR.bubble; if (!b) return;
-    var t = B.target ? B.target() : null, vh = window.innerHeight || 800;
-    b.style.top = ""; b.style.bottom = "";
-    if (!t) { b.style.bottom = "calc(env(safe-area-inset-bottom,0px) + 28px)"; return; }
-    var r = t.getBoundingClientRect();
-    if (r.top + r.height / 2 < vh * 0.52) b.style.top = Math.round(Math.min(vh - 190, r.bottom + 22)) + "px";
-    else b.style.bottom = Math.round(Math.max(24, vh - r.top + 22)) + "px";
+  function tourGo() { var B = TOUR_BEATS[TOUR.beat]; if (!B || !B.gesture) return; try { if (B.gesture === "tools") wGoTools(); else if (B.gesture === "journey") wGoJourney(); else wGoHome(); } catch (e) {} }
+  function tourBubblePos(B) { // THE PLACEMENT LAW the frames encode: the tail's centre x is ALWAYS the lit thing's
+    // centre x; the bubble is centred on reading beats and pinned to the design's left margin on the thumb beats so
+    // the swiping circle keeps its lane; the beats that light nothing sit at the design's own absolute y (285 home /
+    // 340 toolbox) or dead centre (the ending). Artboard px go in as px — never vw/vh (checklist law 1).
+    var b = TOUR.bubble; if (!b || !B) return;
+    var vw = window.innerWidth || 390, vh = window.innerHeight || 800, live = tourLive(B);
+    var W = B.end ? Math.max(240, vw - 72) : (B.w || 296);
+    if (B.end) b.style.width = W + "px"; else b.style.width = "";
+    var L = B.end ? 36 : (B.pin != null && (live || B.thumb)) ? B.pin : Math.round((vw - W) / 2); // the thumb's lane is claimed whether or not its threshold is on screen
+    b.style.left = Math.round(L) + "px";
+    b.style.top = "0px"; // lay it out before measuring: the height depends on how many lines the copy wraps to
+    var H = b.offsetHeight, T;
+    if (!live) T = B.mid ? Math.round((vh - H) / 2) : (B.top != null ? B.top : Math.round((vh - H) / 2));
+    else if (B.side === "above") T = Math.round(live.r.top - (B.gap || 24) - H);
+    else T = Math.round(live.r.bottom + (B.gap || 24));
+    b.style.top = Math.max(10, Math.min(vh - H - 10, T)) + "px";
+    var tail = TOUR.tail;
+    if (tail) {
+      if (live && B.side) {
+        tail.style.display = ""; tail.className = "tour-tail " + (B.side === "above" ? "down" : "up");
+        var cx = live.r.left + live.r.width / 2;
+        tail.style.left = Math.round(Math.max(12, Math.min(W - 48, cx - L - 18))) + "px"; // the design's 30px notch centred on the target: -15 is its own margin-left, -3 the rim the absolute box is measured inside (the frame's left:50% resolves against the 290px padding box, not the 296px border box)
+      } else tail.style.display = "none";
+    }
   }
 
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
   // ===== ONBOARDING V2 (2026-07-04, from _specs/ONBOARDING-V2-SCRIPT — David-approved survey): Finch-typed questions in ALTER's brand grammar. Per-hue option tiles (mood-jewel law) · biome section gates (worlds grammar) · battery progress · the breath splits the form · prism STARTER PLAN with per-answer traces · then wall→pact+days→mint→seed (kept beats). =====
   function onboardV2() {
-    var d2 = { name: "", gender: "", age: "", stage: [], experience: [], challenges: [], words: [], vibe: "", bed: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], door: "", block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
+    var d2 = { name: "", gender: "", age: "", stage: [], experience: [], challenges: [], words: [], vibe: "", bed: "", body: "", ingredients: [], peak: "", struggles: [], overwhelm: [], wants: [], door: "", block: "", pactAt: null, pactDays: 0, taskDone: false, _sd: {} };
     var SECTIONS = [
       { id: "you", l: "ABOUT YOU", c: "#b07aff", ic: "ti-user-star", sub: "so I build for your life · not a template", pat: "radial-gradient(1.5px 1.5px at 22% 25%,#fff 99%,transparent), radial-gradient(1px 1px at 72% 40%,#e8d9ff 99%,transparent), radial-gradient(100% 85% at 32% 22%, #3a2358 0%, #241038 55%, #0c0418 100%)" },
       { id: "energy", l: "ENERGY", c: "#ff8a3a", ic: "ti-bolt", sub: "where your fuel comes from, and where it leaks", pat: "repeating-conic-gradient(from 0deg at 50% 62%, #3a1a08 0deg 9deg, #7a4212 9deg 18deg), radial-gradient(110% 95% at 50% 62%, #5a2a06 0%, #3a1a08 82%)" },
@@ -9624,6 +9701,12 @@
       { sec: 0, key: "experience", q: "What have you tried before?", multi: true, opts: [["meditation", "Meditation", "ti-yoga", "#46e2a4"], ["journaling", "Journaling", "ti-pencil", "#ffd24a"], ["therapy", "Therapy", "ti-messages", "#ff5fa8"], ["breathwork", "Breathwork", "ti-lungs", "#5fa8ff"], ["none", "None yet", "ti-seedling", "#b07aff"]] }, // BLUEPRINT practice history. "none" is the exclusive tile (the q-beat handles it); drives the stone's baby-stepping in round 2.
       { sec: 1, key: "vibe", q: "Honestly, how are you right now?", rows: 1, opts: [["thriving", "Thriving", "ti-flame", "#ff8a3a", "things move. I want more"], ["coasting", "Coasting", "ti-windmill", "#48b8e0", "day after day, on autopilot"], ["stuck", "Stuck", "ti-anchor", "#ff5fa8", "I know what to do. I don't"], ["overwhelmed", "Overwhelmed", "ti-urgent", "#7a9aff", "too much of everything"]],
         reply: { thriving: "Good. Let's spend some of that, right now.", coasting: "Steady. One real thing on purpose. that changes a day.", stuck: "I know that one. Knowing was never the hard part. we'll move one small thing.", overwhelmed: "Okay. Then we go small today. I'll carry the rest." } },
+      // THE TWO STATE TAPS (David verdict 2026-09-01 round 30, ch1-profiling-engine-SPEC §7): the first open asks THREE things only —
+      // how you are, how mornings are, what your body is doing — and every other question moves inside the journey to the moment it
+      // pays off. The bed question is the 2026-07-09 cut one, RESTORED with David's own wording (its "battle"/"creaky" values already
+      // drive the starter plan and the section echo, so the personalization it feeds comes back with it).
+      { sec: 1, key: "bed", q: "Getting out of bed lately is", rows: 1, opts: [["easy", "Fine", "ti-sunrise", "#ffd24a"], ["creaky", "Harder than it should be", "ti-cloud", "#7f9bc4"], ["battle", "A fight", "ti-anchor", "#7a9aff"]] },
+      { sec: 1, key: "body", q: "Right now your body is", rows: 1, opts: [["tense", "Tense somewhere", "ti-bolt", "#ff5fa8"], ["tired", "Tired", "ti-moon", "#5fa8ff"], ["restless", "Restless", "ti-wind", "#ff8a3a"], ["fine", "Fine, mostly", "ti-circle-check", "#46e2a4"]] }, // → the stack entry point: tense opens on stretch, tired on breath, restless on a walk
       // CUT (David 2026-07-09): 'how easy to get out of bed' + 'what's in your good days' trimmed as unnecessary. NOTE the good-days question fed the starter-plan personalization ("made of what your good days are made of"); the plan now builds from friction + vibe only (planItems' ingredient branches simply don't fire). Restore this one question if the plan feels thin.
       { sec: 2, key: "challenges", q: "Where do you want the most help?", rows: 1, multi: true, opts: [["focus", "Focus", "ti-target", "#36b3f0", "I lose the thread and drift to my phone"], ["sleep", "Sleep", "ti-moon", "#5fa8ff", "I wake up tired, or wake at 3am"], ["stress", "Stress", "ti-urgent", "#ff5fa8", "shoulders and jaw stay tight all day"], ["energy", "Energy", "ti-battery-1", "#ffd24a", "I run out of steam by the afternoon"], ["mood", "Mood", "ti-mood-neutral", "#b07aff", "flat, or on edge, for no clear reason"], ["consistency", "Consistency", "ti-repeat", "#46e2a4", "I start strong, then fade by day three"]] }, // BLUEPRINT: where they want help. Short label + specific-moment sub (the vibe-question pattern, both copy-gates passed 2026-07-09). Sits before the friction question; dispatches which tools/lessons surface first.
       // THE FRICTION QUESTION: concrete, true for everyone. (It used to set the Motivation Dial's default route; the dial was culled 2026-08-15 — the answer now only feeds P.overwhelm/P.overwhelms.) Every answer teaches an engine.
@@ -9632,7 +9715,14 @@
     // V3 beat list (_specs/ONBOARDING-V3-LOCKED): intro · name · [gate → questions → ECHO per section; breath+write after ENERGY] · constel · plan · wall · voice · pact · mint · seed
     d2.voice = "";
     var BEATS = [{ t: "intro" }, { t: "pace" }]; // SHORTER onboarding (David 2026-07-11): 7 non-intro beats, like the first stone. Only the 4 essential questions here; life-shape / experience / friction / recap moved OUT (asked later, in-context or Settings — "serve first, ask after"). finishV2 reads them all guarded, so cutting the beats just leaves those fields at defaults.
-    ["gender", "age", "vibe", "challenges"].forEach(function (key) { var q = QS.filter(function (x) { return x.key === key; })[0]; if (q) BEATS.push({ t: "q", q: q }); });
+    // THE VERDICTED FIRST OPEN (David 2026-09-01 round 30, AMENDED 2026-09-05): THREE taps — how you are · where you want the most help · what you have tried before.
+    // The bed + body state taps were cut on sight ("lets cut that"); where-you-want-help came BACK from the journey doorstep because it is
+    // the highest-yield question in the set (it alone orders the tools and names the sticking points, so the app can act on day one), and
+    // what-you-have-tried-before came back with it (David 2026-09-05) — it sets the baby-stepping depth from the very first stone.
+    // "What's your life mostly about right now?" (QS key "stage") is NOT asked here: it moves to the PLANNER's first open, where its answer
+    // pays off immediately in the day it shapes (see the TODO planner-doorstep note at the data-tab="day" handler, @SEC:BOOT — not built yet).
+    // Address / age / friction stay out of the first open too, asked at their moment of payoff (profiling SPEC §7); the char sheet still sets them.
+    ["vibe", "challenges", "experience"].forEach(function (key) { var q = QS.filter(function (x) { return x.key === key; })[0]; if (q) BEATS.push({ t: "q", q: q }); });
     BEATS.push({ t: "voice" }, { t: "plan" }); // the 7: pace · address · age · how-you-are · where-help · voice · plan (plan now CLOSES via finishV2; seed/constel beats cut)
     var bi2 = 0, advT = null, _justPicked = false, _sk = null;
     var ov = add(document.body, "div", "ob-ov"), card = add(ov, "div", "ob-card");
@@ -9685,7 +9775,7 @@
       if (d2.experience && d2.experience.length) P.experience = d2.experience.slice(); // BLUEPRINT: practice history (meditation/journaling/therapy/breathwork/none) → the stone baby-steps anything not ticked
       if (d2.challenges && d2.challenges.length) P.challenges = d2.challenges.slice();   // BLUEPRINT: where they want help (focus/sleep/stress/...) → dispatch which tools + lessons surface first
       P.vibe = d2.vibe || P.vibe || ""; P.lowStart = (d2.vibe === "overwhelmed" || d2.vibe === "stuck") || !!P.lowStart;
-      if (d2.bed) P.bed = d2.bed; if (d2.peak) { P.peak = d2.peak === "am" ? "lark" : d2.peak === "night" ? "owl" : "mixed"; P.peakBand = d2.peak; }
+      if (d2.bed) P.bed = d2.bed; if (d2.body) { P.body = d2.body; P.stackEntry = d2.body === "tense" ? "stretch" : d2.body === "restless" ? "walk" : d2.body === "tired" ? "breathe" : ""; } // the body tap sets where the stack opens (David verdict round 30). Purely additive, guarded reads everywhere → no SCHEMA bump (@SEC:STATE contract). if (d2.peak) { P.peak = d2.peak === "am" ? "lark" : d2.peak === "night" ? "owl" : "mixed"; P.peakBand = d2.peak; }
       if (d2.struggles.length) P.struggles = d2.struggles.slice();
       if (d2.overwhelm.length) { P.overwhelm = d2.overwhelm[0]; P.overwhelms = d2.overwhelm.slice(); } // P.mlDrift write DELETED (David 2026-08-15, THE CULL): its only reader was the Motivation Dial's default route, and the dial is gone. The friction answer still lands in P.overwhelm/P.overwhelms, which the rest of the app reads.
       if (d2.wants.length) P.wants = d2.wants.slice();
@@ -9706,7 +9796,7 @@
       if (d2.vibe) { var _lv = d2.vibe === "thriving" ? "high" : d2.vibe === "coasting" ? "floor" : "low";
         var _as = S.guide.appetiteState = S.guide.appetiteState || { level: _lv, nodeCap: 2, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0, lastDeclineK: null, lastInviteSentK: null };
         if (!_as.stateLockedByUser) { _as.level = _lv; _as.nodeCap = _appCap(_lv); } }
-      if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) { var _fh = new Date().getHours(); S.guide.fd = (_fh >= 23 || _fh < 4) ? { k: tomK(), eve: 1 } : { k: todayK(), eve: _fh >= 17 ? 1 : 0 }; } // TIME-OF-DAY (David 2026-07-08): the first-day journey IS the tutorial / entry, so it runs TODAY at any normal hour (evening included; `eve` flag drives evening-aware copy). Only genuine late-night (11pm-4am) defers to tomorrow with the floor close ("we start properly tomorrow").
+      // FIRST-DAY TRAIL RETIRED (David 2026-09-05 "i never designed that"): chapter 1 of the 36-chapter canon is the first day now; S.guide.fd is no longer seeded. DEV.fd still arms it on purpose.
       save(); ov.remove();
       try { renderAll(); viewK = todayK(); zoomMode = "day"; openHome(); } catch (e) {} // land on HOME after onboarding (David 2026-07-27, supersedes the journey-first landing) — same call the returning-user boot seam uses; the first-day trail (S.guide.fd, seeded above) still waits behind the journey door
       try { setTimeout(function () { tourStart(false); }, 620); } catch (e) {} // …then THE GUIDED TOUR (@SEC:TOUR, round 30): ten beats teaching WHERE, once, right after the survey lands home. Delayed past openHome's morph so the cutout measures a settled board.
@@ -9714,6 +9804,9 @@
     function planItems() { // THE STARTER PLAN (P2 rewire): built from the shortened map's retained signal — bed · friction · vibe · and above all INGREDIENTS ("one rung up, made of what your good days are made of"). Every item = a real habit seed with an HONEST trace answering what you just said. Priority-ordered; max 4 + the already-done breath.
       var items = [{ t: "One conscious breath", ic: "ti-wind", c: "#46e2a4", trace: "already done, just now · see? it counts", done: true }];
       var F = d2.overwhelm || [], I = d2.ingredients || [];
+      if (d2.body === "tense") items.push({ t: "Two minutes of stretching", ic: "ti-stretching", c: "#ff5fa8", trace: "you said your body is tense. that is where the day loosens first" });
+      else if (d2.body === "restless") items.push({ t: "A short walk", ic: "ti-walk", c: "#ff8a3a", trace: "restless burns off on your feet. a short walk spends it" });
+      else if (d2.body === "tired") items.push({ t: "One minute of breath", ic: "ti-lungs", c: "#5fa8ff", trace: "tired lifts faster from breath than from pushing harder" });
       if (d2.bed === "battle") items.push({ t: "Glass of water right after waking", ic: "ti-droplet", c: "#5fa8ff", trace: "mornings are a battle. water is the easiest first win there is" });
       else if (d2.bed === "creaky") items.push({ t: "Glass of water right after waking", ic: "ti-droplet", c: "#5fa8ff", trace: "creaky mornings oil best with the smallest possible move: this one" });
       if (F.indexOf("cant") >= 0) items.push({ t: "The two-minute version", ic: "ti-player-play", c: "#36b3f0", trace: "starting is your wall, and two minutes is a door through it" });
@@ -10060,7 +10153,7 @@
         var _as = S.guide.appetiteState = S.guide.appetiteState || { level: _lv, nodeCap: 2, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0, lastDeclineK: null, lastInviteSentK: null };
         if (!_as.stateLockedByUser) { _as.level = _lv; _as.nodeCap = _appCap(_lv); }
       }
-      if (((S.game || {}).total || 0) <= 60 && !S.guide.fd) S.guide.fd = { k: todayK() }; // FIVE STONES (F1, David 2026-07-02): a brand-new save gets the hand-authored first-day trail; a Redo-setup on a real save (spark total > 60) never does
+      // FIRST-DAY TRAIL RETIRED (David 2026-09-05 "i never designed that"): chapter 1 of the 36-chapter canon is the first day now; S.guide.fd is no longer seeded. DEV.fd still arms it on purpose.
       save(); ov.remove();
       try { renderAll(); viewK = todayK(); zoomMode = "day"; openHome(); } catch (e) {} // land on HOME after onboarding (David 2026-07-27, supersedes the journey-first landing) — same call the returning-user boot seam uses; the first-day trail (S.guide.fd, seeded above) still waits behind the journey door
       try { setTimeout(function () { tourStart(false); }, 620); } catch (e) {} // …then THE GUIDED TOUR (@SEC:TOUR, round 30): ten beats teaching WHERE, once, right after the survey lands home. Delayed past openHome's morph so the cutout measures a settled board.
@@ -21279,7 +21372,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { tour: function (n) { try { tourStop(false); } catch (e) {} tourStart(true); if (n) { for (var i = 0; i < n; i++) tourNext(); } return { on: TOUR.on, beat: TOUR.beat, of: TOUR_BEATS.length, zone: tourZone() }; }, tourAt: function () { var B = TOUR_BEATS[TOUR.beat] || {}; var h = el("tourHoleProbe"); var hole = TOUR.hole ? TOUR.hole.getBoundingClientRect() : null; return { on: TOUR.on, beat: TOUR.beat, id: B.id, line: B.line, gesture: B.gesture || null, zone: tourZone(), hole: hole ? { l: Math.round(hole.left), t: Math.round(hole.top), w: Math.round(hole.width), h: Math.round(hole.height) } : null }; }, open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, medStack: function (secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: 32 }, { k: { id: "meditate", name: "Attention", ti: "ti-moon", col: "#9a5cf0" }, d: secs || 150, med: [{ k: "settle" }, { k: "aware" }, { k: "rest" }] }, { k: { id: "mantra", name: "Rewire", ti: "ti-quote", col: "#ffc83d" }, d: 40 }]); return "medStack (3-section meditation in the middle)"; }, storyBars: function () { var w = document.querySelector(".gp-ov .gp-story"); return w ? { rows: document.querySelectorAll(".gp-ov .gp-story").length, bars: w.children.length } : "no player"; }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } var _g = function (s2) { return pkGap(s2._pk, s2.gap != null ? s2.gap : 0, PK.speechEst) + (s2._pkAdd || 0); }; var est = 0; r.segs.forEach(function (s2) { est += (s2.text ? PK.speechEst : 0) + _g(s2); }); return { depth: +sessionDepth(secs).toFixed(2), dose: r.dose, composedEst: +est.toFixed(1), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, kinds: cues.slice(0, 8).map(function (s2) { return s2._pk || "-"; }), gaps: cues.slice(0, 8).map(function (s2) { return +_g(s2).toFixed(1); }) }; }, // 2026-08-15: the `.slice(1)` that used to sit on `cues` was a leftover from the spoken transition card removed on 2026-07-22 — it silently dropped the FIRST cue of every act, so every cueLines/gaps reading taken since has been short by one. `kinds` + the pkGap-resolved `gaps` make the new pause grammar inspectable; composedEst uses PK.speechEst (the player does the exact fit against real clip lengths).
+  window.DEV = { tour: function (n) { try { tourStop(false); } catch (e) {} tourStart(true); if (n) { for (var i = 0; i < n; i++) tourNext(); } return { on: TOUR.on, beat: TOUR.beat, of: TOUR_BEATS.length, zone: tourZone() }; }, tourAt: function () { var B = TOUR_BEATS[TOUR.beat] || {}; var h = el("tourHoleProbe"); var hole = TOUR.hole ? TOUR.hole.getBoundingClientRect() : null; return { on: TOUR.on, beat: TOUR.beat, id: B.id, line: B.line, gesture: B.gesture || null, zone: tourZone(), hole: hole ? { l: Math.round(hole.left), t: Math.round(hole.top), w: Math.round(hole.width), h: Math.round(hole.height) } : null }; }, open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { FD_TRAIL = true; S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed · FD_TRAIL on for this session only · the trail is retired for real users"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, medStack: function (secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: 32 }, { k: { id: "meditate", name: "Attention", ti: "ti-moon", col: "#9a5cf0" }, d: secs || 150, med: [{ k: "settle" }, { k: "aware" }, { k: "rest" }] }, { k: { id: "mantra", name: "Rewire", ti: "ti-quote", col: "#ffc83d" }, d: 40 }]); return "medStack (3-section meditation in the middle)"; }, storyBars: function () { var w = document.querySelector(".gp-ov .gp-story"); return w ? { rows: document.querySelectorAll(".gp-ov .gp-story").length, bars: w.children.length } : "no player"; }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } var _g = function (s2) { return pkGap(s2._pk, s2.gap != null ? s2.gap : 0, PK.speechEst) + (s2._pkAdd || 0); }; var est = 0; r.segs.forEach(function (s2) { est += (s2.text ? PK.speechEst : 0) + _g(s2); }); return { depth: +sessionDepth(secs).toFixed(2), dose: r.dose, composedEst: +est.toFixed(1), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, kinds: cues.slice(0, 8).map(function (s2) { return s2._pk || "-"; }), gaps: cues.slice(0, 8).map(function (s2) { return +_g(s2).toFixed(1); }) }; }, // 2026-08-15: the `.slice(1)` that used to sit on `cues` was a leftover from the spoken transition card removed on 2026-07-22 — it silently dropped the FIRST cue of every act, so every cueLines/gaps reading taken since has been short by one. `kinds` + the pkGap-resolved `gaps` make the new pause grammar inspectable; composedEst uses PK.speechEst (the player does the exact fit against real clip lengths).
     pauseAudit: function () { // REGRESSION GUARD (David 2026-08-15): no somatic beat may ever grow with the dose or the guidance preset again, and no held position may pass its ceiling. Lives on DEV rather than designAudit — that audit's shape is board geometry, this is session time.
       var bad = [], checked = 0, keep = (S.tools || {}).guidance;
       ["guided", "balanced", "spacious"].forEach(function (pre) {
@@ -23471,7 +23564,7 @@
     })();
     initPaneCarousel(); // 3-PANE CAROUSEL (David 2026-06-30): one global finger-following slider across Planner | Journey | Game
     (function () { // the PERSISTENT bottom menu (#nav) is shared across all 3 panes — tapping a button switches panes cleanly (closes the others), matching the swipe. (Overrides the older per-tab handlers.)
-      var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } /* leaving home for a pane closes the home overlay (David 2026-07-20) */ if (S.profile && S.profile.simpleMode) { if (curPaneName() !== "journey") setPaneRest("journey"); return; } if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "planner") setPaneRest("planner"); }; // FIX #1: when nav is collapsed, the Today-pill tap MUST re-expand it (the old per-tab handler did this but was overwritten by the carousel pane handler — David 2026-06-30). simpleMode (Day 4, David 2026-07-02): hide the planner behind the journey — the button itself is display:none (see applySimpleMode()) but this guards against any stray tap reaching it.
+      var pl = document.querySelector('#nav .nb[data-tab="day"]'); if (pl) pl.onclick = function () { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } /* leaving home for a pane closes the home overlay (David 2026-07-20) */ if (S.profile && S.profile.simpleMode) { if (curPaneName() !== "journey") setPaneRest("journey"); return; } if (document.body.classList.contains("nav-collapsed")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "planner") setPaneRest("planner"); }; // TODO planner-doorstep: ask QS "stage" ("What's your life mostly about right now?") HERE, on the planner's FIRST open only — David 2026-09-05 moved it off the first open so it lands where it pays off. NOT BUILT. // FIX #1: when nav is collapsed, the Today-pill tap MUST re-expand it (the old per-tab handler did this but was overwritten by the carousel pane handler — David 2026-06-30). simpleMode (Day 4, David 2026-07-02): hide the planner behind the journey — the button itself is display:none (see applySimpleMode()) but this guards against any stray tap reaching it.
       var jr = el("navJourney"); if (jr) jr.onclick = function () { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } if (document.body.classList.contains("nav-collapsed") && document.body.classList.contains("journey-open")) { document.body.classList.remove("nav-collapsed"); _navLock = 1; setTimeout(function () { _navLock = 0; }, 650); return; } if (curPaneName() !== "journey") setPaneRest("journey"); }; // journey corner pill tap = EXPAND (same as the planner's Today pill)
       var gm = document.querySelector('#nav .nb[data-tab="self"]'); if (gm) gm.onclick = function () { if (typeof TF_OPEN !== "undefined" && TF_OPEN) { try { leaveHomeForPlayer(); } catch (e) {} } if (curPaneName() !== "game") setPaneRest("game"); };
       try { applySimpleMode(); } catch (e) {}
