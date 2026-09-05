@@ -6,6 +6,8 @@
 - **Story run Round 3** — verdict 4 new lines + 6 one-line conflicts in `_design-sync/journey-stones-2026-08-28/PROMPT-round3-story-run.md`, then paste it into Claude Design. (2026-09-05)
 - **Free-forever list** — which features are permanently free; the deal copy holds a placeholder. (`COPY-CH1-SPARK.md` §tour)
 - **v1412 device test** — deadband + shift fix + cards-close-on-leave shipped DEVICE-UNTESTED. (`TRACKER-HANDOFF-2026-07-19.md` v1412)
+- **v1414 device test** — the tour's motion (dim fade, cutout glide, ring, thumb swipes, real scroll-to-advance) + chapter-1 hue spread after the lessons fix; all preview-blind.
+- **Five-stones trail: dead for good?** — v1414 assumes the July day-one lessons are replaced by chapter 1 ("i never designed that"). One word reverses it (`FD_TRAIL`).
 - **Home-puck "black outline"** — no regression found vs v1407 byte-identical diff; need your screenshot or a word for which element. (v1411 round)
 - ~~Journey doorstep pitch~~ — DONE 2026-09-01: Spine A v4 verdicted default (`COPY-CH1-SPARK.md`). Spine C overwhelmed variant: pending line-by-line pass.
 - ~~Voice taste-test~~ — RESOLVED 2026-09-01: the app's voice is David's (author flip; CLERK-david); the five voices demoted to research lenses.
@@ -18,7 +20,8 @@
 
 ## MY MOVE (Claude owes these)
 - **Planner first-open question** — ask "What's your life mostly about right now?" (QS key `stage`) the first time the planner opens; TODO note left in app.js by the 2026-09-05 build. (`ch1-profiling-engine-SPEC.md` §7 amendment)
-- **Tour re-port (round 46)** — v1413's tour was an invented paint job, David rejected it; a 1:1 port from the Round 30 prototype is running (`_design-sync/tutorial-2026-09-01/PORT-SPEC-round30.md`). Device = iPhone 16 Pro Max 430x932.
+- ~~Tour re-port (round 46)~~ — SHIPPED v1414 (1:1 from Round 30/29, numeric diff at 430x932). Awaiting David's device verdict on motion + swipe feel.
+- **Day-2 triggers orphaned by the retired first-day trail** — `_litPastDay1` (the day-2 "Close the day" node) and `litGapDue()` (the Gap lesson + "tomorrow: the space between") both keyed off `S.guide.fd.done`, which no longer exists for new users; they need a day-count trigger instead. Flagged by the v1414 build. (`@SEC:JOURNEY-ENGINE`)
 - **Weekly mom report** — COFOUNDER calls it non-negotiable; LEDGER: "none sent yet · first report due this week" (written 2026-07-21). Never drafted once. `/report` exists. HIGHEST-PRIORITY DEBT.
 - **Emoji sweep** — owed 3× in the handoff (2026-07-21), never run; `EMOJI_KW` (65 entries) + `emojiFor()` still render emoji in the activity picker, violating the Tabler-icons-only law. Opus build wave.
 - ~~Story-run redesign~~ — DRAFTED 2026-09-05: Round 3 prompt + stone-1 panels v2, both gates passed (`PROMPT-round3-story-run.md`). Now David's move: verdict the [NEW] lines + the 6 conflicts, then paste into Claude Design.
