@@ -4607,6 +4607,35 @@
   .st-placerow div{ display:flex; flex-direction:column; gap:2px; flex:1; min-width:0; }
   .st-placerow b{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:15px; color:#fff2f9; line-height:1.2; }
   .st-placerow span{ font-size:10.5px; font-weight:600; color:#a5718f; line-height:1.4; }
+
+  /* ===== THE GUIDED TOUR (Round 30 · ten beats, ending at the journey door) — David-verdicted 2026-09-04.
+     Round 29 visual language: one dim with ONE cutout at the target's real position, one bubble carrying one
+     guardian line, Back always, Next on reading beats, the gesture itself on gesture beats. No fake screens. ===== */
+  .tour-dim{ position:fixed; inset:0; z-index:90000; pointer-events:none; opacity:0; transition:opacity .3s ease; }
+  .tour-dim.on{ opacity:1; }
+  .tour-hole{ position:fixed; left:0; top:0; width:0; height:0; border-radius:24px; box-shadow:0 0 0 9999px rgba(12,4,10,.74); transition:left .34s cubic-bezier(.22,.9,.3,1), top .34s cubic-bezier(.22,.9,.3,1), width .34s cubic-bezier(.22,.9,.3,1), height .34s cubic-bezier(.22,.9,.3,1), border-radius .34s ease; }
+  .tour-dim.nohole .tour-hole{ box-shadow:0 0 0 9999px rgba(12,4,10,.52); }
+  .tour-ring{ position:fixed; border:3px solid rgba(255,143,192,.85); border-radius:24px; pointer-events:none; animation:tourRing 1.9s ease-out infinite; }
+  @keyframes tourRing{ 0%{ transform:scale(.94); opacity:0; } 18%{ opacity:.9; } 100%{ transform:scale(1.22); opacity:0; border-width:1px; } }
+  .tour-bubble{ position:fixed; left:16px; right:16px; z-index:90001; display:flex; flex-direction:column; gap:13px;
+    padding:17px 18px 14px; border-radius:22px; background:#2a1730; border:2.5px solid rgba(255,143,192,.3);
+    box-shadow:0 14px 34px rgba(6,2,6,.55); pointer-events:auto; }
+  .tour-bubble .tour-line{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; line-height:1.3; color:#fff2f9; text-wrap:pretty; }
+  .tour-bubble .tour-line b{ color:#ff8fc0; font-weight:800; }
+  .tour-foot{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .tour-btn{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:14px; color:#f0a9cd; background:none; border:none; padding:6px 4px; cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
+  .tour-btn.dim{ color:#9a6a86; }
+  .tour-btn.next{ color:#160510; background:#ff4fa0; border-radius:14px; padding:8px 16px; box-shadow:0 3px 0 #a82563; }
+  .tour-btn:active{ transform:translateY(2px); }
+  .tour-btn.next:active{ box-shadow:0 1px 0 #a82563; }
+  .tour-cue{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:13px; color:#ff8fc0; display:inline-flex; align-items:center; gap:6px; }
+  .tour-cue i{ animation:tourNudge 1.5s ease-in-out infinite; }
+  @keyframes tourNudge{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(6px); } }
+  .tour-cue.up i{ animation:tourNudgeUp 1.5s ease-in-out infinite; }
+  @keyframes tourNudgeUp{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+  .tour-dots{ display:flex; gap:5px; align-items:center; }
+  .tour-dots span{ width:6px; height:6px; border-radius:50%; background:rgba(240,169,205,.26); }
+  .tour-dots span.on{ background:#ff4fa0; }
 </style>
 </head>
 <body>
@@ -4790,6 +4819,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1412"></script>
+  <script src="app.js?v=1413"></script>
 </body>
 </html>
