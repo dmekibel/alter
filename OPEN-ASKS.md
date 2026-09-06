@@ -6,8 +6,11 @@
 - **Story run Round 3** — verdict 4 new lines + 6 one-line conflicts in `_design-sync/journey-stones-2026-08-28/PROMPT-round3-story-run.md`, then paste it into Claude Design. (2026-09-05)
 - **Free-forever list** — which features are permanently free; the deal copy holds a placeholder. (`COPY-CH1-SPARK.md` §tour)
 - **v1412 device test** — deadband + shift fix + cards-close-on-leave shipped DEVICE-UNTESTED. (`TRACKER-HANDOFF-2026-07-19.md` v1412)
+- **v1417 (FIX-4) device test** — the animated Round 30 port: entrances, tools cascade, the lock, beat-1 placement, lit strip, journey ring, scroll-away bubble. Building 2026-09-05 night.
+- ~~v1416 device test~~ — done by David; twelve findings → PORT-SPEC §FIX-4.
 - **v1416 device test** — the tour after the device round: element lit in place (no box), touches falling through everywhere, the bubble riding its anchor on the three scroll beats, the handoff under a real fling; plus chapter-1 hue spread after the lessons fix. All preview-blind.
-- **JOURNEY cue fades during its own gesture** — `#tfHudJourney` goes 1→0 opacity as the world leaves home, so beat 9's lit element vanishes mid-swipe while ring + tail stay. Pre-existing HUD behaviour; holding it lit during the tour is a HUD change — your call.
+- ~~JOURNEY cue fades during its own gesture~~ — folded into FIX-4 item 9 (held lit during beat 9, restored on teardown).
+- **JOURNEY cue fades (old note)** — `#tfHudJourney` goes 1→0 opacity as the world leaves home, so beat 9's lit element vanishes mid-swipe while ring + tail stay. Pre-existing HUD behaviour; holding it lit during the tour is a HUD change — your call.
 - **Five-stones trail: dead for good?** — v1414 assumes the July day-one lessons are replaced by chapter 1 ("i never designed that"). One word reverses it (`FD_TRAIL`).
 - **Home-puck "black outline"** — no regression found vs v1407 byte-identical diff; need your screenshot or a word for which element. (v1411 round)
 - ~~Journey doorstep pitch~~ — DONE 2026-09-01: Spine A v4 verdicted default (`COPY-CH1-SPARK.md`). Spine C overwhelmed variant: pending line-by-line pass.

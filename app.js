@@ -9491,6 +9491,7 @@
     "This is the journey. The manual for living well, taught one small step at a time.": "\u042d\u0442\u043e \u043f\u0443\u0442\u044c. \u0420\u0443\u043a\u043e\u0432\u043e\u0434\u0441\u0442\u0432\u043e \u043f\u043e \u0445\u043e\u0440\u043e\u0448\u0435\u0439 \u0436\u0438\u0437\u043d\u0438, \u043f\u043e \u043e\u0434\u043d\u043e\u043c\u0443 \u043c\u0430\u043b\u0435\u043d\u044c\u043a\u043e\u043c\u0443 \u0448\u0430\u0433\u0443.",
     "I'll find my way": "\u042f \u0441\u0430\u043c \u0440\u0430\u0437\u0431\u0435\u0440\u0443\u0441\u044c", "Finish": "\u0413\u043e\u0442\u043e\u0432\u043e", "Scroll down": "\u0412\u043d\u0438\u0437", "Scroll up": "\u0412\u0432\u0435\u0440\u0445",
     "Redo tour": "\u0417\u0430\u043d\u043e\u0432\u043e \u0442\u0443\u0440", "re-run the guided tour": "\u043f\u0440\u043e\u0439\u0442\u0438 \u0442\u0443\u0440 \u0441\u043d\u043e\u0432\u0430",
+    "Tour (start it now)": "\u0422\u0443\u0440 (\u0437\u0430\u043f\u0443\u0441\u0442\u0438\u0442\u044c)",
     "home": "\u0434\u043e\u043c", "strip": "\u043f\u043e\u043b\u043e\u0441\u0430", "time tracker": "\u0442\u0440\u0435\u043a\u0435\u0440 \u0432\u0440\u0435\u043c\u0435\u043d\u0438", "shortcuts": "\u044f\u0440\u043b\u044b\u043a\u0438", "tools library": "\u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0430 \u0438\u043d\u0441\u0442\u0440\u0443\u043c\u0435\u043d\u0442\u043e\u0432", "journey": "\u043f\u0443\u0442\u044c", "Settings": "\u041d\u0430\u0441\u0442\u0440\u043e\u0439\u043a\u0438"
   });
 
@@ -9515,24 +9516,30 @@
   // for the journey/toolbox/shortcuts), `ring`/`thumb`/`thumbDy` = the threshold ring + swipe circle on the three
   // gesture beats. (`round` is dead since FIX-2 — the raise wears the element's OWN shape, so no radius is ever
   // authored for it — and is kept on the beats only as a note of which targets are circular.) Copy is David-verbatim.
-  var TOUR = { on: false, beat: 0, gen: 0, scrim: null, bubble: null, dim: null, ring: null, thumb: null, tail: null, flow: null, pdim: null, lit: null, litWhy: null, zfix: [], flowOff: { x: 0, y: 0 }, scrollTied: false };
+  var TOUR = { on: false, beat: 0, gen: 0, scrim: null, bubble: null, dim: null, ring: null, thumb: null, tail: null, flow: null, pdim: null, cat: null, lit: null, litWhy: null, zfix: [], casc: [], flowOff: { x: 0, y: 0 }, scrollTied: false, anim: "", locked: "", lo: -1, hi: -1, bright: false, enterT: 0 };
+  // THE ANIMATION FIELDS (FIX-4, David's updated Round 30): `anim` = which of the frame's four bubble keyframes this
+  // beat runs (pop = bPopC on the centred bubbles, popy = bPopY on the ending, bloom/bloomc = bBloom/bBloomC),
+  // `org` = the frame's own transform-origin Y (the pops pivot inside the card, the blooms pivot on the TAIL TIP,
+  // 10px outside the edge the tail leaves from), `cx`/`cy` = the frame centres this bubble with left:50% / top:50%
+  // (which is why its keyframe carries the matching translate), `arrive` = this beat is the FIRST on its screen, so
+  // it enters through the full bright → dark → bubble sequence (item 1) after the scroll has settled (item 7).
   var TOUR_BEATS = [
-    { id: "home",     line: "This is home. Your day, your tracker, and your practices, all on one screen.", hi: [["home", "#ff8fc0"]], zone: "home", skip: true, w: 296, top: 285 },
-    { id: "strip",    line: "This strip is your day as you planned it. It fills in as you live it.", target: function () { return el("tfHomeBars"); }, hi: [["day", "#36b3f0"]], zone: "home", w: 296, side: "below", gap: 38 },
-    { id: "tracker",  line: "This is the time tracker. Tap it whenever you start something, and I keep the time.", target: function () { return document.querySelector("#trackerFull .tf-ring"); }, hi: [["time tracker", "#ff8fc0"]], zone: "home", round: true, w: 296, side: "below", gap: 25 },
-    { id: "shortcuts",line: "These are your shortcuts. The practices and stacks you use most, pinned to home.", target: function () { return el("tfHeroRow"); }, hi: [["shortcuts", "#b07aff"]], zone: "home", w: 296, side: "above", gap: 43 },
-    { id: "godown",   line: "Home keeps going below. Scrolling is how you move around. Scroll down, or tap TOOLS.", target: function () { return el("tfToolsHint"); }, gesture: "tools", zone: "home", hi: [["Scrolling", "#36b3f0"], ["TOOLS", "#ff8fc0"]], w: 280, pin: 20, side: "above", gap: 49, ring: "pill", thumb: "up", thumbDy: 25 },
-    { id: "tools",    line: "This is the tools library, where you can stack all the different practices. Breathing, stretching, meditation, and many others.", hi: [["tools library", "#b07aff"]], zone: "tools", w: 310, top: 340 },
+    { id: "home",     line: "This is home. Your day, your tracker, and your practices, all on one screen.", hi: [["home", "#ff8fc0"]], zone: "home", skip: true, w: 296, top: 285, onDisc: true, arrive: true, anim: "pop", cx: true, org: "80%" },
+    { id: "strip",    line: "This strip is your day as you planned it. It fills in as you live it.", target: function () { return el("tfHomeBars"); }, hi: [["day", "#36b3f0"]], zone: "home", w: 296, side: "below", gap: 38, anim: "bloomc", cx: true, org: "-10px" },
+    { id: "tracker",  line: "This is the time tracker. Tap it whenever you start something, and I keep the time.", target: function () { return document.querySelector("#trackerFull .tf-ring"); }, hi: [["time tracker", "#ff8fc0"]], zone: "home", round: true, w: 296, side: "below", gap: 25, anim: "bloomc", cx: true, org: "-10px" },
+    { id: "shortcuts",line: "These are your shortcuts. The practices and stacks you use most, pinned to home.", target: function () { return el("tfHeroRow"); }, hi: [["shortcuts", "#b07aff"]], zone: "home", w: 296, side: "above", gap: 43, anim: "bloomc", cx: true, org: "calc(100% + 10px)" },
+    { id: "godown",   line: "Home keeps going below. Scrolling is how you move around. Scroll down, or tap TOOLS.", target: function () { return el("tfToolsHint"); }, gesture: "tools", zone: "home", hi: [["Scrolling", "#36b3f0"], ["TOOLS", "#ff8fc0"]], w: 280, pin: 20, side: "above", gap: 49, ring: "pill", thumb: "up", thumbDy: 25, anim: "bloom", org: "108%" },
+    { id: "tools",    line: "This is the tools library, where you can stack all the different practices. Breathing, stretching, meditation, and many others.", hi: [["tools library", "#b07aff"]], zone: "tools", w: 310, top: 340, arrive: true, anim: "pop", cx: true, org: "80%" },
     // THE HOME BUTTON the design lights bottom-left IS the app's own away-puck (#guardPuck's pink .gpk-disc, 57⌀ at
     // 25,850 on a 430x932 board — the design's is 62⌀ at 18,794 on 402x874): same affordance, same corner, same job.
     // The frame lights the disc, hangs the round-29 ring at inset −7 around it, parks the bubble 81px above with the
     // tail down on the disc's centre, and swipes the thumb DOWN beside it. Fallback to the top HOME threshold only if
     // the puck is not on screen. NOT PORTED (one-hole limit): the frame ALSO keeps the top HOME threshold lit — a
     // second cut-out would need a second scrim, and two stacked scrims darken the rest of the board to .86.
-    { id: "gohome",   line: "Scroll up to go back, or tap the home button. It always brings you home.", target: function () { var p = document.querySelector("#guardPuck .gpk-disc"); if (p) { var r = p.getBoundingClientRect(); if (r.width > 2 && r.bottom > 4 && r.top < (window.innerHeight || 800) - 4) return p; } return el("tfHudHome"); }, gesture: "home", zone: "tools", hi: [["home", "#ff8fc0"]], w: 280, pin: 14, side: "above", gap: 81, round: true, ring: "circle", thumb: "down", thumbDy: 0 },
-    { id: "settings", line: "Settings live behind this button.", target: function () { return el("tfHudSpark"); }, hi: [["Settings", "#ff8fc0"]], zone: "home", round: true, w: 280, pin: 14, side: "below", gap: 17 },
-    { id: "goup",     line: "The journey sits above home. Scroll up.", target: function () { return el("tfHudJourney"); }, gesture: "journey", zone: "home", hi: [["journey", "#b07aff"]], w: 280, pin: 14, side: "below", gap: 59, ring: "cue", thumb: "short", thumbDy: 0 },
-    { id: "journey",  line: "This is the journey. The manual for living well, taught one small step at a time.", hi: [["journey", "#b07aff"]], zone: "journey", end: true, mid: true }
+    { id: "gohome",   line: "Scroll up to go back, or tap the home button. It always brings you home.", target: function () { var p = document.querySelector("#guardPuck .gpk-disc"); if (p) { var r = p.getBoundingClientRect(); if (r.width > 2 && r.bottom > 4 && r.top < (window.innerHeight || 800) - 4) return p; } return el("tfHudHome"); }, gesture: "home", zone: "tools", hi: [["home", "#ff8fc0"]], w: 280, pin: 14, side: "above", gap: 81, round: true, ring: "circle", thumb: "down", thumbDy: 0, anim: "bloom", org: "108%" },
+    { id: "settings", line: "Settings live behind this button.", target: function () { return el("tfHudSpark"); }, hi: [["Settings", "#ff8fc0"]], zone: "home", round: true, w: 280, pin: 14, side: "below", gap: 17, arrive: true, anim: "bloom", org: "-10px" },
+    { id: "goup",     line: "The journey sits above home. Scroll up.", target: function () { return el("tfHudJourney"); }, gesture: "journey", zone: "home", hi: [["journey", "#b07aff"]], w: 280, pin: 14, side: "below", gap: 59, ring: "cue", thumb: "short", thumbDy: 0, anim: "bloom", org: "-10px", holdLit: true },
+    { id: "journey",  line: "This is the journey. The manual for living well, taught one small step at a time.", hi: [["journey", "#b07aff"]], zone: "journey", end: true, mid: true, arrive: true, anim: "popy", cy: true, org: "45%" }
   ];
   function tourDone() { return !!(S.tour && S.tour.done); } // purely-additive guarded read → no SCHEMA bump (@SEC:STATE contract)
   function tourMark() { try { S.tour = S.tour || {}; S.tour.done = 1; S.tour.ts = Date.now(); save(); } catch (e) {} }
@@ -9544,55 +9551,138 @@
     if (st >= tools - 60) return "tools";
     return "home";
   }
+  function tourChromeNodes() { // every layer that paints ABOVE the world scroller and therefore has to dim itself
+    var out = [], h = el("tfHud"), j = document.querySelector("#trackerFull .jr-host"), p = el("guardPuck");
+    if (h) out.push(h); if (j) out.push(j); if (p) out.push(p);
+    return out;
+  }
+  function tourSkin() { // THE PER-LAYER DIM (FIX-4 item 3). #tfWorld is a COMPOSITED SCROLLER on iOS: its subtree
+    // flattens into one layer, so a child of it can never out-paint a scrim that is a SIBLING of the scroller — which
+    // is exactly why David's phone showed a dim day strip on beat 2 and a dark bubble/thumb/TOOLS cue on beat 5 while
+    // the preview looked right. So the world's dim lives INSIDE the world (full content height, z39, under the raise
+    // at z41 and under the catcher at z40), the HUD and the journey host dim their own children with the frame's
+    // unlit filter, and the puck keeps its own .tour-pdim. Nothing crosses a compositing boundary any more.
+    var w = el("tfWorld"); if (!w) return;
+    var sc = el("tourScrimW"); if (!sc) { sc = document.createElement("div"); sc.id = "tourScrimW"; sc.className = "tour-scrimw"; }
+    if (sc.parentNode !== w) w.appendChild(sc);
+    var ca = el("tourCatch"); if (!ca) { ca = document.createElement("div"); ca.id = "tourCatch"; ca.className = "tour-catch"; }
+    if (ca.parentNode !== w) w.appendChild(ca);
+    var h = Math.max(w.scrollHeight, w.clientHeight) + "px"; // absolutely positioned at top:0 with exactly this height → it covers every zone and adds nothing to the scroll range
+    sc.style.height = h; ca.style.height = h;
+    TOUR.scrim = sc; TOUR.cat = ca;
+    var puck = el("guardPuck");
+    if (puck) { var pd = el("tourPuckDim"); if (!pd) { pd = document.createElement("div"); pd.id = "tourPuckDim"; pd.className = "tour-pdim"; } if (pd.parentNode !== puck) puck.appendChild(pd); TOUR.pdim = pd; }
+  }
+  function tourDimOn(on) { // the BRIGHT ⇄ DARK half of the entrance (item 1). The puck's own dim is off while the puck IS the lit thing.
+    TOUR.bright = !on;
+    if (TOUR.scrim) TOUR.scrim.classList.toggle("on", !!on);
+    if (TOUR.pdim) TOUR.pdim.classList.toggle("on", !!on && TOUR.litWhy !== "puck-scrim-off");
+    tourChromeNodes().forEach(function (n) { if (n.id !== "guardPuck") n.classList.toggle("tour-fade", !!on); });
+  }
+  function tourLock(B) { // ITEM 5 — "it's a preview": nothing tappable, nothing scrollable, except what the beat asks
+    // for. The catcher is inside the scroller, so a PERMITTED pan still reaches #tfWorld natively; touch-action:none
+    // on a reading beat kills the pan outright, and on a gesture beat tourClamp decides the direction.
+    var ca = TOUR.cat, g = B && B.gesture;
+    if (ca) ca.classList.toggle("pan", !!g);
+    tourChromeNodes().forEach(function (n) { n.classList.add("tour-lock"); });
+    TOUR.locked = g ? ("scroll toward " + g + " only") : "nothing scrolls, nothing taps";
+    TOUR.lo = TOUR.hi = -1;
+    if (!g) return;
+    try {
+      var home = wHomeY(), tools = wToolsY(), sky = wSkyY();
+      if (g === "journey") { TOUR.lo = sky; TOUR.hi = home; } else { TOUR.lo = home; TOUR.hi = tools; } // the beat's own corridor: you may travel to the target and back to where you started, never past either end
+    } catch (e) { TOUR.lo = TOUR.hi = -1; }
+  }
+  function tourClamp() { // THE ONE PLACE THE TOUR WRITES scrollTop, and the build rules name it the permitted
+    // exception. WebKit does not implement touch-action's pan-up / pan-down, and an unsupported value parses away to
+    // NO restriction at all — the opposite of a lock — so the direction has to be enforced from the scroll event.
+    if (!TOUR.on || TOUR.lo < 0) return;
+    var w = el("tfWorld"); if (!w) return;
+    var st = w.scrollTop;
+    if (st < TOUR.lo - 1) w.scrollTop = TOUR.lo;
+    else if (st > TOUR.hi + 1) w.scrollTop = TOUR.hi;
+  }
   function tourStart(force) {
     if (TOUR.on) return; if (!force && tourDone()) return;
-    TOUR.on = true; TOUR.beat = 0; TOUR.zfix = []; TOUR.flowOff = { x: 0, y: 0 };
+    TOUR.on = true; TOUR.beat = 0; TOUR.zfix = []; TOUR.casc = []; TOUR.flowOff = { x: 0, y: 0 };
     var dim = el("tourDim"); if (!dim) { dim = document.createElement("div"); dim.id = "tourDim"; dim.className = "tour-dim"; document.body.appendChild(dim); }
     while (dim.firstChild) dim.removeChild(dim.firstChild); // child-drain, never an innerHTML wipe
     TOUR.dim = dim;                                                              // the FIXED host: a transparent layer for the ring + thumb when they must not scroll
     TOUR.ring = add(dim, "div", "tour-ring"); TOUR.ring.style.display = "none";
     TOUR.thumb = add(dim, "div", "tour-thumb"); add(TOUR.thumb, "i"); TOUR.thumb.style.display = "none";
-    // THE SCRIM mounts inside .tf-inner — the app's nearest stacking context that owns every lit target — so a raised
-    // element can actually beat it (FIX-2 D1). Outside the cockpit there is nothing to raise, so it falls back to a
-    // fixed body scrim under the chrome layer: a flat dim with nothing lit, never a rectangle.
-    var inner = document.querySelector("#trackerFull .tf-inner") || document.body;
-    var sc = el("tourScrim"); if (!sc) { sc = document.createElement("div"); sc.id = "tourScrim"; sc.className = "tour-scrim"; }
-    if (sc.parentNode !== inner) inner.appendChild(sc);
-    if (inner === document.body) { sc.style.position = "fixed"; sc.style.zIndex = "89999"; } else { sc.style.position = ""; sc.style.zIndex = ""; }
-    TOUR.scrim = sc;
-    var puck = el("guardPuck"); // z92 in body — above the whole cockpit, so the .tf-inner scrim can never reach it
-    if (puck) { var pd = el("tourPuckDim"); if (!pd) { pd = document.createElement("div"); pd.id = "tourPuckDim"; pd.className = "tour-pdim"; } if (pd.parentNode !== puck) puck.appendChild(pd); TOUR.pdim = pd; }
+    tourSkin();
     var b = el("tourBubble"); if (!b) { b = document.createElement("div"); b.id = "tourBubble"; b.className = "tour-bubble"; document.body.appendChild(b); }
     TOUR.bubble = b;
     if (!TOUR.scrollTied) { var w = el("tfWorld"); if (w) { w.addEventListener("scroll", tourWatch, { passive: true }); TOUR.scrollTied = true; } }
-    setTimeout(function () { dim.classList.add("on"); if (TOUR.scrim) TOUR.scrim.classList.add("on"); }, 20);
-    tourPaint();
+    tourGo(0);
   }
-  function tourWatch() { // GESTURE BEATS: the user's own travel advances the tour, and that is ALL this listener does.
+  function tourWatch() { // GESTURE BEATS: the user's own travel advances the tour, plus the direction clamp (item 5).
     // It repositions NOTHING (FIX-2 D3): the lit thing IS the real element and the bubble rides inside the scroller,
     // so the compositor carries both. A JS reposition here is a guaranteed judder — iOS's main thread reads a
     // scrollTop one to two frames behind the screen (memory: ios-scrolltop-lags-the-compositor).
     if (!TOUR.on) return;
     var B = TOUR_BEATS[TOUR.beat]; if (!B || !B.gesture) return;
+    tourClamp();
     if (tourZone() === B.gesture) tourNext();
+  }
+  var TOUR_HOLD = 380; // THE BRIGHT PHASE (item 1). CHOSEN, not measured, and named as such in PORT-SPEC §EXTRACT-FIX-4 D:
+  // the prototype is a static composition per beat whose scrim carries no transition at all (grep transition = 0 hits
+  // in the whole bundle), so "bright → dark → bubble" has no frame timing to copy. What IS the frame's: the .08s
+  // bubble delay and the .45s cubic-bezier(.22,.9,.3,1) of tLight, which the scrim's fade borrows because tLight is
+  // literally the other half of the same moment (the lit thing brightens while the room darkens).
+  function tourSettle(cb) { // ITEM 7 — "nothing pre-mounted while the user is still scrolling": the arrival waits for
+    // the world to stop moving before the screen darkens and the bubble arrives.
+    var w = el("tfWorld"), seq = TOUR.seq, t0 = Date.now(), last = w ? w.scrollTop : 0, still = 0;
+    if (!w) { cb(); return; }
+    (function step() {
+      if (!TOUR.on || TOUR.seq !== seq) return;
+      var st = w.scrollTop;
+      still = (Math.abs(st - last) < .6) ? still + 1 : 0; last = st;
+      if (still >= 3 || Date.now() - t0 > 1200) { cb(); return; }
+      setTimeout(step, 50); // NOT requestAnimationFrame: rAF is frozen outright while the page is hidden, and a tour that never leaves its bright phase because the tab was in the background is a worse bug than a settle that takes an extra beat
+    })();
+  }
+  function tourBare() { // the screen goes BRIGHT: the dim lifts, the raise lets go, the bubble leaves. The LOCK stays.
+    tourUnraise(); tourCascClear(); tourDimOn(false);
+    if (TOUR.bubble) TOUR.bubble.style.display = "none";
+    if (TOUR.ring) TOUR.ring.style.display = "none";
+    if (TOUR.thumb) TOUR.thumb.style.display = "none";
+  }
+  function tourGo(n, back) { // THE ENTRANCE (item 1): an ARRIVAL at a screen plays bright → dark → bubble; a beat
+    // within a screen keeps the dim up and only re-blooms the bubble. Back never replays the entrance.
+    var B = TOUR_BEATS[n]; if (!B) return;
+    TOUR.beat = n; TOUR.seq = (TOUR.seq || 0) + 1;
+    var seq = TOUR.seq;
+    clearTimeout(TOUR.enterT);
+    tourLock(B); // the preview is locked BEFORE the screen goes bright, so nothing can be scrolled away during the hold
+    if (!B.arrive || back) { tourPaint(); return; }
+    tourBare();
+    tourSettle(function () {
+      if (!TOUR.on || TOUR.seq !== seq) return;
+      TOUR.enterT = setTimeout(function () { if (!TOUR.on || TOUR.seq !== seq) return; tourPaint(); }, TOUR_HOLD);
+    });
   }
   function tourStop(finished) {
     if (!TOUR.on) return; TOUR.on = false;
     if (finished) tourMark();
-    tourUnraise(); // the lit element must go back to its own z-index / position before anything else is torn down
-    var d = el("tourDim"), b = el("tourBubble"), sc = el("tourScrim"), pd = el("tourPuckDim"), fl = el("tourFlow");
+    clearTimeout(TOUR.enterT); TOUR.seq = (TOUR.seq || 0) + 1;
+    tourUnraise();   // the lit element must go back to its own z-index / position before anything else is torn down
+    tourCascClear(); // …and every app node the cascade borrowed gets its own animation back
+    tourChromeNodes().forEach(function (n) { n.classList.remove("tour-lock"); n.classList.remove("tour-fade"); });
+    var d = el("tourDim"), b = el("tourBubble"), sc = el("tourScrimW"), ca = el("tourCatch"), pd = el("tourPuckDim"), fl = el("tourFlow");
     var gen = ++TOUR.gen;
-    if (d) d.classList.remove("on");
     if (sc) sc.classList.remove("on");
-    setTimeout(function () { if (TOUR.gen !== gen || TOUR.on) return; if (d && d.parentNode) d.parentNode.removeChild(d); if (sc && sc.parentNode) sc.parentNode.removeChild(sc); }, 320); // the fade-out removal must not eat a tour that restarted inside its own 320ms (dev "Redo tour" / DEV.tour() stop-then-start in the same tick used to leave the dim node ripped out from under the live tour)
-    if (pd && pd.parentNode) pd.parentNode.removeChild(pd);
+    if (pd) pd.classList.remove("on");
+    if (ca && ca.parentNode) ca.parentNode.removeChild(ca); // the lock leaves FIRST: the app must be usable the instant the tour ends
+    setTimeout(function () { if (TOUR.gen !== gen || TOUR.on) return; if (d && d.parentNode) d.parentNode.removeChild(d); if (sc && sc.parentNode) sc.parentNode.removeChild(sc); if (pd && pd.parentNode) pd.parentNode.removeChild(pd); }, 480); // the fade-out removal must not eat a tour that restarted inside its own fade (dev "Redo tour" / DEV.tour() stop-then-start in the same tick used to leave the dim node ripped out from under the live tour)
     if (fl && fl.parentNode) fl.parentNode.removeChild(fl);
     if (b && b.parentNode) b.parentNode.removeChild(b);
     var w = el("tfWorld"); if (w && TOUR.scrollTied) { w.removeEventListener("scroll", tourWatch); TOUR.scrollTied = false; }
-    TOUR.ring = TOUR.thumb = TOUR.tail = TOUR.bubble = TOUR.dim = TOUR.scrim = TOUR.flow = TOUR.pdim = null; // the nodes went with the hosts; don't hold stale refs across a Redo
+    TOUR.ring = TOUR.thumb = TOUR.tail = TOUR.bubble = TOUR.dim = TOUR.scrim = TOUR.flow = TOUR.pdim = TOUR.cat = null; // the nodes went with the hosts; don't hold stale refs across a Redo
+    TOUR.locked = ""; TOUR.anim = ""; TOUR.lo = TOUR.hi = -1;
   }
-  function tourNext() { if (TOUR.beat >= TOUR_BEATS.length - 1) { tourStop(true); return; } TOUR.beat++; tourPaint(); }
-  function tourBack() { if (TOUR.beat <= 0) return; TOUR.beat--; tourPaint(); }
+  function tourNext() { if (TOUR.beat >= TOUR_BEATS.length - 1) { tourStop(true); return; } tourGo(TOUR.beat + 1); }
+  function tourBack() { if (TOUR.beat <= 0) return; tourGo(TOUR.beat - 1, true); }
   function tourContentBox(t) { // the VISIBLE cue inside a full-width block (#tfToolsHint is 387 wide; its TOOLS
     // label + chevron are 43x40 in the middle of it). The design's threshold ring wraps that content, never the block.
     var L = 1e9, T = 1e9, R = -1e9, B = -1e9;
@@ -9637,47 +9727,67 @@
     if (s.position !== "static" && s.zIndex !== "auto") r.push("z-index");
     return r;
   }
-  function tourBorrow(n, prop, val) { TOUR.zfix.push([n, prop, n.style[prop]]); n.style[prop] = val; } // record the inline value we are about to overwrite, THEN overwrite it
-  function tourUnraise() { // put every borrowed style back — the tour never leaves a z-index or an offset behind
-    if (TOUR.lit) { TOUR.lit.classList.remove("tour-lit"); TOUR.lit.classList.remove("tour-litrel"); TOUR.lit = null; }
-    for (var i = TOUR.zfix.length - 1; i >= 0; i--) { try { TOUR.zfix[i][0].style[TOUR.zfix[i][1]] = TOUR.zfix[i][2]; } catch (e) {} }
+  function tourBorrow(n, prop, val, imp) { TOUR.zfix.push([n, prop, n.style.getPropertyValue(prop), n.style.getPropertyPriority(prop)]); n.style.setProperty(prop, val, imp || ""); } // record the inline value we are about to overwrite, THEN overwrite it
+  function tourCascClear() { for (var i = TOUR.casc.length - 1; i >= 0; i--) { try { TOUR.casc[i][0].style.animation = TOUR.casc[i][1]; } catch (e) {} } TOUR.casc = []; } // RESTORE, never blank: the app writes its own inline animations on these very nodes (homeSinkUp on the hero tiles, youRowOut on the toolbox cells), so a blanking teardown would delete the app's motion, not just the tour's
+  function tourUnraise() { // put every borrowed style back — the tour never leaves a z-index, an offset or a hold behind
+    if (TOUR.lit) { TOUR.lit.classList.remove("tour-lit"); TOUR.lit.classList.remove("tour-litrel"); TOUR.lit.classList.remove("tour-tap"); TOUR.lit.onclick = TOUR.litTap || null; TOUR.lit = null; TOUR.litTap = null; }
+    document.querySelectorAll(".tour-holdlit").forEach(function (n) { n.classList.remove("tour-holdlit"); });
+    for (var i = TOUR.zfix.length - 1; i >= 0; i--) { try { TOUR.zfix[i][0].style.setProperty(TOUR.zfix[i][1], TOUR.zfix[i][2], TOUR.zfix[i][3]); } catch (e) {} }
     TOUR.zfix = [];
-    if (TOUR.pdim) TOUR.pdim.style.display = "";
     TOUR.litWhy = null;
   }
-  function tourRaise(t) { // THE LIT THING (FIX-2 D1) — the frame's mechanism, verbatim: lift the REAL element above
-    // the flat scrim so only its own pixels, in its own shape, read lit. No hole, no spotlight, nothing rectangular.
+  function tourRaise(t, B) { // THE LIT THING — the frame's mechanism, verbatim: lift the REAL element above the flat
+    // dim so only its own pixels, in its own shape, read lit, and run the frame's tLight on it so it LIGHTS UP on
+    // arrival (brightness .4 → 1, item 3). FIX-4 deleted the z-index/translate borrowing this used to need: the dim
+    // now lives in the SAME layer as whatever it dims (tourSkin), so the raise is a plain z-index inside the world
+    // (12 over the scrim's 10, both under the chrome's own 23/30 so the HUD is never double-dimmed),
+    // a plain "skip the fade" inside the HUD, and "switch the puck's own dim off" on the puck. Nothing has to
+    // out-paint a compositing boundary, which is what failed on David's phone while the preview looked right.
     tourUnraise();
     if (!t) { TOUR.litWhy = "nothing"; return; }
-    var puck = el("guardPuck");
-    if (puck && puck.contains(t)) { if (TOUR.pdim) TOUR.pdim.style.display = "none"; TOUR.litWhy = "puck-scrim-off"; return; } // the puck is beyond the cockpit's scrim; lifting it = switching its own dim off
-    var host = TOUR.scrim && TOUR.scrim.parentNode;
-    if (!host || !host.contains(t)) { TOUR.litWhy = "outside-scrim-context"; return; }
-    var n = t.parentNode, blocked = null;
-    while (n && n !== host && !blocked) {
-      var why = tourSCWhy(n), cs = why.length ? getComputedStyle(n) : null;
-      var snap = cs ? { translate: String(cs.translate), top: parseFloat(cs.top), left: parseFloat(cs.left), position: cs.position } : null;
-      for (var q = 0; q < why.length && !blocked; q++) {
-        if (why[q] === "z-index") tourBorrow(n, "zIndex", "auto"); // #tfHud: a plain positioned z-index, so dropping it to auto lets its child compete in .tf-inner and changes nothing on screen (it still paints after #tfWorld in DOM order)
-        else if (why[q] === "translate") {
-          // #trackerFull.tf-2c #tfHud carries `translate:0 12px` purely as a nudge, and that alone caps every child's
-          // z-index. Fold the nudge into top/left — a pixel-identical box with no stacking context (measured: the HUD
-          // rect is 21.38,57.76 387.23x34.23 before and after) — and hand it back on unraise. Only plain px offsets on
-          // a positioned box are folded; anything else BLOCKS rather than gets guessed at.
-          var tv = snap.translate.split(/\s+/), dx = tv[0], dy = tv.length > 1 ? tv[1] : "0px";
-          if (tv.length <= 2 && /^-?[\d.]+px$/.test(dx) && /^-?[\d.]+px$/.test(dy) && snap.position !== "static" && isFinite(snap.top) && isFinite(snap.left)) {
-            tourBorrow(n, "top", (snap.top + parseFloat(dy)) + "px"); tourBorrow(n, "left", (snap.left + parseFloat(dx)) + "px"); tourBorrow(n, "translate", "none");
-          } else blocked = (n.id || n.tagName) + " (translate " + snap.translate + ")";
-        }
-        else blocked = (n.id || n.tagName) + " (" + why[q] + ")";
-      }
-      n = n.parentNode;
-    }
-    if (blocked) { TOUR.litWhy = "blocked by " + blocked; return; } // graceful: this beat lights nothing rather than inventing a shape
+    var puck = el("guardPuck"), w = el("tfWorld"), hud = el("tfHud"), jr = document.querySelector("#trackerFull .jr-host");
+    if (puck && puck.contains(t)) TOUR.litWhy = "puck-scrim-off";      // the puck floats above the whole cockpit and wears its own dim; lighting it = switching that off
+    else if (w && w.contains(t)) TOUR.litWhy = "raised-in-world";       // z12 over the in-scroller scrim at z10, in the scroller's OWN layer
+    else if ((hud && hud.contains(t)) || (jr && jr.contains(t))) TOUR.litWhy = "unfaded-in-chrome"; // the layer fades its own children and skips this one
+    else { TOUR.litWhy = "outside-the-dim"; return; }                   // graceful: light nothing rather than invent a shape
     t.classList.add("tour-lit");
     var pos; try { pos = getComputedStyle(t).position; } catch (e) { pos = "static"; }
     if (pos === "static") t.classList.add("tour-litrel");
-    TOUR.lit = t; TOUR.litWhy = "raised";
+    if (B && B.gesture) { // ITEM 5: the lit cue is the ONE tappable app element on a gesture beat, and it routes through the app's own doors — never a raw scrollTop write
+      t.classList.add("tour-tap");
+      TOUR.litTap = t.onclick || null;
+      t.onclick = function (e) { if (e) { e.preventDefault(); e.stopPropagation(); } try { if (B.gesture === "tools") wGoTools(); else if (B.gesture === "journey") wGoJourney(); else wGoHome(); } catch (er) {} };
+    }
+    if (B && B.holdLit) t.classList.add("tour-holdlit"); // ITEM 9: the JOURNEY cue fades ITSELF out as the world leaves home (opacity 1 → .17 → 0, the HUD's own scrub). A class carrying `opacity:1 !important` is the only hold that survives it — an inline value is simply overwritten by the next scrub frame. Removed on unraise, so the borrowed style never outlives the beat.
+    TOUR.lit = t;
+  }
+  // THE HOME BOARD + TOOLBOX CASCADES (item 6 and the beat-1/2/4 glows David designed). Every delay below is a
+  // COMPUTED reading off the running prototype (PORT-SPEC §EXTRACT-FIX-4 C), mapped onto the app's own nodes; the
+  // inline animation is borrowed and handed back by tourCascClear.
+  function tourCascade(B) {
+    tourCascClear();
+    if (!B) return;
+    var E = "cubic-bezier(.22,.9,.3,1)", put = function (n, a) { if (!n) return; try { TOUR.casc.push([n, n.style.animation]); n.style.animation = a; } catch (e) {} };
+    var kids = function (sel) { var h = document.querySelector(sel); return h ? [].slice.call(h.children) : []; };
+    var each = function (sel) { return [].slice.call(document.querySelectorAll(sel)); };
+    if (B.id === "home") { // the frame's beat-1 arrival cascade over the whole board: tGlow .9s, delays .40 → 2.65
+      kids("#tfHomeBars").forEach(function (n, i) { put(n, "tGlow .9s " + E + " " + (.40 + i * .18).toFixed(2) + "s both"); });
+      put(el("tfDateKick"), "tGlow .9s " + E + " 1.10s both");
+      put(document.querySelector("#trackerFull .tf-ring"), "tGlowF .9s " + E + " 1.25s both"); // the disc is tGlowF: the frame glows it without moving it
+      put(el("tfTitle"), "tGlow .9s " + E + " 1.45s both");
+      put(el("tfVerdict"), "tGlow .9s " + E + " 1.55s both");
+      put(el("tfCtrls"), "tGlowF .9s " + E + " 1.70s both");                                    // the Planner door
+      kids("#tfHeroRow").forEach(function (n, i) { put(n, "tGlow .9s " + E + " " + (1.85 + i * .20).toFixed(2) + "s both"); });
+      put(el("tfToolsHint"), "tGlow .9s " + E + " 2.65s both");
+    } else if (B.id === "strip") {
+      kids("#tfHomeBars").forEach(function (n, i) { put(n, "tGlowS .7s " + E + " " + (.15 + i * .12).toFixed(2) + "s both"); });
+    } else if (B.id === "shortcuts") {
+      kids("#tfHeroRow").forEach(function (n, i) { put(n, "tGlowT 1.5s " + E + " " + (.15 + i * .20).toFixed(2) + "s both"); });
+    } else if (B.id === "tools") { // casc(toolsGrid,.4,.06) · casc(toolsHeroes,1.0,.1) · casc(toolsBento,1.3,.06)
+      kids("#tbxGridTop").forEach(function (n, i) { put(n, "tCascade 1.4s " + E + " " + (.40 + i * .06).toFixed(2) + "s both"); });
+      each(".tbx-hero").forEach(function (n, i) { put(n, "tCascade 1.4s " + E + " " + (1.00 + i * .10).toFixed(2) + "s both"); });
+      kids(".tbx-bento").forEach(function (n, i) { put(n, "tCascade 1.4s " + E + " " + (1.30 + i * .06).toFixed(2) + "s both"); });
+    }
   }
   function tourAt(node, x, y) { // device px in, host coords out: the fixed hosts sit at the viewport origin, #tourFlow
     // at the scroller's. One place converts, so every number below stays the frame's own device px.
@@ -9690,14 +9800,20 @@
     // carried by the compositor. Zero pad — the design's raised element is its own box, never an inflated one.
     var B = TOUR_BEATS[TOUR.beat], ring = TOUR.ring, thumb = TOUR.thumb; if (!B) return;
     var live = tourLive(B), vw = window.innerWidth || 390;
-    tourRaise(live ? live.el : null);
+    tourRaise(live ? live.el : null, B);
     if (ring) {
+      ring.className = "tour-ring" + (B.ring === "cue" ? " cue" : "") + (ring.parentNode === TOUR.flow ? " inflow" : "");
       if (B.ring && live) { // THE THIN EXPANDING RING — only the three gesture thresholds wear it in round 30
         ring.style.display = "";
         var r = live.r, L = r.left, T = r.top, W = r.width, H = r.height, g;
         if (B.ring === "pill") { var c = tourContentBox(live.el) || { l: L, t: T, w: W, h: H }; g = { l: c.l + c.w / 2 - 43, t: c.t + c.h / 2 - 25, w: 86, h: 50 }; } // the design AUTHORS this pill at a fixed 86x50 border box (80x44 + the 3px rim); it is centred on the threshold cue's own content, never derived from it
         else if (B.ring === "circle") g = { l: L - 7, t: T - 7, w: W + 14, h: H + 14 };                                                                     // the home button's ring: the design's inset:-7px
-        else g = { l: L, t: T + 7, w: W, h: H - 2 };                                                                                                        // the threshold cue's ring: the design's inset 7px 0 -5px
+        else { // ITEM 8 — the JOURNEY cue's ring "starts too small and covers the J and Y": the frame draws 88.2x41
+          // around an 88x43 cue, and the app's cue is only 56x35, so a ring DERIVED from the app's cue lands inside
+          // the word. Take the frame's own ring size (board-scaled), centre it on the app's cue, and start at scale 1.
+          var s = tourScale(), RW = 88.2 * s, RH = 41 * s;
+          g = { l: L + W / 2 - RW / 2, t: T + H / 2 - RH / 2, w: RW, h: RH };
+        }
         tourAt(ring, g.l, g.t); ring.style.width = Math.round(g.w) + "px"; ring.style.height = Math.round(g.h) + "px";
       } else ring.style.display = "none";
     }
@@ -9725,18 +9841,13 @@
     });
     if (at < txt.length) line.appendChild(document.createTextNode(txt.slice(at)));
   }
-  function tourMount(B) { // THE BUBBLE ALWAYS TRAVELS WITH ITS ANCHOR (David's call on FIX-2's deviation 2, 2026-09-05).
-    // DERIVED, never authored per beat: a beat is "content"-mounted when the thing it lights lives inside the
-    // scroller (#tfWorld) — then bubble, tail, thumb and ring are carried by the compositor exactly as the content is
-    // (beat 5's `godown` → #tfToolsHint). A beat whose anchor is FIXED chrome (beat 7's `gohome` → the z92 guard
-    // puck; beat 9's `goup` → the #tfHudJourney cue, which lives in #tfHud, not #tfWorld) stays on the FIXED mount
-    // like every reading beat, so the tail keeps pointing at its target for the whole gesture and beat 9's bubble no
-    // longer rides off the bottom before the beat hands over to the ending. Because the test is containment and not
-    // a beat id, a future gesture beat is classified correctly the moment its target is written.
-    if (!B || !B.gesture) return "fixed";
-    var w = el("tfWorld"); if (!w) return "fixed";
-    var t = null; try { t = B.target ? B.target() : null; } catch (e) { t = null; }
-    return (t && w.contains(t)) ? "content" : "fixed";
+  function tourMount(B) { // THE BUBBLE SCROLLS AWAY ON EVERY GESTURE BEAT (FIX-4 item 9 — David REVERSES FIX-3's
+    // "travels with its anchor" rule after seeing it on the phone). All three gesture beats are content-mounted, so
+    // bubble, tail, thumb and ring are carried by the compositor exactly as the content is, and the next beat's
+    // bubble enters fresh through the arrival sequence once the travel has landed. Reading beats stay fixed.
+    // Consequence, accepted: on beats 7 and 9, whose targets are FIXED chrome (the guard puck / the #tfHudJourney
+    // cue), the tail leaves its target as the world moves — that is what "the bubble scrolls away" means.
+    return (B && B.gesture) ? "content" : "fixed";
   }
   function tourHost(B) { // WHERE this beat's pieces live (FIX-2 D3). CONTENT-mounted beats (tourMount) put the bubble
     // + thumb INSIDE #tfWorld, absolutely positioned in the scroller's own coordinates, so the compositor carries
@@ -9756,15 +9867,16 @@
   }
   function tourPaint() {
     var B = TOUR_BEATS[TOUR.beat], b = TOUR.bubble; if (!B || !b) return;
+    tourSkin(); // re-size the in-scroller dim + catcher: the world's scrollHeight is live
     var flow = tourHost(B);
     var bHost = flow || document.body, tHost = flow || TOUR.dim;
     var rHost = flow || TOUR.dim; // ring + thumb ride the bubble's own mount — and that mount IS "is the target inside the scroller", so the ring is still in its TARGET's frame of reference by construction
     if (b.parentNode !== bHost) bHost.appendChild(b);
     if (TOUR.thumb && TOUR.thumb.parentNode !== tHost) tHost.appendChild(TOUR.thumb);
     if (TOUR.ring && TOUR.ring.parentNode !== rHost) rHost.appendChild(TOUR.ring);
-    if (TOUR.ring) TOUR.ring.classList.toggle("inflow", TOUR.ring.parentNode === flow);
+    b.style.display = "";
     while (b.firstChild) b.removeChild(b.firstChild); // child-drain, never an innerHTML wipe
-    b.className = "tour-bubble" + (B.w === 310 ? " wide" : B.w === 280 ? " narrow" : "") + (B.end ? " end" : "") + (bHost === flow ? " inflow" : "");
+    b.className = "tour-bubble" + (B.w === 310 ? " wide" : B.w === 280 ? " narrow" : "") + (B.end ? " end" : "") + (bHost === flow ? " inflow" : "") + (B.cx ? " cx" : "") + (B.cy ? " cy" : "");
     TOUR.tail = add(b, "span", "tour-tail up"); add(TOUR.tail, "i"); TOUR.tail.style.display = "none"; // absolutely positioned → costs the flex column nothing
     var line = add(b, "div", "tour-line");
     if (B.skip) { var sk = add(line, "button", "tour-skip", tr("Skip")); sk.onclick = function () { tourStop(true); }; } // "Skip lives only on panel 1", floated into the corner of the line itself
@@ -9791,6 +9903,15 @@
     tourPlace();
     tourBubblePos(B);
     tourPlace();
+    tourLock(B);      // the raise must exist before the lock decides what may be tapped
+    tourCascade(B);   // David's staggered glows over the app's own board / toolbox
+    tourDimOn(true);  // …and the room darkens, .45s, with the bubble arriving .08s into it (item 1)
+    // RE-ARM THE ENTRANCE: the bubble node persists across beats, so an unchanged animation-name would never restart.
+    // Strip it, force a reflow, put it back — the frame's shorthand then runs from 0% on every single beat.
+    b.classList.remove("a-pop", "a-popy", "a-bloom", "a-bloomc");
+    void b.offsetWidth;
+    TOUR.anim = B.anim ? ("a-" + B.anim) : "";
+    if (TOUR.anim) b.classList.add(TOUR.anim);
     requestAnimationFrame(function () { tourBubblePos(TOUR_BEATS[TOUR.beat]); tourPlace(); }); // one more frame once layout settles (the world eases between beats)
   }
   function tourBubblePos(B) { // THE PLACEMENT LAW the frames encode: the tail's centre x is ALWAYS the lit thing's
@@ -9798,24 +9919,45 @@
     // the swiping circle keeps its lane; the beats that light nothing sit at the design's own absolute y (285 home /
     // 340 toolbox) or dead centre (the ending). Artboard px go in as px — never vw/vh (checklist law 1).
     var b = TOUR.bubble; if (!b || !B) return;
-    var vw = window.innerWidth || 390, vh = window.innerHeight || 800, live = tourLive(B);
+    var vw = window.innerWidth || 390, vh = window.innerHeight || 800, live = tourLive(B), s = tourScale();
     var W = B.end ? Math.max(240, vw - 72) : (B.w || 296);
     if (B.end) b.style.width = W + "px"; else b.style.width = "";
     var L = B.end ? 36 : (B.pin != null && (live || B.thumb)) ? B.pin : Math.round((vw - W) / 2); // the thumb's lane is claimed whether or not its threshold is on screen
-    b.style.top = "0px"; // lay it out before measuring: the height depends on how many lines the copy wraps to
+    b.style.top = "0px"; b.style.left = "0px"; // lay it out before measuring: the height depends on how many lines the copy wraps to
     var H = b.offsetHeight, T;                                                                    // offsetHeight is the LAYOUT height, so #tourFlow's counter-scale leaves it in device px either way
-    if (!live) T = B.mid ? Math.round((vh - H) / 2) : (B.top != null ? B.top : Math.round((vh - H) / 2));
+    // ITEM 2 — "positions are relative to anchors; sizes are artboard px" (the 2c-saga law). v1416 ported beat 1's
+    // absolute artboard y (285) as a DEVICE px while the app's circle rides the 2c board's 1.0697 scale, so on
+    // David's phone the bubble sat 26px high on the pink circle. Measured on the P1 frame with animations suppressed:
+    // circle 110.9,274.4 180.2⌀ centre (201, 364.5) · bubble 53,285 296x157.7 centre (201, 363.8) — the frame CENTRES
+    // the bubble on the circle, 0.7px high. So this beat anchors to the LIVE circle; the toolbox's absolute y scales
+    // its CENTRE by the board scale for the same reason (its card keeps its artboard size). Both reproduce the
+    // frame's own number exactly at 402 and correct themselves at 430.
+    if (B.onDisc) {
+      var disc = document.querySelector("#trackerFull .tf-ring"), dr = disc ? disc.getBoundingClientRect() : null;
+      T = (dr && dr.height > 2) ? Math.round(dr.top + dr.height / 2 - .7 - H / 2) : Math.round((B.top + H / 2) * s - H / 2);
+    }
+    else if (!live) T = B.mid ? Math.round((vh - H) / 2) : (B.top != null ? Math.round((B.top + H / 2) * s - H / 2) : Math.round((vh - H) / 2));
     else if (B.side === "above") T = Math.round(live.r.top - (B.gap || 24) - H);
     else T = Math.round(live.r.bottom + (B.gap || 24));
     tourAt(b, L, Math.max(10, Math.min(vh - H - 10, T))); // device px in, host coords out (fixed mount = the same number; #tourFlow = the same number offset to the scroller's origin)
-    var tail = TOUR.tail;
+    var tail = TOUR.tail, tcx = W / 2;
     if (tail) {
       if (live && B.side) {
         tail.style.display = ""; tail.className = "tour-tail " + (B.side === "above" ? "down" : "up");
         var cx = live.r.left + live.r.width / 2;
-        tail.style.left = Math.round(Math.max(12, Math.min(W - 48, cx - L - 18))) + "px"; // the design's 30px notch centred on the target: -15 is its own margin-left, -3 the rim the absolute box is measured inside (the frame's left:50% resolves against the 290px padding box, not the 296px border box)
+        var tl = Math.round(Math.max(12, Math.min(W - 48, cx - L - 18))); // the design's 30px notch centred on the target: -15 is its own margin-left, -3 the rim the absolute box is measured inside (the frame's left:50% resolves against the 290px padding box, not the 296px border box)
+        tail.style.left = tl + "px"; tcx = tl + 15;
       } else tail.style.display = "none";
     }
+    // THE FRAME'S TRANSFORM-ORIGINS (item 1): the two POP bubbles pivot inside themselves (50% 80% / 50% 45%); every
+    // BLOOM bubble pivots on its TAIL TIP — origin x is the tail's own centre inside the card, origin y sits 10px
+    // outside the edge the tail leaves from. Measured per beat off the running prototype, never derived.
+    // (the frame authors "50%" on the bubbles it centres and the tail's own padding-box centre on the pinned ones —
+    // 148 vs 145 on a 296 card; both spellings are copied as the frame writes them rather than unified)
+    var ox = (B.cx || B.cy || !TOUR.tail || TOUR.tail.style.display === "none") ? "50%" : (Math.round(tcx) + "px");
+    b.style.transformOrigin = ox + " " + (B.org || "50%");
+    if (B.cx) b.style.left = "50%";  // the frame centres these two with left:50%, which is why bPopC/bBloomC carry the matching translateX(-50%)
+    if (B.cy) b.style.top = "50%";   // …and the ending with top:50% + bPopY's translateY(-50%)
   }
 
   // @SEC:ONBOARD — onboarding V2 survey (Finch-typed questions, biome gates, starter plan).
@@ -21506,7 +21648,7 @@
     power:       { description: "All chapters, high appetite, Rx set", state: { v: 3, profile: { gender: "m", age: "30s", vibe: "thriving", stages: ["athlete", "founder"], occ: "founder", goals: [], wake: "05:30", sleep: "7-8", lark: true, lowStart: false, todayIdentity: ["Creator", "Athlete"], todayVirtues: ["zest", "wisdom"], set: true }, goals: [{ id: "g3", title: "Launch product", domain: "focus", woop: { wish: "Launch", outcome: "1000 users", obstacle: "Distraction", plan: "Deep work 4h AM" }, subtasks: [{ title: "Build MVP", done: true }, { title: "Beta test", done: false }] }], habits: [{ id: "move", e: "ti-run", l: "Move", type: "build", per: 0, color: "#ff8a1e" }, { id: "deep", e: "ti-brain", l: "Deep work", type: "build", per: 0, color: "#2a9fe0" }, { id: "breathe", e: "ti-wind", l: "Breathe", type: "build", per: 0, color: "#6a5cf0" }], habitDone: {}, blocks: {}, log: {}, timers: [], game: { spark: 250, total: 500, ups: { focus: 1, create: 1 }, garden: [] }, brain: { engine: "off", key: "" }, microState: {}, mood: {}, acts: [], bk: {}, guide: { mode: "guided", seedTier: 5, unlocked: [0, 1, 2, 3, 4, 5, 6, 7], cache: {}, offeredK: null, appetiteState: { level: "high", nodeCap: 3, modeTarget: "guided", stateAge: 0, stateLockedByUser: false, inviteDeclineCount: 0 } }, tools: { use: {}, last: {}, fav: [], recents: [] }, course: { rx: { fundamental: { eat: true, move: true, sleep: true } } } }, _timeSeries: { loggedDaysLast7: 7, amDoneLast7: 7, pmDoneLast7: 5, habitBuildDoneLast7: 7 } }
   };
   function devLoadPersona(name) { var pDef = _DEV_PERSONAS[name]; if (!pDef) { try { toast("Unknown persona: " + name); } catch(e) {} return; } try { localStorage.setItem(KEY, JSON.stringify(_devMakeState(pDef))); location.replace("index.html?cb=" + Date.now()); } catch(e) { try { toast("Persona inject failed: " + e.message); } catch(e2) {} } }
-  window.DEV = { tour: function (n) { try { tourStop(false); } catch (e) {} tourStart(true); if (n) { for (var i = 0; i < n; i++) tourNext(); } return { on: TOUR.on, beat: TOUR.beat, of: TOUR_BEATS.length, zone: tourZone() }; }, tourAt: function () { var B = TOUR_BEATS[TOUR.beat] || {}; function rc(n) { if (!n) return null; var r = n.getBoundingClientRect(); return { l: Math.round(r.left), t: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }; } var b = TOUR.bubble; return { on: TOUR.on, beat: TOUR.beat, id: B.id, line: B.line, gesture: B.gesture || null, zone: tourZone(), lit: rc(TOUR.lit), litWhy: TOUR.litWhy, litEl: TOUR.lit ? (TOUR.lit.id || TOUR.lit.className) : null, zfix: TOUR.zfix.map(function (p) { return (p[0].id || p[0].tagName) + "." + p[1]; }), mount: b ? (b.parentNode === TOUR.flow ? "flow" : "fixed") : null, mountLaw: tourMount(B), bubble: rc(b), ring: TOUR.ring && TOUR.ring.style.display !== "none" ? rc(TOUR.ring) : null, thumb: TOUR.thumb && TOUR.thumb.style.display !== "none" ? rc(TOUR.thumb) : null }; }, open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { FD_TRAIL = true; S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed · FD_TRAIL on for this session only · the trail is retired for real users"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, medStack: function (secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: 32 }, { k: { id: "meditate", name: "Attention", ti: "ti-moon", col: "#9a5cf0" }, d: secs || 150, med: [{ k: "settle" }, { k: "aware" }, { k: "rest" }] }, { k: { id: "mantra", name: "Rewire", ti: "ti-quote", col: "#ffc83d" }, d: 40 }]); return "medStack (3-section meditation in the middle)"; }, storyBars: function () { var w = document.querySelector(".gp-ov .gp-story"); return w ? { rows: document.querySelectorAll(".gp-ov .gp-story").length, bars: w.children.length } : "no player"; }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } var _g = function (s2) { return pkGap(s2._pk, s2.gap != null ? s2.gap : 0, PK.speechEst) + (s2._pkAdd || 0); }; var est = 0; r.segs.forEach(function (s2) { est += (s2.text ? PK.speechEst : 0) + _g(s2); }); return { depth: +sessionDepth(secs).toFixed(2), dose: r.dose, composedEst: +est.toFixed(1), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, kinds: cues.slice(0, 8).map(function (s2) { return s2._pk || "-"; }), gaps: cues.slice(0, 8).map(function (s2) { return +_g(s2).toFixed(1); }) }; }, // 2026-08-15: the `.slice(1)` that used to sit on `cues` was a leftover from the spoken transition card removed on 2026-07-22 — it silently dropped the FIRST cue of every act, so every cueLines/gaps reading taken since has been short by one. `kinds` + the pkGap-resolved `gaps` make the new pause grammar inspectable; composedEst uses PK.speechEst (the player does the exact fit against real clip lengths).
+  window.DEV = { tour: function (n) { try { tourStop(false); } catch (e) {} tourStart(true); if (n) { for (var i = 0; i < n; i++) tourNext(); } return { on: TOUR.on, beat: TOUR.beat, of: TOUR_BEATS.length, zone: tourZone() }; }, tourAt: function () { var B = TOUR_BEATS[TOUR.beat] || {}; function rc(n) { if (!n) return null; var r = n.getBoundingClientRect(); return { l: Math.round(r.left), t: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }; } var b = TOUR.bubble; return { on: TOUR.on, beat: TOUR.beat, id: B.id, line: B.line, gesture: B.gesture || null, zone: tourZone(), lit: rc(TOUR.lit), litWhy: TOUR.litWhy, litEl: TOUR.lit ? (TOUR.lit.id || TOUR.lit.className) : null, zfix: TOUR.zfix.map(function (p) { return (p[0].id || p[0].tagName) + "." + p[1]; }), mount: b ? (b.parentNode === TOUR.flow ? "flow" : "fixed") : null, mountLaw: tourMount(B), locked: TOUR.locked, corridor: TOUR.lo < 0 ? null : [TOUR.lo, TOUR.hi], anim: (TOUR.anim || "-") + (TOUR.bright ? " · BRIGHT (pre-scrim hold)" : "") + " · casc " + TOUR.casc.length, bubble: rc(b), ring: TOUR.ring && TOUR.ring.style.display !== "none" ? rc(TOUR.ring) : null, thumb: TOUR.thumb && TOUR.thumb.style.display !== "none" ? rc(TOUR.thumb) : null }; }, open: devOpenStage, stage: devOpenStage, edgeInsp: function (on) { window.__edgeInsp = (on !== false); return "edge inspector " + (window.__edgeInsp ? "ON · tap a plan bubble" : "off"); }, cockpit: function () { TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); return "cockpit"; }, demoProfile: devDemoProfile, seedDay: devSeedDay, guided: devGuided, reonboard: devReonboard, freshUser: devFreshUser, persona: devLoadPersona, sound: devToggleSound, mute: function () { setAudioVol("voice", 0); setAudioVol("bg", 0); try { TTS.stop(); } catch (e) {} save(); return "muted"; }, builder: function () { programBuilder({ track: STACK_PACKS[0].track.map(function (t) { return { k: t.k, d: t.d }; }) }); return "builder"; }, S: function () { return S; }, sf: function () { try { return sfNow(); } catch (e) { return e.message; } }, gauge: function () { S.gaugeK = null; gaugeOpen(function () { return "gauge closed"; }); return "gauge opened"; }, reset5: function () { runRitualReset(5); return "reset5"; }, ritual: function (tod, mins) { runRitual(tod || "am", mins || 5); return "ritual " + (tod || "am"); }, ritualSegs: function (tod, mins) { return composeRitual({ timeOfDay: tod || "am", mins: mins || 5 }); }, fd: function () { FD_TRAIL = true; S.guide = S.guide || {}; S.guide.fd = { k: todayK() }; save(); try { drawJourney(true); } catch (e) {} return "five stones armed · FD_TRAIL on for this session only · the trail is retired for real users"; }, fdNodes: function () { var n = firstDayNodes(); return n ? n.map(function (x) { return { key: x.key, title: x.title, done: x.done, locked: !!x.locked }; }) : null; }, snapshot: shareSnapshot, pmClose: function () { return devOpenStage("pm"); }, dayClose: function () { return DEV.S().dayClose; }, streaks: function () { return { ahead: streakAhead(), follow: streakFollow(), plannedDays: Object.keys(paDaysPlanned()).sort() }; }, reset: function () { resetSprint(); return "reset opened"; }, chains: function () { return DEV.S().chains; }, urge: function () { logUrge(); return "urge logged"; }, editBlock: function () { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; blockEdit(bl[0], k); return "editing " + bl[0].title; }, armChain: function (title, delay) { var k = todayK(), bl = (blocks(k) || []).filter(function (b) { return b.title; }); if (!bl.length) return "no blocks"; plantChain(bl[0], k, title || "move to the dryer", delay || 45); return { chains: S.chains, step1: bl[0].title }; }, morningDoor: function () { morningDoor(); return "morning door"; }, theOpen: function () { theOpen(function () {}); return "the open"; }, openDaily: function () { theOpen(function () { try { drawJourney(true); } catch (e) {} }, { daily: true }); return "daily open"; }, lit: function () { return { lit: S.lit, gapDue: litGapDue(), door: (S.profile || {}).door, fd: (S.guide || {}).fd }; }, range: function () { rangeScene(function () { try { drawJourney(true); } catch (e) {} }); return "the range"; }, rangeS: function () { return rangeState(); }, relight: function () { relightScene(function () { try { drawJourney(true); } catch (e) {} }); return "relight"; }, anchorFire: function () { anchorFire(); return "anchor"; }, storm: function (on) { S.storm = on !== false; save(); try { drawJourney(true); } catch (e) {} return "storm " + (S.storm ? "ON" : "off"); }, entrySig: function () { entrySignature(); return "entry signature"; }, lesson: function (key) { var L = DAY1_LESSONS[key || "fd0"]; if (!L) return "keys: " + Object.keys(DAY1_LESSONS).join(","); runLesson(L); return "lesson " + (key || "fd0"); }, firstCommit: function () { firstCommit(); return "first commit"; }, firstDayStack: function () { firstDayStack(function () {}); return "first-day stack (stone 1)"; }, rewire: function () { reprogramTool(); return "rewire"; }, keepMantra: function () { offerKeepMantra(); return "keep-mantra"; }, mantra: function () { return DEV.S().mantra; }, wordsTourney: function () { wordsTournament(); return "words tournament"; }, weekSeal: function () { S._forceSunday = true; return devOpenStage("pm"); }, targets: function () { threeTargets(); return "three targets"; }, twoTuesdays: function () { twoTuesdays(); return "two tuesdays"; }, goals: function () { return DEV.S().goals; }, tool: function (id) { var t = TOOLS.filter(function (x) { return x.id === id; })[0]; if (!t) return "no tool " + id + " · ids: " + TOOLS.map(function (x) { return x.id; }).join(","); try { t.fn(); } catch (e) { return e.message; } return "launched " + id; }, energy: function (k) { _voltCache = { k: null, min: -1, rate: 1 }; var r = energyRate(k); return { rate: r, volt: voltClass(k).trim() || "neutral", ingredients: (S.profile || {}).ingredients || [] }; }, dealCard: function (m) { return deckPick(m || "pm-close"); }, deckMode: function () { return deckMode(); }, words: function () { return (S.profile || {}).words || []; }, tlm: function (d) { S.tlm = { k: todayK(), n: 0 }; triggerTLM({ domain: d, force: true }); return pickTLM(d); }, vkey: function (t) { return TTS.vkey(t); }, hasClip: function (t) { return TTS.hasClip(t); }, fullstack: function (m, tap) { runFullStack(m || 10, tap !== false); return "fullstack " + (m || 10); }, medStack: function (secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#5fb0ff" }, d: 32 }, { k: { id: "meditate", name: "Attention", ti: "ti-moon", col: "#9a5cf0" }, d: secs || 150, med: [{ k: "settle" }, { k: "aware" }, { k: "rest" }] }, { k: { id: "mantra", name: "Rewire", ti: "ti-quote", col: "#ffc83d" }, d: 40 }]); return "medStack (3-section meditation in the middle)"; }, storyBars: function () { var w = document.querySelector(".gp-ov .gp-story"); return w ? { rows: document.querySelectorAll(".gp-ov .gp-story").length, bars: w.children.length } : "no player"; }, chargeSegs: function (s, tap) { return composeCharge(s || 180, tap !== false); }, compose: function (id, secs, guid) { S.tools = S.tools || {}; if (guid !== undefined) S.tools.guidance = guid; var med = (id === "meditate" || id === "medit") ? [{ k: "settle" }] : undefined; var r = composeStackSegs([{ id: id, nm: id, ic: "ti-yoga", c: "#46e2a4", secs: secs, med: med }]); var cues = r.segs.filter(function (s2) { return s2._act === 0 && s2.text; }); var distinct = {}; cues.forEach(function (s2) { distinct[s2.text] = 1; }); var maxRepeat = 0, run = 1; for (var i = 1; i < cues.length; i++) { if (cues[i].text === cues[i - 1].text) { run++; if (run > maxRepeat) maxRepeat = run; } else run = 1; } var _g = function (s2) { return pkGap(s2._pk, s2.gap != null ? s2.gap : 0, PK.speechEst) + (s2._pkAdd || 0); }; var est = 0; r.segs.forEach(function (s2) { est += (s2.text ? PK.speechEst : 0) + _g(s2); }); return { depth: +sessionDepth(secs).toFixed(2), dose: r.dose, composedEst: +est.toFixed(1), cueLines: cues.length, distinctLines: Object.keys(distinct).length, consecutiveRepeats: maxRepeat, kinds: cues.slice(0, 8).map(function (s2) { return s2._pk || "-"; }), gaps: cues.slice(0, 8).map(function (s2) { return +_g(s2).toFixed(1); }) }; }, // 2026-08-15: the `.slice(1)` that used to sit on `cues` was a leftover from the spoken transition card removed on 2026-07-22 — it silently dropped the FIRST cue of every act, so every cueLines/gaps reading taken since has been short by one. `kinds` + the pkGap-resolved `gaps` make the new pause grammar inspectable; composedEst uses PK.speechEst (the player does the exact fit against real clip lengths).
     pauseAudit: function () { // REGRESSION GUARD (David 2026-08-15): no somatic beat may ever grow with the dose or the guidance preset again, and no held position may pass its ceiling. Lives on DEV rather than designAudit — that audit's shape is board geometry, this is session time.
       var bad = [], checked = 0, keep = (S.tools || {}).guidance;
       ["guided", "balanced", "spacious"].forEach(function (pre) {
@@ -23486,7 +23628,9 @@
     })(0);
   }
   function jlxCycle() { jlxGo(_jlxI + 1); try { toast("Scroll test → " + JLX_MODES[_jlxI].n); } catch (e) {} return "keep"; } // "keep" = the dev sheet stays open (see the row handler), so a pass through the modes is taps, not reopens
-  function devMenu() { var ex = el("devSheet"); if (ex) { ex.remove(); return; }
+  function devMenuClose() { var s = el("devSheet"), b = el("devSheetBack"); if (s) s.remove(); if (b) b.remove(); } // ONE closer for all three doors: a row, the ✕, and a tap outside (David 2026-09-05, FIX-4 item 4)
+  function devMenu() { var ex = el("devSheet"); if (ex) { devMenuClose(); return; }
+    var bk = document.createElement("div"); bk.id = "devSheetBack"; bk.setAttribute("style", "position:fixed;inset:0;z-index:99998;background:transparent;"); bk.onclick = devMenuClose; document.body.appendChild(bk); // the backdrop sits one z BELOW the sheet, so a tap anywhere outside it closes the menu
     var s = document.createElement("div"); s.id = "devSheet"; s.setAttribute("style", "position:fixed;left:6px;top:46px;z-index:99999;display:flex;flex-direction:column;gap:6px;background:rgba(28,12,34,.98);border:2px solid #b07aff;border-radius:12px;padding:10px;max-width:66vw;max-height:80vh;overflow:auto;");
     function _dj(fn) { return function () { var ss = el("startScreen"); if (ss) { ss.classList.remove("on", "leaving"); } try { leaveHomeForPlayer(); } catch (e) {} document.body.classList.remove("tracker", "overworld"); try { fn(); } catch (e) {} }; } // dev jump: drop the start-screen + home cockpit + overworld overlays (body.overworld floats #screen at z70 OVER the game) so the target surface lands unobstructed
     var acts = [
@@ -23497,6 +23641,7 @@
       ["🎛 Cockpit (tracker)", _dj(function () { setPaneRest("planner"); TF_MODE = null; TF_MODE_USERSET = true; if (!TF_OPEN) openTrackerFull(); else renderTrackerFull(); })],
       ["🧰 Toolbox", _dj(function () { setPaneRest("planner"); openToolbox(); })],
       ["🎚 Design tuner", function () { try { devTuner(); } catch (e) {} }], // tune the home composition on real pixels (David 2026-07-22) — writes CSS vars live, copy-values → JSON
+      ["🧭 " + tr("Tour (start it now)"), function () { try { tourStop(false); } catch (e) {} try { openHome(); } catch (e) {} setTimeout(function () { tourStart(true); }, 560); }], // FIX-4 item 4: start the guided tour from wherever the app is; it opens home first, then runs its own arrival sequence. The Settings → "Redo tour" row stays.
 
       ["🧘 Full stack (10m)", _dj(function () { runFullStack(10, true); })],
       ["🌬 Breathe tool", _dj(function () { DEV.tool("breathe"); })],
@@ -23514,8 +23659,8 @@
  // ON-DEVICE MEASUREMENT (David 2026-08-14, "find the root cause · i'm tired"): the design-vs-app diff runs 74 gates in the PREVIEW; when his phone still looks wrong while the preview passes, the only honest next step is the PHONE reporting its own numbers. Two taps, screenshot the overlay, done — the failing gates name the drifting elements from HIS renderer, no describing needed.
       [(devSimMin() == null ? "🌆 Sim time: OFF (real clock)" : "🌆 Sim time: " + fmt(devSimMin())), function () { var cur = devSimMin(); var v = window.prompt("Simulate time of day, 24h (e.g. 20 or 22:30). Empty or 'off' = real clock.", cur == null ? "20" : fmt(cur)); if (v === null) return; try { toast("dev: " + window.DEV.hour(v.trim())); } catch (e) {} }], // DEV TIME-SIM (David 2026-08-15): see the evening/night home without waiting for the evening — heroes flip at 20:00, the night face at bedHour() (his profile's bedtime, default 24:00) or before 05:00
       [(soundMuted() ? "🔊 Turn sound ON" : "🔇 Turn sound OFF"), devToggleSound], ["👤 Demo profile (skip onboarding)", devDemoProfile], ["📅 Seed a full day", devSeedDay], ["☀️ Open: Morning", function () { devOpenStage("am"); }], ["🌙 Open: Reflection", function () { devOpenStage("pm"); }], ["🛏 Open: Sleep Math", function () { devOpenStage("sleepmath"); }], ["📋 Open: Daily Rx", function () { devOpenStage("rx"); }], ["🧰 Open: Toolbox", function () { devOpenStage("tool"); }], ["✍️ Open: Journal", function () { devOpenStage("journal"); }], ["🧭 Guided ON", function () { devGuided(true); }], ["🧭 Guided OFF", function () { devGuided(false); }], ["🔁 Re-run onboarding", devReonboard], ["💣 Fresh user (wipe)", devFreshUser], [" · persona: fresh (day 0)", function () { devLoadPersona("fresh"); }], [" · persona: early (day 3)", function () { devLoadPersona("early"); }], [" · persona: building (week 2)", function () { devLoadPersona("building"); }], [" · persona: established (month 1)", function () { devLoadPersona("established"); }], [" · persona: power (all chapters)", function () { devLoadPersona("power"); }]];
-    acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { var r; try { r = a[1](); } catch (e) {} if (r === "keep") { btn.textContent = a[2] ? a[2]() : ("🎚 Scroll test: " + JLX_MODES[_jlxI].n); return; } s.remove(); }; s.appendChild(btn); }); // a row may return "keep" to stay open and relabel itself in place — a[2] is its own label thunk (without it every keep-row printed the SCROLL TEST label, which is what the trace toggle would have shown after one tap)
-    var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = function () { s.remove(); }; s.appendChild(cl);
+    acts.forEach(function (a) { var btn = document.createElement("button"); btn.textContent = a[0]; btn.setAttribute("style", "text-align:left;background:#3a2147;color:#fff;border:none;border-radius:8px;padding:9px 11px;font-size:13px;"); btn.onclick = function () { var r; try { r = a[1](); } catch (e) {} if (r === "keep") { btn.textContent = a[2] ? a[2]() : ("🎚 Scroll test: " + JLX_MODES[_jlxI].n); return; } devMenuClose(); }; s.appendChild(btn); }); // a row may return "keep" to stay open and relabel itself in place — a[2] is its own label thunk (without it every keep-row printed the SCROLL TEST label, which is what the trace toggle would have shown after one tap)
+    var cl = document.createElement("button"); cl.textContent = "✕ close"; cl.setAttribute("style", "background:#160510;color:#fff;border:none;border-radius:8px;padding:6px;font-size:12px;"); cl.onclick = devMenuClose; s.appendChild(cl);
     document.body.appendChild(s);
   }
   // ===== THE DESIGN TUNER (David 2026-07-22) — dev-only. Tune the home composition on REAL pixels so the built result can't diverge from an approved mockup again. Sliders write CSS vars on document.documentElement live; the Part-1 approved values ARE the defaults (the wired CSS reads var(--tun-*, <approved>)). Persists under a DEV localStorage key (NOT S — no SCHEMA); reapplied on boot ONLY when dev is on. Normal users never see or load any of it. =====

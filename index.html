@@ -4628,26 +4628,90 @@
      positioned child of #tfWorld), so the compositor carries them with the content. The tour repositions NOTHING on
      scroll (iOS scrollTop lags the compositor). #tourFlow counter-scales the 2c board's transform so the bubble
      still renders at the frame's own device px. Deviations are named in the spec, never approximated silently. */
-  .tour-dim{ position:fixed; inset:0; z-index:90000; pointer-events:none; opacity:0; transition:opacity .3s ease; }
-  .tour-dim.on{ opacity:1; }
-  /* THE FLAT SCRIM — the design's own dim: one colour, edge to edge, no hole, no spread, nothing rectangular. */
-  .tour-scrim{ position:absolute; inset:0; z-index:40; pointer-events:none; background:rgba(32,10,36,.62); opacity:0; transition:opacity .3s ease; }
-  .tour-scrim.on{ opacity:1; }
-  .tour-pdim{ position:absolute; inset:0; z-index:9; pointer-events:none; background:rgba(32,10,36,.62); } /* the guard puck floats at z92, above the whole cockpit — the one target the .tf-inner scrim cannot reach, so it carries its own */
-  /* THE RAISE — the design's z-index:6 over its z-index:5 scrim, done in the app's own stacking context. */
-  .tour-lit{ z-index:41 !important; }
+  /* ===== FIX-4 (2026-09-05 night — David's second device round on v1416, plus his UPDATED Round 30 that now
+     carries the animations he designed: "i designed all the animation so make sure it stays accurate").
+     THREE STRUCTURAL CHANGES, each one of his numbered items:
+     (item 3) THE DIM IS PER LAYER NOW. v1416 hung ONE scrim in .tf-inner at z40 and raised the target to z41 —
+       correct CSS, and WRONG on iOS: #tfWorld is a COMPOSITED SCROLLER, so its whole subtree flattens into a single
+       layer and nothing inside it can interleave with a scrim that is a SIBLING of the scroller. That is exactly
+       what David photographed: the day strip read dim on beat 2, and on beat 5 the bubble, the thumb AND the TOOLS
+       cue were all dark. So every layer dims ITSELF, from inside: #tourScrimW is a child of #tfWorld spanning the
+       full content height (world targets raise to z41 in the SAME scroller), #tfHud and .jr-host dim their own
+       children with the frame's unlit filter, #guardPuck keeps .tour-pdim. Nothing has to out-paint a compositing
+       boundary any more, so the raise holds under ANY compositor — and the #tfHud z-index/translate borrowing
+       v1416 needed is deleted. THE Z LADDER inside .tf-inner, measured rather than assumed (the highest z-index
+       anywhere under #tfWorld is 5): world content ≤5 · #tourScrimW 10 · #tourCatch 11 · .tour-lit 12 · #tfHud 23
+       · .jr-host 30 · #tourFlow 41. The scrim sits BELOW the chrome on purpose — a scrim above it would double-dim
+       the HUD (its own filter plus the veil) and bury the lit settings / journey cue under the world's own dim. The HUD's dim is a FILTER, not a veil, on purpose: a second veil over the HUD would
+       double-dim its 10px overflow band into a visible rectangle (measured, it lands within ~18/255 of the veil).
+     (item 5) THE LOCK — "it's a preview". #tourCatch is a full-content-height child of #tfWorld: touch-action:none
+       on reading beats (the world cannot scroll AT ALL) and pan-y on gesture beats, where tourClamp pins scrollTop
+       into that beat's own [lo,hi] so only the asked-for direction travels. It swallows every tap; the four chrome
+       buttons — and, on a gesture beat, the lit cue — are the only things that take one. The chrome layers wear
+       .tour-lock (pointer-events:none), which a .tour-tap descendant re-enables.
+     (items 1/6) THE ANIMATIONS are David's own, pulled from the running prototype's computed styles beat by beat
+       (the table is PORT-SPEC-round30.md §EXTRACT-FIX-4): bPopC / bPopY / bBloom / bBloomC on the bubble with the
+       frame's .08s delay and its transform-origins (the pops pivot inside themselves, the blooms pivot on the TAIL
+       TIP), tLight on the lit element, tGlow / tGlowF / tGlowS / tGlowT on the home cascades, tCascade across the
+       toolbox. Keyframes below are byte-verbatim from the bundle. ===== */
+  .tour-dim{ position:fixed; inset:0; z-index:90000; pointer-events:none; }
+  /* THE CATCHER (item 5) — inside the scroller, so a permitted pan still reaches #tfWorld natively. It is the only
+     tour node that takes a touch besides the four buttons; it is invisible and paints nothing. */
+  .tour-catch{ position:absolute; left:0; top:0; width:100%; z-index:11; pointer-events:auto; touch-action:none; background:transparent; }
+  .tour-catch.pan{ touch-action:pan-y; } /* gesture beats: the pan is allowed through and tourClamp decides the DIRECTION (WebKit has no pan-up/pan-down) */
+  /* THE FLAT SCRIM — the design's own dim: one colour, edge to edge, no hole, no spread, nothing rectangular.
+     It lives INSIDE #tfWorld (item 3) and spans the full scroll height, so it dims the world in the world's own layer. */
+  .tour-scrimw{ position:absolute; left:0; top:0; width:100%; z-index:10; pointer-events:none; background:rgba(32,10,36,.62); opacity:0; transition:opacity .45s cubic-bezier(.22,.9,.3,1); }
+  .tour-scrimw.on{ opacity:1; }
+  .tour-pdim{ position:absolute; inset:0; z-index:9; pointer-events:none; background:rgba(32,10,36,.62); opacity:0; transition:opacity .45s cubic-bezier(.22,.9,.3,1); } /* the guard puck floats at z92, above the whole cockpit — no scrim in the cockpit can reach it, so it carries its own */
+  .tour-pdim.on{ opacity:1; }
+  /* THE CHROME LAYERS DIM THEMSELVES — brightness(.4) saturate(.8) IS the frame's own unlit state (tLight's 0%). */
+  .tour-fade > *{ filter:brightness(.4) saturate(.8); transition:filter .45s cubic-bezier(.22,.9,.3,1); }
+  .tour-fade > .tour-lit{ filter:none; }
+  .tour-lock{ pointer-events:none !important; }
+  .tour-lock .tour-tap{ pointer-events:auto !important; }
+  /* THE RAISE — the design's z-index:6 over its z-index:5 scrim, in the SAME layer as the scrim that dims it. */
+  .tour-lit{ z-index:12 !important; pointer-events:none; animation:tLight .45s cubic-bezier(.22,.9,.3,1) both; } /* tLight = the lit thing LIGHTS UP on arrival, brightness .4 → 1 (item 3) */
+  .tour-lit.tour-tap{ pointer-events:auto; } /* the ONE tappable app element on a gesture beat — it routes to wGoTools / wGoHome / wGoJourney */
   .tour-lit.tour-litrel{ position:relative !important; } /* only for targets computing to position:static — an absolute HUD button must keep its own positioning */
+  .tour-holdlit{ opacity:1 !important; } /* item 9: the JOURNEY cue fades itself out during its own gesture; hold it lit for the length of the beat (a class, because the HUD's scrub overwrites any inline opacity every frame) */
   /* THE CONTENT LAYER — mounted inside #tfWorld so the compositor scrolls the bubble with the board (D3). */
   .tour-flow{ position:absolute; left:0; width:0; height:0; z-index:41; pointer-events:none; transform-origin:0 0; }
   .tour-bubble.inflow, .tour-thumb.inflow, .tour-ring.inflow{ position:absolute; }
   /* THE THIN EXPANDING RING — round-29 language, kept in round 30, and ONLY on the three gesture thresholds. */
   .tour-ring{ position:fixed; box-sizing:border-box; border:3px solid rgba(255,143,192,.8); border-radius:999px; pointer-events:none; animation:tourRingThin 1.9s ease-out infinite; }
   @keyframes tourRingThin{ 0%{ transform:scale(.92); border-width:3px; opacity:0; } 18%{ opacity:.9; } 100%{ transform:scale(1.3); border-width:1px; opacity:0; } }
+  /* THE JOURNEY CUE'S RING (item 8, David's device round: "the ring starts too small and covers the J and Y"). The
+     frame draws it 88.2x41 around an 88x43 cue; the app's cue is only 56x35, so scale(.92) of a ring derived from
+     the app's cue lands INSIDE the word. It is sized to the FRAME's ring (board-scaled, centred on the app's cue)
+     and starts at scale 1 — the only difference from tourRingThin. */
+  .tour-ring.cue{ animation-name:tourRingCue; }
+  @keyframes tourRingCue{ 0%{ transform:scale(1); border-width:3px; opacity:0; } 18%{ opacity:.9; } 100%{ transform:scale(1.3); border-width:1px; opacity:0; } }
   /* THE BUBBLE — #341226 body, 3px #ff4fa0 rim, 20px radius, 15/18 pad, 10 gap, NO shadow. Width + x/y are set
      per beat by tourBubblePos (the design pins 296 / 280 / 310 / inset-36 and the tail lands on the target's cx). */
   .tour-bubble{ position:fixed; z-index:90001; box-sizing:border-box; display:flex; flex-direction:column; gap:10px;
     width:296px; padding:15px 18px; border-radius:20px; background:#341226; border:3px solid #ff4fa0; pointer-events:none; } /* D2: the body swallows nothing — only the four chrome buttons below take a touch */
   .tour-bubble.wide{ width:310px; } .tour-bubble.narrow{ width:280px; }
+  /* THE ENTRANCE (item 1) — the frame's own four bubble animations, at the frame's own .08s delay. The two POP
+     bubbles are the ones the frame centres with left:50% / top:50%, so their keyframes carry that translate and
+     .cx / .cy carry it for the frames the animation is not covering. */
+  .tour-bubble.cx{ transform:translateX(-50%); } .tour-bubble.cy{ transform:translateY(-50%); }
+  .tour-bubble.a-pop{ animation:bPopC .48s cubic-bezier(.34,1.56,.64,1) .08s both; }
+  .tour-bubble.a-popy{ animation:bPopY .48s cubic-bezier(.34,1.56,.64,1) .08s both; }
+  .tour-bubble.a-bloom{ animation:bBloom .56s cubic-bezier(.22,.9,.3,1) .08s both; }
+  .tour-bubble.a-bloomc{ animation:bBloomC .56s cubic-bezier(.22,.9,.3,1) .08s both; }
+  @keyframes bPopC{ 0%{ transform:translateX(-50%) scale(.78); opacity:0; } 55%{ opacity:1; } 100%{ transform:translateX(-50%) scale(1); opacity:1; } }
+  @keyframes bPopY{ 0%{ transform:translateY(-50%) scale(.78); opacity:0; } 55%{ opacity:1; } 100%{ transform:translateY(-50%) scale(1); opacity:1; } }
+  @keyframes bBloom{ 0%{ transform:scale(.56); opacity:0; } 35%{ opacity:1; } 100%{ transform:scale(1); opacity:1; } }
+  @keyframes bBloomC{ 0%{ transform:translateX(-50%) scale(.56); opacity:0; } 35%{ opacity:1; } 100%{ transform:translateX(-50%) scale(1); opacity:1; } }
+  /* THE LIGHT + THE CASCADES — the lit element brightens from the unlit .4 on arrival; the home board and the
+     toolbox run David's staggered glows (delays are set per element by tourCascade, from the frame's own tables). */
+  @keyframes tLight{ 0%{ filter:brightness(.4) saturate(.8); } 100%{ filter:brightness(1) saturate(1); } }
+  @keyframes tCascade{ 0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); } 45%{ transform:translateY(-2px) scale(1.01); filter:brightness(1.2) saturate(1.2); } }
+  @keyframes tGlow{ 0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); } 45%{ transform:translateY(-2px) scale(1.015); filter:brightness(1.18) saturate(1.18); } }
+  @keyframes tGlowF{ 0%,100%{ filter:brightness(1); } 45%{ filter:brightness(1.18) saturate(1.18); } }
+  @keyframes tGlowS{ 0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); } 45%{ transform:translateY(-2px) scale(1.05); filter:brightness(1.18) saturate(1.18); } }
+  @keyframes tGlowT{ 0%,100%{ transform:translateY(0) scale(1); filter:brightness(1); } 45%{ transform:translateY(-2px) scale(1.02); filter:brightness(1.15) saturate(1.15); } }
   .tour-line{ font-family:"Baloo 2",sans-serif; font-weight:800; font-size:18px; line-height:1.3; color:#fff2f9; text-wrap:pretty; }
   .tour-line b{ font-weight:800; } /* the highlight COLOUR is per beat (the design tints the word to the thing it names) */
   .tour-bubble.end{ padding:17px 19px; gap:12px; } .tour-bubble.end .tour-line{ font-size:19px; }
@@ -4860,6 +4924,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1416"></script>
+  <script src="app.js?v=1422"></script>
 </body>
 </html>
