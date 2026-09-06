@@ -6,7 +6,7 @@
 - **Story run Round 3** — verdict 4 new lines + 6 one-line conflicts in `_design-sync/journey-stones-2026-08-28/PROMPT-round3-story-run.md`, then paste it into Claude Design. (2026-09-05)
 - **Free-forever list** — which features are permanently free; the deal copy holds a placeholder. (`COPY-CH1-SPARK.md` §tour)
 - **v1412 device test** — deadband + shift fix + cards-close-on-leave shipped DEVICE-UNTESTED. (`TRACKER-HANDOFF-2026-07-19.md` v1412)
-- **v1417 (FIX-4) device test** — the animated Round 30 port: entrances, tools cascade, the lock, beat-1 placement, lit strip, journey ring, scroll-away bubble. Building 2026-09-05 night.
+- **v1422 (FIX-4) device test** — the animated Round 30 port: entrances (bright 380ms → dim .45s → bubble .08s, timing CHOSEN where the frame cuts), tools cascade, the lock + corridor clamp, beat-1 placement on the circle, lit strip, journey ring, scroll-away bubble. Two choices to confirm: the entrance timing and the clamp's snap-back feel.
 - ~~v1416 device test~~ — done by David; twelve findings → PORT-SPEC §FIX-4.
 - **v1416 device test** — the tour after the device round: element lit in place (no box), touches falling through everywhere, the bubble riding its anchor on the three scroll beats, the handoff under a real fling; plus chapter-1 hue spread after the lessons fix. All preview-blind.
 - ~~JOURNEY cue fades during its own gesture~~ — folded into FIX-4 item 9 (held lit during beat 9, restored on teardown).
