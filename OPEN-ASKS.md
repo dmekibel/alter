@@ -3,6 +3,7 @@
 *Born 2026-09-01 from David: "is there anything else I asked that was skipped or ignored?" — after the survey-system miss proved recorded ≠ done. RULE: any session that opens, closes, or moves an ask updates this file the same session. One line each + pointer. Sources: session audit + full sweep of verdicts ledger, handoff, fix specs, CANON, DECISIONS, LEDGER, TRIPWIRES, app.js.*
 
 ## DAVID'S MOVE (waiting on you)
+- **Tools library, Round 33 iteration** — David's own six-folder design is the direction (round 1 rejected). Pick the home for the Stutz + mantra/rewire tools and the next iteration prompt from `_design-sync/tools-simplified-2026-09-07/FEEDBACK-round33.md`. (2026-09-07)
 - **Story run Round 3** — verdict 4 new lines + 6 one-line conflicts in `_design-sync/journey-stones-2026-08-28/PROMPT-round3-story-run.md`, then paste it into Claude Design. (2026-09-05)
 - **Free-forever list** — which features are permanently free; the deal copy holds a placeholder. (`COPY-CH1-SPARK.md` §tour)
 - **v1412 device test** — deadband + shift fix + cards-close-on-leave shipped DEVICE-UNTESTED. (`TRACKER-HANDOFF-2026-07-19.md` v1412)
@@ -40,3 +41,9 @@
 - **Future-chapter preview** — "maybe preview them, I don't know."
 - **+1 library** — post-course plus-one library by use case; chapter banners as review. Recorded as product canon, no design yet. (verdicts 2026-08-31)
 - **Skills-ification (KB option C)** — deferred until A+B prove out. (`KB-REWIRE-2026-09-01.md`)
+
+## 2026-09-09 · audio + copy round
+**David's move:** read the 348 rewritten lines at https://claude.ai/code/artifact/4159ed1f-5670-4bc9-ae73-262b4981b155 and tap anything that sounds wrong. Then on device: do Wind / Breath / Bowl sound right, and is the tone slider where you want it.
+**Claude's move (blocked on the above):** wire the approved lines into app.js, append every kill to `_specs/COPY-ANCHORS.md` with its pattern, then `gen-voice-11labs.py all --approved` for dave + millie, then ship.
+**Open, unblocked:** the dave voice manifest drifts from app.js by 10 keys in each direction, so some spoken lines are playing silent today. Audit with `DEV.auditVoice` after the copy lands.
+**Still owed from David:** the David Spero source for the Heart lane. Nothing is on disk; the July specs have said "link pending" since 2026-07-01.
