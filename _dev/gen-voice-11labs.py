@@ -9,6 +9,16 @@
 #   python3 _dev/gen-voice-11labs.py all --force        # full bank, re-synth every line (burns credits)
 #   VOICE_ID=<id> python3 _dev/gen-voice-11labs.py ...  # override voice (default Dave)
 import re, json, os, sys, time, urllib.request, urllib.error
+import sys as _sys, os as _os
+# ===== THE COPY-APPROVAL GATE (David 2026-09-09, verbatim: "Don't convert anything to audio without me approving the
+# copy first"). Voice clips are hash-keyed to exact strings and cost credits per line PER BANK, and David wants to READ
+# every spoken line before it becomes the app's voice. This runs BEFORE anything else in the file, so no key is loaded,
+# no line is extracted and no request is made until the caller states that the copy in app.js carries his verdict:
+#     python3 <this script> all --approved      (or COPY_APPROVED=1 in the environment)
+# It exists because on 2026-09-09 a bare invocation of this script synthesized 10 unapproved lines within seconds.
+if "--approved" not in _sys.argv and _os.environ.get("COPY_APPROVED") != "1":
+    _sys.exit("REFUSED: no audio until David has approved the copy.\n"
+              "  After his verdict:  python3 " + _sys.argv[0] + " all --approved")
 
 VOICES = {"dave": "fFuZg4Dt9LbhpYrB9FUK", "millie": "X1haHuvIvfCqolpCbj5P"}
 VOICE_NAME = os.environ.get("VOICE_NAME", "dave").lower()  # dave | millie -> own subfolder + manifest
@@ -45,9 +55,11 @@ for arr in re.findall(r"var (?:LINES|seq)\s*=\s*\[([^\]]*)\]", src):
     for s in re.findall(STR, arr): add(un(s))
 for a, b in re.findall(r"\[\s*" + STR + r"\s*,\s*" + STR + r"\s*,\s*\d+\s*\]", src):
     add(un(a) + ", " + un(b))
+# STRETCH_MOVES entries are ["a","b"] or ["a","b",1] — the 2026-09-09 pair flag. The bare-2-tuple regex dropped
+# every flagged move, so its clip was never synthesized and the move played silent.
 m = re.search(r"var STRETCH_MOVES\s*=\s*\[(.*?)\n  \];", src, re.S)
 if m:
-    for a, b in re.findall(r"\[\s*" + STR + r"\s*,\s*" + STR + r"\s*\]", m.group(1)):
+    for a, b in re.findall(r"\[\s*" + STR + r"\s*,\s*" + STR + r"\s*(?:,\s*\d+\s*)?\]", m.group(1)):
         add(un(a) + ", " + un(b))
 for c in ["Breathe in", "Hold", "Breathe out"]: add(c)
 for pt, say in re.findall(r"pt:\s*" + STR + r"\s*,\s*say:\s*" + STR, src):
@@ -99,6 +111,8 @@ uniq, seen = [], set()
 for l in lines:
     if l not in seen: seen.add(l); uniq.append(l)
 print("total unique spoken lines:", len(uniq))
+
+
 
 # ---- mode ----
 mode = sys.argv[1] if len(sys.argv) > 1 else "all"

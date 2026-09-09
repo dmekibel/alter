@@ -73,7 +73,7 @@
   function audioClaimed() { return _asClaimed; }
   function voiceBus() { sharedAudioCtx(); audioClaim(); return _voiceBus; }
   function bgBus() { sharedAudioCtx(); audioClaim(); return _bgBus; }
-  function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : _voiceBus; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; }
+  function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : kind === "voice" ? _voiceBus : null; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; } // a kind with NO bus (David 2026-09-09: "tone", the breath guiding tone's own level) stores the pref and stops there — makeBreathSustain reads it live on every update, so it needs no master gain of its own. Before this, any kind that was not "bg" fell through to the VOICE bus.
   // PEACEFUL PAD (David 2026-07-01): the original meditation drone he liked best — an open A pad (A2·E3·A3) with a gentle breathing swell, that slowly + OCCASIONALLY drifts to a warm neighbour chord (F2·C3·A3, common A3 top) and back for a touch of nuance. Reused for the tool bed AND the whole-app music. Returns { stop }.
   var _padLive = 0; // how many peaceful pads are actually sounding — the honest receipt DEV.beds() reads (a lit chip is not a running oscillator)
   function startPad(ctx, out, level) {
@@ -127,7 +127,7 @@
   // about what the asset actually is. Flagged to David — if Floating is really an ambient pad, move one word here.
   var BED_CAT = { pad: "music", music: "music", bowl: "music", forest: "nature", birds: "nature", rain: "nature", ocean: "nature", fireplace: "nature", stream: "nature", thunder: "nature", crickets: "nature", nightforest: "nature", darkforest: "nature", woods: "nature", woods2: "nature", floating: "binaural", focus13: "binaural", theta6: "binaural", deep4: "binaural", gamma33: "binaural", brownnoise: "binaural" }; // BROWN NOISE IS FILED BINAURAL, NOT NATURE (2026-08-20). It is not a binaural beat, but the category governs SELECTION: with only two slots and one per family, filing it under nature would make "rain + brown noise" illegal — and that is the pair people actually want. The bowl is a sustained drone, so it sits with the other music beds.
   var BED_MAX = 2; // "select multiple, like 2 at a time" — two beds, never more. The app has THREE families (music · nature · binaural), so "one per category" alone would still have allowed three; the cap is its own rule.
-  var BED_DEFAULT = ["birds"]; // David 2026-08-20: the default background sound is birds (was the peaceful pad)
+  var BED_DEFAULT = []; // David 2026-09-09 ("having the birds and the ocean is a little overkill for being the default in the player"): NO default bed. Birds under the ocean guiding tone meant every breathing session opened with two nature layers nobody chose — the bed is now a deliberate pick, and voice-only is the floor.
   var BED_NAME = { pad: "Peaceful", music: "Mysterious", bowl: "Singing bowl", forest: "Forest", birds: "Birds", rain: "Rain", ocean: "Ocean", fireplace: "Fireplace", stream: "Stream", thunder: "Distant thunder", crickets: "Crickets", nightforest: "Night forest", darkforest: "Deep night", woods: "Woods", woods2: "Woods at dusk", brownnoise: "Brown noise", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz" }; // the design's peaceful/mysterious/birdsong ARE the app's pad/music/birds — same beds, and the app's own shipped words win. The design's rain · ocean · fireplace · wind · stream · crickets · thunder have no audio and are not offered until they do.
   var BED_ORDER = ["rain", "ocean", "fireplace", "stream", "thunder", "crickets", "woods", "woods2", "nightforest", "darkforest", "birds", "forest", "brownnoise", "bowl", "pad", "music", "floating", "deep4", "theta6", "focus13", "gamma33"]; // ONE visual list (David 2026-08-20: "for now let's keep one list") — the category governs SELECTION only
   function bedKeys() { // THE selected set — always an array, always valid keys, always inside the rule (one per category, at most BED_MAX). Enforced on READ so an imported or hand-edited save can never sneak three beds past the toggle.
@@ -151,15 +151,19 @@
   // ===== FILE BACKGROUND BEDS (David 2026-07-10): real looping audio, categorized in the Sound panel. Nature + binaural loops in assets/bg/*.m4a (trimmed + crossfaded so they loop seamlessly). Decoded into the shared AudioContext + looped as a BufferSource routed to _bgBus (never an <audio> element — iOS blocks timer-driven audio, same reason as the voice engine). MULTI since 2026-08-20: `live` is a MAP, not one source, so a nature bed and a binaural bed can sound together. =====
   var BG_FILES = { forest: "Forest", birds: "Birds", floating: "Floating", focus13: "Focus · 13 Hz", theta6: "Theta · 6 Hz", deep4: "Deep · 4 Hz", gamma33: "Gamma · 33 Hz", rain: "rain", ocean: "ocean", fireplace: "fireplace", stream: "stream", thunder: "thunder", crickets: "crickets", nightforest: "nightforest", darkforest: "darkforest", woods: "woods", woods2: "woods2", brownnoise: "brownnoise", bowl: "bowl" }; // the twelve David picked 2026-08-20 (CC0, verified per file), rendered to the same recipe as the originals: 90s body, a 3s equal-power tail-into-head crossfade so the loop point is inaudible, every bed soft-limited to -23 dBFS RMS.
   var BGBED = (function () {
-    var cache = {}, live = {}, lvl = 0.5; // live[key] = { src, gain }; src stays null while that key's buffer is still decoding (start() re-attaches when it lands)
+    var cache = {}, live = {}, lvl = 0.5, inflight = {}, want = {}; // live[key] = { src, gain }; src stays null while that key's buffer is still decoding (start() re-attaches when it lands). `want` = buffer() callbacks waiting on a decode, `inflight` = the one-fetch-per-key guard that keeps them from stacking duplicate fetches
     function attach(key) { var ctx = sharedAudioCtx(), b = cache[key], e = live[key]; if (!ctx || !b || !e || e.src) return;
       try { if (ctx.state === "suspended") ctx.resume(); var s = ctx.createBufferSource(); s.buffer = b; s.loop = true; var g = ctx.createGain(); g.gain.value = lvl; s.connect(g); g.connect(bgBus() || ctx.destination); s.start(); e.src = s; e.gain = g; } catch (er) {} }
-    function load(key) { if (cache[key] || !BG_FILES[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return;
-      fetch("assets/bg/" + key + ".m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (b) { cache[key] = b; attach(key); }).catch(function () {}); }
+    function load(key) { if (cache[key] || inflight[key] || !BG_FILES[key]) return; var ctx = sharedAudioCtx(); if (!ctx) return; inflight[key] = 1;
+      fetch("assets/bg/" + key + ".m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(function (b) { inflight[key] = 0; cache[key] = b; attach(key); flush(key); }).catch(function () { inflight[key] = 0; flush(key); }); } // the failure path flushes too, with no buffer: a waiter that is never called is a tone that never resolves its ready promise
+    function flush(key) { var q = want[key]; want[key] = null; if (!q) return; q.forEach(function (cb) { try { cb(cache[key] || null); } catch (e) {} }); }
+    function buffer(key, cb) { // David 2026-09-09: hand back the DECODED AudioBuffer (loading it if needed) so the Bowl breath tone can ride this cache instead of fetching + decoding the same file a second time. Calls back synchronously when it is already decoded.
+      if (!cb || !BG_FILES[key]) return; if (cache[key]) { try { cb(cache[key]); } catch (e) {} return; }
+      (want[key] = want[key] || []).push(cb); load(key); }
     function start(key, level) { if (!BG_FILES[key] || live[key]) return; if (level != null) lvl = level; live[key] = { src: null, gain: null }; if (cache[key]) attach(key); else load(key); }
     function stop(key) { if (key == null) { Object.keys(live).forEach(function (k) { stop(k); }); return; } var e = live[key]; if (!e) return; delete live[key]; try { if (e.src) { e.src.onended = null; e.src.stop(0); } } catch (er) {} } // stop() with no key = stop every bed (the old single-source signature, unchanged for its callers)
     function running() { return Object.keys(live).filter(function (k) { return !!live[k].src; }); } // the honest receipt: which keys have a LIVE BufferSource, not which chips are lit
-    return { load: load, start: start, stop: stop, running: running };
+    return { load: load, start: start, stop: stop, running: running, buffer: buffer };
   })();
   var _activeBed = null; // the running timelinePlayer registers a (keys[])=>switch fn here so the settings card can live-swap its bed SET
   var _gpSettings = null; // …and a read-only "what is in this session" dump, so the settings card can COMPUTE its rows (hue · does it contain breathing · is it a stack) instead of being told. Cleared on both teardown paths, same as _activeBed.
@@ -10660,7 +10664,7 @@
     S.audio = S.audio || { voice: 1, bg: 1 };
     if (S.audio.voice == null) S.audio.voice = 1;
     if (S.audio.bg == null) S.audio.bg = 1;
-    if (S.audio.bed == null) S.audio.bed = BED_DEFAULT.slice(); /* David 2026-08-20: the background sound default is BIRDS (was the peaceful pad) */
+    if (S.audio.bed == null) S.audio.bed = BED_DEFAULT.slice(); /* David 2026-09-09: BED_DEFAULT is now EMPTY — a fresh save opens with no backdrop at all (was birds, 2026-08-20) */
     if (!S.audioMigPad) S.audioMigPad = 1; /* the 2026-07-01 "everyone gets the peaceful pad" one-time migration is SPENT. The flag stays stamped so no save can re-run it, but its WRITE is gone: birds is the default now, and MIG 8→9 turns that un-chosen pad into it. */
     if (S.audio.appMusic == null) S.audio.appMusic = false;
     if (!S.audioMigMusicOff) { S.audioMigMusicOff = 1; S.audio.appMusic = false; }
@@ -10771,6 +10775,13 @@
       else if (!Array.isArray(_b0)) S.audio.bed = BED_DEFAULT.slice();
     }
     if (!Array.isArray(S.audio.bed)) S.audio.bed = (typeof S.audio.bed === "string" && BED_CAT[S.audio.bed]) ? [S.audio.bed] : []; // shape guard on EVERY load: a hand-edited or imported save can still carry the old string
+    /* THE UN-CHOSEN BIRDS (David 2026-09-09). The 2026-08-20 default wrote ["birds"] into every save that had never opened
+       the backdrop grid, so "overkill by default" is sitting in real data, not just in BED_DEFAULT. bedSet is the ONLY
+       writer of S.audio.bed and it always stamps S.audioBedPick, so `exactly ["birds"] and no audioBedPick` is precisely
+       the un-chosen default and nothing else — a human pick, birds included, carries the flag and is never touched.
+       Idempotent by construction: once it is [] the test can never match again, so it is safe on every load and needs no
+       SCHEMA bump (additive guarded reads, per the @SEC:STATE contract). */
+    if (!S.audioBedPick && S.audio.bed.length === 1 && S.audio.bed[0] === "birds") S.audio.bed = [];
     S.v = SCHEMA; // stamp current — the NEXT "MIG n→n+1" block goes right above this line (ratchet enforces the marker)
     } catch (e) { try { if (_rawLoad != null) localStorage.setItem(KEY + "_bak", _rawLoad); } catch (e2) {} S = fresh(); toast("save was damaged · backed up + started fresh"); } // NEVER let load() throw past here: damaged save → _bak + fresh() — David's data survives every crash
   }
@@ -14774,62 +14785,88 @@
     setTimeout(function () { try { gate.disconnect(); } catch (e) {} }, 400);
   }
   // hit(kind, ctx, out, durSec, at) — `at` (optional) schedules against an explicit context second instead of ctx.currentTime, so DEV.breathCues / DEV.breathToggles can pre-schedule a whole run into an OfflineAudioContext and MEASURE what the set actually emits per phase.
-  var BREATH_TONES = { glide: { name: "Glide" }, chord: { name: "Chord" }, ocean: { name: "Ocean" } };
-  var BREATH_TONE_KEYS = ["glide", "chord", "ocean"];
-  var BREATH_TONE_SPAN = 500; // cents the guiding tone climbs across a FULL inhale — a perfect fourth. It LANDS on an interval instead of the old 330→415→294 wander, and at level 0 it is exactly 0 cents, so the tone is never parked off-key.
-  // THE GUIDING TONE, REBUILT (David 2026-08-15: "gentle, not ugly … it sounds really bad"). Three structural fixes:
-  // (1) PITCH IS A FUNCTION OF LEVEL, NOT AN EVENT AT A BOUNDARY. The old setPhase scheduled a linearRampToValueAtTime at
-  //     every phase turn, and the octave partial's ramp was never anchored — per the Web Audio spec a new ramp interpolates
-  //     from the PREVIOUS event, which was already in the past, so the parameter jumped 123-260 cents the instant it was
-  //     scheduled and then beat against the fundamental at a flat minor seventh for the whole exhale. Now every frame hands
-  //     the tone the clock's `level` and the pitch is level × BREATH_TONE_SPAN cents. A boundary is no longer an event, so
-  //     there is nothing left to snap: it rises across the inhale, holds through a hold (level holds), falls across the
-  //     exhale, and its contour is the orb's contour by construction.
-  // (2) ONE OSCILLATOR, NOT TWO. `glide` is a PeriodicWave (fundamental + octave + a little third), so the partial is part
-  //     of the waveform. There is no second frequency parameter left that CAN drift out of tune with the first.
+  var BREATH_TONES = { ocean: { name: "Ocean" }, wind: { name: "Wind" }, breath: { name: "Breath" }, bowl: { name: "Bowl" } };
+  var BREATH_TONE_KEYS = ["ocean", "wind", "breath", "bowl"];
+  // THE GUIDING TONE, SECOND PASS (David 2026-09-09: "the ocean is the only kind of regular sounding thing. The other two
+  // options sound bad. So I want you to give me better options for that"). `glide` and `chord` are RETIRED: both were
+  // OSCILLATORS, and an oscillator swelling under a breath is exactly what reads as synthetic no matter how carefully it
+  // is tuned. Ocean worked because it is AIR — filtered noise with no pitch to be out of tune with anything. So the whole
+  // set is now air or a real recording: OCEAN (broadband noise, kept untouched), WIND (the same noise through a bandpass
+  // that rides the breath, with a slow wander so it never reads as a fixed filter), BREATH (narrower and higher — air
+  // actually moving through a nose), BOWL (the bowl bed's own recording, swelled by the breath instead of struck).
+  // THE THREE LAWS FROM 2026-08-15 STILL GOVERN, and every new voice obeys them:
+  // (1) SOUND IS A FUNCTION OF LEVEL, NOT AN EVENT AT A BOUNDARY. Every frame hands the tone the clock's `level` and the
+  //     gain + filter follow it. A phase turn is not an event, so there is nothing left that CAN snap. (The pitch bend
+  //     that law was written for is gone with the oscillators — nothing in the 2026-09-09 set has a pitch — but the shape
+  //     it forced is the reason a breath tone sounds like the breath.)
+  // (2) ONE SOURCE PER VOICE. No second parameter that can drift out of tune with the first.
   // (3) EVERY AUTOMATION IS setTargetAtTime, which approaches from the value the parameter holds right then. It is
   //     continuous by definition — it cannot click and it cannot be left un-anchored. The only scheduled ramp is the
   //     release inside stop(), and that one is anchored explicitly.
   // `at` (optional 3rd arg to update) schedules against an explicit time instead of ctx.currentTime, so DEV.breathTone can
   // pre-schedule a whole cycle into an OfflineAudioContext and MEASURE the rendered waveform rather than anyone claiming
-  // it sounds fine. Returns { update, setPhase, stop, probe } or null.
+  // it sounds fine. Returns { update, setPhase, stop, probe, ready } or null.
+  function toneVol() { try { return (S.audio && S.audio.tone != null) ? S.audio.tone : 1; } catch (e) { return 1; } } // THE GUIDING TONE'S OWN LEVEL (David 2026-09-09: "I would wanna be able to control the volume of those things as well"). It rides no bus of its own — makeBreathSustain reads this on EVERY update() call, so the slider is heard on the next frame, in the session you are in.
+  var BOWL_TONE_CEIL = 0.155; // the Bowl is a REAL file normalised to about -23 dBFS RMS, where the synthesized voices are raw noise a filter then throws most of away — so its ceiling has to sit an order of magnitude above theirs to land at the SAME loudness. Measured, not guessed: DEV.breathTone("bowl") vs DEV.breathTone("ocean") must agree within ~3 dB of rendered RMS at level 1.
+  // ===== THE NO-SIREN LAW (David 2026-09-09: "I don't want any sound to sound like a siren because that will give
+  // people anxiety"). A siren is a pitch, or a narrow resonant band, that RISES AND FALLS ON A REPEATING CYCLE — which is
+  // structurally what a breath tone does, so this is a hard constraint on the shape of every voice here, not a taste note:
+  //   1. NOTHING PITCHED. No oscillator glides with the breath. The breath is carried by LOUDNESS and by an opening
+  //      filter, never by pitch. (This is exactly why `ocean` was the one David kept: "the only kind of regular sounding
+  //      thing." The retired `glide` and `chord` were the siren family itself; do not revive them.)
+  //   2. NOISE OR A RECORDING, never a raw waveform. Ocean / Wind / Breath are filtered noise; Bowl is a real strike.
+  //   3. Q STAYS LOW (<= 0.7). A high-Q band sweeping across the breath WAILS even on white noise, which is the exact
+  //      failure mode: wind was 0.7 and breath was 1.2 on the first pass, and breath swept 500->2200 Hz. Now 0.55 / 0.6
+  //      over narrower spans — the band still opens with the lungs, but it reads as air, not as an alarm.
+  //   4. SLOW MOVEMENT ONLY. Every automation stays on setTargetAtTime with TAU 0.08; no fast tremolo, no two-tone
+  //      alternation, no repeated ascending figure, nothing periodic enough to grab attention.
+  // The same law binds the breath CUES and the reward chimes: a single soft strike that decays, never a sweep.
   function makeBreathSustain(key, ctx) { try {
     if (!ctx) return null;
     var _bb = bgBus(), out = (_bb && _bb.context === ctx) ? _bb : ctx.destination, t00 = ctx.currentTime, TAU = 0.08, stopped = false, curKind = "rest", _lv = 0; // the bg bus belongs to the SHARED context; an OfflineAudioContext render (DEV.breathTone) has to land on its own destination or the connect throws across contexts
     var master = ctx.createGain(); master.gain.setValueAtTime(0.0002, t00); master.connect(out);
     var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.4; lp.frequency.setValueAtTime(340, t00); lp.connect(master);
-    var oscs = [], noise = null, span = BREATH_TONE_SPAN, ceil = 0.055;
-    if (key === "ocean") { // filtered noise that swells in and ebbs out — the one old voice that was already shaped right; it just never followed the level continuously
-      var len = Math.max(1, Math.floor(ctx.sampleRate * 2)), nb = ctx.createBuffer(1, len, ctx.sampleRate), nd = nb.getChannelData(0), ni;
-      for (ni = 0; ni < len; ni++) nd[ni] = Math.random() * 2 - 1;
-      noise = ctx.createBufferSource(); noise.buffer = nb; noise.loop = true; noise.connect(lp); noise.start(); span = 0; ceil = 0.06;
-    } else if (key === "chord") { // a low triad that breathes. It glides as ONE body by a whole tone and RETURNS TO UNITY at level 0 — the old chord targeted ×1.05 / ×1.08 / ×0.95 and never once targeted ×1.0, so it sat about a semitone out of tune permanently.
-      [[130.81, 1], [196.0, 0.45], [261.63, 0.2]].forEach(function (o2) { var os = ctx.createOscillator(), g = ctx.createGain(); os.type = "sine"; os.frequency.setValueAtTime(o2[0], t00); os.detune.setValueAtTime(0, t00); g.gain.value = o2[1]; os.connect(g); g.connect(lp); os.start(); oscs.push(os); });
-      span = 120; ceil = 0.05;
-    } else { // GLIDE — the "pitch rises on the inhale and falls on the exhale" voice David remembers, as one oscillator
-      var real = new Float32Array([0, 0, 0, 0, 0, 0]), imag = new Float32Array([0, 1, 0.32, 0.1, 0.05, 0.02]);
-      var o1 = ctx.createOscillator(); try { o1.setPeriodicWave(ctx.createPeriodicWave(real, imag)); } catch (e) { o1.type = "triangle"; }
-      o1.frequency.setValueAtTime(220, t00); o1.detune.setValueAtTime(0, t00); o1.connect(lp); o1.start(); oscs.push(o1);
+    var noise = null, src = null, bp = null, gust = null, span = 0, ceil = 0.055, lpSpan = 900, restMul = 0.45, bpBase = 0, bpSpan = 0; // span stays on the handle at 0: nothing in the 2026-09-09 set is pitched, and DEV.breathTone reads tone.span to decide whether a pitch measurement is even meaningful
+    var _rdy = null, _rdyGo = null; // resolves once an ASYNC source has attached (the Bowl's recording). Null = nothing to wait for.
+    function whiteBuf() { var len = Math.max(1, Math.floor(ctx.sampleRate * 2)), nb = ctx.createBuffer(1, len, ctx.sampleRate), nd = nb.getChannelData(0), ni; for (ni = 0; ni < len; ni++) nd[ni] = Math.random() * 2 - 1; return nb; }
+    function playNoise(dest) { var n = ctx.createBufferSource(); n.buffer = whiteBuf(); n.loop = true; n.connect(dest); n.start(); return n; }
+    if (key === "wind") { // WIND (David 2026-09-09) — the SAME white noise as ocean, but through a BANDPASS instead of a lowpass, so the breath moves a moving band rather than opening a shelf: a low moan at the bottom of the lungs, a bright rush at the top.
+      bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 0.55; bp.frequency.setValueAtTime(220, t00); bp.connect(master);
+      noise = playNoise(bp); bpBase = 220; bpSpan = 880; ceil = 0.05; // 0.05 not 0.07: measured against the ocean render, 0.07 put wind 2.9 dB hot, so switching tones changed the VOLUME as much as the voice. Every tone now lands within 1 dB of ocean at full lungs (DEV.breathTone rmsAtL1DbFS).
+      gust = { a: 0.10 + Math.random() * 0.10, b: 0.10 + Math.random() * 0.10, p: Math.random() * 6.2832, q: Math.random() * 6.2832 }; // THE GUST: two slow LFO rates in 0.1-0.2 Hz with random phases, summed to at most +/-15% of the centre and written with the same setTargetAtTime as everything else. Without it the filter is a fixed setting and the ear hears a synth sweep; with it, the wind never lands on the same place twice.
+    } else if (key === "breath") { // BREATH (David 2026-09-09) — air moving WITH the breath, not weather. Cut everything under 300 Hz so nothing rumbles, then a narrower band (Q 1.2) sweeping 500 -> 2200 Hz, which is where a real inhale through a nose actually lives.
+      var hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.Q.value = 0.7; hp.frequency.setValueAtTime(300, t00);
+      bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 0.6; bp.frequency.setValueAtTime(500, t00);
+      hp.connect(bp); bp.connect(master); noise = playNoise(hp); bpBase = 500; bpSpan = 1000; ceil = 0.05; restMul = 0.35; // an empty-lung REST drops further than on any other tone: this voice IS a breath, and a held-out breath makes no sound at all
+    } else if (key === "bowl") { // BOWL (David 2026-09-09) — a REAL recording, assets/bg/bowl.m4a, the same file the bowl BED plays: looped, low-passed with the level like every other tone, and swelled by the breath instead of struck. The one voice in the set that no synthesis can fake.
+      lpSpan = 860; ceil = BOWL_TONE_CEIL; // 340 -> 1200 Hz with the level
+      _rdy = new Promise(function (res) { _rdyGo = res; });
+      var landed = function (b) { try { if (!stopped && b) { var s2 = ctx.createBufferSource(); s2.buffer = b; s2.loop = true; s2.connect(lp); s2.start(); src = s2; } } catch (e) {} if (_rdyGo) _rdyGo(); }; // the tone starts SILENT and the source joins the moment the buffer lands — BGBED.attach's own pattern, for the same reason: a decode cannot be waited on inside a gesture
+      if (ctx === _sharedACtx) { try { BGBED.buffer("bowl", landed); } catch (e) { landed(null); } } // the live path reuses the bed cache, so the bowl is fetched + decoded once for the whole app
+      else { fetch("assets/bg/bowl.m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(landed, function () { landed(null); }); } // an OfflineAudioContext (DEV.breathTone) CANNOT play a buffer decoded in the shared context — cross-context buffers throw — so a probe render decodes into the ctx it was handed
+    } else { // OCEAN — filtered noise that swells in and ebbs out, the one voice from the first pass that was already shaped right. Also the fallback for an unknown key, so a stale stored pref can never produce a silent tone.
+      noise = playNoise(lp); ceil = 0.06;
     }
     function update(level, kind, at) {
       if (stopped) return;
-      var t = (at != null) ? at : ctx.currentTime, L = level < 0 ? 0 : (level > 1.2 ? 1.2 : level), i;
+      var t = (at != null) ? at : ctx.currentTime, L = level < 0 ? 0 : (level > 1.2 ? 1.2 : level);
       if (kind) curKind = kind;
-      var g = ceil * (0.14 + 0.86 * L); if (curKind === "rest") g *= 0.45; // an empty-lung rest drops back so the near-silence itself reads as "stay out"; it never goes to zero, or the return would click
+      var g = ceil * (0.14 + 0.86 * L) * toneVol(); if (curKind === "rest") g *= restMul; // an empty-lung rest drops back so the near-silence itself reads as "stay out"; it never goes to zero, or the return would click. toneVol() is read LIVE, so a slider drag lands on the next frame (David 2026-09-09).
       try { master.gain.setTargetAtTime(g < 0.0002 ? 0.0002 : g, t, TAU); } catch (e) {}
-      try { lp.frequency.setTargetAtTime(340 + 900 * L, t, TAU); } catch (e) {} // the body opens as the breath fills — the one thing the old `ocean` did right, now on every tone
-      if (span) for (i = 0; i < oscs.length; i++) { try { oscs[i].detune.setTargetAtTime(L * span, t, TAU); } catch (e) {} }
+      if (bp) { var w = gust ? (1 + 0.15 * (0.6 * Math.sin(6.2832 * gust.a * (t - t00) + gust.p) + 0.4 * Math.sin(6.2832 * gust.b * (t - t00) + gust.q))) : 1;
+        try { bp.frequency.setTargetAtTime((bpBase + bpSpan * L) * w, t, TAU); } catch (e) {} } // wind / breath: the BAND rides the breath (and the gust wanders it), so the lowpass is out of their signal path entirely
+      else { try { lp.frequency.setTargetAtTime(340 + lpSpan * L, t, TAU); } catch (e) {} } // ocean / bowl: the body opens as the breath fills
       _lv = L;
     }
     function stop() {
       if (stopped) return; stopped = true;
       var t = ctx.currentTime;
       try { master.gain.cancelScheduledValues(t); master.gain.setValueAtTime(Math.max(0.0002, master.gain.value), t); master.gain.exponentialRampToValueAtTime(0.0001, t + 0.45); } catch (e) {} // ANCHORED release: plant what it holds right now, then fade. 450ms so the tone leaves instead of clicking off.
-      oscs.forEach(function (o) { try { o.stop(t + 0.55); } catch (e) {} });
       if (noise) { try { noise.stop(t + 0.55); } catch (e) {} }
+      if (src) { try { src.stop(t + 0.55); } catch (e) {} }
     }
-    return { update: update, setPhase: function (kind) { update(_lv, kind); }, stop: stop, key: key, span: span,
-      probe: function () { return { key: key, level: +_lv.toFixed(4), kind: curKind, cents: +(_lv * span).toFixed(2), gain: +master.gain.value.toFixed(5), cutoff: +lp.frequency.value.toFixed(1) }; } };
+    return { update: update, setPhase: function (kind) { update(_lv, kind); }, stop: stop, key: key, span: span, ready: _rdy || Promise.resolve(),
+      probe: function () { return { key: key, level: +_lv.toFixed(4), kind: curKind, cents: +(_lv * span).toFixed(2), gain: +master.gain.value.toFixed(5), cutoff: +(bp || lp).frequency.value.toFixed(1), src: noise ? "noise" : src ? "file" : "none" }; } }; // `src` is the receipt the Bowl needs: its recording attaches ASYNCHRONOUSLY, so "the tone object exists" was never proof that anything could sound. "none" past the first second means the fetch or the decode failed.
   } catch (e) { return null; } }
   // ===== THE BREATHING PLAYER'S NUMBERS — Round 25 "Breathing Player" frame, extracted from David's RUNNING prototype
   // (_specs/BREATHING-PLAYER-PORT-2026-08-20.md). Its header COMMENT disagrees with its own logic in five places
@@ -14966,7 +15003,7 @@
     "Exhale": "Выдох", "Breathing": "Дыхание",
     "visual": "картинка", "cue sound": "звук фазы", "guiding tone": "ведущий тон", "volume": "громкость",
     "Bell": "Колокол", "Gong": "Гонг", "Woodblock": "Деревянный стук",
-    "Orb": "Шар", "Wave": "Волна", "Glide": "Скольжение", "Chord": "Аккорд", "Ocean": "Океан",
+    "Orb": "Шар", "Wave": "Волна", "Ocean": "Океан", "Wind": "Ветер", "Bowl": "Чаша", "Tone": "Тон", // the 2026-09-09 tone set. "Breath" already carries Дыхание above; Glide + Chord are gone with their tones.
     // the BREATH_PATTERNS names the in-session sub-line prints (the picker rows already translate via P.name → these same keys)
     "Calming breath": "Спокойное дыхание", "Physiological sigh": "Физиологический вздох", "Box breath": "Дыхание по квадрату",
     "4-7-8 breath": "Дыхание 4-7-8", "Coherent breath": "Когерентное дыхание", "Power breaths": "Силовые вдохи", "Retention": "Задержка на пустых"
@@ -14977,7 +15014,8 @@
   // broken tone, and David has only ever heard the broken one. He opts into the new tone and judges it on its own.
   var BREATH_SOUND_MIGRATE = { silent: "off", bell: "bell", bells3: "bell", chime: "bell", harp: "bell", bowl: "gong", wood: "woodblock", flute: "bell", chord: "bell", ocean: "bell" };
   function breathCueKey() { try { if (BREATH_CUES[S.breathCue]) return S.breathCue; var m = BREATH_SOUND_MIGRATE[S.breathSound]; return m || "woodblock"; } catch (e) { return "woodblock"; } } // default: cues ON, the WOODBLOCK set (David 2026-08-20; was bell). A stored pick — including "off", a real cue set — still wins, and so does a legacy S.breathSound choice.
-  function breathToneKey() { try { if (S.breathTone == null) return "ocean"; return BREATH_TONES[S.breathTone] ? S.breathTone : "off"; } catch (e) { return "ocean"; } } // default: the OCEAN tone (David 2026-08-20; was off). An explicit stored "off" is a real choice and is honoured — only an unset pref gets the new default.
+  var BREATH_TONE_MIGRATE = { glide: "ocean", chord: "ocean" }; // David 2026-09-09: the two synthesized voices are retired, so a save that stored one lands on OCEAN — the tone he kept ("the ocean is the only kind of regular sounding thing"). Resolved on READ, not written into the save, so nothing has to migrate and nothing can be lost.
+  function breathToneKey() { try { if (S.breathTone == null) return "ocean"; if (BREATH_TONE_MIGRATE[S.breathTone]) return BREATH_TONE_MIGRATE[S.breathTone]; return BREATH_TONES[S.breathTone] ? S.breathTone : "off"; } catch (e) { return "ocean"; } } // default: the OCEAN tone (David 2026-08-20; was off). An explicit stored "off" is a real choice and is honoured — only an unset pref gets the new default.
   function breathVizKey() { try { if (S.breathViz == null) return "wave"; return BREATH_VIZ[S.breathViz] ? S.breathViz : "wave"; } catch (e) { return "wave"; } } // default: the WAVE (David 2026-08-20; was orb). Resolved here, the same shape as breathCueKey/breathToneKey a build earlier, so a user who actually TAPPED "Orb" keeps the orb and only an unset preference gets the new default.
   var _breathLive = null; // the running breath surface's "re-read the sound prefs" door, so a change in the settings applies to the session you are IN (the same shape as _activeBed). Cleared on teardown.
   // BREATH PREVIEW (BUILD 2026-07-19, David: "when you press on the sounds you can't hear them"): a short in / hold / out demo so you can choose BEFORE the session. It runs the SAME makeBreathClock, the SAME cue-set `hit` at each turn and the SAME tone the live session runs, so what you preview is byte-for-byte what you get. Routed through the bg bus (the Sound slider applies). Returns { stop }.
@@ -15025,7 +15063,7 @@
   // BREATH VOLUME SLIDERS (BUILD 2026-07-19, David: "there's no volume options"): the same two master buses as the player's Sound panel (Voice = spoken cues, Sound = the breath sound + bed), live. Rendered into any container — the picker AND the in-session cog share this exact control. Compact.
   function breathVolRows(host) {
     S.audio = S.audio || { voice: 1, bg: 1 };
-    [["Voice", "voice"], ["Sound", "bg"]].forEach(function (kv) {
+    [["Voice", "voice"], ["Sound", "bg"], ["Tone", "tone"]].forEach(function (kv) { // Tone = the breath's guiding tone, its own level since 2026-09-09. setAudioVol stores a bus-less kind without touching a bus, and makeBreathSustain reads it live.
       var row = document.createElement("div"); row.style.cssText = "display:flex;align-items:center;gap:10px;margin-top:8px;width:100%;max-width:360px;";
       var lab = document.createElement("span"); lab.textContent = tr(kv[0]); lab.style.cssText = "flex:0 0 52px;font-size:11.5px;font-weight:800;color:#9a86c0;letter-spacing:.3px;"; row.appendChild(lab);
       var s = document.createElement("input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round((S.audio[kv[1]] != null ? S.audio[kv[1]] : 1) * 100); s.style.cssText = "flex:1;accent-color:#9a7cff;height:24px;";
@@ -17188,14 +17226,15 @@
     // BREATHING — drawn only when the session actually contains breath segments. In a STACK it is its own titled block with
     // its own SOUND kicker (the frame's shape); in a single breathing session the cue/tone rows just continue the one block.
     var bPaints = [];
-    function breathRow(labelKey, keys, nameOf, getCur, setCur) {
+    function breathRow(labelKey, keys, nameOf, getCur, setCur, vol) {
       var r = row(labelKey), cw = add(r, "div", "ps-chips"); cw.style.flexWrap = "wrap";
       keys.forEach(function (k) { bPaints.push(chip(cw, tr(nameOf(k)), true, 11, function () { return getCur() === k; }, function () { setCur(k); save(); bPaints.forEach(function (p) { p(); }); if (_breathLive) { try { _breathLive(); } catch (e) {} } })); }); // _breathLive = the running breath surface re-reads the prefs on its next frame
+      if (vol) slider(r, function () { return S.audio.tone != null ? S.audio.tone : 1; }, function (v) { setAudioVol("tone", v); }); // THE THIRD LAYER (David 2026-09-09: "I would wanna be able to control the volume of those things as well"). Voice and backdrop already had one; the guiding tone was a fixed ceiling nobody could reach. Same slider as the backdrop row, and makeBreathSustain reads S.audio.tone on every update, so it moves the sound you are hearing right now.
     }
     if (hasBreath) {
       if (isStack) { add(card, "div", "ps-title", tr("Breathing")); add(card, "div", "ps-kick", tr("sound")); }
       breathRow("cue", BREATH_CUE_KEYS, function (k) { return BREATH_CUES[k].name; }, breathCueKey, function (k) { S.breathCue = k; });
-      breathRow("tone", ["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; });
+      breathRow("tone", ["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; }, true);
       add(card, "div", "ps-kick", tr("visual"));
       breathRow("visual", BREATH_VIZ_KEYS, function (k) { return BREATH_VIZ[k].name; }, breathVizKey, function (k) { S.breathViz = k; });
     }
@@ -17456,7 +17495,7 @@
       BREATH_VIZ[k].paint(_vzN, s);
       return true;
     }
-    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, lock: { keepalive: KEEPALIVE.live(), planted: Object.keys(_bSchedK).length, card: MEDIASESSION.owner() === _msTok, art: !!_msArtA, pos: +curElapsed().toFixed(2), dur: +total.toFixed(2) }, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, atPhase: _bPh, hits: _bHits.slice(), viz: { pick: breathVizKey(), mounted: _vzK, node: !!(_vzEl && _vzEl.parentNode), orbParked: !!(_vzOrb && _vzOrb.style.display === "none"), path: _vzN && _vzN.path ? (_vzN.path.getAttribute("d") || "").length : null, pts: _vzN && _vzN.pts ? _vzN.pts.length : null } },
+    _gpProbe = function () { return { gen: myVoiceGen, ttsGen: TTS.voiceGen(), bank: TTS.bank(), revoicing: revoicing, playing: playing, elapsed: +curElapsed().toFixed(2), total: +total.toFixed(2), scheduled: sources.length, live: liveSegAt(curElapsed()), swap: _lastSwap, lock: { keepalive: KEEPALIVE.live(), planted: Object.keys(_bSchedK).length, card: MEDIASESSION.owner() === _msTok, art: !!_msArtA, pos: +curElapsed().toFixed(2), dur: +total.toFixed(2) }, breath: { runs: _bRuns.length, phases: _bRuns.reduce(function (m, r) { return m + r.clock.count; }, 0), cue: breathCueKey(), tone: _bTk, toneLive: !!_bTone, toneProbe: _bTone ? _bTone.probe() : null, atPhase: _bPh, hits: _bHits.slice(), viz: { pick: breathVizKey(), mounted: _vzK, node: !!(_vzEl && _vzEl.parentNode), orbParked: !!(_vzOrb && _vzOrb.style.display === "none"), path: _vzN && _vzN.path ? (_vzN.path.getAttribute("d") || "").length : null, pts: _vzN && _vzN.pts ? _vzN.pts.length : null } },
       ready: ready, transport: bar ? (getComputedStyle(bar).visibility) : null, label: lab ? lab.textContent : null, decoded: segs.filter(function (sg) { return !!sg.buf; }).length, voiced: segs.filter(function (sg) { return !!sg.text; }).length, segs: segs.map(function (sg) { return { t: (sg.text || "").slice(0, 22), start: sg.start != null ? +sg.start.toFixed(2) : null, dur: sg.dur != null ? +sg.dur.toFixed(2) : null, shift: sg._clipShift ? +sg._clipShift.toFixed(3) : 0, buf: sg.buf ? (sg.buf.length + "@" + sg.buf.sampleRate) : null }; }) }; }; // buf = length@rate — a fingerprint that CHANGES when a line is re-decoded from the other bank (same words, different recording). `live` = the line in the air; `swap` = the last re-voice's receipt, including the mid-line splice numbers (t/Dold/Dnew/p/start) so the preview can prove the rewind arithmetic it cannot hear.
 
     // WHAT IS IN THIS SESSION (David 2026-08-20, the settings-card rule): "a single-type session gets only its own settings;
@@ -18731,21 +18770,24 @@
     return out.length ? out : [text];
   }
   function medSeg(ln, gap, subName, act) { var caps = capSplit(tr(ln)); var s = { text: ln, label: caps[0], sub: subName || "", gap: gap }; if (caps.length > 1) s.caps = caps; if (act != null) s._act = act; return s; } // a meditation cue: full line = the voice clip; caps = the short display chunks the player cycles. TRANSLATE-THEN-SPLIT (David on device 2026-08-21, "sometimes the text is English when it should be in Russian"): the caption is cut from the LOCALIZED line, never from the English one. translateTree can only translate a DICT KEY, and a chunk is not a key — splitting first meant every fully-translated long line still printed English on screen while the voice spoke Russian. `text` stays the EN line: it is the voice clip's key (TTS localizes it itself via vline).
-  // STRETCH_MOVES (David 2026-07-13): a real, ORDERED head-to-toe mobility flow, not 3 fixed poses. The player takes as many moves as the chosen time needs (never loops, never stretches 3 over 2 min) — more time = more moves, each a held ~13s. Both gates passed. Add moves here to deepen (a data edit).
+  // STRETCH_MOVES (David 2026-07-13): a real, ORDERED head-to-toe mobility flow, not 3 fixed poses. The composer walks this
+  // list ONCE from the top (stretchMoveSegs) — a longer dose buys more of it, then longer holds, and only repeats when even
+  // PK.heldMax cannot fill the time. THE POOL IS THE DIAL (David 2026-09-09: "instead we need more text"): adding moves here
+  // is a pure data edit and is the only thing that removes a repeat from a long session.
   var STRETCH_MOVES = [
     ["Reach for the ceiling", "stand tall, both arms long and slow"],
     ["Fold forward", "hang heavy, let the neck and arms go"],
     ["Roll up slowly", "stack the spine, head comes up last"],
     ["Roll your shoulders back", "big and slow, a few times around"],
     ["Drop one ear toward your shoulder", "let the weight of your head do the work"],
-    ["Now the other side", "just as slow"],
+    ["Now the other side", "just as slow", 1],
     ["Pull one arm across your chest", "hold it, and feel the shoulder open"],
-    ["Switch arms", "same easy hold on the other side"],
+    ["Switch arms", "same easy hold on the other side", 1],
     ["Press your palms forward and round your back", "open the space between the shoulder blades"],
     ["Reach up and lean to one side", "a long stretch down your ribs"],
-    ["And lean the other way", "keep breathing into it"],
+    ["And lean the other way", "keep breathing into it", 1],
     ["Twist slowly to look behind you", "let your eyes lead the turn"],
-    ["And twist the other way", "easy, all the way around"],
+    ["And twist the other way", "easy, all the way around", 1],
     ["Clasp your hands behind you and lift your chest", "open the front of the shoulders"]
   ];
   Object.assign(I18N.ru, { // THE STRETCH FLOW's own move lines (David on device 2026-08-21: the RU player printed all 14 moves in English). B4 law, in place. Register matched to the relax cues already in the dict: the move is an imperative to ты, its second half a lowercase continuation. These lines have NO RU voice clip either way (hasClip is false with or without this entry), so nothing that is audible today goes silent — the screen simply stops speaking English. They are now dict keys, so the next RU voice-gen pass picks them up.
@@ -18774,16 +18816,33 @@
     "easy, all the way around": "\u0441\u043f\u043e\u043a\u043e\u0439\u043d\u043e, \u0434\u043e \u043a\u043e\u043d\u0446\u0430",
     "Clasp your hands behind you and lift your chest": "\u0421\u0446\u0435\u043f\u0438 \u0440\u0443\u043a\u0438 \u0437\u0430 \u0441\u043f\u0438\u043d\u043e\u0439 \u0438 \u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u0433\u0440\u0443\u0434\u044c",
     "open the front of the shoulders": "\u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u043f\u0435\u0440\u0435\u0434\u043d\u044e\u044e \u043f\u043e\u0432\u0435\u0440\u0445\u043d\u043e\u0441\u0442\u044c \u043f\u043b\u0435\u0447" });
-  function stretchMoveSegs(secs, tag) { // fill `secs` with as many DISTINCT moves as it needs (never looped); more time = more moves, each held; long time lengthens the holds rather than repeating. Returns timelinePlayer segments.
+  function stretchMoveSegs(secs, tag) { // fill `secs` by WALKING THE POOL ONCE: distinct moves first, then longer holds, and only a dose that even the cap cannot fill starts a second pass. Returns timelinePlayer segments.
     secs = Math.max(30, secs || 75);
-    var _per = PK.speechEst + PK.held;                        // one move = the spoken cue + its short hold
-    var n = Math.max(3, Math.round(secs / _per));             // NO pool cap: a longer dose buys MORE MOVES, and the pool LOOPS past its 14th (David 2026-08-16: "if the user chooses a longer stretch, you simply have to loop certain stuff if you have to"). Looping repeats a move; lengthening the silence repeated NOTHING, which is what felt broken.
-    // HOLD CAP (David 2026-08-15: "in the stretching stack a line is said, then a long pause… the long pause feels out of
-    // place"). `max(7, dwell - 3.5)` had no ceiling, so a long dose bought SILENCE instead of moves: 120s -> 9.8s holds,
-    // 300s -> 17.9s. A held position past PK.held stops being a stretch and becomes waiting. Tagged `held` so the player
-    // clamps it again after the real clip length is known, and so the dose re-fit may squeeze it (it never stretches it).
-    var out = [];
-    for (var i = 0; i < n; i++) { var p = STRETCH_MOVES[i % STRETCH_MOVES.length]; var o = { text: p[0] + ", " + p[1], label: p[0], sub: p[1], gap: PK.held, _pk: "held" }; if (tag != null) o._act = tag; out.push(o); }
+    var N = STRETCH_MOVES.length, _per = PK.speechEst + PK.held;   // one move = the spoken cue + its short hold
+    var n = Math.max(3, Math.round(secs / _per));
+    // NO LOOP UNTIL THE POOL IS SPENT (David 2026-09-09: "problem with audio like the stretching looping if the setting is
+    // too long — instead we need more text to provide them"). The 2026-08-16 rule was `i % N`, so a 5-minute dose ran the
+    // 14-move routine two and a half times and you stretched the same shoulder three times over. The order is now: buy
+    // DISTINCT MOVES while the pool has any left; when it is spent, buy LONGER HOLDS up to PK.heldMax; only past that does
+    // a second pass from the top begin. Both earlier laws survive inside it — the hold still has a hard cap (2026-08-15:
+    // a long pause is not content), and a longer dose still buys something real rather than silence (2026-08-16). Grow
+    // STRETCH_MOVES and every dose gets more moves instead of longer holds, with no change here.
+    var out = [], h = PK.held, i, more;
+    function push(ix, gap) { var p = STRETCH_MOVES[ix % N]; var o = { text: p[0] + ", " + p[1], label: p[0], sub: p[1], gap: gap, _pk: "held" }; if (tag != null) o._act = tag; out.push(o); } // tagged `held` so relayoutFrom re-fits it against the REAL clip length (and may squeeze it to land the dose) instead of trusting this estimate
+    // NEVER CUT BETWEEN A MOVE AND ITS OTHER SIDE (2026-09-09 adversarial read of the routine): `n` is a free-running
+    // rounded count, so a dose could end one move after "pull one arm across your chest" and leave the second arm
+    // unstretched. A third element `1` on a pool entry means THIS MOVE CONTINUES THE ONE BEFORE IT; the count walks
+    // forward off any such entry so a short dose always ends on a finished pair. Forward, never back: finishing the pair
+    // is worth the few seconds, and the player's dose re-fit absorbs them.
+    while (n < N && STRETCH_MOVES[n] && STRETCH_MOVES[n][2]) n++;
+    if (n <= N) { for (i = 0; i < n; i++) push(i, PK.held); }      // the pool covers it: first n moves, authored order, short beat
+    else {
+      h = Math.max(PK.held, Math.min(PK.heldMax, (secs - N * PK.speechEst) / N)); // the whole pool, each held as long as the dose needs, capped
+      for (i = 0; i < N; i++) push(i, h);
+      more = Math.round((secs - N * (h + PK.speechEst)) / (h + PK.speechEst));    // heldMax still could not fill it — the pool is genuinely too small for this dose, so a second pass begins, at the long hold
+      while (more > 0 && STRETCH_MOVES[more % N] && STRETCH_MOVES[more % N][2]) more++; // the SECOND pass gets the same pair rule as the first: a repeat run that stops one move after "pull one arm across your chest" leaves the other arm undone just as surely as a short dose would. MODULO, because a pool small enough to need a second pass is small enough for that pass to wrap again (14 moves against a 10-minute dose wraps twice), and an index-based check silently stopped guarding past the first wrap
+      for (i = 0; i < more; i++) push(i, h);
+    }
     return out;
   }
   // Body floor: a slow head-to-toe stretch flow, on the reliable Web-Audio player (David 2026-07-13: replaced the fixed-3-pose + timer-speak overlay — the long-pause / only-3-moves / iOS-silent bug). The highest-ROI reset for a screen-slumped body.
@@ -18976,6 +19035,7 @@
     somaticRest: 12,   // the rest at a body-group boundary (face · shoulders+chest · arms+legs)
     somaticRelease: 45, // the rest AFTER the last cue — the PMR rebound, and the only place a somatic act is allowed a long silence, because by then there is nothing left to cue
     held: 4,           // THE STRETCH HOLD BEAT (David 2026-08-16: "the first line and you have to wait nine seconds of silence. It just feels empty and weird... make those pauses minimum unless it's specifically about meditation"). Was a 12s CEILING over a 7s floor, so every stretch line was followed by 7-12s of nothing. It is now a flat short beat: long enough to get into the move, short enough that the app never reads as stalled. A longer dose buys MORE MOVES (looped), never longer silence. One-number tunable.
+    heldMax: 8,        // THE CEILING A HOLD MAY GROW TO before the routine repeats (David 2026-09-09: "instead we need more text"). A long dose buys TIME IN THE MOVE up to here; past it a stretch stops being a stretch and becomes waiting, which is the same reason PK.held exists. A dose longer than pool × (heldMax + speechEst) is the POOL's problem, not the pause grammar's.
     transition: 2.0,   // act / section boundary: a beat to register the shift (it was literally 0 until today)
     affirmMul: 1.15, affirmMin: 3.0, affirmMax: 7.0, // say-it-back: anchored to the line's OWN spoken length, not the dose
     visualBase: 8, visualSpan: 7,                    // picture-a-scene: 8s guided → 15s spacious (was "cue" = 3.3s, far too short to picture anything)
@@ -18990,7 +19050,7 @@
       case "somatic": return PK.somatic;                                                              // hard floor AND hard ceiling: a somatic gap can never grow with the dose again
       case "settle": return Math.max(PK.somatic, Math.min(PK.somaticRest, g));
       case "release": return Math.max(PK.somatic, Math.min(PK.somaticRelease, g));
-      case "held": return Math.max(4, Math.min(PK.held, g));
+      case "held": return Math.max(PK.held, Math.min(PK.heldMax, g));                                     // David 2026-09-09: HONOUR the composer's per-move hold, up to the cap. Was min(PK.held, g), which flattened every hold back to 4s the moment the real clip length was known — so the only way left to fill a long dose was to loop the routine, which is exactly what he heard. Never shorter than the beat, never longer than the cap; the dose re-fit may still squeeze it (held stays in PK_ELASTIC).
       case "affirm": return Math.max(PK.affirmMin, Math.min(PK.affirmMax, (dur || 3) * PK.affirmMul)); // a line you say back sits for about as long as it took to say
       default: return g;                                                                              // absorb / inquiry / visual / cue keep the composed, guidance-scaled value
     }
@@ -21709,6 +21769,24 @@
       m = re * re + im * im; if (m > best) { best = m; bf = f; } }
     return bf;
   }
+  function _bacToneLevels(d, SR, clock) { // WHAT A PITCHLESS TONE CAN STILL BE MEASURED ON (David 2026-09-09): is it audible at all, does it GROW with the breath, and how loud is it at the top of an inhale — the number that lets a real recording and a synthesized noise be set to the same loudness instead of eyeballed.
+    function rms(a, b) { a = Math.max(0, Math.floor(a)); b = Math.min(d.length, Math.floor(b)); var e = 0, n = 0, i; for (i = a; i < b; i++) { e += d[i] * d[i]; n++; } return n ? Math.sqrt(e / n) : 0; }
+    var W = Math.floor(0.15 * SR), tg = [0.25, 0.5, 0.75, 1], onIn = [], k, t, best, bd, c;
+    for (k = 0; k < tg.length; k++) { best = null; bd = 9;
+      for (t = 0; t <= clock.total; t += 20) { var st = clock.at(t); if (st.phase !== "in") continue; var dd = Math.abs(st.level - tg[k]); if (dd < bd) { bd = dd; best = t; } }
+      if (best == null) continue; c = best / 1000 * SR; onIn.push({ level: tg[k], atSec: +(best / 1000).toFixed(2), rms: +rms(c - W / 2, c + W / 2).toFixed(6) }); }
+    var pk = 0, pkAt = 0, step = Math.floor(0.05 * SR), i2;
+    for (i2 = 0; i2 + W < d.length; i2 += step) { var r = rms(i2, i2 + W); if (r > pk) { pk = r; pkAt = i2; } }
+    // RMS AT LEVEL 1, ACROSS EVERY FULL-LUNG MOMENT IN THE RENDER (David 2026-09-09). A single 150ms window is fine for
+    // synthesized noise and useless for a RECORDING, whose own amplitude wanders under the envelope — the Bowl measured
+    // 6 dB under ocean at one peak and 3 dB over it at another. Pooling the energy of every block where the clock is at
+    // full lungs is the number two tones can actually be matched on.
+    var blk = 128, e1 = 0, n1 = 0, b0;
+    for (b0 = 0; b0 + blk <= d.length; b0 += blk) { var lv = clock.at(b0 / SR * 1000); if (!lv || lv.level < 0.95 || lv.phase === "rest") continue; for (i2 = b0; i2 < b0 + blk; i2++) { e1 += d[i2] * d[i2]; n1++; } }
+    var r1 = n1 ? Math.sqrt(e1 / n1) : 0;
+    return { onInhale: onIn, rmsAtL1: +r1.toFixed(6), rmsAtL1DbFS: +(20 * Math.log(r1 || 1e-9) / Math.LN10).toFixed(1), l1Sec: +(n1 / SR).toFixed(2),
+      rmsPeak: +pk.toFixed(6), rmsPeakDbFS: +(20 * Math.log(pk || 1e-9) / Math.LN10).toFixed(1), rmsPeakAtSec: +((pkAt + W / 2) / SR).toFixed(2), rmsWhole: +rms(0, d.length).toFixed(6) };
+  }
   function _bacBoundaries(d, SR, clock, base, wantPitch, span) { // at EVERY phase boundary: the pitch measured just before vs just after, in cents, and the waveform's slew there against its own local envelope
     var rows = [], st = clock.starts;
     for (var k = 1; k < st.length; k++) {
@@ -21745,26 +21823,32 @@
       if (a.phase !== b.phase || a.phaseIdx !== b.phaseIdx || Math.abs(a.remain - b.remain) > 1 || Math.abs(a.level - b.level) > 1e-9) bad.push({ t: x, tool: a.phase + "#" + a.phaseIdx + "@" + a.remain.toFixed(0), player: b.phase + "#" + b.phaseIdx + "@" + b.remain.toFixed(0), dLevel: +(a.level - b.level).toFixed(9) }); }
     return { pattern: pk, toolTotalMs: A.total, playerTotalMs: B.total, comparedMs: lim, samples: n, endpointSkipped: skipped, mismatches: bad.length, worst: bad.slice(0, 6), segs: r.segs.length };
   };
-  window.DEV.breathTone = function (toneKey, patKey, cycles, runtime) { // OFFLINE RENDER of the guiding tone across a real pattern, then MEASURE the rendered waveform at every phase boundary: the pitch just before vs just after, in cents, plus the slew against the local envelope. This is the probe that would have caught the old flute's 123-260 cent snap. `runtime` drives update() through OfflineAudioContext.suspend at ctx.currentTime — the byte-identical call the rAF loop makes — instead of pre-scheduling with `at`.
-    var key = toneKey || "glide", clock = makeBreathClock(breathPhaseList(breathStages(patKey || "resonance", cycles || 2)));
+  window.DEV.breathTone = function (toneKey, patKey, cycles, runtime) { // OFFLINE RENDER of the guiding tone across a real pattern, then MEASURE the rendered waveform: the level it reaches at each point of an inhale, its loudest 150ms, and at every phase boundary the slew against the local envelope (plus, for a pitched tone, the cents either side — this is the probe that caught the old flute's 123-260 cent snap). `runtime` drives update() through OfflineAudioContext.suspend at ctx.currentTime — the byte-identical call the rAF loop makes — instead of pre-scheduling with `at`.
+    var key = toneKey || "ocean", clock = makeBreathClock(breathPhaseList(breathStages(patKey || "resonance", cycles || 2)));
     var SR = 44100, secs = Math.ceil(clock.total / 1000) + 1, oac = new OfflineAudioContext(1, SR * secs, SR);
     var tone = makeBreathSustain(key, oac); if (!tone) return Promise.resolve("no tone " + key);
-    var base = key === "chord" ? 130.81 : 220, targets = [], t, pre = Promise.resolve();
-    if (runtime) { var qz = function (x) { return Math.round(x * SR / 128) * 128 / SR; }, chain = null;
-      for (t = 0; t <= clock.total; t += 60) (function (t2) { var at = qz(t2 / 1000); if (at <= 0) return; var f = function () { return oac.suspend(at).then(function () { var s2 = clock.at(t2); tone.update(s2.level, s2.phase); oac.resume(); }); }; chain = chain ? chain.then(f) : f(); })(t);
-      var s0 = clock.at(0); tone.update(s0.level, s0.phase, 0); pre = chain || Promise.resolve();
-    } else { for (t = 0; t <= clock.total; t += 20) { var s = clock.at(t); tone.update(s.level, s.phase, t / 1000); if (t % 500 === 0) targets.push({ t: t, ph: s.phase, cents: +(Math.min(1.2, Math.max(0, s.level)) * tone.span).toFixed(2) }); } }
-    var rendering = oac.startRendering();
-    return pre.then(function () { return rendering; }).then(function (buf) {
+    var base = 220, targets = [], t; // nothing in the 2026-09-09 set is pitched (tone.span is 0), so `base` only feeds the pitch path the probe then skips — for air, `levels` below is the measurement that matters
+    // THE ASYNC-SOURCE GATE (David 2026-09-09). The Bowl tone is a REAL recording whose fetch + decode lands long after
+    // startRendering() would have finished, so an ungated probe renders SILENCE and reports it as a pass — which is
+    // exactly what it did on the first run of this build. Nothing is scheduled and nothing is rendered until tone.ready
+    // says the source is attached; for every synthesized voice that promise is already resolved.
+    return (tone.ready || Promise.resolve()).then(function () {
+      var pre = Promise.resolve();
+      if (runtime) { var qz = function (x) { return Math.round(x * SR / 128) * 128 / SR; }, chain = null;
+        for (t = 0; t <= clock.total; t += 60) (function (t2) { var at = qz(t2 / 1000); if (at <= 0) return; var f = function () { return oac.suspend(at).then(function () { var s2 = clock.at(t2); tone.update(s2.level, s2.phase); oac.resume(); }); }; chain = chain ? chain.then(f) : f(); })(t);
+        var s0 = clock.at(0); tone.update(s0.level, s0.phase, 0); pre = chain || Promise.resolve();
+      } else { for (t = 0; t <= clock.total; t += 20) { var s = clock.at(t); tone.update(s.level, s.phase, t / 1000); if (t % 500 === 0) targets.push({ t: t, ph: s.phase, cents: +(Math.min(1.2, Math.max(0, s.level)) * tone.span).toFixed(2) }); } }
+      var rendering = oac.startRendering();
+      return pre.then(function () { return rendering; });
+    }).then(function (buf) {
       var d = buf.getChannelData(0);
       var rows = _bacBoundaries(d, SR, clock, base, !!tone.span, tone.span);
-      // the chord's own contract: at level 0 the detune target is exactly 0, so the pitch is back to UNITY with base — the old chord targeted ×1.05 / ×1.08 / ×0.95 and never once targeted ×1.0
       var endS = Math.floor((clock.total / 1000 - 0.06) * SR), fEnd = tone.span ? _bacPeakNear(d, endS - Math.floor(0.35 * SR), endS, SR, base, 120, 241) : 0;
       try { tone.stop(); } catch (e) {}
       return { tone: key, mode: runtime ? "runtime (suspend, ctx.currentTime — the LIVE path)" : "pre-scheduled (at=)", pattern: patKey || "resonance", spanCents: tone.span, baseHz: base, boundaries: rows,
         endHz: +fEnd.toFixed(2), endCentsOffBase: tone.span ? +(_bacCents(base, fEnd) || 0).toFixed(1) : 0,
         maxBoundaryCents: rows.reduce(function (m, r2) { return Math.max(m, Math.abs(r2.cents)); }, 0),
-        maxSlewRatio: rows.reduce(function (m, r2) { return Math.max(m, r2.slewRatio); }, 0), targetDump: targets };
+        maxSlewRatio: rows.reduce(function (m, r2) { return Math.max(m, r2.slewRatio); }, 0), toneVol: toneVol(), levels: _bacToneLevels(d, SR, clock), targetDump: targets };
     });
   };
   // CONTROL — THE DEFECT THIS PASS REMOVED, rebuilt in isolation and measured by the SAME analyzer, so "0 cents at every
@@ -21808,7 +21892,7 @@
   };
   window.DEV.breathToggles = function (patKey) { // ALL FOUR COMBINATIONS of the two toggles, rendered offline and measured. `transientPeak` is what a cue produces (a strike at a phase boundary); `floorRms` is what a tone produces (a sustained bed between the strikes). Independent toggles mean each number moves only with its own switch.
     var clock = makeBreathClock(breathPhaseList(breathStages(patKey || "resonance", 1))), SR = 22050;
-    var save0 = { c: S.breathCue, t: S.breathTone }, combos = [["bell", "off"], ["bell", "glide"], ["off", "glide"], ["off", "off"]];
+    var save0 = { c: S.breathCue, t: S.breathTone }, combos = [["bell", "off"], ["bell", "ocean"], ["off", "ocean"], ["off", "off"]];
     return combos.reduce(function (p, cb) {
       return p.then(function (acc) {
         S.breathCue = cb[0]; S.breathTone = cb[1];
@@ -21829,6 +21913,12 @@
     }, Promise.resolve([])).then(function (rows) { S.breathCue = save0.c; S.breathTone = save0.t; return { pattern: patKey || "resonance", combos: rows }; });
   };
   window.DEV.stack = function (id, secs, pat) { runStackCarousel([{ k: { id: id || "stretch", name: id || "stretch", ti: "ti-yoga", col: "#46e2a4" }, d: secs || 120, pat: pat }]); return "running " + (id || "stretch") + " for " + (secs || 120) + "s — read DEV.segs() once it is ready"; }; // DEV: launch ANY tool as a real one-act stack through the SAME carousel a real tap uses, so a pause can be measured where it actually plays (after relayoutFrom's dose re-fit and the real decoded clip lengths) rather than where the composer merely declared it. DEV.breathStack is this with id "breathe" pre-filled.
+  window.DEV.stretchSegs = function (secs) { // WHAT THE COMPOSER ACTUALLY LAID DOWN for a stretch dose, without opening a player: how many moves, the hold on each, whether the pool had to repeat, and what the whole thing adds up to against the dose it was asked for. The number that would have caught the 2026-08-16 `i % N` loop.
+    var g = stretchMoveSegs(secs || 120), seen = {}, rep2 = 0, gaps = {};
+    g.forEach(function (sg) { if (seen[sg.label]) rep2++; seen[sg.label] = 1; gaps[+sg.gap.toFixed(2)] = 1; });
+    return { secs: secs || 120, pool: STRETCH_MOVES.length, segs: g.length, gaps: Object.keys(gaps).map(Number), repeats: rep2,
+      fillSec: +(g.reduce(function (a, sg) { return a + sg.gap; }, 0) + g.length * PK.speechEst).toFixed(1), moves: g.map(function (sg) { return sg.label; }) };
+  };
   window.DEV.segs = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player open"; var sg = p.segs || [], out = [], i; for (i = 0; i < sg.length; i++) { var nxt = sg[i + 1]; out.push({ t: (sg[i].t || "").slice(0, 26), start: sg[i].start, dur: sg[i].dur, gap: (nxt && sg[i].start != null && sg[i].dur != null) ? +(nxt.start - sg[i].start - sg[i].dur).toFixed(2) : null }); } return { n: out.length, elapsed: p.elapsed, total: p.total, segs: out }; }; // the REAL laid-out gap between consecutive segments = next.start - (this.start + this.dur). This is the number the ear hears; the composer's declared `gap` is only its input.
   window.DEV.breathStack = function (pat, secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: "#63d3c9" }, d: secs || 60, pat: pat || "resonance" }]); return "composed breath session (the toolbox front door's engine) · pat=" + (pat || "resonance"); }; // the same runStackCarousel → composeStackSegs → timelinePlayer path breatheLadder takes, without walking the toolbox
   window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov");

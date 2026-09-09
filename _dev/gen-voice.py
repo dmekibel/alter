@@ -3,6 +3,18 @@
 # Covers: beatRunner beats (Rewire + Stutz), meditation guides, mantra, relax, breath cues, tapping.
 # Names each by a normalized djb2 hash matching TTS.vhash() in app.js. Run: python3 _dev/gen-voice.py
 import re, json, asyncio, edge_tts, os
+import sys as _sys, os as _os
+# ===== THE COPY-APPROVAL GATE (David 2026-09-09, verbatim: "Don't convert anything to audio without me approving the
+# copy first"). Voice clips are hash-keyed to exact strings and cost credits per line PER BANK, and David wants to READ
+# every spoken line before it becomes the app's voice. This runs BEFORE anything else in the file, so no key is loaded,
+# no line is extracted and no request is made until the caller states that the copy in app.js carries his verdict:
+#     python3 <this script> all --approved      (or COPY_APPROVED=1 in the environment)
+# It exists because on 2026-09-09 a bare invocation of this script synthesized 10 unapproved lines within seconds.
+if "--approved" not in _sys.argv and _os.environ.get("COPY_APPROVED") != "1":
+    _sys.exit("REFUSED: no audio until David has approved the copy.\n"
+              "  After his verdict:  python3 " + _sys.argv[0] + " all --approved")
+
+
 VOICE="en-GB-RyanNeural"; RATE="-14%"; PITCH="-4Hz"
 src=open('app.js',encoding='utf-8').read()
 def un(s): return s.replace('\\"','"').replace("\\'","'").replace('\\n',' ').replace('\\\\','\\')
@@ -27,10 +39,12 @@ for arr in re.findall(r'var (?:LINES|seq)\s*=\s*\[([^\]]*)\]', src):
 # 4) relaxMoment STEPS: a + ", " + b  (["a","b",num])
 for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*,\s*\d+\s*\]', src):
     add(un(a)+", "+un(b))
-# 4b) STRETCH_MOVES: a + ", " + b  (["a","b"] — bare 2-tuples, no numeric third element)
+# 4b) STRETCH_MOVES: a + ", " + b. Entries are ["a","b"] or ["a","b",1] — the optional third element is the
+#     2026-09-09 "this move continues the one before it" pair flag, and the old bare-2-tuple regex silently
+#     DROPPED every flagged move (its clip would never be recorded and the move would play silent).
 m = re.search(r'var STRETCH_MOVES\s*=\s*\[(.*?)\n  \];', src, re.S)
 if m:
-    for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*\]', m.group(1)):
+    for a,b in re.findall(r'\[\s*'+STR+r'\s*,\s*'+STR+r'\s*(?:,\s*\d+\s*)?\]', m.group(1)):
         add(un(a)+", "+un(b))
 # 5) breath cues (PH labels, hardcoded — spoken for non-rest phases)
 for c in ["Breathe in","Hold","Breathe out"]: add(c)
