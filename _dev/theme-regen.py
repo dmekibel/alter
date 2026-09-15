@@ -47,6 +47,18 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         # OWN HUE darkened — color-mix(accent 62%, ink). Computed for Warhol that is #af8751, which is
         # exactly what the prototype renders. Night keeps #160510, so it stays byte-identical.
         '--t-lip': '#160510' if T is None else blend(T['accent'], T['ink'], 0.62),
+        # THE GROUND IS A GRADIENT (David 2026-09-15: "should there not be gradient for the
+        # background?"). Each world's ground is the doc's own bg recipe, not a flat fill: Water Lilies
+        # is grad=1, a vertical dusk; Warhol is grad=3, the "accent horizon" where the gold rises from
+        # the bottom edge. Both reproduce byte-identically from build(). Night keeps its own gradient.
+        '--t-bg': ('linear-gradient(170deg,#86205a 0%,#5c123c 55%,#480f2f 100%)' if T is None
+                   else ('linear-gradient(180deg,#8797e6 0%,#7285e2 52%,#596fdd 100%)' if key == 'lilies'
+                         else 'linear-gradient(180deg,#df86d9 0%,#df86d9 45%,' + blend(T['accent'], T['ground'], 0.24) + ' 100%)')),
+        # body.journey-open paints a FLAT fill with !important over that gradient, which is why the
+        # ground reads flat — in night too, where the flat #1c0612 is deliberate and stays.
+        '--t-bg-journey': ('#1c0612' if T is None
+                           else ('linear-gradient(180deg,#8797e6 0%,#7285e2 52%,#596fdd 100%)' if key == 'lilies'
+                                 else 'linear-gradient(180deg,#df86d9 0%,#df86d9 45%,' + blend(T['accent'], T['ground'], 0.24) + ' 100%)')),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }

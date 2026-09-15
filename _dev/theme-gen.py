@@ -64,6 +64,14 @@ def contrast(a, b):
     hi, lo = max(la, lb), min(la, lb)
     return (hi + 0.05) / (lo + 0.05)
 
+def bodyInk(T):
+    """THE FRAME'S OWN BODY INK (David 2026-09-15: "the intro text ... should not just be pure dark
+    that's ugly"). He was reading my build, not his design. The frames draw body copy at
+    blend(ink, ground, .78) — a soft plum that sits ON the world rather than punching a near-black hole
+    in it. Verified byte-identical in BOTH: Warhol #532a59, Water Lilies #2f3670, read off each running
+    prototype. My earlier blend(ink, surface, .88) was invented and landed colder and darker (#401c47)."""
+    return blend(T['ink'], T['ground'], 0.78)
+
 def inkSoft(T):
     """The design's inkSoft token, color-mix(ink 62%, ground), as a concrete hex."""
     return blend(T['ink'], T['ground'], 0.62)
@@ -113,14 +121,33 @@ def remap(c, role, T):
     # emphasis color (Warhol #ffc41f, Water Lilies #ca16af). It is what makes the intro's key words and
     # the guardian mark read as the palette instead of as flat dark ink.
     if role == 'highlight': return T['highlight']
+    # EDGE = a border, an outline, or a hard "lip" shadow. Night is a dark world, so its edges are the
+    # near-black ink and they read as depth. On a light world that same ink is the darkest thing on the
+    # screen and reads as a cheap black outline (David 2026-09-15: "I don't like the black outline").
+    # His own deck law says it — "NO ink border and NO black outline ANYWHERE on the deck, a FLAT hue
+    # face on a CHUNKY lip of its OWN hue" — and the Round H frame draws every element at border:0 with
+    # a lip of mix(own hue 62%, ink). A stylesheet cannot mix against an element's own background, so
+    # the day worlds get one shared edge a long way down from ink toward the ground: dark enough to
+    # read as a lip, never a black line. Night keeps its own value, so it is untouched.
+    if role == 'edge': return blend(T['ink'], T['ground'], 0.55)
+    # HEAD = a display heading. The frame draws "What now?" at the FULL ink (#1c2050 in Water Lilies),
+    # not at the softer body ink — headings are the one place the world wants maximum weight.
+    if role == 'head': return T['ink']
+    # ONPIECE = a label or glyph sitting ON a coin. The frame's Planner pill is a #d161c0 coin carrying
+    # a #f3ecff label, and the tool tiles carry white glyphs: text on a mid-toned piece stays LIGHT,
+    # the opposite of text on the ground. (Text on the bright ACCENT is dark — that is `onaccent`.)
+    if role == 'onpiece': return '#f3ecff'
+    # GEM = the spark currency. Gold in BOTH day frames (#ffc41f), so it is world-independent and must
+    # NOT follow the highlight, which is magenta in Water Lilies.
+    if role == 'gem': return '#ffc41f'
     if c == '#ffffff':
         # a white FILL is a specular highlight and stays white; white TEXT must flip on a light ground
-        return c if role == 'bg' else blend(T['ink'], T['surface'], 0.88)  # white is PRIMARY text
+        return c if role == 'bg' else bodyInk(T)  # white is PRIMARY text
     b = band(c)
     if b == 'light':
         if role == 'bg':
             return blend('#ffffff', T['ground'], min(1.0, (l-0.80)/0.20) * 0.72)
-        out = blend(T['ink'], T['surface'], 0.88)
+        out = bodyInk(T)
     elif b == 'structural':
         if role == 'bg':
             t = min(1.0, l/0.45)
@@ -133,7 +160,7 @@ def remap(c, role, T):
     if contrast(out, T['ground']) < 3.0:
         # Keep the hierarchy the night build had: a MUTED source was secondary text, so it lands on the
         # design's inkSoft; a saturated one was primary text or a glyph and lands on full ink.
-        out = inkSoft(T) if s < 0.45 else blend(T['ink'], T['surface'], 0.88)
+        out = inkSoft(T) if s < 0.45 else bodyInk(T)
     return out
 
 # ---------- role detection ----------

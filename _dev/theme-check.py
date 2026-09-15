@@ -9,7 +9,7 @@ then reference it as var(--c-rrggbb-bg) in CSS, or THC("#rrggbb","bg") in app.js
 A hex that is only QUOTED IN PROSE (a designAudit gate label) is exempt: write it as #rrggbb/*canon*/.
 """
 import re, sys, json
-ROLE = re.compile(r'","(bg|ink|accent|onaccent|highlight)"')
+ROLE = re.compile(r'","(bg|ink|edge|accent|onaccent|highlight|head|onpiece|gem)"')
 # NATIONAL FLAG COLORS are not palette — a French flag is blue-white-red in every world. They live in
 # the language picker's inline SVGs and are listed in _dev/theme-fixed.json, which is the ONLY reason a
 # bare hex is allowed to stand. Do not add UI colors to that file.

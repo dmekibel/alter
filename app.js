@@ -752,15 +752,15 @@
   // ---- 8-DOMAIN taxonomy (DESIGN-BRIEF §24) — the canonical palette. Colors live at the CATEGORY level and drive EVERY calendar bubble (plan, real, celebration). ----
   // Domain palette — the ORIGINAL varied/beautiful set restored (David 2026-06-25: collapsing the energy family to orange made it "ugly orange"). Each domain its own colour; drift is the solid dark-red.
   var DOM = {
-    move:    { l: "Move",    e: "🏃", c: THC("#ff8a3a","bg"), light: THC("#ffa24a","ink"), dark: THC("#ff741a","ink"), ring: THC("#ffcf9a","ink"), ink: THC("#4a2400","ink"), ti: "ti-run" },
-    nourish: { l: "Nourish", e: "🍎", c: THC("#34d39a","bg"), light: THC("#5fe0b2","ink"), dark: THC("#22c089","ink"), ring: THC("#9fe8cf","ink"), ink: THC("#0a3326","ink"), ti: "ti-bowl-spoon" },
-    focus:   { l: "Focus",   e: "🎯", c: THC("#36b3f0","bg"), light: THC("#5ec4f5","ink"), dark: THC("#22a6e8","ink"), ring: THC("#aadcf8","ink"), ink: THC("#08283c","ink"), ti: "ti-brain" },
-    create:  { l: "Create",  e: "🎨", c: THC("#b07aff","bg"), light: THC("#c7adff","ink"), dark: THC("#9a5cf0","ink"), ring: THC("#ddccff","ink"), ink: THC("#241548","ink"), ti: "ti-palette" },
-    connect: { l: "Connect", e: "💛", c: THC("#ff5fa0","bg"), light: THC("#ff7ab0","ink"), dark: THC("#ff4f96","ink"), ring: THC("#ffb3d6","ink"), ink: THC("#4a1126","ink"), ti: "ti-users" },
-    play:    { l: "Play",    e: "🎮", c: THC("#ffc83d","bg"), light: THC("#f0c860","ink"), dark: THC("#c08a22","ink"), ring: THC("#f2d894","ink"), ink: THC("#4a3000","ink"), ti: "ti-device-gamepad-2" }, // ONE PLAY GOLD (David 2026-07-30): var(--c-ffc83d-ink), the value the toolbox/editor/picker surfaces already used. The old var(--c-d99f30-ink) split the domain in two — the newer surfaces were built to the bright gold and the registry stayed dark, so a Play block and a Play tool never matched.
-    restore: { l: "Restore", e: "🌙", c: THC("#2ab8c4","bg"), light: THC("#5fd6df","ink"), dark: THC("#1f9aa6","ink"), ring: THC("#a3e4e9","ink"), ink: THC("#06343a","ink"), ti: "ti-moon" },
-    upkeep:  { l: "Upkeep",  e: "🧹", c: THC("#7f9bc4","bg"), light: THC("#9fb6d8","ink"), dark: THC("#6781a8","ink"), ring: THC("#c4d4e8","ink"), ink: THC("#16243a","ink"), ti: "ti-shirt" }, // ti-shirt, the picker artifact's Upkeep glyph — and ti-broom does not EXIST in the loaded Tabler webfont (3.31.0 resolves it to content:none), so every Upkeep coin and folder glyph was rendering blank
-    drift:   { l: "Drift",   e: "🌫️", c: THC("#565b66","bg"), light: THC("#b8bcc6","ink"), dark: THC("#2a2d34","ink"), ring: THC("#7a808c","ink"), ink: THC("#cdd2db","ink"), ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
+    move:    { l: "Move",    e: "🏃", c: THC("#ff8a3a","bg"), light: THC("#ffa24a","ink"), dark: THC("#ff741a","ink"), ring: THC("#ffcf9a","ink"), ink: THC("#4a2400","onpiece"), ti: "ti-run" },
+    nourish: { l: "Nourish", e: "🍎", c: THC("#34d39a","bg"), light: THC("#5fe0b2","ink"), dark: THC("#22c089","ink"), ring: THC("#9fe8cf","ink"), ink: THC("#0a3326","onpiece"), ti: "ti-bowl-spoon" },
+    focus:   { l: "Focus",   e: "🎯", c: THC("#36b3f0","bg"), light: THC("#5ec4f5","ink"), dark: THC("#22a6e8","ink"), ring: THC("#aadcf8","ink"), ink: THC("#08283c","onpiece"), ti: "ti-brain" },
+    create:  { l: "Create",  e: "🎨", c: THC("#b07aff","bg"), light: THC("#c7adff","ink"), dark: THC("#9a5cf0","ink"), ring: THC("#ddccff","ink"), ink: THC("#241548","onpiece"), ti: "ti-palette" },
+    connect: { l: "Connect", e: "💛", c: THC("#ff5fa0","bg"), light: THC("#ff7ab0","ink"), dark: THC("#ff4f96","ink"), ring: THC("#ffb3d6","ink"), ink: THC("#4a1126","onpiece"), ti: "ti-users" },
+    play:    { l: "Play",    e: "🎮", c: THC("#ffc83d","bg"), light: THC("#f0c860","ink"), dark: THC("#c08a22","ink"), ring: THC("#f2d894","ink"), ink: THC("#4a3000","onpiece"), ti: "ti-device-gamepad-2" }, // ONE PLAY GOLD (David 2026-07-30): var(--c-ffc83d-ink), the value the toolbox/editor/picker surfaces already used. The old var(--c-d99f30-ink) split the domain in two — the newer surfaces were built to the bright gold and the registry stayed dark, so a Play block and a Play tool never matched.
+    restore: { l: "Restore", e: "🌙", c: THC("#2ab8c4","bg"), light: THC("#5fd6df","ink"), dark: THC("#1f9aa6","ink"), ring: THC("#a3e4e9","ink"), ink: THC("#06343a","onpiece"), ti: "ti-moon" },
+    upkeep:  { l: "Upkeep",  e: "🧹", c: THC("#7f9bc4","bg"), light: THC("#9fb6d8","ink"), dark: THC("#6781a8","ink"), ring: THC("#c4d4e8","ink"), ink: THC("#16243a","onpiece"), ti: "ti-shirt" }, // ti-shirt, the picker artifact's Upkeep glyph — and ti-broom does not EXIST in the loaded Tabler webfont (3.31.0 resolves it to content:none), so every Upkeep coin and folder glyph was rendering blank
+    drift:   { l: "Drift",   e: "🌫️", c: THC("#565b66","bg"), light: THC("#b8bcc6","ink"), dark: THC("#2a2d34","ink"), ring: THC("#7a808c","ink"), ink: THC("#cdd2db","onpiece"), ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // 5 SUPERCATEGORIES (David 2026-06-29): Energy · Work · Love · Hobbies · Other — the compact layer ABOVE the 8 domains. Tabler icons, never emojis. Drives the bento picker overview (+ onboarding + plan flow). Each domain belongs to exactly one supercat. (Hobbies split back OUT of Love — Love = people, Hobbies = creating/play.)
@@ -1452,7 +1452,7 @@
     function paint() {
       listEl.innerHTML = "";
       items.forEach(function (it, i) {
-        var r = add(listEl, "div"); r.style.cssText = "display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:13px;border:2px solid " + (on[i] ? DOM.focus.c : THC("#3a1730","ink")) + ";background:" + (on[i] ? "rgba(122,162,247,.13)" : "rgba(255,255,255,.04)") + ";color:var(--c-f0e6ef-bg);font-family:var(--bub);font-weight:700;font-size:14px;text-align:left;cursor:pointer;";
+        var r = add(listEl, "div"); r.style.cssText = "display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:13px;border:2px solid " + (on[i] ? DOM.focus.c : THC("#3a1730","edge")) + ";background:" + (on[i] ? "rgba(122,162,247,.13)" : "rgba(255,255,255,.04)") + ";color:var(--c-f0e6ef-bg);font-family:var(--bub);font-weight:700;font-size:14px;text-align:left;cursor:pointer;";
         r.innerHTML = '<i class="ti ' + (on[i] ? "ti-circle-check" : "ti-circle") + '" style="font-size:19px;color:' + (on[i] ? DOM.focus.c : THC("#6a5a78","ink")) + ';flex:none;"></i><span style="flex:1;">' + esc(it.t) + '</span><span style="font-size:11.5px;color:var(--c-b39ab0-ink);">' + it.m + 'm</span>';
         if (on[i] && it.m > 5) { // [smaller] — the tiny-step guardian, wired (P0-b, 2026-07-03): a first-class floor-below-the-floor on every offered item; tapping it is itself data (→ appetite low)
           var sm = document.createElement("span"); sm.textContent = "smaller"; sm.style.cssText = "flex:none;font-size:10.5px;font-weight:800;padding:4px 9px;border-radius:9px;border:1.5px solid var(--c-6a5a78-ink);color:var(--c-b39ab0-ink);background:rgba(255,255,255,.05);";
@@ -2506,7 +2506,7 @@
       _fb.style.borderColor = _w.c; _fb.style.color = THC("#fff2f9","bg"); _fb.style.boxShadow = "0 4px 0 var(--c-160510-ink), 0 0 18px " + _w.c + "2e"; _fb.style.setProperty("--wglow", _w.c + "33");
       var _fk = _fb.querySelector(".ju-k"); if (_fk) _fk.style.color = f === 7 ? THC("#160510","ink") : _w.c; // the eyebrow speaks the world hue (barcode world: ink for contrast)
       if (f === 7) { var _ft = _fb.querySelector(".ju-t"); if (_ft) { _ft.style.color = THC("#160510","ink"); } } // rainbow barcode is bright — ink title there
-      var _fi = _fb.querySelector(".ju-ic"); if (_fi) { _fi.style.background = "rgba(10,3,8,.72)"; _fi.style.border = "2px solid var(--c-ffd24a-bg)"; _fi.style.borderRadius = "50%"; _fi.style.color = THC("#ffd24a","ink"); } // binder disc: dark circle, gold ring, gold icon
+      var _fi = _fb.querySelector(".ju-ic"); if (_fi) { _fi.style.background = "rgba(10,3,8,.72)"; _fi.style.border = "2px solid var(--c-ffd24a-bg)"; _fi.style.borderRadius = "50%"; _fi.style.color = THC("#ffd24a","edge"); } // binder disc: dark circle, gold ring, gold icon
       if (_far) { var _lk = add(_fb, "div", "gate-lock"); _lk.innerHTML = '<i class="ti ti-lock"></i>'; } // far worlds: visibly LOCKED, still full pattern
       add(_fb, "div", "gatefoil"); // the mint-sheen sweep rides the pattern
       (function(idx){ _fb.style.cursor="pointer"; _fb.onclick=function(){try{chapterSheet(idx);}catch(e){};}; })(f);
@@ -2646,7 +2646,7 @@
     try { if (navigator.vibrate) navigator.vibrate(tier >= 3 ? [12, 30, 18, 30, 24] : [10, 24, 14]); } catch (e) {} // tactile celebration beat (David 2026-06-24 night)
     var ov = add(document.body, "div", "cele-ov");
     var box = add(ov, "div", "cele-box" + (tier >= 4 ? " fire" : "")); box.style.background = color || THC("#36b3f0","bg");
-    box.style.boxShadow = "0 0 0 " + (2 + tier) + "px " + (tier >= 3 ? THC("#ff7a1a","ink") : THC("#ffd54a","ink")) + ",0 0 " + (10 + tier * 6) + "px " + (tier >= 3 ? THC("#ff5a1a","ink") : THC("#ffd54a","ink"));
+    box.style.boxShadow = "0 0 0 " + (2 + tier) + "px " + (tier >= 3 ? THC("#ff7a1a","edge") : THC("#ffd54a","ink")) + ",0 0 " + (10 + tier * 6) + "px " + (tier >= 3 ? THC("#ff5a1a","ink") : THC("#ffd54a","ink"));
     box.innerHTML = '<i class="ti ti-circle-check"></i>';
     var n = 3 + tier * 2;
     for (var i = 0; i < n; i++) { var ang = (i / n) * 6.28 + (i % 2), dist = 70 + (i % 3) * 30; var st = add(ov, "i", "cele-star ti " + (tier >= 3 && i % 2 ? "ti-flame" : "ti-star")); st.style.setProperty("--dx", (Math.cos(ang) * dist) + "px"); st.style.setProperty("--dy", (Math.sin(ang) * dist) + "px"); st.style.color = tier >= 3 ? (i % 2 ? THC("#ff7a1a","ink") : THC("#ffd54a","ink")) : THC("#ffd54a","ink"); st.style.animationDelay = (i * 0.03) + "s"; }
@@ -4169,7 +4169,7 @@
       else { var _iv = tfIdleInvite(); el("tfVerdict").innerHTML = '<span class="tf-invite">' + tr(_iv.t) + '</span>'; } // NUMERIC PASS (David 2026-07-22): the home next-line is PLAIN TEXT — no leading icon (the board shows text only)
       el("tfTime").textContent = nb ? fmt(hm(nb.time)) : "—"; el("tfTime").removeAttribute("data-tid");
       el("tfCtx").textContent = nb ? ("planned " + dur(nb.mins || 30)) : "tap Start to begin tracking";
-      el("tfSpark").innerHTML = '<i class="ti ti-diamond-filled" style="color:var(--c-ffd24a-ink)"></i> <b>' + ((S.game && S.game.spark) || 0).toLocaleString() + '</b>'; // H-D3 (David 2026-07-20): idle header right = the gem count with a diamond, matching the What-now mockup (was streak + tracked-mins)
+      el("tfSpark").innerHTML = '<i class="ti ti-diamond-filled" style="color:var(--c-ffd24a-gem)"></i> <b>' + ((S.game && S.game.spark) || 0).toLocaleString() + '</b>'; // H-D3 (David 2026-07-20): idle header right = the gem count with a diamond, matching the What-now mockup (was streak + tracked-mins)
       if (tile) { tile.style.filter = ""; tile.style.cursor = "pointer";
         // THE DISC DOES WHAT ITS OWN SUB-LINE SAYS (David 2026-08-22). It was wired to playFirst in BOTH variants, so
         // (b) opened a picker while the line under it promised "play begins it now", and (a) opened the retired bento
@@ -4205,8 +4205,8 @@
     var D = DOM[S0.dom] || DOM.focus, drift = !!S0.drift, onplan = S0.id === "onplan";
     tf.classList.add(onplan ? "st-onplan" : "st-off");
     // RUN-1 mocks 3/4: on-plan disc = striped (winning); off-plan disc = MATTE (dark tint + colored border + colored icon, no stripe, no filter)
-    if (tile) { tile.style.background = "repeating-linear-gradient(115deg," + D.c + " 0 13px," + mixHex(D.c, THC("#ffffff","bg"), 0.22) + " 13px 26px)"; tile.style.border = "3px solid var(--c-160510-ink)"; tile.style.color = THC("#160510","ink"); tile.style.filter = "none"; tile.innerHTML = tiIcon(t); } // FIX PASS 2 B (design 2026-07-28, verbatim .disc-live): ONE live disc for on-plan AND off-plan — 115°/13px hue candy stripes, ink outline, ink glyph (56px + the 7px var(--c-2a1730-ink) halo live in CSS). Supersedes the F1 flat-fill/white-icon + the off-plan hue-bordered matte disc (a hue border on a resting element is selection-only now).
-    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = "linear-gradient(100deg," + mixHex(D.c, THC("#ffffff","bg"), 0.20) + "," + D.c + ")"; _tt.style.color = THC("#160510","bg"); _tt.style.borderColor = THC("#160510","ink"); _tt.onclick = function () { tfPickTrack("Switch to?"); }; // FIX PASS 2 C (verbatim .title-pill): hue candy gradient + INK text (was a muddy 68%-ink fill with light-hue text); the ink outline / 16px radius / 5px sticker / Baloo 19px live in CSS
+    if (tile) { tile.style.background = "repeating-linear-gradient(115deg," + D.c + " 0 13px," + mixHex(D.c, THC("#ffffff","bg"), 0.22) + " 13px 26px)"; tile.style.border = "3px solid var(--c-160510-ink)"; tile.style.color = THC("#160510","edge"); tile.style.filter = "none"; tile.innerHTML = tiIcon(t); } // FIX PASS 2 B (design 2026-07-28, verbatim .disc-live): ONE live disc for on-plan AND off-plan — 115°/13px hue candy stripes, ink outline, ink glyph (56px + the 7px var(--c-2a1730-ink) halo live in CSS). Supersedes the F1 flat-fill/white-icon + the off-plan hue-bordered matte disc (a hue border on a resting element is selection-only now).
+    var _tt = el("tfTitle"); _tt.innerHTML = esc(t.title || "Tracking") + ' <i class="ti ti-switch-horizontal" style="font-size:.66em;opacity:.65"></i>'; _tt.classList.add("switchable"); _tt.style.background = "linear-gradient(100deg," + mixHex(D.c, THC("#ffffff","bg"), 0.20) + "," + D.c + ")"; _tt.style.color = THC("#160510","bg"); _tt.style.borderColor = THC("#160510","edge"); _tt.onclick = function () { tfPickTrack("Switch to?"); }; // FIX PASS 2 C (verbatim .title-pill): hue candy gradient + INK text (was a muddy 68%-ink fill with light-hue text); the ink outline / 16px radius / 5px sticker / Baloo 19px live in CSS
     el("tfVerdict").textContent = onplan ? "on plan · winning" : (drift ? "drifting" : "off plan"); // kept for a11y — hidden by CSS in the five-element live body
     el("tfTime").setAttribute("data-tid", t.id); el("tfTime").textContent = elapsedStr(t); el("tfElabel").textContent = "elapsed";
     var elMin = (Date.now() - t.start) / 60000;
@@ -4457,7 +4457,7 @@
     MOODS.forEach(function (m, i) {
       var f = add(moodWrap, "button", "jr-mood"); f.setAttribute("style", "flex:1;background:var(--c-241328-bg);border:2px solid " + (sb.dataset.mood === String(i) ? m.c : THC("#160510","bg")) + ";border-radius:11px;box-shadow:0 2px 0 var(--c-160510-ink);font-size:22px;padding:7px 0;cursor:pointer;line-height:1;");
       f.innerHTML = '<i class="ti ' + m.e + '" style="color:' + m.c + '"></i>'; f.title = tr(m.l); // visual audit 2026-07-04: m.e is a Tabler CLASS — textContent printed literal "ti-cloud-fog"
-      f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : THC("#160510","ink"); b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
+      f.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(moodWrap.querySelectorAll(".jr-mood"), function (b, bi) { b.style.borderColor = (!on && bi === idx) ? DOM.restore.light : THC("#160510","edge"); b.style.transform = (!on && bi === idx) ? "translateY(1px)" : ""; }); }; })(i);
     });
   }
   // ENTRY POINT: picker on first mount, then the chosen type's flow. Idempotent across the 1s tick via renderStage's dataset.mode guard;
@@ -4483,7 +4483,7 @@
     var grid = add(card, "div"); grid.style.cssText = "display:flex;flex-direction:column;gap:8px;";
     order.forEach(function (t) {
       var row = add(grid, "button", "tf-chip"); var isSug = t.id === suggested, isFav = t.id === fav;
-      row.style.cssText = "display:flex;align-items:flex-start;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:2px solid " + (isSug ? DOM.restore.light : THC("#160510","ink")) + ";background:var(--c-1c0f20-bg);width:100%;box-sizing:border-box;";
+      row.style.cssText = "display:flex;align-items:flex-start;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:2px solid " + (isSug ? DOM.restore.light : THC("#160510","edge")) + ";background:var(--c-1c0f20-bg);width:100%;box-sizing:border-box;";
       var ic = add(row, "div"); ic.style.cssText = "font-size:20px;line-height:1.2;flex:0 0 auto;"; ic.innerHTML = '<i class="ti ' + t.icon + '"></i>';
       var txt = add(row, "div"); txt.style.cssText = "flex:1;min-width:0;";
       var h = add(txt, "div"); h.style.cssText = "font-size:14px;color:var(--c-ffe3f1-ink);display:flex;align-items:center;gap:6px;flex-wrap:wrap;";
@@ -4915,7 +4915,7 @@
       var msel = (sb.dataset.mood === String(i)) || (!sb.dataset.mood && prev && prev.mood === i);
       var j = add(jewels, "button", "pm-jewel" + (msel ? " on" : "")); j.style.borderColor = m.c;
       j.innerHTML = '<i class="ti ' + m.e + '" style="color:' + (msel ? THC("#160510","ink") : m.c) + '"></i><span>' + tr(m.l) + '</span>';
-      j.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(jewels.querySelectorAll(".pm-jewel"), function (bb, bi) { var s = (!on && bi === idx); bb.className = "pm-jewel" + (s ? " on" : ""); bb.style.borderColor = MOODS[bi].c; bb.querySelector("i").style.color = s ? THC("#160510","ink") : MOODS[bi].c; }); }; })(i);
+      j.onclick = (function (idx) { return function () { var on = sb.dataset.mood === String(idx); sb.dataset.mood = on ? "" : String(idx); Array.prototype.forEach.call(jewels.querySelectorAll(".pm-jewel"), function (bb, bi) { var s = (!on && bi === idx); bb.className = "pm-jewel" + (s ? " on" : ""); bb.style.borderColor = MOODS[bi].c; bb.querySelector("i").style.color = s ? THC("#160510","edge") : MOODS[bi].c; }); }; })(i);
     });
   }
   // ---- BEAT 4: TOMORROW (WOOP, never named) — name the one thing → "what's most likely to kill it?" → "when that shows up you'll…?" → armor written onto the block.
@@ -5307,7 +5307,7 @@
   // Pause (the existing one-tap open-ended hold, tfStartBreak) and Replan (the What's-next picker at the next 5-min slot, exactly the call
   // Plan-my-day makes). There is NO Stop button anywhere now, and no "extend" door — the extend sheet still auto-opens in the last 5 minutes.
   function TF_LIVE_DOORS() {
-    return [{ icon: "ti-circle-check", label: "Done", fn: tfDone, primary: true, finish: "solid", c: THC("#28cf86","bg"), ink: THC("#160510","ink") },
+    return [{ icon: "ti-circle-check", label: "Done", fn: tfDone, primary: true, finish: "solid", c: THC("#28cf86","bg"), ink: THC("#160510","onpiece") },
             { icon: "ti-coffee", label: "Break", fn: tfStartBreak, half: true },
             { icon: "ti-clock-plus", label: "Extend", fn: tfRevealExtend, half: true }]; // FP3 §6, the design's caption on the approved live PNG: "ghost Break / Extend, tools stay as break-starters — there is NO Stop button". This REPLACES round-2's Pause/Replan pair (Pause was the same tfStartBreak fn, now under its real name; Replan is dropped and the dormant tfRevealExtend path is revived). The deck stays one scroll below the fold = "tools stay".
   }
@@ -5327,16 +5327,16 @@
                 { icon: "ti-x", label: "Not mine", fn: tfClaimDismiss, finish: "ghost" }];
       }
       case "night":
-        return [{ icon: "ti-wind", label: "Breathe with me", fn: tfNightBreathe, primary: true, finish: "solid", c: THC("#9a8cff","bg"), ink: THC("#1c1030","ink") },
+        return [{ icon: "ti-wind", label: "Breathe with me", fn: tfNightBreathe, primary: true, finish: "solid", c: THC("#9a8cff","bg"), ink: THC("#1c1030","onpiece") },
                 { icon: "ti-chevron-down", label: "Close", fn: closeTrackerFull, finish: "ghost" }];
       case "idle": { // §12 COCKPIT FRAME (David's upload 07): THREE FIXED DOORS — pink Track now / striped Plan+track next / ghost Plan my day; the docked time sheet handles the next block's duration
         var n = nextPlannedBlock(todayK());
         if (n) {
-          return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: THC("#ff5fa8","bg"), ink: THC("#4a1126","ink") },
-                  { icon: "ti-calendar-plus", label: "Plan + track next", fn: function () { startNextNow(n); }, finish: "striped", c: THC("#36b3f0","bg"), ink: THC("#08283c","ink"), tag: n.title }, // RUN-1 mock 1: the striped door NAMES its block
+          return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: THC("#ff5fa8","bg"), ink: THC("#4a1126","onpiece") },
+                  { icon: "ti-calendar-plus", label: "Plan + track next", fn: function () { startNextNow(n); }, finish: "striped", c: THC("#36b3f0","bg"), ink: THC("#08283c","onpiece"), tag: n.title }, // RUN-1 mock 1: the striped door NAMES its block
                   { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "ghost" }]; }
-        return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: THC("#ff5fa8","bg"), ink: THC("#4a1126","ink") },
-                { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "striped", c: THC("#36b3f0","bg"), ink: THC("#08283c","ink"), sub: "3 tasks · 60 seconds" }]; // RUN-1 mock 2: Plan-my-day sells its real cost. G11 play-first: the app's main verb is the hero
+        return [{ icon: "ti-player-play", label: "Track now", fn: playFirst, primary: true, finish: "solid", c: THC("#ff5fa8","bg"), ink: THC("#4a1126","onpiece") },
+                { icon: "ti-map-2", label: "Plan my day", fn: function () { closeTrackerFull(); try { shapeFlow(todayK()); } catch (e) {} }, finish: "striped", c: THC("#36b3f0","bg"), ink: THC("#08283c","onpiece"), sub: "3 tasks · 60 seconds" }]; // RUN-1 mock 2: Plan-my-day sells its real cost. G11 play-first: the app's main verb is the hero
       }
       case "break":
         return [{ icon: "ti-player-play-filled", label: "Resume", fn: tfResumeBreak, primary: true },
@@ -8740,7 +8740,7 @@
     TBX_FACE_LADDER.forEach(function (m) { // ONE ROW, ALL THE DOSES, scrolled sideways (David 2026-08-20). No More button, no collapse, no second picker underneath — and tbxRepaintDose puts the row back where you left it, so the chip you tap stays under your thumb instead of jumping to the left edge.
       var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + tr("m"));
       if (m === cur) {
-        if (face) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, var(--c-ffffff-bg)) 13px 26px)"; chip.style.border = "2.5px solid var(--c-160510-ink)"; chip.style.color = THC("#160510","ink"); chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
+        if (face) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, var(--c-ffffff-bg)) 13px 26px)"; chip.style.border = "2.5px solid var(--c-160510-ink)"; chip.style.color = THC("#160510","edge"); chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
         else { chip.style.background = tbxCandy(d); chip.style.boxShadow = tbxLip(d); }
       } else if (face) { chip.style.border = "2px solid color-mix(in srgb, " + d + " 40%, var(--c-1c0b15-ink))"; chip.style.background = THC("#1c0b15","bg"); chip.style.color = THC("#d8a9bb","bg"); }
       else chip.style.borderColor = "color-mix(in srgb, " + d + " 38%, var(--c-33192a-ink))";
@@ -9186,7 +9186,7 @@
       var took = {}, nq = 0; // what this folder has already given the queue — plain ACT picks only, so a stack that merely shares a hue never lights a folder it didn't come from
       (_pk.queue || []).forEach(function (p) { if (p.kind === "act" && p.dom === d) { nq++; took[p.title] = 1; } });
       var tile = add(grid, "button", "pk-ftile"); // NO HUE WASH (David 2026-07-31, on device): every shell is the same flat var(--c-241022-ink) night. The colour on a card comes from its coins, its glyph and name row, and the ring when it holds a pick — nothing else. The 12%-hue shells made eight cards read as eight different papers.
-      tile.style.borderColor = nq ? THC("#ff4fa0","ink") : PK_EDGE; // 2.5px NEUTRAL PK_EDGE at rest, identical on all eight; a pick takes the edge pink (selection is the ONE legal hue border). Set inline in BOTH states because an inline colour would otherwise beat .pk-ftile.on.
+      tile.style.borderColor = nq ? THC("#ff4fa0","edge") : PK_EDGE; // 2.5px NEUTRAL PK_EDGE at rest, identical on all eight; a pick takes the edge pink (selection is the ONE legal hue border). Set inline in BOTH states because an inline colour would otherwise beat .pk-ftile.on.
       if (nq) tile.classList.add("on");
       var mini = add(tile, "span", "pk-mini");
       var six = acts.filter(function (a) { return took[a.title]; }).concat(acts.filter(function (a) { return !took[a.title]; })).slice(0, 6); // PICKED-FIRST: what you just picked has to be VISIBLE in the six, even when it ranks ninth in the folder
@@ -9221,7 +9221,7 @@
         var b = pkFolder(sg, true), muted = mixHex(F.c, THC("#1e0b18","bg"), 0.25); b.style.borderColor = muted; // the muted edge stays: color-mix(HUE 75%, var(--c-1e0b18-ink))
         var dr = add(b, "div", "pk-deckrow");
         F.items.slice(0, 3).forEach(function (p) { var hue = pkHue(p.dom); stkCard(dr, { s: PK_DECK_S, hue: hue, ti: p.ti, shards: stkShards(hue, p.st0), cls: "pk-deck" }); }); // THE STACK CARD: flat hue face on its own hue lip, white glyph, two shards fanned up-left in the next steps' hues. The ink-ringed face and the darkened same-hue peeks that lived here are dead.
-        if (!F.items.length) { var e = add(dr, "span", "pk-deckph"); e.style.borderColor = stkMix(F.c, THC("#160510","ink"), 0.42); var ei = add(e, "i", "ti ti-plus"); ei.style.color = THC("#8a5f76","ink"); } // one lone placeholder tile, not a full-width box
+        if (!F.items.length) { var e = add(dr, "span", "pk-deckph"); e.style.borderColor = stkMix(F.c, THC("#160510","edge"), 0.42); var ei = add(e, "i", "ti ti-plus"); ei.style.color = THC("#8a5f76","ink"); } // one lone placeholder tile, not a full-width box
         var frow = add(b, "div", "pk-frow"); var fi = add(frow, "i", "ti " + F.ti); fi.style.color = muted; // the folder glyph rides with the edge, not against it
         var tx = add(frow, "span", "pk-ftx"); add(tx, "span", "pk-ftl", tr(F.l)); var s = add(tx, "span", "pk-fts", tr(F.s)); s.style.color = F.c; // always the designed phrase — counts are data slop, they're nowhere on this wall
         b.onclick = function () { _pk.sheet = { kind: F.kind, more: false, naming: false, draft: "" }; pkBuildSheet(); };
@@ -9257,13 +9257,13 @@
   }
   function pkQueueActs() { return (_pk && _pk.queue ? _pk.queue : []).filter(function (p) { return p.kind === "act"; }).map(pkHandBack); } // BEAT mode reads its picks back out as plain activities — the same list shapeFlow's accumulator has always held
   function pkPriLab(v) { for (var i = 0; i < PK_PRIS.length; i++) if (PK_PRIS[i].v === v) return PK_PRIS[i].l; return "Priority"; }
-  function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = THC("#160510","bg"); el2.style.borderColor = hue; if (ico) ico.style.color = THC("#160510","ink"); } else { el2.style.borderColor = mixHex(hue, THC("#33192a","bg"), 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
+  function pkSkin(el2, ico, hue, on) { if (on) { el2.style.background = tbxCandy(hue); el2.style.color = THC("#160510","bg"); el2.style.borderColor = hue; if (ico) ico.style.color = THC("#160510","edge"); } else { el2.style.borderColor = mixHex(hue, THC("#33192a","bg"), 0.62); if (ico) ico.style.color = hue; } } // DS choice-row v3: at rest = dark tint + own-hue outline + bare colored icon; chosen = ignite into the option's OWN hue candy stripes + ink. Never gold.
   function pkSkinChip(c, hue, on) { // the LENGTH rail's own skin (borderless) — deliberately NOT pkSkin, which dresses the Priority/Steps buttons
     if (on) { c.style.background = pkIgnite(hue); c.style.color = PK_INK; c.style.boxShadow = pkRing(); c.style.padding = "8px 22px"; } // the chosen length is an ignited thing like any other: stripes + the ring, nothing under it — and David's footer frame gives it the WIDER chip (8/22 against the resting 8/14)
     else { c.style.background = THC("#170811","bg"); c.style.color = THC("#c98ca6","bg"); c.style.boxShadow = "none"; c.style.padding = ""; }
   }
   function pkSkinTune(el2, ico, hue, on) { // Priority / Steps: DEAD-QUIET at rest (David 2026-07-31) — the CSS carries var(--c-170811-ink) on a 2px var(--c-4a2338-ink) outline with var(--c-c9b8c4-ink) type, and no hue tint touches them until they are actually set
-    if (on) { el2.style.background = tbxCandy(hue); el2.style.color = THC("#160510","bg"); el2.style.borderColor = hue; if (ico) ico.style.color = THC("#160510","ink"); }
+    if (on) { el2.style.background = tbxCandy(hue); el2.style.color = THC("#160510","bg"); el2.style.borderColor = hue; if (ico) ico.style.color = THC("#160510","edge"); }
     else { el2.style.background = ""; el2.style.color = ""; el2.style.borderColor = ""; if (ico) ico.style.color = ""; }
   }
   function pkRail(host, cur, hue, onPick, bg) { // bg is kept for the callers; the DS fixes the right-edge fade at var(--c-1b0b16-bg) on every surface
@@ -9323,7 +9323,7 @@
     _pk.hot.slice(0, 8).forEach(function (a) {
       var hue = pkHue(a.domain || domainOf(a)), took = (_pk.queue || []).some(function (q) { return q.title === a.title; });
       var b = add(row, "button", "pk-hot" + (took ? " on" : ""));
-      b.style.cssText = "display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:13px;border:2.5px solid " + (took ? THC("#ff4fa0","ink") : mixHex(hue, THC("#160510","bg"), 0.42)) + ";background:" + (took ? pkIgnite(hue) : mixHex(hue, THC("#160510","bg"), 0.84)) + ";color:" + (took ? PK_INK : THC("#f0dcea","ink")) + ";font-family:var(--bub);font-weight:800;font-size:14px;";
+      b.style.cssText = "display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border-radius:13px;border:2.5px solid " + (took ? THC("#ff4fa0","edge") : mixHex(hue, THC("#160510","bg"), 0.42)) + ";background:" + (took ? pkIgnite(hue) : mixHex(hue, THC("#160510","bg"), 0.84)) + ";color:" + (took ? PK_INK : THC("#f0dcea","ink")) + ";font-family:var(--bub);font-weight:800;font-size:14px;";
       var i = add(b, "i", "ti " + tiClass(a)); i.style.color = took ? PK_INK : hue;
       add(b, "span", null, a.title);
       b.onclick = function () { pkTake(a); };
@@ -12843,7 +12843,7 @@
   }
   function vrtCard(host, v) { // 15B: opens in place — the craft strip, the three honest numbers, her declaration, the record, the one action
     var M = VRT[v.id], lit = vrtLit(v), moments = vrtMoments(v), tot = moments.length, ci = vrtCraft(v);
-    var card = add(host, "div", "vr-card"); card.style.borderColor = THC("#ff3f9e","ink");
+    var card = add(host, "div", "vr-card"); card.style.borderColor = THC("#ff3f9e","edge");
     var head = add(card, "div", "vr-cardhead");
     var well = add(head, "span", "vr-well"), hi = add(well, "img"); hi.src = vrtSrc(v.id, lit); hi.alt = "";
     if (lit) hi.style.filter = "drop-shadow(0 0 6px " + M.hue + "8c)";
@@ -15139,7 +15139,7 @@
       var paints = [];
       keys.forEach(function (k) {
         var b = document.createElement("button"); b.textContent = tr(nameOf(k));
-        function paint() { var on = getCur() === k; b.style.cssText = "border:2px solid " + (on ? THC("#c8a8ff","ink") : THC("#4a3670","ink")) + ";border-radius:11px;padding:7px 13px;font-family:var(--bub);font-size:12px;font-weight:800;cursor:pointer;color:var(--c-efeaff-ink);background:" + (on ? THC("#9a7cff","bg") : "rgba(255,255,255,.05)") + ";"; }
+        function paint() { var on = getCur() === k; b.style.cssText = "border:2px solid " + (on ? THC("#c8a8ff","edge") : THC("#4a3670","edge")) + ";border-radius:11px;padding:7px 13px;font-family:var(--bub);font-size:12px;font-weight:800;cursor:pointer;color:var(--c-efeaff-ink);background:" + (on ? THC("#9a7cff","bg") : "rgba(255,255,255,.05)") + ";"; }
         paint(); paints.push(paint);
         b.onclick = function () { setCur(k); save(); paints.forEach(function (p) { p(); }); stopPrev(); if (hear && opts.preview) prevCtl = breathPreview(breathCueKey(), breathToneKey()); if (_breathLive) { try { _breathLive(); } catch (e) {} } };
         row.appendChild(b);
@@ -15441,7 +15441,7 @@
       var lRow = add(box, "div"); lRow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;justify-content:center;";
       LANES.forEach(function (o) {
         var isIn = o[1] === "insight", b = add(lRow, "button", null, null);
-        b.textContent = o[0]; b.style.cssText = "border:2.5px solid " + (isIn ? THC("#b98cff","ink") : THC("#6a5a9a","ink")) + ";border-radius:14px;padding:9px 14px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:var(--c-efeaff-ink);background:" + (cfg.sess === o[1] ? THC("#9a7cff","bg") : "rgba(255,255,255,.06)") + ";";
+        b.textContent = o[0]; b.style.cssText = "border:2.5px solid " + (isIn ? THC("#b98cff","edge") : THC("#6a5a9a","edge")) + ";border-radius:14px;padding:9px 14px;font-family:var(--bub);font-weight:800;font-size:14px;cursor:pointer;color:var(--c-efeaff-ink);background:" + (cfg.sess === o[1] ? THC("#9a7cff","bg") : "rgba(255,255,255,.06)") + ";";
         b.onclick = function () { if (isIn && !(S.tools && S.tools.insightOptIn)) { insightConsent(); return; } cfg.sess = o[1]; build(); };
       });
       var who = add(box, "div", null, (MED_SESSIONS[cfg.sess] || MED_SESSIONS.concentration).sub); who.style.cssText = "font-size:11px;color:var(--c-9c8fc4-ink);margin-top:6px;font-style:italic;";
@@ -15590,7 +15590,7 @@
     function refresh() { ctr.querySelector(".rie").textContent = sel.length ? "✓" : "⋯"; ctr.querySelector(".ril").textContent = sel.length ? "go · " + sel.length : "more"; }
     items.forEach(function (m, i) {
       var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = cx + Math.cos(a) * R, y = cy + Math.sin(a) * R;
-      var b = document.createElement("div"); b.className = "ritem"; b.style.left = (x - 36) + "px"; b.style.top = (y - 36) + "px"; b.style.borderColor = m.color || THC("#8a5cf0","ink");
+      var b = document.createElement("div"); b.className = "ritem"; b.style.left = (x - 36) + "px"; b.style.top = (y - 36) + "px"; b.style.borderColor = m.color || THC("#8a5cf0","edge");
       b.innerHTML = '<div class="rie">' + emojiFor(m) + '</div><div class="ril">' + m.title + '</div>';
       b.onclick = function (e) {
         e.stopPropagation();
@@ -15693,7 +15693,7 @@
       else if (_mn === 30) { if (_SHOWHALF) { var _l2 = add(cal, "div", "calhalf half30"); _l2.style.top = _t + "px"; _l2.dataset.mn = mm; } } // :30 = a MEDIUM dash (never "7:30" text) — just signifies between the two hours (David 2026-07-21)
       else { if (_SHOWQTR) { var _l3 = add(cal, "div", "calhalf half15"); _l3.style.top = _t + "px"; _l3.dataset.mn = mm; } } // :15/:45 = a THINNER dash, deeper zoom only
     }
-    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = topFor(now); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : THC("#ff5fa8","ink"); var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = THC("#ff5fa8","ink"); nl.style.boxShadow = "0 0 13px var(--c-ff5fa8-ink)"; nl.dataset.mn = now; nowLineEl = nl; add(nl, "div", "nowscan"); /* P-A scanner glow: a soft upward bloom riding the line = the present "printing" the day; child of the line so it creeps with it, pointer-events:none */ nowRightBand = [_ny - 6, _ny + 30]; /* now-line stays the brightest thing on the timeline (David 2026-06-27) */ var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 8) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : THC("#4a1126","bg"); nc.dataset.mn = now; nc.dataset.off = -8; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; { var np = add(cal, "div", "nowtime"); np.style.top = (_ny - 9) + "px"; np.dataset.mn = now; np.dataset.off = -9; np.style.left = "auto"; np.style.right = "10px"; np.innerHTML = "NOW"; } } // clean "NOW" pink pill centered on the now-line's right end — the canon mockup (David 2026-07-20; was the NOW HH:MM + tracking readout)
+    if (showNow && now >= startH * 60 && now <= endH * 60) { var _ny = topFor(now); var _nrun = activeTimers(), _lv = _nrun[_nrun.length - 1], _lD = _lv ? (DOM[domainOf(_lv)] || DOM.focus) : null, _lc = _lD ? _lD.c : THC("#ff5fa8","ink"); var nl = add(cal, "div", "nowline"); nl.style.top = _ny + "px"; nl.style.borderTopColor = THC("#ff5fa8","edge"); nl.style.boxShadow = "0 0 13px var(--c-ff5fa8-ink)"; nl.dataset.mn = now; nowLineEl = nl; add(nl, "div", "nowscan"); /* P-A scanner glow: a soft upward bloom riding the line = the present "printing" the day; child of the line so it creeps with it, pointer-events:none */ nowRightBand = [_ny - 6, _ny + 30]; /* now-line stays the brightest thing on the timeline (David 2026-06-27) */ var nc = add(cal, "div", "nowcirc"); nc.style.top = (_ny - 8) + "px"; nc.style.background = _lc; nc.style.color = _lD ? _lD.ink : THC("#4a1126","bg"); nc.dataset.mn = now; nc.dataset.off = -8; nc.innerHTML = _lv ? tiIcon(_lv) : '<i class="ti ti-clock"></i>'; { var np = add(cal, "div", "nowtime"); np.style.top = (_ny - 9) + "px"; np.dataset.mn = now; np.dataset.off = -9; np.style.left = "auto"; np.style.right = "10px"; np.innerHTML = "NOW"; } } // clean "NOW" pink pill centered on the now-line's right end — the canon mockup (David 2026-07-20; was the NOW HH:MM + tracking readout)
     if (showNow) { // Batch 3 #4: TAP THE NOW-LINE (or its circle) → zoom into the present. Toggles zoomed-in ⇄ default, anchored at the line, then recenters on now. Replaces the removed double-tap.
       (function () { var _nl2 = cal.querySelector(".nowline"), _nc2 = cal.querySelector(".nowcirc"); if (!_nl2) return;
         var _zoomNow = function (e2) { if (e2) e2.stopPropagation(); if (pullZoom !== "day") return; var _y = _nl2.getBoundingClientRect().top; animateHourPx(pullHourPx < 150 ? 240 : 64, _y); setTimeout(scrollToNow, 40); };
@@ -15754,7 +15754,7 @@
       card.dataset.ic = tiClass(b); card.dataset.c = D.c; card.dataset.ink = D.ink; // carried so the LIVE pinch reflow can rebuild this bar's rail icon without recomputing its domain (David 2026-06-26)
       degrade(card); if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) { card._swOpen = (function (bb) { return function () { editBlk(bb); }; })(b); } // small bubble → carries its open-fn so the swipe-select cluster gesture can open it (David 2026-06-28)
       if (status === "ok" && !partial) { // DONE = BRIGHT pastel diagonal STRIPES (V≈88, canon: Gym) + bright same-colour edge, NO black outline, NO gold
-        card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; card.style.borderColor = mixHex(D.c, THC("#ffffff","ink"), 0.20); card.style.borderStyle = "solid"; card.style.boxShadow = "0 5px 15px rgba(0,0,0,.32)"; // stripes go toward WHITE (bright), edge is the bright domain colour
+        card.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; card.style.borderColor = mixHex(D.c, THC("#ffffff","edge"), 0.20); card.style.borderStyle = "solid"; card.style.boxShadow = "0 5px 15px rgba(0,0,0,.32)"; // stripes go toward WHITE (bright), edge is the bright domain colour
       } else if (dark) { // missed/skipped — quiet outlined, dashed + dimmer to read as "not kept"
         card.style.background = mixHex(D.c, THC("#160510","bg"), 0.84); card.style.borderColor = mixHex(D.c, THC("#160510","bg"), 0.2); card.style.borderStyle = "solid"; card.style.boxShadow = "none"; // incomplete = SOLID one-colour outline, NOT dashed (David 2026-07-21: kill the dotted look; done = stripes, incomplete = solid)
       } else { // PLANNED / quiet = BRIGHT domain outline + dark domain fill + domain-colour label (canon: Lunch, Read)
@@ -15768,7 +15768,7 @@
           if (_tsm > bs + 0.5) { card.style.height = flowSpan(_knots, bs, _tsm - bs) + "px"; card.dataset.mn = bs; card.dataset.dur = (_tsm - bs); card.style.background = mixHex(D.c, THC("#160510","bg"), 0.86); card.style.borderColor = mixHex(D.c, THC("#160510","bg"), 0.32); card.style.borderRadius = _R + " " + _R + " 0 0"; card.style.borderBottom = "none"; card.style.boxShadow = "none"; degrade(card); } // GHOST = untracked past (bs → _tsm). EXACT height (no barH −4 margin) + square bottom: the ghost and the charge are ONE continuous story — the 4px bar-gap read as "a tiny space appears" (David device 2026-07-03). degrade() drops text on slivers.
           else { card.style.height = "0px"; card.style.border = "none"; card.style.background = "none"; card.style.boxShadow = "none"; card.style.visibility = "hidden"; } // started exactly at the block top → no ghost head. visibility:hidden — a 0px card's title text still painted (overflow) and bled through the young charge up close (David device 2026-07-03)
           // (2a) TRACKED stretch — rendered from SECOND ZERO (David device 2026-07-03: "printing doesn't start from the very beginning"): the old `now > _tsm + 0.5` gate was minute-granular, leaving up to a minute of emptiness before the first paint; now the seg is born at 0px and tickCharge grows it per second. Sliver (<10px) = clean color line; content appears as space allows (emoji ≥7px via tickCharge, full label on the next minute-rebuild ≥15px).
-          var _segH = flowSpan(_knots, _tsm, _nowX - _tsm), _seg = add(cal, "div", "matchseg chgseg" + (_segH < 10 ? " sliver" : "") + voltClass(k)); /* BATTERY PHYSICS: the live charge prints at the day's voltage */ _seg.style.top = topFor(_tsm) + "px"; _seg.style.height = _segH + "px"; _seg.style.left = "32px"; _seg.style.right = "14px"; _seg.dataset.mn = _tsm; _seg.dataset.dur = Math.max(0, _nowX - _tsm); _seg.dataset.ic = tiClass(b); _seg.dataset.lc = D.light; _seg.style.borderRadius = _R + " " + _R + " 0 0"; _seg.style.borderBottom = "none"; _seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; _seg.style.borderColor = mixHex(D.c, THC("#ffffff","ink"), 0.2); _seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
+          var _segH = flowSpan(_knots, _tsm, _nowX - _tsm), _seg = add(cal, "div", "matchseg chgseg" + (_segH < 10 ? " sliver" : "") + voltClass(k)); /* BATTERY PHYSICS: the live charge prints at the day's voltage */ _seg.style.top = topFor(_tsm) + "px"; _seg.style.height = _segH + "px"; _seg.style.left = "32px"; _seg.style.right = "14px"; _seg.dataset.mn = _tsm; _seg.dataset.dur = Math.max(0, _nowX - _tsm); _seg.dataset.ic = tiClass(b); _seg.dataset.lc = D.light; _seg.style.borderRadius = _R + " " + _R + " 0 0"; _seg.style.borderBottom = "none"; _seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; _seg.style.borderColor = mixHex(D.c, THC("#ffffff","edge"), 0.2); _seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
           if (_segH >= 15) { var _ssc = add(_seg, "div", "mscn"); _ssc.style.color = D.light; _ssc.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> <i class="ti ti-circle-check"></i>'; } else if (_segH >= 7) { var _se = add(_seg, "div", "msemoji"); _se.innerHTML = tiIcon(b); _se.style.cssText = "position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;line-height:1;color:var(--c-fff2f9-ink);"; }
           // (2b) Batch 3 #3 (David 2026-07-03, reverses the old "nothing below the line while tracking" rule — DAVID'S CALL): SHOW the committed future stretch (now → block end) as a faint dashed plan bar, continuous below the bright tracked segment. This is the "keep going N more" you committed — it should be visible ahead of you, not blank.
           if (be > now + 0.5) { var _fh2 = flowH(_knots, now, be - now), _cf = add(cal, "div", "calblk lane futurebar committedfut"); _cf.style.top = topFor(now) + "px"; _cf.style.height = _fh2 + "px"; _cf.style.left = "32px"; _cf.style.right = "14px"; _cf.dataset.mn = now; _cf.dataset.dur = (be - now); _cf.style.background = _matte; _cf.style.borderColor = THC("#160510","bg"); _cf.style.borderStyle = "dashed"; _cf.style.borderTop = "none"; _cf.style.boxShadow = "none"; _cf.style.opacity = "0.72"; _cf.style.borderRadius = "0 0 " + _R + " " + _R; _cf.style.pointerEvents = "none"; if (_fh2 >= 16) { var _cfl = add(_cf, "div", "cn"); _cfl.style.color = D.light; _cfl.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>'; } } // borderTop:none — the now-line IS the seam; a dashed top edge under it read as a glitch up close
@@ -15783,7 +15783,7 @@
       if (partial) { // overlay the MATCHED span — a full-width shining segment over both lanes; the rest of the block stays ghost (left) with the drift in the right lane = the split
         var _mh = flowH(_knots, _pm.start, _pm.end - _pm.start); // flowed span (no artificial floor — that caused zoom-out overlap; the overlay respects the block's flowed extent)
         var seg = add(cal, "div", "matchseg" + voltClass(k)); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "32px"; seg.style.right = "14px"; /* BATTERY PHYSICS: matched charge keeps the voltage of the day it was lived */
-        seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; seg.style.borderColor = mixHex(D.c, THC("#ffffff","ink"), 0.2); seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
+        seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; seg.style.borderColor = mixHex(D.c, THC("#ffffff","edge"), 0.2); seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
         seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
         var _sc = add(seg, "div", "mscn"); _sc.style.color = D.light; _sc.innerHTML = (_mh >= 40 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : tiIcon(b) + ' ') + '<i class="ti ti-circle-check"></i>'; // short matched bar = just the icon + ✓ on the right (clean symbol-box, no cramped faint text) — David 2026-07-21
       }
@@ -15898,7 +15898,7 @@
       card.style.left = "32px"; card.style.right = "14px"; card.style.width = "auto"; // single column: real activity is a full-width inset card in the same column (no right lane)
       if (it.kind === "log") {
         var e = it.ref, dom = domainOf(e), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.background = drift ? mixHex(D.c, THC("#160510","bg"), 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)") : mixHex(D.c, THC("#160510","bg"), 0.84); card.style.borderColor = onp ? mixHex(D.c, THC("#ffffff","ink"), 0.2) : mixHex(D.c, THC("#160510","bg"), 0.16); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--c-160510-ink),0 5px 12px rgba(0,0,0,.4)"; // matched real = deep stripes · drift = dark mauve · no neon/shine (David 2026-06-27)
+        card.style.background = drift ? mixHex(D.c, THC("#160510","bg"), 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)") : mixHex(D.c, THC("#160510","bg"), 0.84); card.style.borderColor = onp ? mixHex(D.c, THC("#ffffff","edge"), 0.2) : mixHex(D.c, THC("#160510","bg"), 0.16); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--c-160510-ink),0 5px 12px rgba(0,0,0,.4)"; // matched real = deep stripes · drift = dark mauve · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         if (!drift) { var _vc = voltClass(k); if (_vc) card.classList.add(_vc.trim()); } /* BATTERY PHYSICS: lived charge carries the day's voltage — drift stays calm gray, never dimmed further */
         var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>'; // minimalist: no sparkle (David 2026-07-20)
@@ -15932,7 +15932,7 @@
         });
       } else {
         var t = it.ref, dom = domainOf(t), D = DOM[dom], drift = (dom === "drift"), onp = !drift && onPlanMatch(it, dom);
-        card.style.background = drift ? mixHex(D.c, THC("#160510","bg"), 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)") : mixHex(D.c, THC("#160510","bg"), 0.84); card.style.borderColor = onp ? mixHex(D.c, THC("#ffffff","ink"), 0.2) : mixHex(D.c, THC("#160510","bg"), 0.16); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--c-160510-ink)"; // live on-plan = deep stripes · no neon/shine (David 2026-06-27)
+        card.style.background = drift ? mixHex(D.c, THC("#160510","bg"), 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)") : mixHex(D.c, THC("#160510","bg"), 0.84); card.style.borderColor = onp ? mixHex(D.c, THC("#ffffff","edge"), 0.2) : mixHex(D.c, THC("#160510","bg"), 0.16); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--c-160510-ink)"; // live on-plan = deep stripes · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         if (!drift) { var _vc = voltClass(k); if (_vc) card.classList.add(_vc.trim()); } /* BATTERY PHYSICS: lived charge carries the day's voltage — drift stays calm gray, never dimmed further */
         var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> <span class="cn-t">' + esc(t.title) + '</span><span class="cn-el"> · <span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span></span>'; // C9b (David 2026-07-02): the elapsed rides inside .cn-el so a thin bar can hide it as ONE unit (separator included) — timer text appears only once the block has room
@@ -16367,7 +16367,7 @@
       if (lit1 && !isT) {
         var rung = st1.perfect ? 3 : st1.ratio >= 0.66 ? 2 : st1.ratio >= 0.33 ? 1 : 0;
         cell.style.background = MO_RAMP[rung]; cell.classList.add("lit");
-        if (st1.perfect) { cell.style.borderColor = THC("#ffd24a","ink"); add(cell, "i", "ti ti-crown mo-crown"); }
+        if (st1.perfect) { cell.style.borderColor = THC("#ffd24a","edge"); add(cell, "i", "ti ti-crown mo-crown"); }
         if (dayOnFire(dk)) add(cell, "i", "ti ti-flame mo-fire");
         if (st1.active && !dayStats(keyAdd(dk, -1)).active) add(cell, "i", "ti ti-sparkles mo-glint");
       }
@@ -16399,7 +16399,7 @@
     function commit() { if (isLog) reflowLogs(k); else if (!blockPast(k, o)) reflow(k); save(); renderToday(); } // every change applies live — no Save button
     // HERO — the activity name IS the switch button, in its own colour
     var hero = add(B, "button", "ed-hero");
-    function paintHero() { if (!o.title) { hero.classList.add("ed-hero-empty"); hero.style.removeProperty("background"); hero.style.removeProperty("color"); hero.style.removeProperty("border-color"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ti-plus"></i> choose activity</span><i class="ti ti-chevron-right ed-swap"></i>'; return; } hero.classList.remove("ed-hero-empty"); var d = D(); hero.style.setProperty("background", d.c, "important"); hero.style.setProperty("color", d.ink, "important"); hero.style.setProperty("border-color", THC("#160510","ink"), "important"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ' + tiClass(o) + '"></i> ' + esc(o.title) + '</span><i class="ti ti-switch-horizontal ed-swap"></i>'; } // empty bubble → a dashed "choose activity" prompt; filled → the activity in its own colour (David 2026-06-26)
+    function paintHero() { if (!o.title) { hero.classList.add("ed-hero-empty"); hero.style.removeProperty("background"); hero.style.removeProperty("color"); hero.style.removeProperty("border-color"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ti-plus"></i> choose activity</span><i class="ti ti-chevron-right ed-swap"></i>'; return; } hero.classList.remove("ed-hero-empty"); var d = D(); hero.style.setProperty("background", d.c, "important"); hero.style.setProperty("color", d.ink, "important"); hero.style.setProperty("border-color", THC("#160510","edge"), "important"); hero.innerHTML = '<span class="ed-heroname"><i class="ti ' + tiClass(o) + '"></i> ' + esc(o.title) + '</span><i class="ti ti-switch-horizontal ed-swap"></i>'; } // empty bubble → a dashed "choose activity" prompt; filled → the activity in its own colour (David 2026-06-26)
     paintHero();
     hero.onclick = function () { pkOpen({ title: "Switch to…", pick: function (x) { o.title = x.title; o.catK = x.catK || null; o.color = x.color || o.color; if (x.domain) o.domain = x.domain; paintHero(); commit(); } }); };
     // SCRUBBER — drag the segment to move, pull the right edge to resize
@@ -18763,7 +18763,7 @@
         add(gr, "span", null, tr("Guidance")).style.cssText = "font-size:12px;color:var(--c-b9a6de-ink);font-weight:800;flex:none;";
         var gchips = [];
         [["guided", "Guided"], ["balanced", "Balanced"], ["spacious", "Spacious"]].forEach(function (g) { var b = add(gr, "button", null, tr(g[1])); b._k = g[0]; gchips.push(b); b.onclick = function () { S.tools = S.tools || {}; S.tools.guidance = (S.tools.guidance === g[0]) ? null : g[0]; save(); paintG(); }; });
-        function paintG() { var selg = (S.tools && S.tools.guidance) || null; gchips.forEach(function (b) { var on = b._k === selg; b.style.cssText = "flex:1;padding:7px 4px;border-radius:10px;border:2px solid " + (on ? THC("#ffd76a","ink") : THC("#160510","ink")) + ";background:" + (on ? "rgba(255,215,106,.16)" : "rgba(255,255,255,.06)") + ";color:var(--c-efeaff-bg);font-family:'Jost',var(--bub),sans-serif;font-weight:800;font-size:12px;cursor:pointer;"; }); }
+        function paintG() { var selg = (S.tools && S.tools.guidance) || null; gchips.forEach(function (b) { var on = b._k === selg; b.style.cssText = "flex:1;padding:7px 4px;border-radius:10px;border:2px solid " + (on ? THC("#ffd76a","edge") : THC("#160510","edge")) + ";background:" + (on ? "rgba(255,215,106,.16)" : "rgba(255,255,255,.06)") + ";color:var(--c-efeaff-bg);font-family:'Jost',var(--bub),sans-serif;font-weight:800;font-size:12px;cursor:pointer;"; }); }
         paintG();
       }
       var cta = add(foot, "button"); cta.setAttribute("style", "display:block;width:calc(100% - 28px);margin:8px 14px 0;background:var(--c-ff5fa8-bg);color:var(--c-3a0e22-bg);border:2.5px solid var(--c-160510-bg);border-radius:14px;padding:12px;font-weight:800;font-size:14.5px;text-align:center;box-shadow:0 4px 0 var(--c-160510-ink);cursor:pointer;font-family:'Jost',var(--bub),sans-serif;"); cta.innerHTML = '<i class="ti ti-device-floppy"></i> ' + esc(tr("Save as my session")); cta.onclick = saveFlow;
@@ -19902,7 +19902,7 @@
       add(gr, "span", null, tr("Guidance")).style.cssText = "font-size:12px;color:var(--c-b39ab0-ink);font-weight:700;margin-right:2px;flex:none;";
       var chips = [];
       [["guided", "Guided"], ["balanced", "Balanced"], ["spacious", "Spacious"]].forEach(function (g) { var b = add(gr, "button", null, tr(g[1])); b._k = g[0]; chips.push(b); b.onclick = function () { S.tools = S.tools || {}; S.tools.guidance = (S.tools.guidance === g[0]) ? null : g[0]; save(); paintG(); }; });
-      function paintG() { var sel = (S.tools && S.tools.guidance) || null; chips.forEach(function (b) { var on = b._k === sel; b.style.cssText = "flex:1;padding:7px 4px;border-radius:10px;border:1.5px solid " + (on ? THC("#ffd76a","ink") : THC("#6a4a6a","ink")) + ";background:" + (on ? "rgba(255,215,106,.16)" : "rgba(255,255,255,.05)") + ";color:var(--c-f0e6ef-bg);font-family:var(--bub);font-weight:800;font-size:12px;cursor:pointer;"; }); }
+      function paintG() { var sel = (S.tools && S.tools.guidance) || null; chips.forEach(function (b) { var on = b._k === sel; b.style.cssText = "flex:1;padding:7px 4px;border-radius:10px;border:1.5px solid " + (on ? THC("#ffd76a","edge") : THC("#6a4a6a","edge")) + ";background:" + (on ? "rgba(255,215,106,.16)" : "rgba(255,255,255,.05)") + ";color:var(--c-f0e6ef-bg);font-family:var(--bub);font-weight:800;font-size:12px;cursor:pointer;"; }); }
       paintG();
     })();
     var play = add(foot, "button", "done2", cfg.playLabel || "Play ▶"); play.style.cssText = "margin:12px auto 0;display:block;max-width:280px;"; play.onclick = function () { if (!track.length) return; persist(); if (ov.parentNode) ov.remove(); cfg.onPlay(track); };
@@ -20703,7 +20703,7 @@
         add(B, "div", "lbl", "🎯 what are you chasing? (optional)"); inputs.g = document.createElement("input"); inputs.g.type = "text"; inputs.g.placeholder = "get lean, ship the app, find peace…"; inputs.g.style.cssText = "width:100%;"; if (prof.goals) inputs.g.value = prof.goals; B.appendChild(inputs.g);
       } else if (step === 1) {
         add(B, "div", "sttl", "💼 What's your work?"); add(B, "div", "lbl", "so the app tailors your deep-work habits to you");
-        var og = add(B, "div", "tilegrid"); OCCUPATIONS.forEach(function (o) { var on = prof.occ === o.k; var x = add(og, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = THC("#2a9fe0","ink"); if (on) x.style.background = THC("#2a9fe0","bg"); var oge = document.createElement("div"); oge.className = "ge"; oge.innerHTML = '<i class="ti ' + (OCC_ICON[o.k] || "ti-sparkles") + '"></i>'; x.appendChild(oge); add(x, "div", "gl", o.l); x.onclick = function () { prof.occ = o.k; drawCharSheet(); }; });
+        var og = add(B, "div", "tilegrid"); OCCUPATIONS.forEach(function (o) { var on = prof.occ === o.k; var x = add(og, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = THC("#2a9fe0","edge"); if (on) x.style.background = THC("#2a9fe0","bg"); var oge = document.createElement("div"); oge.className = "ge"; oge.innerHTML = '<i class="ti ' + (OCC_ICON[o.k] || "ti-sparkles") + '"></i>'; x.appendChild(oge); add(x, "div", "gl", o.l); x.onclick = function () { prof.occ = o.k; drawCharSheet(); }; });
       } else {
         add(B, "div", "sttl", "🌟 Your path"); add(B, "div", "lbl", "which virtues call you most right now? pick up to 3. you'll still grow them all");
         var grid = add(B, "div", "tilegrid"); VIRTUES.forEach(function (v) { var on = prof.focus.indexOf(v.k) !== -1; var x = add(grid, "div", "gtile" + (on ? " on" : "")); x.style.borderColor = v.c; if (on) x.style.background = v.c; var vge2 = document.createElement("div"); vge2.className = "ge"; vge2.innerHTML = '<i class="ti ' + (VIRTUE_ICON[v.k] || "ti-sparkles") + '"></i>'; x.appendChild(vge2); add(x, "div", "gl", v.l); x.onclick = function () { var idx = prof.focus.indexOf(v.k); if (idx !== -1) prof.focus.splice(idx, 1); else if (prof.focus.length < 3) prof.focus.push(v.k); drawCharSheet(); }; });
