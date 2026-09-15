@@ -10337,5 +10337,12 @@
 "night": "#ffe9a8",
 "lilies": "#8192e5",
 "warhol": "#e293dd"
+},
+"--c-fff2f9-onpiece": {
+"hex": "#fff2f9",
+"role": "onpiece",
+"night": "#fff2f9",
+"lilies": "#f3ecff",
+"warhol": "#f3ecff"
 }
 }

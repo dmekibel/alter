@@ -3492,6 +3492,7 @@
     // just pink") — the mark IS the palette's accent, so Warhol reads gold and Water Lilies magenta.
     var _lookAcc = getComputedStyle(document.documentElement).getPropertyValue("--t-accent").trim() || THC("#ff8fc0","ink");
     row(col, 18, THC("#6a3050","ink"), "ti-palette", _lookAcc, "Look", tr(_lookName[themeGet()]), function () {
+      try { sessionStorage.setItem("alter_theme_reopen_you", "1"); } catch (e) {}
       themeSet(THEME_IDS[(THEME_IDS.indexOf(themeGet()) + 1) % THEME_IDS.length]);
     });
     var _snapAgo = S.lastSnapK ? daysSinceK(S.lastSnapK) : 12;
@@ -24079,6 +24080,7 @@
     setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot. The start screen (below) sits ON TOP of it until you tap Continue.
     // §10f.7 HOME LANDING (David ✓ 2026-07-13): the home cockpit is opened by ssEnter() when the user taps Continue — AFTER the daily gauge/welcome-back, so it lands reliably on top of the panes (the boot-time instant-open was getting lost under that flow). New users (onboarding) and mid-activity/claim/night states are untouched.
     showStartScreen(); // v652: the animated launch screen gates the cold open; its primary button enters the app (or starts onboarding)
+    try { if (sessionStorage.getItem("alter_theme_reopen_you")) { sessionStorage.removeItem("alter_theme_reopen_you"); setTimeout(function () { try { youMenu(); } catch (e) {} }, 420); } } catch (e) {} // @SEC:THEME — come back to the Look row you just used
     if (!_ssShown) { if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); else if (!activeTimers().length) setTimeout(function () { try { openHomeInstant(); } catch (e) {} }, 250); } // fallbacks ONLY if the start screen didn't show: new → onboard; returning-idle → land on home
     try { i18nObserve(); if (curLang() !== "en") { translateTree(document.body); setTimeout(function () { translateTree(document.body); }, 400); } } catch (e) {} // v656: live translation (display-only; safe — app never reads rendered text)
   }
