@@ -6617,7 +6617,7 @@
     jlAdd(st, "span", "jst-rays");                                      // the dark ray-center kills the bright core under the glyph (unlocked stones only)
     jlAdd(st, "i", "ti ti-" + t.ic + " jst-g", "color:" + hue + ";" + (big ? "font-size:52px;" : ""));
     if (n.done) jlAdd(jlAdd(st, "span", "jst-coin"), "i", "ti ti-check");
-    var lab = jlAdd(col, "span", big ? "jl-next-lab" : "jl-stone-lab", "color:" + hue + ";");
+    var lab = jlAdd(col, "span", big ? "jl-next-lab" : "jl-stone-lab", "color:color-mix(in srgb, " + hue + " var(--t-lblmix), var(--t-lblink));");
     if (big) jlAdd(lab, "span", "jl-next-t", "color:" + hue + ";").textContent = tr(n.title || "");
     else lab.textContent = tr(n.title || "");
     col.appendChild(jsCard(n, ty, hue));
@@ -14962,7 +14962,7 @@
     var lvl = Math.max(0, kind === "cue" ? cueVol() * CUE_HEADROOM : toneVol());
     (_liveVol[kind] || []).forEach(function (g) { try { g.gain.value = lvl; } catch (e) {} });
   }
-  var CUE_HEADROOM = 2;
+  var CUE_HEADROOM = 6; // 3x the strike that shipped, at the default 0.5 — see the mix note on the ceilings
   function cueVol() { try { return (S.audio && S.audio.cue != null) ? S.audio.cue : 0.5; } catch (e) { return 0.5; } }
   function cueHit(set, k, ctx, out, durSec, at) {
     if (!set || !ctx) return;
@@ -14972,7 +14972,7 @@
     } catch (e) {}
   }
   function toneVol() { try { return (S.audio && S.audio.tone != null) ? S.audio.tone : 1; } catch (e) { return 1; } } // THE GUIDING TONE'S OWN LEVEL (David 2026-09-09: "I would wanna be able to control the volume of those things as well"). It rides no bus of its own — makeBreathSustain reads this on EVERY update() call, so the slider is heard on the next frame, in the session you are in.
-  var BOWL_TONE_CEIL = 0.155; // the Bowl is a REAL file normalised to about -23 dBFS RMS, where the synthesized voices are raw noise a filter then throws most of away — so its ceiling has to sit an order of magnitude above theirs to land at the SAME loudness. Measured, not guessed: DEV.breathTone("bowl") vs DEV.breathTone("ocean") must agree within ~3 dB of rendered RMS at level 1.
+  var BOWL_TONE_CEIL = 0.085; // the Bowl is a REAL file normalised to about -23 dBFS RMS, where the synthesized voices are raw noise a filter then throws most of away — so its ceiling has to sit an order of magnitude above theirs to land at the SAME loudness. Measured, not guessed: DEV.breathTone("bowl") vs DEV.breathTone("ocean") must agree within ~3 dB of rendered RMS at level 1.
   // ===== THE NO-SIREN LAW (David 2026-09-09: "I don't want any sound to sound like a siren because that will give
   // people anxiety"). A siren is a pitch, or a narrow resonant band, that RISES AND FALLS ON A REPEATING CYCLE — which is
   // structurally what a breath tone does, so this is a hard constraint on the shape of every voice here, not a taste note:
@@ -14995,18 +14995,18 @@
     // what lets the slider move a tone whose gain curve was planted minutes ago.
     var tvol = volNode("tone", ctx, out); master.connect(tvol);
     var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.4; lp.frequency.setValueAtTime(340, t00); lp.connect(master);
-    var noise = null, src = null, bp = null, gust = null, span = 0, ceil = 0.055, lpSpan = 900, restMul = 0.45, bpBase = 0, bpSpan = 0; // span stays on the handle at 0: nothing in the 2026-09-09 set is pitched, and DEV.breathTone reads tone.span to decide whether a pitch measurement is even meaningful
+    var noise = null, src = null, bp = null, gust = null, span = 0, ceil = 0.030, lpSpan = 900, restMul = 0.45, bpBase = 0, bpSpan = 0; // span stays on the handle at 0: nothing in the 2026-09-09 set is pitched, and DEV.breathTone reads tone.span to decide whether a pitch measurement is even meaningful
     var _rdy = null, _rdyGo = null; // resolves once an ASYNC source has attached (the Bowl's recording). Null = nothing to wait for.
     function whiteBuf() { var len = Math.max(1, Math.floor(ctx.sampleRate * 2)), nb = ctx.createBuffer(1, len, ctx.sampleRate), nd = nb.getChannelData(0), ni; for (ni = 0; ni < len; ni++) nd[ni] = Math.random() * 2 - 1; return nb; }
     function playNoise(dest) { var n = ctx.createBufferSource(); n.buffer = whiteBuf(); n.loop = true; n.connect(dest); n.start(); return n; }
     if (key === "wind") { // WIND (David 2026-09-09) — the SAME white noise as ocean, but through a BANDPASS instead of a lowpass, so the breath moves a moving band rather than opening a shelf: a low moan at the bottom of the lungs, a bright rush at the top.
       bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 0.55; bp.frequency.setValueAtTime(220, t00); bp.connect(master);
-      noise = playNoise(bp); bpBase = 220; bpSpan = 880; ceil = 0.05; // 0.05 not 0.07: measured against the ocean render, 0.07 put wind 2.9 dB hot, so switching tones changed the VOLUME as much as the voice. Every tone now lands within 1 dB of ocean at full lungs (DEV.breathTone rmsAtL1DbFS).
+      noise = playNoise(bp); bpBase = 220; bpSpan = 880; ceil = 0.027; // 0.05 not 0.07: measured against the ocean render, 0.07 put wind 2.9 dB hot, so switching tones changed the VOLUME as much as the voice. Every tone now lands within 1 dB of ocean at full lungs (DEV.breathTone rmsAtL1DbFS).
       gust = { a: 0.10 + Math.random() * 0.10, b: 0.10 + Math.random() * 0.10, p: Math.random() * 6.2832, q: Math.random() * 6.2832 }; // THE GUST: two slow LFO rates in 0.1-0.2 Hz with random phases, summed to at most +/-15% of the centre and written with the same setTargetAtTime as everything else. Without it the filter is a fixed setting and the ear hears a synth sweep; with it, the wind never lands on the same place twice.
     } else if (key === "breath") { // BREATH (David 2026-09-09) — air moving WITH the breath, not weather. Cut everything under 300 Hz so nothing rumbles, then a narrower band (Q 1.2) sweeping 500 -> 2200 Hz, which is where a real inhale through a nose actually lives.
       var hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.Q.value = 0.7; hp.frequency.setValueAtTime(300, t00);
       bp = ctx.createBiquadFilter(); bp.type = "bandpass"; bp.Q.value = 0.6; bp.frequency.setValueAtTime(500, t00);
-      hp.connect(bp); bp.connect(master); noise = playNoise(hp); bpBase = 500; bpSpan = 1000; ceil = 0.05; restMul = 0.35; // an empty-lung REST drops further than on any other tone: this voice IS a breath, and a held-out breath makes no sound at all
+      hp.connect(bp); bp.connect(master); noise = playNoise(hp); bpBase = 500; bpSpan = 1000; ceil = 0.027; restMul = 0.35; // an empty-lung REST drops further than on any other tone: this voice IS a breath, and a held-out breath makes no sound at all
     } else if (key === "bowl") { // BOWL (David 2026-09-09) — a REAL recording, assets/bg/bowl.m4a, the same file the bowl BED plays: looped, low-passed with the level like every other tone, and swelled by the breath instead of struck. The one voice in the set that no synthesis can fake.
       lpSpan = 860; ceil = BOWL_TONE_CEIL; // 340 -> 1200 Hz with the level
       _rdy = new Promise(function (res) { _rdyGo = res; });
@@ -15014,7 +15014,7 @@
       if (ctx === _sharedACtx) { try { BGBED.buffer("bowl", landed); } catch (e) { landed(null); } } // the live path reuses the bed cache, so the bowl is fetched + decoded once for the whole app
       else { fetch("assets/bg/bowl.m4a", { cache: "force-cache" }).then(function (r) { return r.arrayBuffer(); }).then(function (ab) { return new Promise(function (res, rej) { try { var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej); } catch (e) { rej(e); } }); }).then(landed, function () { landed(null); }); } // an OfflineAudioContext (DEV.breathTone) CANNOT play a buffer decoded in the shared context — cross-context buffers throw — so a probe render decodes into the ctx it was handed
     } else { // OCEAN — filtered noise that swells in and ebbs out, the one voice from the first pass that was already shaped right. Also the fallback for an unknown key, so a stale stored pref can never produce a silent tone.
-      noise = playNoise(lp); ceil = 0.06;
+      noise = playNoise(lp); ceil = 0.033;
     }
     function update(level, kind, at) {
       if (stopped) return;
@@ -22445,6 +22445,11 @@
   //   UNREADABLE   — text under 3:1 against its own background (the "Load save" class).
   // It walks what is ACTUALLY PAINTED, so it cannot be fooled by a value being right in the map and
   // wrong on screen — which is how every one of these got past me.
+  window.DEV.audioProbe = function () { // MEASURE, do not assert — three wrong audio reports taught this
+    return { storedCue: (S.audio || {}).cue, storedTone: (S.audio || {}).tone, cueHeadroom: CUE_HEADROOM,
+      liveCueGains: _liveVol.cue.map(function (g) { try { return +g.gain.value.toFixed(4); } catch (e) { return null; } }),
+      liveToneGains: _liveVol.tone.map(function (g) { try { return +g.gain.value.toFixed(4); } catch (e) { return null; } }) };
+  };
   window.DEV.colorAudit = function (opts) {
     opts = opts || {};
     var lum = function (c) {

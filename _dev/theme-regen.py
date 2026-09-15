@@ -74,6 +74,15 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         # FILL was byte-correct against the frame the whole time; the lip was the defect. Night keeps
         # black; the day worlds mix toward their own ink, which is what the frames' lips actually are.
         '--t-lipbase': ('#000000' if T is None else T['ink']),
+        # THE FULL-SCREEN SURFACE. .tf-inner sits over the body and painted its OWN night gradient,
+        # so the world's ground was never visible — David, three times: "we're missing the gradient",
+        # "there's no gradient". Night keeps its exact three stops; the day worlds take their ground.
+        '--t-surfbg': ('linear-gradient(180deg,#1a0712 0%,#180a1e 55%,#140f26 100%)' if T is None
+                       else ('linear-gradient(180deg,#8797e6 0%,#7285e2 52%,#596fdd 100%)' if key == 'lilies'
+                             else 'linear-gradient(180deg,#df86d9 0%,#df86d9 45%,' + blend(T['accent'], T['ground'], 0.24) + ' 100%)')),
+        # THE PLANNER PILL, from the frames: border 0 and a soft rgba(ink,.14) lip, not an ink outline.
+        '--t-pillbd': ('#160510' if T is None else 'transparent'),
+        '--t-pillsh': ('#160510' if T is None else rgba(T['ink'], '.14')),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }
