@@ -1,0 +1,8787 @@
+{
+"--c-000000-bg": {
+"hex": "#000000",
+"role": "bg",
+"night": "#000000",
+"lilies": "#7285e2",
+"warhol": "#df86d9"
+},
+"--c-000000-ink": {
+"hex": "#000000",
+"role": "ink",
+"night": "#000000",
+"lilies": "#1c2050",
+"warhol": "#2c1035"
+},
+"--c-0039a6-ink": {
+"hex": "#0039a6",
+"role": "ink",
+"night": "#0039a6",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-0055a4-ink": {
+"hex": "#0055a4",
+"role": "ink",
+"night": "#0055a4",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-009246-ink": {
+"hex": "#009246",
+"role": "ink",
+"night": "#009246",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-012169-ink": {
+"hex": "#012169",
+"role": "ink",
+"night": "#012169",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-02160c-bg": {
+"hex": "#02160c",
+"role": "bg",
+"night": "#02160c",
+"lilies": "#7083e1",
+"warhol": "#de84d8"
+},
+"--c-032428-ink": {
+"hex": "#032428",
+"role": "ink",
+"night": "#032428",
+"lilies": "#1f2457",
+"warhol": "#34153c"
+},
+"--c-04041a-bg": {
+"hex": "#04041a",
+"role": "bg",
+"night": "#04041a",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-04202f-ink": {
+"hex": "#04202f",
+"role": "ink",
+"night": "#04202f",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-046a38-ink": {
+"hex": "#046a38",
+"role": "ink",
+"night": "#046a38",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-050b2c-ink": {
+"hex": "#050b2c",
+"role": "ink",
+"night": "#050b2c",
+"lilies": "#202558",
+"warhol": "#35163d"
+},
+"--c-05101e-bg": {
+"hex": "#05101e",
+"role": "bg",
+"night": "#05101e",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-052a1f-ink": {
+"hex": "#052a1f",
+"role": "ink",
+"night": "#052a1f",
+"lilies": "#1f2457",
+"warhol": "#35153d"
+},
+"--c-059669-ink": {
+"hex": "#059669",
+"role": "ink",
+"night": "#059669",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-060a14-bg": {
+"hex": "#060a14",
+"role": "bg",
+"night": "#060a14",
+"lilies": "#7083e1",
+"warhol": "#de84d8"
+},
+"--c-062e1a-bg": {
+"hex": "#062e1a",
+"role": "bg",
+"night": "#062e1a",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-062e36-ink": {
+"hex": "#062e36",
+"role": "ink",
+"night": "#062e36",
+"lilies": "#202659",
+"warhol": "#37173f"
+},
+"--c-06321f-ink": {
+"hex": "#06321f",
+"role": "ink",
+"night": "#06321f",
+"lilies": "#202559",
+"warhol": "#37163f"
+},
+"--c-06343a-ink": {
+"hex": "#06343a",
+"role": "ink",
+"night": "#06343a",
+"lilies": "#21265a",
+"warhol": "#381740"
+},
+"--c-06351f-ink": {
+"hex": "#06351f",
+"role": "ink",
+"night": "#06351f",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-071018-bg": {
+"hex": "#071018",
+"role": "bg",
+"night": "#071018",
+"lilies": "#6f82e1",
+"warhol": "#de84d7"
+},
+"--c-07351f-ink": {
+"hex": "#07351f",
+"role": "ink",
+"night": "#07351f",
+"lilies": "#202659",
+"warhol": "#37173f"
+},
+"--c-08191f-bg": {
+"hex": "#08191f",
+"role": "bg",
+"night": "#08191f",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-08283c-bg": {
+"hex": "#08283c",
+"role": "bg",
+"night": "#08283c",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-08283c-ink": {
+"hex": "#08283c",
+"role": "ink",
+"night": "#08283c",
+"lilies": "#21265b",
+"warhol": "#391841"
+},
+"--c-08321f-ink": {
+"hex": "#08321f",
+"role": "ink",
+"night": "#08321f",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-083430-ink": {
+"hex": "#083430",
+"role": "ink",
+"night": "#083430",
+"lilies": "#202659",
+"warhol": "#37173f"
+},
+"--c-0a0008-ink": {
+"hex": "#0a0008",
+"role": "ink",
+"night": "#0a0008",
+"lilies": "#1d2152",
+"warhol": "#2e1137"
+},
+"--c-0a0a12-bg": {
+"hex": "#0a0a12",
+"role": "bg",
+"night": "#0a0a12",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-0a0a1e-bg": {
+"hex": "#0a0a1e",
+"role": "bg",
+"night": "#0a0a1e",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-0a3326-ink": {
+"hex": "#0a3326",
+"role": "ink",
+"night": "#0a3326",
+"lilies": "#20265a",
+"warhol": "#38173f"
+},
+"--c-0a3a20-ink": {
+"hex": "#0a3a20",
+"role": "ink",
+"night": "#0a3a20",
+"lilies": "#21265b",
+"warhol": "#391841"
+},
+"--c-0a3a24-ink": {
+"hex": "#0a3a24",
+"role": "ink",
+"night": "#0a3a24",
+"lilies": "#21265b",
+"warhol": "#391841"
+},
+"--c-0a4028-ink": {
+"hex": "#0a4028",
+"role": "ink",
+"night": "#0a4028",
+"lilies": "#21275c",
+"warhol": "#3a1942"
+},
+"--c-0a4a2a-bg": {
+"hex": "#0a4a2a",
+"role": "bg",
+"night": "#0a4a2a",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-0b0308-ink": {
+"hex": "#0b0308",
+"role": "ink",
+"night": "#0b0308",
+"lilies": "#1d2152",
+"warhol": "#2f1237"
+},
+"--c-0b2233-ink": {
+"hex": "#0b2233",
+"role": "ink",
+"night": "#0b2233",
+"lilies": "#21265a",
+"warhol": "#381740"
+},
+"--c-0b2740-ink": {
+"hex": "#0b2740",
+"role": "ink",
+"night": "#0b2740",
+"lilies": "#22275c",
+"warhol": "#3a1942"
+},
+"--c-0c0418-bg": {
+"hex": "#0c0418",
+"role": "bg",
+"night": "#0c0418",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-0c0510-bg": {
+"hex": "#0c0510",
+"role": "bg",
+"night": "#0c0510",
+"lilies": "#7083e1",
+"warhol": "#de85d8"
+},
+"--c-0c0a1c-bg": {
+"hex": "#0c0a1c",
+"role": "bg",
+"night": "#0c0a1c",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-0c0d10-ink": {
+"hex": "#0c0d10",
+"role": "ink",
+"night": "#0c0d10",
+"lilies": "#1e2354",
+"warhol": "#31133a"
+},
+"--c-0c1330-ink": {
+"hex": "#0c1330",
+"role": "ink",
+"night": "#0c1330",
+"lilies": "#202659",
+"warhol": "#37173f"
+},
+"--c-0c2b2c-bg": {
+"hex": "#0c2b2c",
+"role": "bg",
+"night": "#0c2b2c",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-0c3a5a-ink": {
+"hex": "#0c3a5a",
+"role": "ink",
+"night": "#0c3a5a",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-0c3d29-bg": {
+"hex": "#0c3d29",
+"role": "bg",
+"night": "#0c3d29",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-0c3d29-ink": {
+"hex": "#0c3d29",
+"role": "ink",
+"night": "#0c3d29",
+"lilies": "#21275b",
+"warhol": "#3a1841"
+},
+"--c-0d0309-ink": {
+"hex": "#0d0309",
+"role": "ink",
+"night": "#0d0309",
+"lilies": "#1d2153",
+"warhol": "#2f1238"
+},
+"--c-0d0410-ink": {
+"hex": "#0d0410",
+"role": "ink",
+"night": "#0d0410",
+"lilies": "#1d2253",
+"warhol": "#301238"
+},
+"--c-0d050f-bg": {
+"hex": "#0d050f",
+"role": "bg",
+"night": "#0d050f",
+"lilies": "#7083e1",
+"warhol": "#de85d8"
+},
+"--c-0d1230-ink": {
+"hex": "#0d1230",
+"role": "ink",
+"night": "#0d1230",
+"lilies": "#20265a",
+"warhol": "#38173f"
+},
+"--c-0d1626-bg": {
+"hex": "#0d1626",
+"role": "bg",
+"night": "#0d1626",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-0d2038-bg": {
+"hex": "#0d2038",
+"role": "bg",
+"night": "#0d2038",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-0d271a-ink": {
+"hex": "#0d271a",
+"role": "ink",
+"night": "#0d271a",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-0e0618-bg": {
+"hex": "#0e0618",
+"role": "bg",
+"night": "#0e0618",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-0e0618-ink": {
+"hex": "#0e0618",
+"role": "ink",
+"night": "#0e0618",
+"lilies": "#1e2355",
+"warhol": "#32133a"
+},
+"--c-0e0717-bg": {
+"hex": "#0e0717",
+"role": "bg",
+"night": "#0e0717",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-0e1450-bg": {
+"hex": "#0e1450",
+"role": "bg",
+"night": "#0e1450",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-0e1626-ink": {
+"hex": "#0e1626",
+"role": "ink",
+"night": "#0e1626",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-0e2240-bg": {
+"hex": "#0e2240",
+"role": "bg",
+"night": "#0e2240",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-0e2240-ink": {
+"hex": "#0e2240",
+"role": "ink",
+"night": "#0e2240",
+"lilies": "#22275c",
+"warhol": "#3b1942"
+},
+"--c-0e2b28-ink": {
+"hex": "#0e2b28",
+"role": "ink",
+"night": "#0e2b28",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-0e3a6e-bg": {
+"hex": "#0e3a6e",
+"role": "bg",
+"night": "#0e3a6e",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-0ea5e9-ink": {
+"hex": "#0ea5e9",
+"role": "ink",
+"night": "#0ea5e9",
+"lilies": "#d161c0",
+"warhol": "#b93eb1"
+},
+"--c-0f2a34-ink": {
+"hex": "#0f2a34",
+"role": "ink",
+"night": "#0f2a34",
+"lilies": "#21265a",
+"warhol": "#391840"
+},
+"--c-0f2b3a-bg": {
+"hex": "#0f2b3a",
+"role": "bg",
+"night": "#0f2b3a",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-100a1a-bg": {
+"hex": "#100a1a",
+"role": "bg",
+"night": "#100a1a",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-100c1c-ink": {
+"hex": "#100c1c",
+"role": "ink",
+"night": "#100c1c",
+"lilies": "#1f2456",
+"warhol": "#34153c"
+},
+"--c-10122a-bg": {
+"hex": "#10122a",
+"role": "bg",
+"night": "#10122a",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-101827-ink": {
+"hex": "#101827",
+"role": "ink",
+"night": "#101827",
+"lilies": "#202559",
+"warhol": "#36163e"
+},
+"--c-101f14-bg": {
+"hex": "#101f14",
+"role": "bg",
+"night": "#101f14",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-120509-bg": {
+"hex": "#120509",
+"role": "bg",
+"night": "#120509",
+"lilies": "#7083e1",
+"warhol": "#de84d8"
+},
+"--c-120604-bg": {
+"hex": "#120604",
+"role": "bg",
+"night": "#120604",
+"lilies": "#7083e1",
+"warhol": "#de84d8"
+},
+"--c-120718-bg": {
+"hex": "#120718",
+"role": "bg",
+"night": "#120718",
+"lilies": "#6f82e1",
+"warhol": "#de84d7"
+},
+"--c-120a12-bg": {
+"hex": "#120a12",
+"role": "bg",
+"night": "#120a12",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-120a12-ink": {
+"hex": "#120a12",
+"role": "ink",
+"night": "#120a12",
+"lilies": "#1e2354",
+"warhol": "#31133a"
+},
+"--c-120d22-ink": {
+"hex": "#120d22",
+"role": "ink",
+"night": "#120d22",
+"lilies": "#1f2457",
+"warhol": "#35153d"
+},
+"--c-12283a-ink": {
+"hex": "#12283a",
+"role": "ink",
+"night": "#12283a",
+"lilies": "#22275c",
+"warhol": "#3a1942"
+},
+"--c-12463c-bg": {
+"hex": "#12463c",
+"role": "bg",
+"night": "#12463c",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-12d68f-bg": {
+"hex": "#12d68f",
+"role": "bg",
+"night": "#12d68f",
+"lilies": "#d161c1",
+"warhol": "#ae3aa6"
+},
+"--c-12d68f-ink": {
+"hex": "#12d68f",
+"role": "ink",
+"night": "#12d68f",
+"lilies": "#d161c1",
+"warhol": "#ae3aa6"
+},
+"--c-130c1d-bg": {
+"hex": "#130c1d",
+"role": "bg",
+"night": "#130c1d",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-14060e-bg": {
+"hex": "#14060e",
+"role": "bg",
+"night": "#14060e",
+"lilies": "#7083e1",
+"warhol": "#de84d8"
+},
+"--c-14060e-ink": {
+"hex": "#14060e",
+"role": "ink",
+"night": "#14060e",
+"lilies": "#1e2254",
+"warhol": "#311339"
+},
+"--c-14060f-bg": {
+"hex": "#14060f",
+"role": "bg",
+"night": "#14060f",
+"lilies": "#7083e1",
+"warhol": "#de84d8"
+},
+"--c-14060f-ink": {
+"hex": "#14060f",
+"role": "ink",
+"night": "#14060f",
+"lilies": "#1e2254",
+"warhol": "#311339"
+},
+"--c-140a1a-bg": {
+"hex": "#140a1a",
+"role": "bg",
+"night": "#140a1a",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-140f26-bg": {
+"hex": "#140f26",
+"role": "bg",
+"night": "#140f26",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-14101d-ink": {
+"hex": "#14101d",
+"role": "ink",
+"night": "#14101d",
+"lilies": "#1f2457",
+"warhol": "#35153d"
+},
+"--c-141033-ink": {
+"hex": "#141033",
+"role": "ink",
+"night": "#141033",
+"lilies": "#21265a",
+"warhol": "#391840"
+},
+"--c-14200c-ink": {
+"hex": "#14200c",
+"role": "ink",
+"night": "#14200c",
+"lilies": "#1f2457",
+"warhol": "#34153d"
+},
+"--c-143226-bg": {
+"hex": "#143226",
+"role": "bg",
+"night": "#143226",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-150912-bg": {
+"hex": "#150912",
+"role": "bg",
+"night": "#150912",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-150a1a-bg": {
+"hex": "#150a1a",
+"role": "bg",
+"night": "#150a1a",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-150a20-bg": {
+"hex": "#150a20",
+"role": "bg",
+"night": "#150a20",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-15294a-bg": {
+"hex": "#15294a",
+"role": "bg",
+"night": "#15294a",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-160510-bg": {
+"hex": "#160510",
+"role": "bg",
+"night": "#160510",
+"lilies": "#7083e1",
+"warhol": "#de84d7"
+},
+"--c-160510-ink": {
+"hex": "#160510",
+"role": "ink",
+"night": "#160510",
+"lilies": "#1e2354",
+"warhol": "#31133a"
+},
+"--c-160714-bg": {
+"hex": "#160714",
+"role": "bg",
+"night": "#160714",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-160714-ink": {
+"hex": "#160714",
+"role": "ink",
+"night": "#160714",
+"lilies": "#1e2355",
+"warhol": "#32133a"
+},
+"--c-160806-bg": {
+"hex": "#160806",
+"role": "bg",
+"night": "#160806",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-160a1c-bg": {
+"hex": "#160a1c",
+"role": "bg",
+"night": "#160a1c",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-160a1e-bg": {
+"hex": "#160a1e",
+"role": "bg",
+"night": "#160a1e",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-160a20-bg": {
+"hex": "#160a20",
+"role": "bg",
+"night": "#160a20",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-160b1e-bg": {
+"hex": "#160b1e",
+"role": "bg",
+"night": "#160b1e",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-160b22-bg": {
+"hex": "#160b22",
+"role": "bg",
+"night": "#160b22",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-160b26-bg": {
+"hex": "#160b26",
+"role": "bg",
+"night": "#160b26",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-161020-bg": {
+"hex": "#161020",
+"role": "bg",
+"night": "#161020",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-16243a-ink": {
+"hex": "#16243a",
+"role": "ink",
+"night": "#16243a",
+"lilies": "#22275d",
+"warhol": "#3b1943"
+},
+"--c-16345e-ink": {
+"hex": "#16345e",
+"role": "ink",
+"night": "#16345e",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-163a5c-bg": {
+"hex": "#163a5c",
+"role": "bg",
+"night": "#163a5c",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-163e63-ink": {
+"hex": "#163e63",
+"role": "ink",
+"night": "#163e63",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-164c50-bg": {
+"hex": "#164c50",
+"role": "bg",
+"night": "#164c50",
+"lilies": "#697dde",
+"warhol": "#da7fd3"
+},
+"--c-170811-bg": {
+"hex": "#170811",
+"role": "bg",
+"night": "#170811",
+"lilies": "#6f82e1",
+"warhol": "#de84d7"
+},
+"--c-170811-ink": {
+"hex": "#170811",
+"role": "ink",
+"night": "#170811",
+"lilies": "#1e2355",
+"warhol": "#32143a"
+},
+"--c-17091a-bg": {
+"hex": "#17091a",
+"role": "bg",
+"night": "#17091a",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-17091a-ink": {
+"hex": "#17091a",
+"role": "ink",
+"night": "#17091a",
+"lilies": "#1f2355",
+"warhol": "#33143b"
+},
+"--c-170a12-bg": {
+"hex": "#170a12",
+"role": "bg",
+"night": "#170a12",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-170a15-bg": {
+"hex": "#170a15",
+"role": "bg",
+"night": "#170a15",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-170a1c-bg": {
+"hex": "#170a1c",
+"role": "bg",
+"night": "#170a1c",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-17101f-bg": {
+"hex": "#17101f",
+"role": "bg",
+"night": "#17101f",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-171130-bg": {
+"hex": "#171130",
+"role": "bg",
+"night": "#171130",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-171203-bg": {
+"hex": "#171203",
+"role": "bg",
+"night": "#171203",
+"lilies": "#7083e1",
+"warhol": "#de84d8"
+},
+"--c-172648-bg": {
+"hex": "#172648",
+"role": "bg",
+"night": "#172648",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-180a14-bg": {
+"hex": "#180a14",
+"role": "bg",
+"night": "#180a14",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-180a1e-bg": {
+"hex": "#180a1e",
+"role": "bg",
+"night": "#180a1e",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-180a2a-bg": {
+"hex": "#180a2a",
+"role": "bg",
+"night": "#180a2a",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-180a30-ink": {
+"hex": "#180a30",
+"role": "ink",
+"night": "#180a30",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-180b25-bg": {
+"hex": "#180b25",
+"role": "bg",
+"night": "#180b25",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-184630-bg": {
+"hex": "#184630",
+"role": "bg",
+"night": "#184630",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-190913-bg": {
+"hex": "#190913",
+"role": "bg",
+"night": "#190913",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-190b18-bg": {
+"hex": "#190b18",
+"role": "bg",
+"night": "#190b18",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-190d26-bg": {
+"hex": "#190d26",
+"role": "bg",
+"night": "#190d26",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-191334-bg": {
+"hex": "#191334",
+"role": "bg",
+"night": "#191334",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-1a0206-bg": {
+"hex": "#1a0206",
+"role": "bg",
+"night": "#1a0206",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-1a0612-bg": {
+"hex": "#1a0612",
+"role": "bg",
+"night": "#1a0612",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-1a0712-bg": {
+"hex": "#1a0712",
+"role": "bg",
+"night": "#1a0712",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-1a0813-bg": {
+"hex": "#1a0813",
+"role": "bg",
+"night": "#1a0813",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-1a0a24-bg": {
+"hex": "#1a0a24",
+"role": "bg",
+"night": "#1a0a24",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-1a0b26-bg": {
+"hex": "#1a0b26",
+"role": "bg",
+"night": "#1a0b26",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-1a0c1e-bg": {
+"hex": "#1a0c1e",
+"role": "bg",
+"night": "#1a0c1e",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-1a0e28-bg": {
+"hex": "#1a0e28",
+"role": "bg",
+"night": "#1a0e28",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-1a0f26-bg": {
+"hex": "#1a0f26",
+"role": "bg",
+"night": "#1a0f26",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-1a0f2e-bg": {
+"hex": "#1a0f2e",
+"role": "bg",
+"night": "#1a0f2e",
+"lilies": "#6c80e0",
+"warhol": "#dc82d6"
+},
+"--c-1a1128-bg": {
+"hex": "#1a1128",
+"role": "bg",
+"night": "#1a1128",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-1a1226-bg": {
+"hex": "#1a1226",
+"role": "bg",
+"night": "#1a1226",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-1a1440-ink": {
+"hex": "#1a1440",
+"role": "ink",
+"night": "#1a1440",
+"lilies": "#22285d",
+"warhol": "#3c1a43"
+},
+"--c-1a1726-ink": {
+"hex": "#1a1726",
+"role": "ink",
+"night": "#1a1726",
+"lilies": "#20265a",
+"warhol": "#38173f"
+},
+"--c-1a1a1a-ink": {
+"hex": "#1a1a1a",
+"role": "ink",
+"night": "#1a1a1a",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-1a3a66-bg": {
+"hex": "#1a3a66",
+"role": "bg",
+"night": "#1a3a66",
+"lilies": "#667ade",
+"warhol": "#d97dd2"
+},
+"--c-1b0b16-bg": {
+"hex": "#1b0b16",
+"role": "bg",
+"night": "#1b0b16",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-1b0c1a-bg": {
+"hex": "#1b0c1a",
+"role": "bg",
+"night": "#1b0c1a",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-1b1330-bg": {
+"hex": "#1b1330",
+"role": "bg",
+"night": "#1b1330",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-1b1535-bg": {
+"hex": "#1b1535",
+"role": "bg",
+"night": "#1b1535",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-1c0500-bg": {
+"hex": "#1c0500",
+"role": "bg",
+"night": "#1c0500",
+"lilies": "#6f83e1",
+"warhol": "#de84d7"
+},
+"--c-1c0512-bg": {
+"hex": "#1c0512",
+"role": "bg",
+"night": "#1c0512",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-1c0612-bg": {
+"hex": "#1c0612",
+"role": "bg",
+"night": "#1c0612",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-1c0612-ink": {
+"hex": "#1c0612",
+"role": "ink",
+"night": "#1c0612",
+"lilies": "#1f2355",
+"warhol": "#32143b"
+},
+"--c-1c0616-bg": {
+"hex": "#1c0616",
+"role": "bg",
+"night": "#1c0616",
+"lilies": "#6f82e1",
+"warhol": "#dd84d7"
+},
+"--c-1c0814-bg": {
+"hex": "#1c0814",
+"role": "bg",
+"night": "#1c0814",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-1c0a17-bg": {
+"hex": "#1c0a17",
+"role": "bg",
+"night": "#1c0a17",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-1c0a18-bg": {
+"hex": "#1c0a18",
+"role": "bg",
+"night": "#1c0a18",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-1c0b15-bg": {
+"hex": "#1c0b15",
+"role": "bg",
+"night": "#1c0b15",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-1c0b15-ink": {
+"hex": "#1c0b15",
+"role": "ink",
+"night": "#1c0b15",
+"lilies": "#1f2456",
+"warhol": "#33153c"
+},
+"--c-1c0d26-bg": {
+"hex": "#1c0d26",
+"role": "bg",
+"night": "#1c0d26",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-1c0d28-bg": {
+"hex": "#1c0d28",
+"role": "bg",
+"night": "#1c0d28",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-1c0e2e-bg": {
+"hex": "#1c0e2e",
+"role": "bg",
+"night": "#1c0e2e",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-1c0e30-bg": {
+"hex": "#1c0e30",
+"role": "bg",
+"night": "#1c0e30",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-1c0f20-bg": {
+"hex": "#1c0f20",
+"role": "bg",
+"night": "#1c0f20",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-1c0f20-ink": {
+"hex": "#1c0f20",
+"role": "ink",
+"night": "#1c0f20",
+"lilies": "#1f2457",
+"warhol": "#35153d"
+},
+"--c-1c0f22-bg": {
+"hex": "#1c0f22",
+"role": "bg",
+"night": "#1c0f22",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-1c0f26-bg": {
+"hex": "#1c0f26",
+"role": "bg",
+"night": "#1c0f26",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-1c1030-ink": {
+"hex": "#1c1030",
+"role": "ink",
+"night": "#1c1030",
+"lilies": "#21265a",
+"warhol": "#381740"
+},
+"--c-1c1228-bg": {
+"hex": "#1c1228",
+"role": "bg",
+"night": "#1c1228",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-1c1338-bg": {
+"hex": "#1c1338",
+"role": "bg",
+"night": "#1c1338",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-1c2a7a-bg": {
+"hex": "#1c2a7a",
+"role": "bg",
+"night": "#1c2a7a",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-1d1108-ink": {
+"hex": "#1d1108",
+"role": "ink",
+"night": "#1d1108",
+"lilies": "#1f2356",
+"warhol": "#33143b"
+},
+"--c-1d1226-bg": {
+"hex": "#1d1226",
+"role": "bg",
+"night": "#1d1226",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-1d1628-bg": {
+"hex": "#1d1628",
+"role": "bg",
+"night": "#1d1628",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-1d1636-bg": {
+"hex": "#1d1636",
+"role": "bg",
+"night": "#1d1636",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-1d5a44-bg": {
+"hex": "#1d5a44",
+"role": "bg",
+"night": "#1d5a44",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-1e0a16-bg": {
+"hex": "#1e0a16",
+"role": "bg",
+"night": "#1e0a16",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-1e0b18-bg": {
+"hex": "#1e0b18",
+"role": "bg",
+"night": "#1e0b18",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-1e0b18-ink": {
+"hex": "#1e0b18",
+"role": "ink",
+"night": "#1e0b18",
+"lilies": "#1f2456",
+"warhol": "#34153c"
+},
+"--c-1e0d18-bg": {
+"hex": "#1e0d18",
+"role": "bg",
+"night": "#1e0d18",
+"lilies": "#6e81e1",
+"warhol": "#dd83d7"
+},
+"--c-1e0d1a-bg": {
+"hex": "#1e0d1a",
+"role": "bg",
+"night": "#1e0d1a",
+"lilies": "#6e81e1",
+"warhol": "#dd83d7"
+},
+"--c-1e0d1a-ink": {
+"hex": "#1e0d1a",
+"role": "ink",
+"night": "#1e0d1a",
+"lilies": "#1f2457",
+"warhol": "#34153c"
+},
+"--c-1e0f22-bg": {
+"hex": "#1e0f22",
+"role": "bg",
+"night": "#1e0f22",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-1e1230-ink": {
+"hex": "#1e1230",
+"role": "ink",
+"night": "#1e1230",
+"lilies": "#21265a",
+"warhol": "#391840"
+},
+"--c-1e2b38-ink": {
+"hex": "#1e2b38",
+"role": "ink",
+"night": "#1e2b38",
+"lilies": "#22285d",
+"warhol": "#3c1a44"
+},
+"--c-1f0612-bg": {
+"hex": "#1f0612",
+"role": "bg",
+"night": "#1f0612",
+"lilies": "#6f82e1",
+"warhol": "#dd83d7"
+},
+"--c-1f3658-bg": {
+"hex": "#1f3658",
+"role": "bg",
+"night": "#1f3658",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-1f6a3a-bg": {
+"hex": "#1f6a3a",
+"role": "bg",
+"night": "#1f6a3a",
+"lilies": "#657add",
+"warhol": "#d87cd1"
+},
+"--c-1f7268-bg": {
+"hex": "#1f7268",
+"role": "bg",
+"night": "#1f7268",
+"lilies": "#6579dd",
+"warhol": "#d87cd1"
+},
+"--c-1f9aa6-ink": {
+"hex": "#1f9aa6",
+"role": "ink",
+"night": "#1f9aa6",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-1fb0f5-bg": {
+"hex": "#1fb0f5",
+"role": "bg",
+"night": "#1fb0f5",
+"lilies": "#d161c0",
+"warhol": "#c44fbd"
+},
+"--c-1fb0f5-ink": {
+"hex": "#1fb0f5",
+"role": "ink",
+"night": "#1fb0f5",
+"lilies": "#d161c0",
+"warhol": "#c44fbd"
+},
+"--c-200a14-bg": {
+"hex": "#200a14",
+"role": "bg",
+"night": "#200a14",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-200f30-bg": {
+"hex": "#200f30",
+"role": "bg",
+"night": "#200f30",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-201022-bg": {
+"hex": "#201022",
+"role": "bg",
+"night": "#201022",
+"lilies": "#6d81e0",
+"warhol": "#dd83d6"
+},
+"--c-201028-ink": {
+"hex": "#201028",
+"role": "ink",
+"night": "#201028",
+"lilies": "#202559",
+"warhol": "#37163f"
+},
+"--c-201042-bg": {
+"hex": "#201042",
+"role": "bg",
+"night": "#201042",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-20140d-bg": {
+"hex": "#20140d",
+"role": "bg",
+"night": "#20140d",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-202c4e-bg": {
+"hex": "#202c4e",
+"role": "bg",
+"night": "#202c4e",
+"lilies": "#687cde",
+"warhol": "#da7ed3"
+},
+"--c-210e1a-bg": {
+"hex": "#210e1a",
+"role": "bg",
+"night": "#210e1a",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-211031-bg": {
+"hex": "#211031",
+"role": "bg",
+"night": "#211031",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-220719-bg": {
+"hex": "#220719",
+"role": "bg",
+"night": "#220719",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-22091a-bg": {
+"hex": "#22091a",
+"role": "bg",
+"night": "#22091a",
+"lilies": "#6e81e1",
+"warhol": "#dd83d7"
+},
+"--c-220c1a-bg": {
+"hex": "#220c1a",
+"role": "bg",
+"night": "#220c1a",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-221018-bg": {
+"hex": "#221018",
+"role": "bg",
+"night": "#221018",
+"lilies": "#6d81e0",
+"warhol": "#dd83d6"
+},
+"--c-221018-ink": {
+"hex": "#221018",
+"role": "ink",
+"night": "#221018",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-221026-bg": {
+"hex": "#221026",
+"role": "bg",
+"night": "#221026",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-22102e-bg": {
+"hex": "#22102e",
+"role": "bg",
+"night": "#22102e",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-221030-bg": {
+"hex": "#221030",
+"role": "bg",
+"night": "#221030",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-22103a-ink": {
+"hex": "#22103a",
+"role": "ink",
+"night": "#22103a",
+"lilies": "#21275c",
+"warhol": "#3a1942"
+},
+"--c-221126-bg": {
+"hex": "#221126",
+"role": "bg",
+"night": "#221126",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-221126-ink": {
+"hex": "#221126",
+"role": "ink",
+"night": "#221126",
+"lilies": "#202559",
+"warhol": "#36163e"
+},
+"--c-221a30-bg": {
+"hex": "#221a30",
+"role": "bg",
+"night": "#221a30",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-221a38-bg": {
+"hex": "#221a38",
+"role": "bg",
+"night": "#221a38",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-221a3e-bg": {
+"hex": "#221a3e",
+"role": "bg",
+"night": "#221a3e",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-221b36-bg": {
+"hex": "#221b36",
+"role": "bg",
+"night": "#221b36",
+"lilies": "#6b7edf",
+"warhol": "#db80d4"
+},
+"--c-227883-bg": {
+"hex": "#227883",
+"role": "bg",
+"night": "#227883",
+"lilies": "#6377dc",
+"warhol": "#d77ad0"
+},
+"--c-227883-ink": {
+"hex": "#227883",
+"role": "ink",
+"night": "#227883",
+"lilies": "#282f6a",
+"warhol": "#4b2351"
+},
+"--c-22a6e8-ink": {
+"hex": "#22a6e8",
+"role": "ink",
+"night": "#22a6e8",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-22c089-ink": {
+"hex": "#22c089",
+"role": "ink",
+"night": "#22c089",
+"lilies": "#d161c1",
+"warhol": "#aa39a2"
+},
+"--c-231018-bg": {
+"hex": "#231018",
+"role": "bg",
+"night": "#231018",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-231020-bg": {
+"hex": "#231020",
+"role": "bg",
+"night": "#231020",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-23192e-ink": {
+"hex": "#23192e",
+"role": "ink",
+"night": "#23192e",
+"lilies": "#21275b",
+"warhol": "#3a1841"
+},
+"--c-23c98a-ink": {
+"hex": "#23c98a",
+"role": "ink",
+"night": "#23c98a",
+"lilies": "#d161c1",
+"warhol": "#b13ba9"
+},
+"--c-24091c-bg": {
+"hex": "#24091c",
+"role": "bg",
+"night": "#24091c",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-241009-bg": {
+"hex": "#241009",
+"role": "bg",
+"night": "#241009",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-241019-bg": {
+"hex": "#241019",
+"role": "bg",
+"night": "#241019",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-241019-ink": {
+"hex": "#241019",
+"role": "ink",
+"night": "#241019",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-241020-bg": {
+"hex": "#241020",
+"role": "bg",
+"night": "#241020",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-241022-bg": {
+"hex": "#241022",
+"role": "bg",
+"night": "#241022",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-241022-ink": {
+"hex": "#241022",
+"role": "ink",
+"night": "#241022",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-241026-bg": {
+"hex": "#241026",
+"role": "bg",
+"night": "#241026",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-241030-bg": {
+"hex": "#241030",
+"role": "bg",
+"night": "#241030",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-241031-ink": {
+"hex": "#241031",
+"role": "ink",
+"night": "#241031",
+"lilies": "#21265a",
+"warhol": "#381840"
+},
+"--c-241038-bg": {
+"hex": "#241038",
+"role": "bg",
+"night": "#241038",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-241038-ink": {
+"hex": "#241038",
+"role": "ink",
+"night": "#241038",
+"lilies": "#21275b",
+"warhol": "#3a1841"
+},
+"--c-241322-bg": {
+"hex": "#241322",
+"role": "bg",
+"night": "#241322",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-241328-bg": {
+"hex": "#241328",
+"role": "bg",
+"night": "#241328",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-241328-ink": {
+"hex": "#241328",
+"role": "ink",
+"night": "#241328",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-241335-bg": {
+"hex": "#241335",
+"role": "bg",
+"night": "#241335",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-241400-ink": {
+"hex": "#241400",
+"role": "ink",
+"night": "#241400",
+"lilies": "#1f2356",
+"warhol": "#33143b"
+},
+"--c-241435-bg": {
+"hex": "#241435",
+"role": "bg",
+"night": "#241435",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-241436-bg": {
+"hex": "#241436",
+"role": "bg",
+"night": "#241436",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-241436-ink": {
+"hex": "#241436",
+"role": "ink",
+"night": "#241436",
+"lilies": "#21275c",
+"warhol": "#3a1942"
+},
+"--c-241534-bg": {
+"hex": "#241534",
+"role": "bg",
+"night": "#241534",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-241548-bg": {
+"hex": "#241548",
+"role": "bg",
+"night": "#241548",
+"lilies": "#697ddf",
+"warhol": "#db80d4"
+},
+"--c-241548-ink": {
+"hex": "#241548",
+"role": "ink",
+"night": "#241548",
+"lilies": "#23295f",
+"warhol": "#3e1b45"
+},
+"--c-241640-ink": {
+"hex": "#241640",
+"role": "ink",
+"night": "#241640",
+"lilies": "#22285d",
+"warhol": "#3c1a44"
+},
+"--c-241a04-bg": {
+"hex": "#241a04",
+"role": "bg",
+"night": "#241a04",
+"lilies": "#6e82e1",
+"warhol": "#dd83d7"
+},
+"--c-241a3a-bg": {
+"hex": "#241a3a",
+"role": "bg",
+"night": "#241a3a",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-241a46-ink": {
+"hex": "#241a46",
+"role": "ink",
+"night": "#241a46",
+"lilies": "#23295f",
+"warhol": "#3e1b45"
+},
+"--c-241b28-bg": {
+"hex": "#241b28",
+"role": "bg",
+"night": "#241b28",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-251020-bg": {
+"hex": "#251020",
+"role": "bg",
+"night": "#251020",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-251436-bg": {
+"hex": "#251436",
+"role": "bg",
+"night": "#251436",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-251640-bg": {
+"hex": "#251640",
+"role": "bg",
+"night": "#251640",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-251d40-bg": {
+"hex": "#251d40",
+"role": "bg",
+"night": "#251d40",
+"lilies": "#697ddf",
+"warhol": "#db80d4"
+},
+"--c-260818-bg": {
+"hex": "#260818",
+"role": "bg",
+"night": "#260818",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-26091a-bg": {
+"hex": "#26091a",
+"role": "bg",
+"night": "#26091a",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-260b18-bg": {
+"hex": "#260b18",
+"role": "bg",
+"night": "#260b18",
+"lilies": "#6e81e0",
+"warhol": "#dd83d6"
+},
+"--c-269ca7-bg": {
+"hex": "#269ca7",
+"role": "bg",
+"night": "#269ca7",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-281c48-bg": {
+"hex": "#281c48",
+"role": "bg",
+"night": "#281c48",
+"lilies": "#697ddf",
+"warhol": "#da7fd3"
+},
+"--c-288968-bg": {
+"hex": "#288968",
+"role": "bg",
+"night": "#288968",
+"lilies": "#6276dc",
+"warhol": "#d77acf"
+},
+"--c-288968-ink": {
+"hex": "#288968",
+"role": "ink",
+"night": "#288968",
+"lilies": "#29306c",
+"warhol": "#4e2453"
+},
+"--c-28cf86-bg": {
+"hex": "#28cf86",
+"role": "bg",
+"night": "#28cf86",
+"lilies": "#d161c0",
+"warhol": "#b93eb1"
+},
+"--c-28cf86-ink": {
+"hex": "#28cf86",
+"role": "ink",
+"night": "#28cf86",
+"lilies": "#d161c0",
+"warhol": "#b93eb1"
+},
+"--c-29101f-bg": {
+"hex": "#29101f",
+"role": "bg",
+"night": "#29101f",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-29101f-ink": {
+"hex": "#29101f",
+"role": "ink",
+"night": "#29101f",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-29d9e8-ink": {
+"hex": "#29d9e8",
+"role": "ink",
+"night": "#29d9e8",
+"lilies": "#d161c0",
+"warhol": "#c44dbc"
+},
+"--c-2a0716-ink": {
+"hex": "#2a0716",
+"role": "ink",
+"night": "#2a0716",
+"lilies": "#202558",
+"warhol": "#35163d"
+},
+"--c-2a0812-bg": {
+"hex": "#2a0812",
+"role": "bg",
+"night": "#2a0812",
+"lilies": "#6d81e0",
+"warhol": "#dd83d6"
+},
+"--c-2a0a1e-bg": {
+"hex": "#2a0a1e",
+"role": "bg",
+"night": "#2a0a1e",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-2a0a1e-ink": {
+"hex": "#2a0a1e",
+"role": "ink",
+"night": "#2a0a1e",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-2a0c14-ink": {
+"hex": "#2a0c14",
+"role": "ink",
+"night": "#2a0c14",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-2a0c1f-bg": {
+"hex": "#2a0c1f",
+"role": "bg",
+"night": "#2a0c1f",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-2a0d1c-bg": {
+"hex": "#2a0d1c",
+"role": "bg",
+"night": "#2a0d1c",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a0d1c-ink": {
+"hex": "#2a0d1c",
+"role": "ink",
+"night": "#2a0d1c",
+"lilies": "#202559",
+"warhol": "#36163e"
+},
+"--c-2a0d1e-bg": {
+"hex": "#2a0d1e",
+"role": "bg",
+"night": "#2a0d1e",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a0e02-bg": {
+"hex": "#2a0e02",
+"role": "bg",
+"night": "#2a0e02",
+"lilies": "#6e81e0",
+"warhol": "#dd83d7"
+},
+"--c-2a0e10-ink": {
+"hex": "#2a0e10",
+"role": "ink",
+"night": "#2a0e10",
+"lilies": "#202559",
+"warhol": "#37163f"
+},
+"--c-2a0f1e-bg": {
+"hex": "#2a0f1e",
+"role": "bg",
+"night": "#2a0f1e",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a0f22-bg": {
+"hex": "#2a0f22",
+"role": "bg",
+"night": "#2a0f22",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a0f26-bg": {
+"hex": "#2a0f26",
+"role": "bg",
+"night": "#2a0f26",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a0f38-bg": {
+"hex": "#2a0f38",
+"role": "bg",
+"night": "#2a0f38",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-2a1020-ink": {
+"hex": "#2a1020",
+"role": "ink",
+"night": "#2a1020",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-2a1024-bg": {
+"hex": "#2a1024",
+"role": "bg",
+"night": "#2a1024",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a1030-bg": {
+"hex": "#2a1030",
+"role": "bg",
+"night": "#2a1030",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-2a1109-bg": {
+"hex": "#2a1109",
+"role": "bg",
+"night": "#2a1109",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-2a1220-bg": {
+"hex": "#2a1220",
+"role": "bg",
+"night": "#2a1220",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a1220-ink": {
+"hex": "#2a1220",
+"role": "ink",
+"night": "#2a1220",
+"lilies": "#202659",
+"warhol": "#37173f"
+},
+"--c-2a1226-bg": {
+"hex": "#2a1226",
+"role": "bg",
+"night": "#2a1226",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a1228-bg": {
+"hex": "#2a1228",
+"role": "bg",
+"night": "#2a1228",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a1228-ink": {
+"hex": "#2a1228",
+"role": "ink",
+"night": "#2a1228",
+"lilies": "#202659",
+"warhol": "#37173f"
+},
+"--c-2a1320-bg": {
+"hex": "#2a1320",
+"role": "bg",
+"night": "#2a1320",
+"lilies": "#6c80e0",
+"warhol": "#dc82d6"
+},
+"--c-2a1424-bg": {
+"hex": "#2a1424",
+"role": "bg",
+"night": "#2a1424",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-2a1626-bg": {
+"hex": "#2a1626",
+"role": "bg",
+"night": "#2a1626",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-2a1730-bg": {
+"hex": "#2a1730",
+"role": "bg",
+"night": "#2a1730",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-2a1730-ink": {
+"hex": "#2a1730",
+"role": "ink",
+"night": "#2a1730",
+"lilies": "#21275b",
+"warhol": "#3a1841"
+},
+"--c-2a1830-bg": {
+"hex": "#2a1830",
+"role": "bg",
+"night": "#2a1830",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-2a1830-ink": {
+"hex": "#2a1830",
+"role": "ink",
+"night": "#2a1830",
+"lilies": "#21275b",
+"warhol": "#3a1841"
+},
+"--c-2a1832-bg": {
+"hex": "#2a1832",
+"role": "bg",
+"night": "#2a1832",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-2a1832-ink": {
+"hex": "#2a1832",
+"role": "ink",
+"night": "#2a1832",
+"lilies": "#21275c",
+"warhol": "#3a1942"
+},
+"--c-2a1a47-bg": {
+"hex": "#2a1a47",
+"role": "bg",
+"night": "#2a1a47",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-2a1b48-bg": {
+"hex": "#2a1b48",
+"role": "bg",
+"night": "#2a1b48",
+"lilies": "#697ddf",
+"warhol": "#da7fd3"
+},
+"--c-2a1c46-bg": {
+"hex": "#2a1c46",
+"role": "bg",
+"night": "#2a1c46",
+"lilies": "#697ddf",
+"warhol": "#da7fd3"
+},
+"--c-2a1d3e-bg": {
+"hex": "#2a1d3e",
+"role": "bg",
+"night": "#2a1d3e",
+"lilies": "#6a7ddf",
+"warhol": "#db80d4"
+},
+"--c-2a2030-bg": {
+"hex": "#2a2030",
+"role": "bg",
+"night": "#2a2030",
+"lilies": "#6b7edf",
+"warhol": "#db80d4"
+},
+"--c-2a2147-bg": {
+"hex": "#2a2147",
+"role": "bg",
+"night": "#2a2147",
+"lilies": "#687cde",
+"warhol": "#da7fd3"
+},
+"--c-2a2150-bg": {
+"hex": "#2a2150",
+"role": "bg",
+"night": "#2a2150",
+"lilies": "#687cde",
+"warhol": "#da7ed3"
+},
+"--c-2a2150-ink": {
+"hex": "#2a2150",
+"role": "ink",
+"night": "#2a2150",
+"lilies": "#242a62",
+"warhol": "#421d48"
+},
+"--c-2a2244-ink": {
+"hex": "#2a2244",
+"role": "ink",
+"night": "#2a2244",
+"lilies": "#242960",
+"warhol": "#3f1c46"
+},
+"--c-2a2d34-bg": {
+"hex": "#2a2d34",
+"role": "bg",
+"night": "#2a2d34",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-2a2d34-ink": {
+"hex": "#2a2d34",
+"role": "ink",
+"night": "#2a2d34",
+"lilies": "#23295f",
+"warhol": "#3e1b45"
+},
+"--c-2a759f-bg": {
+"hex": "#2a759f",
+"role": "bg",
+"night": "#2a759f",
+"lilies": "#6074db",
+"warhol": "#d578ce"
+},
+"--c-2a9fe0-bg": {
+"hex": "#2a9fe0",
+"role": "bg",
+"night": "#2a9fe0",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-2a9fe0-ink": {
+"hex": "#2a9fe0",
+"role": "ink",
+"night": "#2a9fe0",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-2ab8c4-bg": {
+"hex": "#2ab8c4",
+"role": "bg",
+"night": "#2ab8c4",
+"lilies": "#d161c0",
+"warhol": "#b33caa"
+},
+"--c-2ab8c4-ink": {
+"hex": "#2ab8c4",
+"role": "ink",
+"night": "#2ab8c4",
+"lilies": "#d161c0",
+"warhol": "#b33caa"
+},
+"--c-2b1220-bg": {
+"hex": "#2b1220",
+"role": "bg",
+"night": "#2b1220",
+"lilies": "#6c80e0",
+"warhol": "#dc82d6"
+},
+"--c-2b1220-ink": {
+"hex": "#2b1220",
+"role": "ink",
+"night": "#2b1220",
+"lilies": "#20265a",
+"warhol": "#38173f"
+},
+"--c-2b1622-bg": {
+"hex": "#2b1622",
+"role": "bg",
+"night": "#2b1622",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-2b1642-bg": {
+"hex": "#2b1642",
+"role": "bg",
+"night": "#2b1642",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-2c081a-bg": {
+"hex": "#2c081a",
+"role": "bg",
+"night": "#2c081a",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-2c081a-ink": {
+"hex": "#2c081a",
+"role": "ink",
+"night": "#2c081a",
+"lilies": "#202558",
+"warhol": "#36163e"
+},
+"--c-2c0d20-ink": {
+"hex": "#2c0d20",
+"role": "ink",
+"night": "#2c0d20",
+"lilies": "#202559",
+"warhol": "#37173f"
+},
+"--c-2c1024-bg": {
+"hex": "#2c1024",
+"role": "bg",
+"night": "#2c1024",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-2c1224-bg": {
+"hex": "#2c1224",
+"role": "bg",
+"night": "#2c1224",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-2c1226-bg": {
+"hex": "#2c1226",
+"role": "bg",
+"night": "#2c1226",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-2c1442-bg": {
+"hex": "#2c1442",
+"role": "bg",
+"night": "#2c1442",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-2c1522-bg": {
+"hex": "#2c1522",
+"role": "bg",
+"night": "#2c1522",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-2c1608-bg": {
+"hex": "#2c1608",
+"role": "bg",
+"night": "#2c1608",
+"lilies": "#6d81e0",
+"warhol": "#dd82d6"
+},
+"--c-2c1c4a-bg": {
+"hex": "#2c1c4a",
+"role": "bg",
+"night": "#2c1c4a",
+"lilies": "#697dde",
+"warhol": "#da7fd3"
+},
+"--c-2c1e46-bg": {
+"hex": "#2c1e46",
+"role": "bg",
+"night": "#2c1e46",
+"lilies": "#697ddf",
+"warhol": "#da7fd3"
+},
+"--c-2c2068-ink": {
+"hex": "#2c2068",
+"role": "ink",
+"night": "#2c2068",
+"lilies": "#262d65",
+"warhol": "#46204c"
+},
+"--c-2c6392-ink": {
+"hex": "#2c6392",
+"role": "ink",
+"night": "#2c6392",
+"lilies": "#2a326e",
+"warhol": "#502656"
+},
+"--c-2c6f9e-bg": {
+"hex": "#2c6f9e",
+"role": "bg",
+"night": "#2c6f9e",
+"lilies": "#6074db",
+"warhol": "#d578ce"
+},
+"--c-2d1a38-bg": {
+"hex": "#2d1a38",
+"role": "bg",
+"night": "#2d1a38",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-2d6e3a-ink": {
+"hex": "#2d6e3a",
+"role": "ink",
+"night": "#2d6e3a",
+"lilies": "#272e68",
+"warhol": "#4a2250"
+},
+"--c-2d6e5a-ink": {
+"hex": "#2d6e5a",
+"role": "ink",
+"night": "#2d6e5a",
+"lilies": "#272e68",
+"warhol": "#4a2250"
+},
+"--c-2e1224-ink": {
+"hex": "#2e1224",
+"role": "ink",
+"night": "#2e1224",
+"lilies": "#21265a",
+"warhol": "#381740"
+},
+"--c-2e1640-bg": {
+"hex": "#2e1640",
+"role": "bg",
+"night": "#2e1640",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-2e1850-bg": {
+"hex": "#2e1850",
+"role": "bg",
+"night": "#2e1850",
+"lilies": "#687cde",
+"warhol": "#da7fd3"
+},
+"--c-2e1a28-bg": {
+"hex": "#2e1a28",
+"role": "bg",
+"night": "#2e1a28",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-2e1a28-ink": {
+"hex": "#2e1a28",
+"role": "ink",
+"night": "#2e1a28",
+"lilies": "#21275b",
+"warhol": "#3a1841"
+},
+"--c-2e1a42-bg": {
+"hex": "#2e1a42",
+"role": "bg",
+"night": "#2e1a42",
+"lilies": "#6a7ddf",
+"warhol": "#db80d4"
+},
+"--c-2e2408-bg": {
+"hex": "#2e2408",
+"role": "bg",
+"night": "#2e2408",
+"lilies": "#6d81e0",
+"warhol": "#dc82d6"
+},
+"--c-2e2650-bg": {
+"hex": "#2e2650",
+"role": "bg",
+"night": "#2e2650",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-2e2650-ink": {
+"hex": "#2e2650",
+"role": "ink",
+"night": "#2e2650",
+"lilies": "#252b62",
+"warhol": "#421e49"
+},
+"--c-2ec4b6-ink": {
+"hex": "#2ec4b6",
+"role": "ink",
+"night": "#2ec4b6",
+"lilies": "#d161c1",
+"warhol": "#b63dad"
+},
+"--c-2f1026-bg": {
+"hex": "#2f1026",
+"role": "bg",
+"night": "#2f1026",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-2f1524-bg": {
+"hex": "#2f1524",
+"role": "bg",
+"night": "#2f1524",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-2f2552-bg": {
+"hex": "#2f2552",
+"role": "bg",
+"night": "#2f2552",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-2f6330-bg": {
+"hex": "#2f6330",
+"role": "bg",
+"night": "#2f6330",
+"lilies": "#6579dd",
+"warhol": "#d87cd1"
+},
+"--c-2f6b4a-bg": {
+"hex": "#2f6b4a",
+"role": "bg",
+"night": "#2f6b4a",
+"lilies": "#6478dd",
+"warhol": "#d87bd0"
+},
+"--c-2f7660-ink": {
+"hex": "#2f7660",
+"role": "ink",
+"night": "#2f7660",
+"lilies": "#282f6a",
+"warhol": "#4b2351"
+},
+"--c-2fd07a-bg": {
+"hex": "#2fd07a",
+"role": "bg",
+"night": "#2fd07a",
+"lilies": "#d161c1",
+"warhol": "#bf40b7"
+},
+"--c-301509-bg": {
+"hex": "#301509",
+"role": "bg",
+"night": "#301509",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-301526-bg": {
+"hex": "#301526",
+"role": "bg",
+"night": "#301526",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-31c38f-bg": {
+"hex": "#31c38f",
+"role": "bg",
+"night": "#31c38f",
+"lilies": "#d161c0",
+"warhol": "#b73daf"
+},
+"--c-32152e-bg": {
+"hex": "#32152e",
+"role": "bg",
+"night": "#32152e",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-321a48-ink": {
+"hex": "#321a48",
+"role": "ink",
+"night": "#321a48",
+"lilies": "#23295f",
+"warhol": "#3f1b46"
+},
+"--c-33182a-ink": {
+"hex": "#33182a",
+"role": "ink",
+"night": "#33182a",
+"lilies": "#22275c",
+"warhol": "#3a1942"
+},
+"--c-33192a-ink": {
+"hex": "#33192a",
+"role": "ink",
+"night": "#33192a",
+"lilies": "#22275c",
+"warhol": "#3a1942"
+},
+"--c-33203a-bg": {
+"hex": "#33203a",
+"role": "bg",
+"night": "#33203a",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-33271a-bg": {
+"hex": "#33271a",
+"role": "bg",
+"night": "#33271a",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-341226-bg": {
+"hex": "#341226",
+"role": "bg",
+"night": "#341226",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-341226-ink": {
+"hex": "#341226",
+"role": "ink",
+"night": "#341226",
+"lilies": "#21275b",
+"warhol": "#391841"
+},
+"--c-34123f-bg": {
+"hex": "#34123f",
+"role": "bg",
+"night": "#34123f",
+"lilies": "#6b7edf",
+"warhol": "#db80d4"
+},
+"--c-341530-ink": {
+"hex": "#341530",
+"role": "ink",
+"night": "#341530",
+"lilies": "#21275b",
+"warhol": "#3a1841"
+},
+"--c-34172d-ink": {
+"hex": "#34172d",
+"role": "ink",
+"night": "#34172d",
+"lilies": "#22275c",
+"warhol": "#3a1942"
+},
+"--c-34304e-bg": {
+"hex": "#34304e",
+"role": "bg",
+"night": "#34304e",
+"lilies": "#667bde",
+"warhol": "#d97dd2"
+},
+"--c-34d39a-bg": {
+"hex": "#34d39a",
+"role": "bg",
+"night": "#34d39a",
+"lilies": "#d161c0",
+"warhol": "#c146b9"
+},
+"--c-34d39a-ink": {
+"hex": "#34d39a",
+"role": "ink",
+"night": "#34d39a",
+"lilies": "#d161c0",
+"warhol": "#c146b9"
+},
+"--c-35142a-bg": {
+"hex": "#35142a",
+"role": "bg",
+"night": "#35142a",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-35142c-bg": {
+"hex": "#35142c",
+"role": "bg",
+"night": "#35142c",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-35290f-bg": {
+"hex": "#35290f",
+"role": "bg",
+"night": "#35290f",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-36203f-bg": {
+"hex": "#36203f",
+"role": "bg",
+"night": "#36203f",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-362b1c-bg": {
+"hex": "#362b1c",
+"role": "bg",
+"night": "#362b1c",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-36b3f0-bg": {
+"hex": "#36b3f0",
+"role": "bg",
+"night": "#36b3f0",
+"lilies": "#d161c1",
+"warhol": "#c95dc2"
+},
+"--c-36b3f0-ink": {
+"hex": "#36b3f0",
+"role": "ink",
+"night": "#36b3f0",
+"lilies": "#d161c1",
+"warhol": "#c95dc2"
+},
+"--c-372254-bg": {
+"hex": "#372254",
+"role": "bg",
+"night": "#372254",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-38060e-bg": {
+"hex": "#38060e",
+"role": "bg",
+"night": "#38060e",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-3a0822-bg": {
+"hex": "#3a0822",
+"role": "bg",
+"night": "#3a0822",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-3a0a24-ink": {
+"hex": "#3a0a24",
+"role": "ink",
+"night": "#3a0a24",
+"lilies": "#21265b",
+"warhol": "#391841"
+},
+"--c-3a0e22-bg": {
+"hex": "#3a0e22",
+"role": "bg",
+"night": "#3a0e22",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-3a0f1c-bg": {
+"hex": "#3a0f1c",
+"role": "bg",
+"night": "#3a0f1c",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-3a0f24-bg": {
+"hex": "#3a0f24",
+"role": "bg",
+"night": "#3a0f24",
+"lilies": "#6b7fdf",
+"warhol": "#dc81d5"
+},
+"--c-3a1030-bg": {
+"hex": "#3a1030",
+"role": "bg",
+"night": "#3a1030",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-3a1126-ink": {
+"hex": "#3a1126",
+"role": "ink",
+"night": "#3a1126",
+"lilies": "#22275c",
+"warhol": "#3a1942"
+},
+"--c-3a1208-bg": {
+"hex": "#3a1208",
+"role": "bg",
+"night": "#3a1208",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-3a1226-bg": {
+"hex": "#3a1226",
+"role": "bg",
+"night": "#3a1226",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-3a1228-bg": {
+"hex": "#3a1228",
+"role": "bg",
+"night": "#3a1228",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-3a1230-bg": {
+"hex": "#3a1230",
+"role": "bg",
+"night": "#3a1230",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-3a1430-bg": {
+"hex": "#3a1430",
+"role": "bg",
+"night": "#3a1430",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-3a1530-bg": {
+"hex": "#3a1530",
+"role": "bg",
+"night": "#3a1530",
+"lilies": "#6b7edf",
+"warhol": "#db80d5"
+},
+"--c-3a1630-bg": {
+"hex": "#3a1630",
+"role": "bg",
+"night": "#3a1630",
+"lilies": "#6b7edf",
+"warhol": "#db80d4"
+},
+"--c-3a1730-bg": {
+"hex": "#3a1730",
+"role": "bg",
+"night": "#3a1730",
+"lilies": "#6b7edf",
+"warhol": "#db80d4"
+},
+"--c-3a1730-ink": {
+"hex": "#3a1730",
+"role": "ink",
+"night": "#3a1730",
+"lilies": "#22285d",
+"warhol": "#3b1943"
+},
+"--c-3a180c-bg": {
+"hex": "#3a180c",
+"role": "bg",
+"night": "#3a180c",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-3a1830-ink": {
+"hex": "#3a1830",
+"role": "ink",
+"night": "#3a1830",
+"lilies": "#22285d",
+"warhol": "#3c1943"
+},
+"--c-3a1a08-bg": {
+"hex": "#3a1a08",
+"role": "bg",
+"night": "#3a1a08",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-3a1a08-ink": {
+"hex": "#3a1a08",
+"role": "ink",
+"night": "#3a1a08",
+"lilies": "#21265a",
+"warhol": "#391840"
+},
+"--c-3a1a2e-ink": {
+"hex": "#3a1a2e",
+"role": "ink",
+"night": "#3a1a2e",
+"lilies": "#22285d",
+"warhol": "#3c1a43"
+},
+"--c-3a1b34-bg": {
+"hex": "#3a1b34",
+"role": "bg",
+"night": "#3a1b34",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-3a1b52-bg": {
+"hex": "#3a1b52",
+"role": "bg",
+"night": "#3a1b52",
+"lilies": "#687cde",
+"warhol": "#da7ed3"
+},
+"--c-3a1d31-ink": {
+"hex": "#3a1d31",
+"role": "ink",
+"night": "#3a1d31",
+"lilies": "#22285e",
+"warhol": "#3d1a44"
+},
+"--c-3a1e42-bg": {
+"hex": "#3a1e42",
+"role": "bg",
+"night": "#3a1e42",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-3a1f2e-ink": {
+"hex": "#3a1f2e",
+"role": "ink",
+"night": "#3a1f2e",
+"lilies": "#23285e",
+"warhol": "#3d1a44"
+},
+"--c-3a2036-bg": {
+"hex": "#3a2036",
+"role": "bg",
+"night": "#3a2036",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-3a2036-ink": {
+"hex": "#3a2036",
+"role": "ink",
+"night": "#3a2036",
+"lilies": "#23285e",
+"warhol": "#3d1a44"
+},
+"--c-3a2147-bg": {
+"hex": "#3a2147",
+"role": "bg",
+"night": "#3a2147",
+"lilies": "#687cde",
+"warhol": "#da7fd3"
+},
+"--c-3a2147-ink": {
+"hex": "#3a2147",
+"role": "ink",
+"night": "#3a2147",
+"lilies": "#242a60",
+"warhol": "#401c47"
+},
+"--c-3a2230-bg": {
+"hex": "#3a2230",
+"role": "bg",
+"night": "#3a2230",
+"lilies": "#6a7ddf",
+"warhol": "#db80d4"
+},
+"--c-3a2358-bg": {
+"hex": "#3a2358",
+"role": "bg",
+"night": "#3a2358",
+"lilies": "#677bde",
+"warhol": "#d97dd2"
+},
+"--c-3a2415-bg": {
+"hex": "#3a2415",
+"role": "bg",
+"night": "#3a2415",
+"lilies": "#6b7edf",
+"warhol": "#db80d5"
+},
+"--c-3a2450-ink": {
+"hex": "#3a2450",
+"role": "ink",
+"night": "#3a2450",
+"lilies": "#252b62",
+"warhol": "#421d49"
+},
+"--c-3a2540-bg": {
+"hex": "#3a2540",
+"role": "bg",
+"night": "#3a2540",
+"lilies": "#697dde",
+"warhol": "#da7fd3"
+},
+"--c-3a2540-ink": {
+"hex": "#3a2540",
+"role": "ink",
+"night": "#3a2540",
+"lilies": "#232960",
+"warhol": "#3f1c46"
+},
+"--c-3a2614-bg": {
+"hex": "#3a2614",
+"role": "bg",
+"night": "#3a2614",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-3a2640-bg": {
+"hex": "#3a2640",
+"role": "bg",
+"night": "#3a2640",
+"lilies": "#697dde",
+"warhol": "#da7fd3"
+},
+"--c-3a2a06-ink": {
+"hex": "#3a2a06",
+"role": "ink",
+"night": "#3a2a06",
+"lilies": "#21265a",
+"warhol": "#381740"
+},
+"--c-3a2a08-bg": {
+"hex": "#3a2a08",
+"role": "bg",
+"night": "#3a2a08",
+"lilies": "#6c80e0",
+"warhol": "#dc81d5"
+},
+"--c-3a2a4a-bg": {
+"hex": "#3a2a4a",
+"role": "bg",
+"night": "#3a2a4a",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-3a2a55-ink": {
+"hex": "#3a2a55",
+"role": "ink",
+"night": "#3a2a55",
+"lilies": "#252c64",
+"warhol": "#441f4b"
+},
+"--c-3a2a5e-bg": {
+"hex": "#3a2a5e",
+"role": "bg",
+"night": "#3a2a5e",
+"lilies": "#667add",
+"warhol": "#d87dd1"
+},
+"--c-3a2c16-bg": {
+"hex": "#3a2c16",
+"role": "bg",
+"night": "#3a2c16",
+"lilies": "#6b7edf",
+"warhol": "#db80d4"
+},
+"--c-3a2f5c-bg": {
+"hex": "#3a2f5c",
+"role": "bg",
+"night": "#3a2f5c",
+"lilies": "#6579dd",
+"warhol": "#d87cd1"
+},
+"--c-3a9ae6-ink": {
+"hex": "#3a9ae6",
+"role": "ink",
+"night": "#3a9ae6",
+"lilies": "#d161c1",
+"warhol": "#c859c0"
+},
+"--c-3aa88a-bg": {
+"hex": "#3aa88a",
+"role": "bg",
+"night": "#3aa88a",
+"lilies": "#5d72da",
+"warhol": "#d476cc"
+},
+"--c-3ad07f-bg": {
+"hex": "#3ad07f",
+"role": "bg",
+"night": "#3ad07f",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-3c1733-bg": {
+"hex": "#3c1733",
+"role": "bg",
+"night": "#3c1733",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-3c1733-ink": {
+"hex": "#3c1733",
+"role": "ink",
+"night": "#3c1733",
+"lilies": "#22285d",
+"warhol": "#3c1a43"
+},
+"--c-3c1c1c-ink": {
+"hex": "#3c1c1c",
+"role": "ink",
+"night": "#3c1c1c",
+"lilies": "#22285e",
+"warhol": "#3d1a44"
+},
+"--c-3c7eb0-bg": {
+"hex": "#3c7eb0",
+"role": "bg",
+"night": "#3c7eb0",
+"lilies": "#d161c1",
+"warhol": "#b13ba9"
+},
+"--c-3cc4b6-bg": {
+"hex": "#3cc4b6",
+"role": "bg",
+"night": "#3cc4b6",
+"lilies": "#d161c0",
+"warhol": "#c041b7"
+},
+"--c-3ce07f-ink": {
+"hex": "#3ce07f",
+"role": "ink",
+"night": "#3ce07f",
+"lilies": "#d161c1",
+"warhol": "#c756bf"
+},
+"--c-3d2740-bg": {
+"hex": "#3d2740",
+"role": "bg",
+"night": "#3d2740",
+"lilies": "#697cde",
+"warhol": "#da7fd3"
+},
+"--c-3f2688-bg": {
+"hex": "#3f2688",
+"role": "bg",
+"night": "#3f2688",
+"lilies": "#6277dc",
+"warhol": "#d77acf"
+},
+"--c-3f8036-bg": {
+"hex": "#3f8036",
+"role": "bg",
+"night": "#3f8036",
+"lilies": "#6176dc",
+"warhol": "#d679cf"
+},
+"--c-3f8a5e-bg": {
+"hex": "#3f8a5e",
+"role": "bg",
+"night": "#3f8a5e",
+"lilies": "#6074db",
+"warhol": "#d578ce"
+},
+"--c-3fd98e-ink": {
+"hex": "#3fd98e",
+"role": "ink",
+"night": "#3fd98e",
+"lilies": "#d161c1",
+"warhol": "#c653be"
+},
+"--c-40180a-bg": {
+"hex": "#40180a",
+"role": "bg",
+"night": "#40180a",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-43301e-bg": {
+"hex": "#43301e",
+"role": "bg",
+"night": "#43301e",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-433a5e-ink": {
+"hex": "#433a5e",
+"role": "ink",
+"night": "#433a5e",
+"lilies": "#272e68",
+"warhol": "#49224f"
+},
+"--c-44193a-bg": {
+"hex": "#44193a",
+"role": "bg",
+"night": "#44193a",
+"lilies": "#697ddf",
+"warhol": "#db80d4"
+},
+"--c-453a4a-bg": {
+"hex": "#453a4a",
+"role": "bg",
+"night": "#453a4a",
+"lilies": "#667add",
+"warhol": "#d97dd2"
+},
+"--c-45c2ff-ink": {
+"hex": "#45c2ff",
+"role": "ink",
+"night": "#45c2ff",
+"lilies": "#d161c0",
+"warhol": "#d173ca"
+},
+"--c-46b0ef-ink": {
+"hex": "#46b0ef",
+"role": "ink",
+"night": "#46b0ef",
+"lilies": "#d161c0",
+"warhol": "#cd68c6"
+},
+"--c-46e2a4-bg": {
+"hex": "#46e2a4",
+"role": "bg",
+"night": "#46e2a4",
+"lilies": "#d161c0",
+"warhol": "#ca5ec2"
+},
+"--c-46e2a4-ink": {
+"hex": "#46e2a4",
+"role": "ink",
+"night": "#46e2a4",
+"lilies": "#d161c0",
+"warhol": "#ca5ec2"
+},
+"--c-480f2f-bg": {
+"hex": "#480f2f",
+"role": "bg",
+"night": "#480f2f",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-48122f-bg": {
+"hex": "#48122f",
+"role": "bg",
+"night": "#48122f",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-48123a-bg": {
+"hex": "#48123a",
+"role": "bg",
+"night": "#48123a",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-48b8e0-ink": {
+"hex": "#48b8e0",
+"role": "ink",
+"night": "#48b8e0",
+"lilies": "#d161c0",
+"warhol": "#ca5ec2"
+},
+"--c-48d0e0-ink": {
+"hex": "#48d0e0",
+"role": "ink",
+"night": "#48d0e0",
+"lilies": "#d161c0",
+"warhol": "#ca5ec2"
+},
+"--c-4a0e2c-ink": {
+"hex": "#4a0e2c",
+"role": "ink",
+"night": "#4a0e2c",
+"lilies": "#22285e",
+"warhol": "#3d1a44"
+},
+"--c-4a0f2c-bg": {
+"hex": "#4a0f2c",
+"role": "bg",
+"night": "#4a0f2c",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-4a1020-bg": {
+"hex": "#4a1020",
+"role": "bg",
+"night": "#4a1020",
+"lilies": "#6a7edf",
+"warhol": "#db80d4"
+},
+"--c-4a1126-bg": {
+"hex": "#4a1126",
+"role": "bg",
+"night": "#4a1126",
+"lilies": "#6a7ddf",
+"warhol": "#db80d4"
+},
+"--c-4a1126-ink": {
+"hex": "#4a1126",
+"role": "ink",
+"night": "#4a1126",
+"lilies": "#23285e",
+"warhol": "#3d1b45"
+},
+"--c-4a1530-bg": {
+"hex": "#4a1530",
+"role": "bg",
+"night": "#4a1530",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-4a1f38-bg": {
+"hex": "#4a1f38",
+"role": "bg",
+"night": "#4a1f38",
+"lilies": "#687cde",
+"warhol": "#da7fd3"
+},
+"--c-4a2040-ink": {
+"hex": "#4a2040",
+"role": "ink",
+"night": "#4a2040",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-4a2238-bg": {
+"hex": "#4a2238",
+"role": "bg",
+"night": "#4a2238",
+"lilies": "#687cde",
+"warhol": "#da7ed3"
+},
+"--c-4a2238-ink": {
+"hex": "#4a2238",
+"role": "ink",
+"night": "#4a2238",
+"lilies": "#242a61",
+"warhol": "#411c47"
+},
+"--c-4a2338-ink": {
+"hex": "#4a2338",
+"role": "ink",
+"night": "#4a2338",
+"lilies": "#242a61",
+"warhol": "#411d48"
+},
+"--c-4a2400-ink": {
+"hex": "#4a2400",
+"role": "ink",
+"night": "#4a2400",
+"lilies": "#21275c",
+"warhol": "#3a1942"
+},
+"--c-4a2540-ink": {
+"hex": "#4a2540",
+"role": "ink",
+"night": "#4a2540",
+"lilies": "#242a61",
+"warhol": "#411d48"
+},
+"--c-4a2a44-ink": {
+"hex": "#4a2a44",
+"role": "ink",
+"night": "#4a2a44",
+"lilies": "#252b62",
+"warhol": "#421d49"
+},
+"--c-4a2a52-bg": {
+"hex": "#4a2a52",
+"role": "bg",
+"night": "#4a2a52",
+"lilies": "#677bde",
+"warhol": "#d97dd2"
+},
+"--c-4a2b3a-ink": {
+"hex": "#4a2b3a",
+"role": "ink",
+"night": "#4a2b3a",
+"lilies": "#252b62",
+"warhol": "#421e49"
+},
+"--c-4a2b46-bg": {
+"hex": "#4a2b46",
+"role": "bg",
+"night": "#4a2b46",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-4a2d40-ink": {
+"hex": "#4a2d40",
+"role": "ink",
+"night": "#4a2d40",
+"lilies": "#252b63",
+"warhol": "#431e49"
+},
+"--c-4a3000-bg": {
+"hex": "#4a3000",
+"role": "bg",
+"night": "#4a3000",
+"lilies": "#6b7fdf",
+"warhol": "#db81d5"
+},
+"--c-4a3000-ink": {
+"hex": "#4a3000",
+"role": "ink",
+"night": "#4a3000",
+"lilies": "#21275c",
+"warhol": "#3a1942"
+},
+"--c-4a3358-ink": {
+"hex": "#4a3358",
+"role": "ink",
+"night": "#4a3358",
+"lilies": "#262d66",
+"warhol": "#46204d"
+},
+"--c-4a3500-ink": {
+"hex": "#4a3500",
+"role": "ink",
+"night": "#4a3500",
+"lilies": "#21275c",
+"warhol": "#3a1942"
+},
+"--c-4a3550-ink": {
+"hex": "#4a3550",
+"role": "ink",
+"night": "#4a3550",
+"lilies": "#262c65",
+"warhol": "#451f4c"
+},
+"--c-4a3560-ink": {
+"hex": "#4a3560",
+"role": "ink",
+"night": "#4a3560",
+"lilies": "#272e67",
+"warhol": "#48214e"
+},
+"--c-4a3670-ink": {
+"hex": "#4a3670",
+"role": "ink",
+"night": "#4a3670",
+"lilies": "#282f6a",
+"warhol": "#4c2351"
+},
+"--c-4a36a0-ink": {
+"hex": "#4a36a0",
+"role": "ink",
+"night": "#4a36a0",
+"lilies": "#2c3471",
+"warhol": "#55295a"
+},
+"--c-4a3a1e-bg": {
+"hex": "#4a3a1e",
+"role": "bg",
+"night": "#4a3a1e",
+"lilies": "#687cde",
+"warhol": "#da7fd3"
+},
+"--c-4a4068-bg": {
+"hex": "#4a4068",
+"role": "bg",
+"night": "#4a4068",
+"lilies": "#6377dc",
+"warhol": "#d77acf"
+},
+"--c-4a4068-ink": {
+"hex": "#4a4068",
+"role": "ink",
+"night": "#4a4068",
+"lilies": "#28306a",
+"warhol": "#4c2352"
+},
+"--c-4a8ec4-bg": {
+"hex": "#4a8ec4",
+"role": "bg",
+"night": "#4a8ec4",
+"lilies": "#d161c0",
+"warhol": "#c34bbb"
+},
+"--c-4aa8e8-ink": {
+"hex": "#4aa8e8",
+"role": "ink",
+"night": "#4aa8e8",
+"lilies": "#d161c1",
+"warhol": "#cc66c5"
+},
+"--c-4ab6f0-bg": {
+"hex": "#4ab6f0",
+"role": "bg",
+"night": "#4ab6f0",
+"lilies": "#d161c1",
+"warhol": "#ce6cc7"
+},
+"--c-4ade80-ink": {
+"hex": "#4ade80",
+"role": "ink",
+"night": "#4ade80",
+"lilies": "#d161c0",
+"warhol": "#ca5fc2"
+},
+"--c-4b2a44-bg": {
+"hex": "#4b2a44",
+"role": "bg",
+"night": "#4b2a44",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-4b2a44-ink": {
+"hex": "#4b2a44",
+"role": "ink",
+"night": "#4b2a44",
+"lilies": "#252b62",
+"warhol": "#421e49"
+},
+"--c-4b3a56-ink": {
+"hex": "#4b3a56",
+"role": "ink",
+"night": "#4b3a56",
+"lilies": "#272d67",
+"warhol": "#47214e"
+},
+"--c-4db8ff-ink": {
+"hex": "#4db8ff",
+"role": "ink",
+"night": "#4db8ff",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-4dd0e1-ink": {
+"hex": "#4dd0e1",
+"role": "ink",
+"night": "#4dd0e1",
+"lilies": "#d161c0",
+"warhol": "#cb63c4"
+},
+"--c-4e2f96-ink": {
+"hex": "#4e2f96",
+"role": "ink",
+"night": "#4e2f96",
+"lilies": "#2b326f",
+"warhol": "#512757"
+},
+"--c-4eb072-bg": {
+"hex": "#4eb072",
+"role": "bg",
+"night": "#4eb072",
+"lilies": "#d161c0",
+"warhol": "#bf40b6"
+},
+"--c-4f9d95-ink": {
+"hex": "#4f9d95",
+"role": "ink",
+"night": "#4f9d95",
+"lilies": "#d161c1",
+"warhol": "#b13ba9"
+},
+"--c-4fb0ff-ink": {
+"hex": "#4fb0ff",
+"role": "ink",
+"night": "#4fb0ff",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-4fd08a-ink": {
+"hex": "#4fd08a",
+"role": "ink",
+"night": "#4fd08a",
+"lilies": "#d161c1",
+"warhol": "#c758c0"
+},
+"--c-54123a-bg": {
+"hex": "#54123a",
+"role": "bg",
+"night": "#54123a",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-553a22-bg": {
+"hex": "#553a22",
+"role": "bg",
+"night": "#553a22",
+"lilies": "#677bde",
+"warhol": "#d97ed2"
+},
+"--c-565b66-ink": {
+"hex": "#565b66",
+"role": "ink",
+"night": "#565b66",
+"lilies": "#2a316d",
+"warhol": "#502655"
+},
+"--c-57405c-ink": {
+"hex": "#57405c",
+"role": "ink",
+"night": "#57405c",
+"lilies": "#272e68",
+"warhol": "#4a2250"
+},
+"--c-5a1126-bg": {
+"hex": "#5a1126",
+"role": "bg",
+"night": "#5a1126",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-5a1138-bg": {
+"hex": "#5a1138",
+"role": "bg",
+"night": "#5a1138",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-5a1236-bg": {
+"hex": "#5a1236",
+"role": "bg",
+"night": "#5a1236",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-5a1838-bg": {
+"hex": "#5a1838",
+"role": "bg",
+"night": "#5a1838",
+"lilies": "#687cde",
+"warhol": "#da7ed3"
+},
+"--c-5a2440-ink": {
+"hex": "#5a2440",
+"role": "ink",
+"night": "#5a2440",
+"lilies": "#252c64",
+"warhol": "#441f4b"
+},
+"--c-5a2840-bg": {
+"hex": "#5a2840",
+"role": "bg",
+"night": "#5a2840",
+"lilies": "#667add",
+"warhol": "#d97dd2"
+},
+"--c-5a2942-ink": {
+"hex": "#5a2942",
+"role": "ink",
+"night": "#5a2942",
+"lilies": "#262c64",
+"warhol": "#451f4b"
+},
+"--c-5a2a06-bg": {
+"hex": "#5a2a06",
+"role": "bg",
+"night": "#5a2a06",
+"lilies": "#697ddf",
+"warhol": "#da7fd4"
+},
+"--c-5a2a3c-bg": {
+"hex": "#5a2a3c",
+"role": "bg",
+"night": "#5a2a3c",
+"lilies": "#667add",
+"warhol": "#d97dd2"
+},
+"--c-5a2a48-bg": {
+"hex": "#5a2a48",
+"role": "bg",
+"night": "#5a2a48",
+"lilies": "#667add",
+"warhol": "#d97dd2"
+},
+"--c-5a2c44-bg": {
+"hex": "#5a2c44",
+"role": "bg",
+"night": "#5a2c44",
+"lilies": "#667add",
+"warhol": "#d97dd1"
+},
+"--c-5a2ea8-bg": {
+"hex": "#5a2ea8",
+"role": "bg",
+"night": "#5a2ea8",
+"lilies": "#5e73db",
+"warhol": "#d577cd"
+},
+"--c-5a3318-bg": {
+"hex": "#5a3318",
+"role": "bg",
+"night": "#5a3318",
+"lilies": "#687cde",
+"warhol": "#da7ed3"
+},
+"--c-5a3350-ink": {
+"hex": "#5a3350",
+"role": "ink",
+"night": "#5a3350",
+"lilies": "#262d66",
+"warhol": "#47204d"
+},
+"--c-5a3850-ink": {
+"hex": "#5a3850",
+"role": "ink",
+"night": "#5a3850",
+"lilies": "#272e67",
+"warhol": "#48214e"
+},
+"--c-5a3a00-ink": {
+"hex": "#5a3a00",
+"role": "ink",
+"night": "#5a3a00",
+"lilies": "#23285e",
+"warhol": "#3d1a44"
+},
+"--c-5a3f6e-ink": {
+"hex": "#5a3f6e",
+"role": "ink",
+"night": "#5a3f6e",
+"lilies": "#29306b",
+"warhol": "#4d2453"
+},
+"--c-5a4a64-bg": {
+"hex": "#5a4a64",
+"role": "bg",
+"night": "#5a4a64",
+"lilies": "#6277dc",
+"warhol": "#d77acf"
+},
+"--c-5a4a6a-bg": {
+"hex": "#5a4a6a",
+"role": "bg",
+"night": "#5a4a6a",
+"lilies": "#6276dc",
+"warhol": "#d679cf"
+},
+"--c-5a4a86-ink": {
+"hex": "#5a4a86",
+"role": "ink",
+"night": "#5a4a86",
+"lilies": "#2b3371",
+"warhol": "#542859"
+},
+"--c-5a4a8a-ink": {
+"hex": "#5a4a8a",
+"role": "ink",
+"night": "#5a4a8a",
+"lilies": "#2c3471",
+"warhol": "#542859"
+},
+"--c-5a5570-ink": {
+"hex": "#5a5570",
+"role": "ink",
+"night": "#5a5570",
+"lilies": "#2b326f",
+"warhol": "#512757"
+},
+"--c-5aa040-bg": {
+"hex": "#5aa040",
+"role": "bg",
+"night": "#5aa040",
+"lilies": "#5e72da",
+"warhol": "#d476cc"
+},
+"--c-5b7fb8-ink": {
+"hex": "#5b7fb8",
+"role": "ink",
+"night": "#5b7fb8",
+"lilies": "#d161c0",
+"warhol": "#c44fbc"
+},
+"--c-5b8fd6-ink": {
+"hex": "#5b8fd6",
+"role": "ink",
+"night": "#5b8fd6",
+"lilies": "#d161c0",
+"warhol": "#cc65c5"
+},
+"--c-5c123c-bg": {
+"hex": "#5c123c",
+"role": "bg",
+"night": "#5c123c",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-5cc47a-bg": {
+"hex": "#5cc47a",
+"role": "bg",
+"night": "#5cc47a",
+"lilies": "#d161c1",
+"warhol": "#c859c0"
+},
+"--c-5e3c22-bg": {
+"hex": "#5e3c22",
+"role": "bg",
+"night": "#5e3c22",
+"lilies": "#667ade",
+"warhol": "#d97dd2"
+},
+"--c-5e3c22-ink": {
+"hex": "#5e3c22",
+"role": "ink",
+"night": "#5e3c22",
+"lilies": "#252c64",
+"warhol": "#441f4b"
+},
+"--c-5e4329-bg": {
+"hex": "#5e4329",
+"role": "bg",
+"night": "#5e4329",
+"lilies": "#667add",
+"warhol": "#d97dd1"
+},
+"--c-5e636f-bg": {
+"hex": "#5e636f",
+"role": "bg",
+"night": "#5e636f",
+"lilies": "#5f74db",
+"warhol": "#d578cd"
+},
+"--c-5ec4f5-ink": {
+"hex": "#5ec4f5",
+"role": "ink",
+"night": "#5ec4f5",
+"lilies": "#d260c1",
+"warhol": "#d47fce"
+},
+"--c-5ed0b0-ink": {
+"hex": "#5ed0b0",
+"role": "ink",
+"night": "#5ed0b0",
+"lilies": "#d161c0",
+"warhol": "#cb63c4"
+},
+"--c-5ed6df-ink": {
+"hex": "#5ed6df",
+"role": "ink",
+"night": "#5ed6df",
+"lilies": "#d260c1",
+"warhol": "#cf6ec8"
+},
+"--c-5f8dd6-ink": {
+"hex": "#5f8dd6",
+"role": "ink",
+"night": "#5f8dd6",
+"lilies": "#d161c0",
+"warhol": "#cd68c6"
+},
+"--c-5fa8ff-bg": {
+"hex": "#5fa8ff",
+"role": "bg",
+"night": "#5fa8ff",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-5fa8ff-ink": {
+"hex": "#5fa8ff",
+"role": "ink",
+"night": "#5fa8ff",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-5fb0ff-ink": {
+"hex": "#5fb0ff",
+"role": "ink",
+"night": "#5fb0ff",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-5fd6df-ink": {
+"hex": "#5fd6df",
+"role": "ink",
+"night": "#5fd6df",
+"lilies": "#d161c0",
+"warhol": "#cf6fc9"
+},
+"--c-5fe0a8-ink": {
+"hex": "#5fe0a8",
+"role": "ink",
+"night": "#5fe0a8",
+"lilies": "#d161c0",
+"warhol": "#cf70c9"
+},
+"--c-5fe0b2-ink": {
+"hex": "#5fe0b2",
+"role": "ink",
+"night": "#5fe0b2",
+"lilies": "#d161c0",
+"warhol": "#cf70c9"
+},
+"--c-5fe8b2-ink": {
+"hex": "#5fe8b2",
+"role": "ink",
+"night": "#5fe8b2",
+"lilies": "#d161c1",
+"warhol": "#d176cb"
+},
+"--c-63d3c9-bg": {
+"hex": "#63d3c9",
+"role": "bg",
+"night": "#63d3c9",
+"lilies": "#d161c1",
+"warhol": "#cd69c6"
+},
+"--c-63d3c9-ink": {
+"hex": "#63d3c9",
+"role": "ink",
+"night": "#63d3c9",
+"lilies": "#d161c1",
+"warhol": "#cd69c6"
+},
+"--c-63dcd0-bg": {
+"hex": "#63dcd0",
+"role": "bg",
+"night": "#63dcd0",
+"lilies": "#d161c0",
+"warhol": "#cf70c9"
+},
+"--c-63e6d6-ink": {
+"hex": "#63e6d6",
+"role": "ink",
+"night": "#63e6d6",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-662040-ink": {
+"hex": "#662040",
+"role": "ink",
+"night": "#662040",
+"lilies": "#262c65",
+"warhol": "#461f4c"
+},
+"--c-673999-ink": {
+"hex": "#673999",
+"role": "ink",
+"night": "#673999",
+"lilies": "#2b3471",
+"warhol": "#542859"
+},
+"--c-6781a8-ink": {
+"hex": "#6781a8",
+"role": "ink",
+"night": "#6781a8",
+"lilies": "#d161c1",
+"warhol": "#c34cbb"
+},
+"--c-6a1ad0-bg": {
+"hex": "#6a1ad0",
+"role": "bg",
+"night": "#6a1ad0",
+"lilies": "#d161c0",
+"warhol": "#b03ba8"
+},
+"--c-6a2848-bg": {
+"hex": "#6a2848",
+"role": "bg",
+"night": "#6a2848",
+"lilies": "#6579dd",
+"warhol": "#d87cd1"
+},
+"--c-6a2848-ink": {
+"hex": "#6a2848",
+"role": "ink",
+"night": "#6a2848",
+"lilies": "#272e67",
+"warhol": "#48214e"
+},
+"--c-6a3050-bg": {
+"hex": "#6a3050",
+"role": "bg",
+"night": "#6a3050",
+"lilies": "#6478dd",
+"warhol": "#d87bd0"
+},
+"--c-6a3050-ink": {
+"hex": "#6a3050",
+"role": "ink",
+"night": "#6a3050",
+"lilies": "#272e68",
+"warhol": "#49224f"
+},
+"--c-6a3fd0-bg": {
+"hex": "#6a3fd0",
+"role": "bg",
+"night": "#6a3fd0",
+"lilies": "#d161c1",
+"warhol": "#c34cbb"
+},
+"--c-6a4a5c-ink": {
+"hex": "#6a4a5c",
+"role": "ink",
+"night": "#6a4a5c",
+"lilies": "#29316c",
+"warhol": "#4e2554"
+},
+"--c-6a4a60-ink": {
+"hex": "#6a4a60",
+"role": "ink",
+"night": "#6a4a60",
+"lilies": "#29316c",
+"warhol": "#4e2554"
+},
+"--c-6a4a66-bg": {
+"hex": "#6a4a66",
+"role": "bg",
+"night": "#6a4a66",
+"lilies": "#6276dc",
+"warhol": "#d679cf"
+},
+"--c-6a4a66-ink": {
+"hex": "#6a4a66",
+"role": "ink",
+"night": "#6a4a66",
+"lilies": "#29316c",
+"warhol": "#4e2554"
+},
+"--c-6a4a6a-bg": {
+"hex": "#6a4a6a",
+"role": "bg",
+"night": "#6a4a6a",
+"lilies": "#6276dc",
+"warhol": "#d679cf"
+},
+"--c-6a4a6a-ink": {
+"hex": "#6a4a6a",
+"role": "ink",
+"night": "#6a4a6a",
+"lilies": "#29316c",
+"warhol": "#4e2554"
+},
+"--c-6a4a78-ink": {
+"hex": "#6a4a78",
+"role": "ink",
+"night": "#6a4a78",
+"lilies": "#2a326e",
+"warhol": "#512656"
+},
+"--c-6a4aa0-ink": {
+"hex": "#6a4aa0",
+"role": "ink",
+"night": "#6a4aa0",
+"lilies": "#d161c0",
+"warhol": "#b03ba8"
+},
+"--c-6a4f66-ink": {
+"hex": "#6a4f66",
+"role": "ink",
+"night": "#6a4f66",
+"lilies": "#2a316d",
+"warhol": "#4f2555"
+},
+"--c-6a4fd0-ink": {
+"hex": "#6a4fd0",
+"role": "ink",
+"night": "#6a4fd0",
+"lilies": "#d161c1",
+"warhol": "#c758c0"
+},
+"--c-6a5566-bg": {
+"hex": "#6a5566",
+"role": "bg",
+"night": "#6a5566",
+"lilies": "#6175db",
+"warhol": "#d679ce"
+},
+"--c-6a567e-ink": {
+"hex": "#6a567e",
+"role": "ink",
+"night": "#6a567e",
+"lilies": "#2c3471",
+"warhol": "#542859"
+},
+"--c-6a5870-ink": {
+"hex": "#6a5870",
+"role": "ink",
+"night": "#6a5870",
+"lilies": "#2b336f",
+"warhol": "#522757"
+},
+"--c-6a5a78-bg": {
+"hex": "#6a5a78",
+"role": "bg",
+"night": "#6a5a78",
+"lilies": "#5f74db",
+"warhol": "#d577cd"
+},
+"--c-6a5a78-ink": {
+"hex": "#6a5a78",
+"role": "ink",
+"night": "#6a5a78",
+"lilies": "#2b3471",
+"warhol": "#542859"
+},
+"--c-6a5a9a-ink": {
+"hex": "#6a5a9a",
+"role": "ink",
+"night": "#6a5a9a",
+"lilies": "#d161c0",
+"warhol": "#b73daf"
+},
+"--c-6a5cf0-ink": {
+"hex": "#6a5cf0",
+"role": "ink",
+"night": "#6a5cf0",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-6a6088-ink": {
+"hex": "#6a6088",
+"role": "ink",
+"night": "#6a6088",
+"lilies": "#d161c1",
+"warhol": "#ae3aa6"
+},
+"--c-6a6580-ink": {
+"hex": "#6a6580",
+"role": "ink",
+"night": "#6a6580",
+"lilies": "#2d3574",
+"warhol": "#582a5c"
+},
+"--c-6a9a82-ink": {
+"hex": "#6a9a82",
+"role": "ink",
+"night": "#6a9a82",
+"lilies": "#d161c0",
+"warhol": "#c143b8"
+},
+"--c-6a9ab0-ink": {
+"hex": "#6a9ab0",
+"role": "ink",
+"night": "#6a9ab0",
+"lilies": "#d161c0",
+"warhol": "#c654be"
+},
+"--c-6aa76f-ink": {
+"hex": "#6aa76f",
+"role": "ink",
+"night": "#6aa76f",
+"lilies": "#d161c0",
+"warhol": "#c44dbc"
+},
+"--c-6b2438-ink": {
+"hex": "#6b2438",
+"role": "ink",
+"night": "#6b2438",
+"lilies": "#272d66",
+"warhol": "#47214d"
+},
+"--c-6b2a48-bg": {
+"hex": "#6b2a48",
+"role": "bg",
+"night": "#6b2a48",
+"lilies": "#6479dd",
+"warhol": "#d87cd1"
+},
+"--c-6b2a48-ink": {
+"hex": "#6b2a48",
+"role": "ink",
+"night": "#6b2a48",
+"lilies": "#272e67",
+"warhol": "#48214e"
+},
+"--c-6b4258-ink": {
+"hex": "#6b4258",
+"role": "ink",
+"night": "#6b4258",
+"lilies": "#29306b",
+"warhol": "#4d2453"
+},
+"--c-6b4a2c-bg": {
+"hex": "#6b4a2c",
+"role": "bg",
+"night": "#6b4a2c",
+"lilies": "#6478dd",
+"warhol": "#d87bd0"
+},
+"--c-6b4a2e-ink": {
+"hex": "#6b4a2e",
+"role": "ink",
+"night": "#6b4a2e",
+"lilies": "#272e68",
+"warhol": "#49224f"
+},
+"--c-6b4a5e-bg": {
+"hex": "#6b4a5e",
+"role": "bg",
+"night": "#6b4a5e",
+"lilies": "#6176dc",
+"warhol": "#d679cf"
+},
+"--c-6b5680-ink": {
+"hex": "#6b5680",
+"role": "ink",
+"night": "#6b5680",
+"lilies": "#2c3471",
+"warhol": "#55295a"
+},
+"--c-6e0e1e-bg": {
+"hex": "#6e0e1e",
+"role": "bg",
+"night": "#6e0e1e",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-6e4260-bg": {
+"hex": "#6e4260",
+"role": "bg",
+"night": "#6e4260",
+"lilies": "#6276dc",
+"warhol": "#d77acf"
+},
+"--c-6f4a5e-ink": {
+"hex": "#6f4a5e",
+"role": "ink",
+"night": "#6f4a5e",
+"lilies": "#2a316d",
+"warhol": "#4f2555"
+},
+"--c-6f5a7e-ink": {
+"hex": "#6f5a7e",
+"role": "ink",
+"night": "#6f5a7e",
+"lilies": "#2c3472",
+"warhol": "#55295a"
+},
+"--c-6f6382-ink": {
+"hex": "#6f6382",
+"role": "ink",
+"night": "#6f6382",
+"lilies": "#2d3574",
+"warhol": "#582a5c"
+},
+"--c-6f8a93-bg": {
+"hex": "#6f8a93",
+"role": "bg",
+"night": "#6f8a93",
+"lilies": "#d161c1",
+"warhol": "#c042b8"
+},
+"--c-6f8fd6-ink": {
+"hex": "#6f8fd6",
+"role": "ink",
+"night": "#6f8fd6",
+"lilies": "#d161c0",
+"warhol": "#d174cb"
+},
+"--c-74c2ff-ink": {
+"hex": "#74c2ff",
+"role": "ink",
+"night": "#74c2ff",
+"lilies": "#d260c0",
+"warhol": "#dc97d8"
+},
+"--c-79ccff-ink": {
+"hex": "#79ccff",
+"role": "ink",
+"night": "#79ccff",
+"lilies": "#d161c1",
+"warhol": "#de9bd9"
+},
+"--c-7a1a3e-ink": {
+"hex": "#7a1a3e",
+"role": "ink",
+"night": "#7a1a3e",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-7a1d50-bg": {
+"hex": "#7a1d50",
+"role": "bg",
+"night": "#7a1d50",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-7a2148-ink": {
+"hex": "#7a2148",
+"role": "ink",
+"night": "#7a2148",
+"lilies": "#272e68",
+"warhol": "#4a2250"
+},
+"--c-7a2c10-bg": {
+"hex": "#7a2c10",
+"role": "bg",
+"night": "#7a2c10",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-7a3a1a-bg": {
+"hex": "#7a3a1a",
+"role": "bg",
+"night": "#7a3a1a",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-7a3a5e-ink": {
+"hex": "#7a3a5e",
+"role": "ink",
+"night": "#7a3a5e",
+"lilies": "#29316c",
+"warhol": "#4e2554"
+},
+"--c-7a3fe0-ink": {
+"hex": "#7a3fe0",
+"role": "ink",
+"night": "#7a3fe0",
+"lilies": "#d161c1",
+"warhol": "#c758c0"
+},
+"--c-7a4212-bg": {
+"hex": "#7a4212",
+"role": "bg",
+"night": "#7a4212",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-7a4a10-bg": {
+"hex": "#7a4a10",
+"role": "bg",
+"night": "#7a4a10",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-7a4a12-bg": {
+"hex": "#7a4a12",
+"role": "bg",
+"night": "#7a4a12",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-7a4a24-bg": {
+"hex": "#7a4a24",
+"role": "bg",
+"night": "#7a4a24",
+"lilies": "#6478dc",
+"warhol": "#d77bd0"
+},
+"--c-7a4a62-ink": {
+"hex": "#7a4a62",
+"role": "ink",
+"night": "#7a4a62",
+"lilies": "#2a326f",
+"warhol": "#512757"
+},
+"--c-7a4a68-ink": {
+"hex": "#7a4a68",
+"role": "ink",
+"night": "#7a4a68",
+"lilies": "#2a326f",
+"warhol": "#512757"
+},
+"--c-7a4ac0-bg": {
+"hex": "#7a4ac0",
+"role": "bg",
+"night": "#7a4ac0",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-7a4f2e-bg": {
+"hex": "#7a4f2e",
+"role": "bg",
+"night": "#7a4f2e",
+"lilies": "#6377dc",
+"warhol": "#d77acf"
+},
+"--c-7a5870-ink": {
+"hex": "#7a5870",
+"role": "ink",
+"night": "#7a5870",
+"lilies": "#2b3471",
+"warhol": "#542859"
+},
+"--c-7a5a2a-ink": {
+"hex": "#7a5a2a",
+"role": "ink",
+"night": "#7a5a2a",
+"lilies": "#282f6a",
+"warhol": "#4b2351"
+},
+"--c-7a5a6c-ink": {
+"hex": "#7a5a6c",
+"role": "ink",
+"night": "#7a5a6c",
+"lilies": "#2c3471",
+"warhol": "#542859"
+},
+"--c-7a5a70-ink": {
+"hex": "#7a5a70",
+"role": "ink",
+"night": "#7a5a70",
+"lilies": "#2c3471",
+"warhol": "#542859"
+},
+"--c-7a5ac4-bg": {
+"hex": "#7a5ac4",
+"role": "bg",
+"night": "#7a5ac4",
+"lilies": "#d161c0",
+"warhol": "#c757bf"
+},
+"--c-7a5ac4-ink": {
+"hex": "#7a5ac4",
+"role": "ink",
+"night": "#7a5ac4",
+"lilies": "#d161c0",
+"warhol": "#c757bf"
+},
+"--c-7a5c6e-ink": {
+"hex": "#7a5c6e",
+"role": "ink",
+"night": "#7a5c6e",
+"lilies": "#2c3471",
+"warhol": "#55295a"
+},
+"--c-7a5e72-ink": {
+"hex": "#7a5e72",
+"role": "ink",
+"night": "#7a5e72",
+"lilies": "#2c3472",
+"warhol": "#55295a"
+},
+"--c-7a6a80-bg": {
+"hex": "#7a6a80",
+"role": "bg",
+"night": "#7a6a80",
+"lilies": "#d161c0",
+"warhol": "#b03ba8"
+},
+"--c-7a6a80-ink": {
+"hex": "#7a6a80",
+"role": "ink",
+"night": "#7a6a80",
+"lilies": "#d161c0",
+"warhol": "#b03ba8"
+},
+"--c-7a6a86-ink": {
+"hex": "#7a6a86",
+"role": "ink",
+"night": "#7a6a86",
+"lilies": "#d161c0",
+"warhol": "#b43cac"
+},
+"--c-7a6cf0-ink": {
+"hex": "#7a6cf0",
+"role": "ink",
+"night": "#7a6cf0",
+"lilies": "#d260c0",
+"warhol": "#d786d1"
+},
+"--c-7a6e92-ink": {
+"hex": "#7a6e92",
+"role": "ink",
+"night": "#7a6e92",
+"lilies": "#d161c0",
+"warhol": "#c041b7"
+},
+"--c-7a6f9a-ink": {
+"hex": "#7a6f9a",
+"role": "ink",
+"night": "#7a6f9a",
+"lilies": "#d161c1",
+"warhol": "#c247b9"
+},
+"--c-7a808c-ink": {
+"hex": "#7a808c",
+"role": "ink",
+"night": "#7a808c",
+"lilies": "#d161c0",
+"warhol": "#c145b9"
+},
+"--c-7a9aff-ink": {
+"hex": "#7a9aff",
+"role": "ink",
+"night": "#7a9aff",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-7ac8ff-ink": {
+"hex": "#7ac8ff",
+"role": "ink",
+"night": "#7ac8ff",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-7c3aed-ink": {
+"hex": "#7c3aed",
+"role": "ink",
+"night": "#7c3aed",
+"lilies": "#d161c0",
+"warhol": "#c95ec2"
+},
+"--c-7cc8ff-bg": {
+"hex": "#7cc8ff",
+"role": "bg",
+"night": "#7cc8ff",
+"lilies": "#d260c1",
+"warhol": "#de9dda"
+},
+"--c-7cc8ff-ink": {
+"hex": "#7cc8ff",
+"role": "ink",
+"night": "#7cc8ff",
+"lilies": "#d260c1",
+"warhol": "#de9dda"
+},
+"--c-7d5430-bg": {
+"hex": "#7d5430",
+"role": "bg",
+"night": "#7d5430",
+"lilies": "#6277dc",
+"warhol": "#d77acf"
+},
+"--c-7d5670-ink": {
+"hex": "#7d5670",
+"role": "ink",
+"night": "#7d5670",
+"lilies": "#2c3471",
+"warhol": "#542859"
+},
+"--c-7d5fa8-ink": {
+"hex": "#7d5fa8",
+"role": "ink",
+"night": "#7d5fa8",
+"lilies": "#d161c0",
+"warhol": "#c146b9"
+},
+"--c-7d66da-ink": {
+"hex": "#7d66da",
+"role": "ink",
+"night": "#7d66da",
+"lilies": "#d161c1",
+"warhol": "#d071c9"
+},
+"--c-7d6d92-ink": {
+"hex": "#7d6d92",
+"role": "ink",
+"night": "#7d6d92",
+"lilies": "#d161c1",
+"warhol": "#bf40b7"
+},
+"--c-7d6ea8-ink": {
+"hex": "#7d6ea8",
+"role": "ink",
+"night": "#7d6ea8",
+"lilies": "#d161c1",
+"warhol": "#c551bd"
+},
+"--c-7d72a0-ink": {
+"hex": "#7d72a0",
+"role": "ink",
+"night": "#7d72a0",
+"lilies": "#d161c1",
+"warhol": "#c44ebc"
+},
+"--c-7e6178-ink": {
+"hex": "#7e6178",
+"role": "ink",
+"night": "#7e6178",
+"lilies": "#2c3573",
+"warhol": "#562a5b"
+},
+"--c-7e6378-ink": {
+"hex": "#7e6378",
+"role": "ink",
+"night": "#7e6378",
+"lilies": "#2d3573",
+"warhol": "#572a5b"
+},
+"--c-7ea8d8-ink": {
+"hex": "#7ea8d8",
+"role": "ink",
+"night": "#7ea8d8",
+"lilies": "#d161c1",
+"warhol": "#d581cf"
+},
+"--c-7f8492-bg": {
+"hex": "#7f8492",
+"role": "bg",
+"night": "#7f8492",
+"lilies": "#d161c0",
+"warhol": "#c44dbc"
+},
+"--c-7f9bc4-bg": {
+"hex": "#7f9bc4",
+"role": "bg",
+"night": "#7f9bc4",
+"lilies": "#d161c1",
+"warhol": "#d073ca"
+},
+"--c-7f9bc4-ink": {
+"hex": "#7f9bc4",
+"role": "ink",
+"night": "#7f9bc4",
+"lilies": "#d161c1",
+"warhol": "#d073ca"
+},
+"--c-7fd9a8-ink": {
+"hex": "#7fd9a8",
+"role": "ink",
+"night": "#7fd9a8",
+"lilies": "#d260c0",
+"warhol": "#d683d0"
+},
+"--c-7fdf7f-ink": {
+"hex": "#7fdf7f",
+"role": "ink",
+"night": "#7fdf7f",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-7fe4ff-bg": {
+"hex": "#7fe4ff",
+"role": "bg",
+"night": "#7fe4ff",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-86205a-bg": {
+"hex": "#86205a",
+"role": "bg",
+"night": "#86205a",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-86c45a-bg": {
+"hex": "#86c45a",
+"role": "bg",
+"night": "#86c45a",
+"lilies": "#d161c0",
+"warhol": "#c757bf"
+},
+"--c-8a1f52-bg": {
+"hex": "#8a1f52",
+"role": "bg",
+"night": "#8a1f52",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-8a2a44-ink": {
+"hex": "#8a2a44",
+"role": "ink",
+"night": "#8a2a44",
+"lilies": "#29316c",
+"warhol": "#4e2554"
+},
+"--c-8a2e5c-ink": {
+"hex": "#8a2e5c",
+"role": "ink",
+"night": "#8a2e5c",
+"lilies": "#2a316d",
+"warhol": "#4f2554"
+},
+"--c-8a2f66-bg": {
+"hex": "#8a2f66",
+"role": "bg",
+"night": "#8a2f66",
+"lilies": "#6176dc",
+"warhol": "#d679cf"
+},
+"--c-8a45cc-bg": {
+"hex": "#8a45cc",
+"role": "bg",
+"night": "#8a45cc",
+"lilies": "#d161c0",
+"warhol": "#c44dbc"
+},
+"--c-8a5a72-bg": {
+"hex": "#8a5a72",
+"role": "bg",
+"night": "#8a5a72",
+"lilies": "#5d72da",
+"warhol": "#d476cc"
+},
+"--c-8a5cf0-bg": {
+"hex": "#8a5cf0",
+"role": "bg",
+"night": "#8a5cf0",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-8a5cf0-ink": {
+"hex": "#8a5cf0",
+"role": "ink",
+"night": "#8a5cf0",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-8a5d34-bg": {
+"hex": "#8a5d34",
+"role": "bg",
+"night": "#8a5d34",
+"lilies": "#6175db",
+"warhol": "#d679ce"
+},
+"--c-8a5f76-ink": {
+"hex": "#8a5f76",
+"role": "ink",
+"night": "#8a5f76",
+"lilies": "#d161c1",
+"warhol": "#af3aa7"
+},
+"--c-8a6076-ink": {
+"hex": "#8a6076",
+"role": "ink",
+"night": "#8a6076",
+"lilies": "#d161c0",
+"warhol": "#b03ba8"
+},
+"--c-8a6478-ink": {
+"hex": "#8a6478",
+"role": "ink",
+"night": "#8a6478",
+"lilies": "#d161c0",
+"warhol": "#b33caa"
+},
+"--c-8a6a4a-ink": {
+"hex": "#8a6a4a",
+"role": "ink",
+"night": "#8a6a4a",
+"lilies": "#2c3471",
+"warhol": "#542859"
+},
+"--c-8a6bb8-ink": {
+"hex": "#8a6bb8",
+"role": "ink",
+"night": "#8a6bb8",
+"lilies": "#d161c1",
+"warhol": "#c85bc1"
+},
+"--c-8a6d85-ink": {
+"hex": "#8a6d85",
+"role": "ink",
+"night": "#8a6d85",
+"lilies": "#d161c0",
+"warhol": "#b93eb1"
+},
+"--c-8a6ea0-ink": {
+"hex": "#8a6ea0",
+"role": "ink",
+"night": "#8a6ea0",
+"lilies": "#d161c0",
+"warhol": "#c34bbb"
+},
+"--c-8a6f84-ink": {
+"hex": "#8a6f84",
+"role": "ink",
+"night": "#8a6f84",
+"lilies": "#d161c1",
+"warhol": "#bb3eb2"
+},
+"--c-8a6f9a-bg": {
+"hex": "#8a6f9a",
+"role": "bg",
+"night": "#8a6f9a",
+"lilies": "#d161c1",
+"warhol": "#c247b9"
+},
+"--c-8a7898-bg": {
+"hex": "#8a7898",
+"role": "bg",
+"night": "#8a7898",
+"lilies": "#d161c0",
+"warhol": "#c34dbb"
+},
+"--c-8a7898-ink": {
+"hex": "#8a7898",
+"role": "ink",
+"night": "#8a7898",
+"lilies": "#d161c0",
+"warhol": "#c34dbb"
+},
+"--c-8a7a9a-ink": {
+"hex": "#8a7a9a",
+"role": "ink",
+"night": "#8a7a9a",
+"lilies": "#d161c0",
+"warhol": "#c44fbd"
+},
+"--c-8a7ba0-ink": {
+"hex": "#8a7ba0",
+"role": "ink",
+"night": "#8a7ba0",
+"lilies": "#d161c0",
+"warhol": "#c655bf"
+},
+"--c-8a7fb0-ink": {
+"hex": "#8a7fb0",
+"role": "ink",
+"night": "#8a7fb0",
+"lilies": "#d161c1",
+"warhol": "#cb64c4"
+},
+"--c-8ac8e8-ink": {
+"hex": "#8ac8e8",
+"role": "ink",
+"night": "#8ac8e8",
+"lilies": "#d260c0",
+"warhol": "#dc96d7"
+},
+"--c-8ad0ff-ink": {
+"hex": "#8ad0ff",
+"role": "ink",
+"night": "#8ad0ff",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-8b6fd6-ink": {
+"hex": "#8b6fd6",
+"role": "ink",
+"night": "#8b6fd6",
+"lilies": "#d161c0",
+"warhol": "#d174cb"
+},
+"--c-8f55de-ink": {
+"hex": "#8f55de",
+"role": "ink",
+"night": "#8f55de",
+"lilies": "#d161c1",
+"warhol": "#cc67c5"
+},
+"--c-8f7f96-ink": {
+"hex": "#8f7f96",
+"role": "ink",
+"night": "#8f7f96",
+"lilies": "#d161c1",
+"warhol": "#c550bd"
+},
+"--c-8fa2e8-ink": {
+"hex": "#8fa2e8",
+"role": "ink",
+"night": "#8fa2e8",
+"lilies": "#d260c1",
+"warhol": "#dd9ad9"
+},
+"--c-8fc6f0-ink": {
+"hex": "#8fc6f0",
+"role": "ink",
+"night": "#8fc6f0",
+"lilies": "#d062c0",
+"warhol": "#dfa0db"
+},
+"--c-8fd2f5-ink": {
+"hex": "#8fd2f5",
+"role": "ink",
+"night": "#8fd2f5",
+"lilies": "#d260c1",
+"warhol": "#e1a3dc"
+},
+"--c-8fd4f7-ink": {
+"hex": "#8fd4f7",
+"role": "ink",
+"night": "#8fd4f7",
+"lilies": "#d161c0",
+"warhol": "#e1a5dd"
+},
+"--c-8fd7b8-ink": {
+"hex": "#8fd7b8",
+"role": "ink",
+"night": "#8fd7b8",
+"lilies": "#d161c0",
+"warhol": "#d98dd4"
+},
+"--c-8fd8ff-ink": {
+"hex": "#8fd8ff",
+"role": "ink",
+"night": "#8fd8ff",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-8fe3d0-ink": {
+"hex": "#8fe3d0",
+"role": "ink",
+"night": "#8fe3d0",
+"lilies": "#d260c0",
+"warhol": "#dc96d7"
+},
+"--c-8fe4d8-bg": {
+"hex": "#8fe4d8",
+"role": "bg",
+"night": "#8fe4d8",
+"lilies": "#d260c0",
+"warhol": "#dc97d8"
+},
+"--c-8fe6a8-ink": {
+"hex": "#8fe6a8",
+"role": "ink",
+"night": "#8fe6a8",
+"lilies": "#d161c0",
+"warhol": "#dd98d8"
+},
+"--c-8fffa8-bg": {
+"hex": "#8fffa8",
+"role": "bg",
+"night": "#8fffa8",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-924f31-ink": {
+"hex": "#924f31",
+"role": "ink",
+"night": "#924f31",
+"lilies": "#2a326e",
+"warhol": "#512756"
+},
+"--c-92e2ff-bg": {
+"hex": "#92e2ff",
+"role": "bg",
+"night": "#92e2ff",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-932b69-ink": {
+"hex": "#932b69",
+"role": "ink",
+"night": "#932b69",
+"lilies": "#2a326e",
+"warhol": "#502656"
+},
+"--c-96637e-ink": {
+"hex": "#96637e",
+"role": "ink",
+"night": "#96637e",
+"lilies": "#d161c1",
+"warhol": "#bb3eb2"
+},
+"--c-972b56-bg": {
+"hex": "#972b56",
+"role": "bg",
+"night": "#972b56",
+"lilies": "#6075db",
+"warhol": "#d678ce"
+},
+"--c-972b56-ink": {
+"hex": "#972b56",
+"role": "ink",
+"night": "#972b56",
+"lilies": "#2a326e",
+"warhol": "#512656"
+},
+"--c-99566b-ink": {
+"hex": "#99566b",
+"role": "ink",
+"night": "#99566b",
+"lilies": "#d161c1",
+"warhol": "#b33cab"
+},
+"--c-9a4dff-ink": {
+"hex": "#9a4dff",
+"role": "ink",
+"night": "#9a4dff",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-9a5cf0-bg": {
+"hex": "#9a5cf0",
+"role": "bg",
+"night": "#9a5cf0",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-9a5cf0-ink": {
+"hex": "#9a5cf0",
+"role": "ink",
+"night": "#9a5cf0",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-9a6080-ink": {
+"hex": "#9a6080",
+"role": "ink",
+"night": "#9a6080",
+"lilies": "#d161c0",
+"warhol": "#bb3fb3"
+},
+"--c-9a6a7c-ink": {
+"hex": "#9a6a7c",
+"role": "ink",
+"night": "#9a6a7c",
+"lilies": "#d161c0",
+"warhol": "#c143b8"
+},
+"--c-9a6a82-ink": {
+"hex": "#9a6a82",
+"role": "ink",
+"night": "#9a6a82",
+"lilies": "#d161c0",
+"warhol": "#c143b8"
+},
+"--c-9a6a86-bg": {
+"hex": "#9a6a86",
+"role": "bg",
+"night": "#9a6a86",
+"lilies": "#d161c0",
+"warhol": "#c143b8"
+},
+"--c-9a6a86-ink": {
+"hex": "#9a6a86",
+"role": "ink",
+"night": "#9a6a86",
+"lilies": "#d161c0",
+"warhol": "#c143b8"
+},
+"--c-9a7090-bg": {
+"hex": "#9a7090",
+"role": "bg",
+"night": "#9a7090",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-9a7090-ink": {
+"hex": "#9a7090",
+"role": "ink",
+"night": "#9a7090",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-9a7288-ink": {
+"hex": "#9a7288",
+"role": "ink",
+"night": "#9a7288",
+"lilies": "#d161c1",
+"warhol": "#c34aba"
+},
+"--c-9a7a92-ink": {
+"hex": "#9a7a92",
+"role": "ink",
+"night": "#9a7a92",
+"lilies": "#d161c0",
+"warhol": "#c44fbd"
+},
+"--c-9a7ba6-ink": {
+"hex": "#9a7ba6",
+"role": "ink",
+"night": "#9a7ba6",
+"lilies": "#d161c0",
+"warhol": "#c859c0"
+},
+"--c-9a7cff-bg": {
+"hex": "#9a7cff",
+"role": "bg",
+"night": "#9a7cff",
+"lilies": "#d260c1",
+"warhol": "#de9dda"
+},
+"--c-9a7cff-ink": {
+"hex": "#9a7cff",
+"role": "ink",
+"night": "#9a7cff",
+"lilies": "#d260c1",
+"warhol": "#de9dda"
+},
+"--c-9a7ea8-ink": {
+"hex": "#9a7ea8",
+"role": "ink",
+"night": "#9a7ea8",
+"lilies": "#d161c1",
+"warhol": "#c95dc2"
+},
+"--c-9a7f92-ink": {
+"hex": "#9a7f92",
+"role": "ink",
+"night": "#9a7f92",
+"lilies": "#d161c1",
+"warhol": "#c653be"
+},
+"--c-9a8098-ink": {
+"hex": "#9a8098",
+"role": "ink",
+"night": "#9a8098",
+"lilies": "#d161c0",
+"warhol": "#c654be"
+},
+"--c-9a86c0-bg": {
+"hex": "#9a86c0",
+"role": "bg",
+"night": "#9a86c0",
+"lilies": "#d260c1",
+"warhol": "#d175cb"
+},
+"--c-9a86c0-ink": {
+"hex": "#9a86c0",
+"role": "ink",
+"night": "#9a86c0",
+"lilies": "#d260c1",
+"warhol": "#d175cb"
+},
+"--c-9a8cc4-ink": {
+"hex": "#9a8cc4",
+"role": "ink",
+"night": "#9a8cc4",
+"lilies": "#d161c1",
+"warhol": "#d47dce"
+},
+"--c-9a8cff-ink": {
+"hex": "#9a8cff",
+"role": "ink",
+"night": "#9a8cff",
+"lilies": "#d161c1",
+"warhol": "#e2a9de"
+},
+"--c-9a8fb5-ink": {
+"hex": "#9a8fb5",
+"role": "ink",
+"night": "#9a8fb5",
+"lilies": "#d161c0",
+"warhol": "#d173ca"
+},
+"--c-9aa0ad-bg": {
+"hex": "#9aa0ad",
+"role": "bg",
+"night": "#9aa0ad",
+"lilies": "#d161c1",
+"warhol": "#d176cb"
+},
+"--c-9ac8ff-bg": {
+"hex": "#9ac8ff",
+"role": "bg",
+"night": "#9ac8ff",
+"lilies": "#7386e2",
+"warhol": "#df87d9"
+},
+"--c-9b7fd6-ink": {
+"hex": "#9b7fd6",
+"role": "ink",
+"night": "#9b7fd6",
+"lilies": "#d161c0",
+"warhol": "#d580cf"
+},
+"--c-9b8fc0-ink": {
+"hex": "#9b8fc0",
+"role": "ink",
+"night": "#9b8fc0",
+"lilies": "#d260c0",
+"warhol": "#d37ccd"
+},
+"--c-9c5746-bg": {
+"hex": "#9c5746",
+"role": "bg",
+"night": "#9c5746",
+"lilies": "#5d72da",
+"warhol": "#d476cc"
+},
+"--c-9c6233-bg": {
+"hex": "#9c6233",
+"role": "bg",
+"night": "#9c6233",
+"lilies": "#5f74db",
+"warhol": "#d578cd"
+},
+"--c-9c6b3f-bg": {
+"hex": "#9c6b3f",
+"role": "bg",
+"night": "#9c6b3f",
+"lilies": "#5e73da",
+"warhol": "#d577cd"
+},
+"--c-9c8fc4-ink": {
+"hex": "#9c8fc4",
+"role": "ink",
+"night": "#9c8fc4",
+"lilies": "#d260c1",
+"warhol": "#d47fce"
+},
+"--c-9ee6a8-bg": {
+"hex": "#9ee6a8",
+"role": "bg",
+"night": "#9ee6a8",
+"lilies": "#d260c1",
+"warhol": "#e1a3dc"
+},
+"--c-9fb6d8-ink": {
+"hex": "#9fb6d8",
+"role": "ink",
+"night": "#9fb6d8",
+"lilies": "#d260c1",
+"warhol": "#dd9ad9"
+},
+"--c-9fc0f0-ink": {
+"hex": "#9fc0f0",
+"role": "ink",
+"night": "#9fc0f0",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-9fd0ee-ink": {
+"hex": "#9fd0ee",
+"role": "ink",
+"night": "#9fd0ee",
+"lilies": "#d260c0",
+"warhol": "#e3aadf"
+},
+"--c-9fe8cf-ink": {
+"hex": "#9fe8cf",
+"role": "ink",
+"night": "#9fe8cf",
+"lilies": "#d161c1",
+"warhol": "#e1a6dd"
+},
+"--c-a02c10-bg": {
+"hex": "#a02c10",
+"role": "bg",
+"night": "#a02c10",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-a04416-bg": {
+"hex": "#a04416",
+"role": "bg",
+"night": "#a04416",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-a04dff-ink": {
+"hex": "#a04dff",
+"role": "ink",
+"night": "#a04dff",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-a06b86-ink": {
+"hex": "#a06b86",
+"role": "ink",
+"night": "#a06b86",
+"lilies": "#d161c1",
+"warhol": "#c249ba"
+},
+"--c-a06bff-bg": {
+"hex": "#a06bff",
+"role": "bg",
+"night": "#a06bff",
+"lilies": "#d260c1",
+"warhol": "#da90d5"
+},
+"--c-a06e88-ink": {
+"hex": "#a06e88",
+"role": "ink",
+"night": "#a06e88",
+"lilies": "#d161c0",
+"warhol": "#c34bbb"
+},
+"--c-a06f40-bg": {
+"hex": "#a06f40",
+"role": "bg",
+"night": "#a06f40",
+"lilies": "#5e72da",
+"warhol": "#d476cc"
+},
+"--c-a07a48-bg": {
+"hex": "#a07a48",
+"role": "bg",
+"night": "#a07a48",
+"lilies": "#d161c1",
+"warhol": "#ae3aa6"
+},
+"--c-a07a96-ink": {
+"hex": "#a07a96",
+"role": "ink",
+"night": "#a07a96",
+"lilies": "#d161c0",
+"warhol": "#c654be"
+},
+"--c-a07fa0-ink": {
+"hex": "#a07fa0",
+"role": "ink",
+"night": "#a07fa0",
+"lilies": "#d161c1",
+"warhol": "#c758c0"
+},
+"--c-a08bb8-ink": {
+"hex": "#a08bb8",
+"role": "ink",
+"night": "#a08bb8",
+"lilies": "#d161c1",
+"warhol": "#d073ca"
+},
+"--c-a08fff-ink": {
+"hex": "#a08fff",
+"role": "ink",
+"night": "#a08fff",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-a23aff-bg": {
+"hex": "#a23aff",
+"role": "bg",
+"night": "#a23aff",
+"lilies": "#d161c1",
+"warhol": "#ce6bc7"
+},
+"--c-a3768c-ink": {
+"hex": "#a3768c",
+"role": "ink",
+"night": "#a3768c",
+"lilies": "#d161c1",
+"warhol": "#c653be"
+},
+"--c-a3d9ff-bg": {
+"hex": "#a3d9ff",
+"role": "bg",
+"night": "#a3d9ff",
+"lilies": "#7c8ee4",
+"warhol": "#e18fdc"
+},
+"--c-a3e4e9-ink": {
+"hex": "#a3e4e9",
+"role": "ink",
+"night": "#a3e4e9",
+"lilies": "#d062c0",
+"warhol": "#e3a9df"
+},
+"--c-a41d60-ink": {
+"hex": "#a41d60",
+"role": "ink",
+"night": "#a41d60",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-a487a0-ink": {
+"hex": "#a487a0",
+"role": "ink",
+"night": "#a487a0",
+"lilies": "#d260c0",
+"warhol": "#ca61c3"
+},
+"--c-a5718f-ink": {
+"hex": "#a5718f",
+"role": "ink",
+"night": "#a5718f",
+"lilies": "#d161c1",
+"warhol": "#c551bd"
+},
+"--c-a83a5c-bg": {
+"hex": "#a83a5c",
+"role": "bg",
+"night": "#a83a5c",
+"lilies": "#5d72da",
+"warhol": "#d476cc"
+},
+"--c-a86a8c-ink": {
+"hex": "#a86a8c",
+"role": "ink",
+"night": "#a86a8c",
+"lilies": "#d161c1",
+"warhol": "#c44ebc"
+},
+"--c-a86ff0-ink": {
+"hex": "#a86ff0",
+"role": "ink",
+"night": "#a86ff0",
+"lilies": "#d161c0",
+"warhol": "#d788d2"
+},
+"--c-a8b06a-bg": {
+"hex": "#a8b06a",
+"role": "bg",
+"night": "#a8b06a",
+"lilies": "#d161c0",
+"warhol": "#c654be"
+},
+"--c-a8c4ff-bg": {
+"hex": "#a8c4ff",
+"role": "bg",
+"night": "#a8c4ff",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
+},
+"--c-a8d8c0-ink": {
+"hex": "#a8d8c0",
+"role": "ink",
+"night": "#a8d8c0",
+"lilies": "#d260c0",
+"warhol": "#e0a1db"
+},
+"--c-a8e4ff-bg": {
+"hex": "#a8e4ff",
+"role": "bg",
+"night": "#a8e4ff",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
+},
+"--c-a8f0cc-bg": {
+"hex": "#a8f0cc",
+"role": "bg",
+"night": "#a8f0cc",
+"lilies": "#7285e2",
+"warhol": "#df86d9"
+},
+"--c-a8f0cc-ink": {
+"hex": "#a8f0cc",
+"role": "ink",
+"night": "#a8f0cc",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-a8f0d8-bg": {
+"hex": "#a8f0d8",
+"role": "bg",
+"night": "#a8f0d8",
+"lilies": "#7285e2",
+"warhol": "#df86d9"
+},
+"--c-a8f0f0-bg": {
+"hex": "#a8f0f0",
+"role": "bg",
+"night": "#a8f0f0",
+"lilies": "#7285e2",
+"warhol": "#df86d9"
+},
+"--c-a8f0f0-ink": {
+"hex": "#a8f0f0",
+"role": "ink",
+"night": "#a8f0f0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-a95dff-ink": {
+"hex": "#a95dff",
+"role": "ink",
+"night": "#a95dff",
+"lilies": "#d260c0",
+"warhol": "#d786d1"
+},
+"--c-a97ff0-ink": {
+"hex": "#a97ff0",
+"role": "ink",
+"night": "#a97ff0",
+"lilies": "#d161c0",
+"warhol": "#db94d6"
+},
+"--c-a99ad6-ink": {
+"hex": "#a99ad6",
+"role": "ink",
+"night": "#a99ad6",
+"lilies": "#d161c1",
+"warhol": "#db94d7"
+},
+"--c-a99bdc-ink": {
+"hex": "#a99bdc",
+"role": "ink",
+"night": "#a99bdc",
+"lilies": "#d260c1",
+"warhol": "#dd9ad9"
+},
+"--c-aa151b-ink": {
+"hex": "#aa151b",
+"role": "ink",
+"night": "#aa151b",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-aa3f6c-bg": {
+"hex": "#aa3f6c",
+"role": "bg",
+"night": "#aa3f6c",
+"lilies": "#d161c1",
+"warhol": "#af3aa7"
+},
+"--c-aa3f6c-ink": {
+"hex": "#aa3f6c",
+"role": "ink",
+"night": "#aa3f6c",
+"lilies": "#d161c1",
+"warhol": "#af3aa7"
+},
+"--c-aa5a2b-bg": {
+"hex": "#aa5a2b",
+"role": "bg",
+"night": "#aa5a2b",
+"lilies": "#5f73db",
+"warhol": "#d577cd"
+},
+"--c-aa5a2b-ink": {
+"hex": "#aa5a2b",
+"role": "ink",
+"night": "#aa5a2b",
+"lilies": "#2c3471",
+"warhol": "#552959"
+},
+"--c-aa822c-bg": {
+"hex": "#aa822c",
+"role": "bg",
+"night": "#aa822c",
+"lilies": "#5e73db",
+"warhol": "#d577cd"
+},
+"--c-aa822c-ink": {
+"hex": "#aa822c",
+"role": "ink",
+"night": "#aa822c",
+"lilies": "#2c3471",
+"warhol": "#55295a"
+},
+"--c-aadcf8-ink": {
+"hex": "#aadcf8",
+"role": "ink",
+"night": "#aadcf8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-b04a9e-bg": {
+"hex": "#b04a9e",
+"role": "bg",
+"night": "#b04a9e",
+"lilies": "#d161c0",
+"warhol": "#bc3fb3"
+},
+"--c-b04a9e-ink": {
+"hex": "#b04a9e",
+"role": "ink",
+"night": "#b04a9e",
+"lilies": "#d161c0",
+"warhol": "#bc3fb3"
+},
+"--c-b06a3a-bg": {
+"hex": "#b06a3a",
+"role": "bg",
+"night": "#b06a3a",
+"lilies": "#d161c0",
+"warhol": "#b03ba8"
+},
+"--c-b07aff-bg": {
+"hex": "#b07aff",
+"role": "bg",
+"night": "#b07aff",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-b07aff-ink": {
+"hex": "#b07aff",
+"role": "ink",
+"night": "#b07aff",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-b08a1e-bg": {
+"hex": "#b08a1e",
+"role": "bg",
+"night": "#b08a1e",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-b09a86-ink": {
+"hex": "#b09a86",
+"role": "ink",
+"night": "#b09a86",
+"lilies": "#d161c1",
+"warhol": "#cd69c6"
+},
+"--c-b0b04e-bg": {
+"hex": "#b0b04e",
+"role": "bg",
+"night": "#b0b04e",
+"lilies": "#d161c0",
+"warhol": "#bf40b6"
+},
+"--c-b28ba6-ink": {
+"hex": "#b28ba6",
+"role": "ink",
+"night": "#b28ba6",
+"lilies": "#d260c1",
+"warhol": "#cf6ec8"
+},
+"--c-b2a6d8-ink": {
+"hex": "#b2a6d8",
+"role": "ink",
+"night": "#b2a6d8",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-b39ab0-bg": {
+"hex": "#b39ab0",
+"role": "bg",
+"night": "#b39ab0",
+"lilies": "#d161c1",
+"warhol": "#d37acd"
+},
+"--c-b39ab0-ink": {
+"hex": "#b39ab0",
+"role": "ink",
+"night": "#b39ab0",
+"lilies": "#d161c1",
+"warhol": "#d37acd"
+},
+"--c-b3a0c4-ink": {
+"hex": "#b3a0c4",
+"role": "ink",
+"night": "#b3a0c4",
+"lilies": "#d161c1",
+"warhol": "#d98bd3"
+},
+"--c-b48cff-ink": {
+"hex": "#b48cff",
+"role": "ink",
+"night": "#b48cff",
+"lilies": "#d161c1",
+"warhol": "#e2a9de"
+},
+"--c-b53d77-ink": {
+"hex": "#b53d77",
+"role": "ink",
+"night": "#b53d77",
+"lilies": "#d161c1",
+"warhol": "#b63dad"
+},
+"--c-b58aa6-ink": {
+"hex": "#b58aa6",
+"role": "ink",
+"night": "#b58aa6",
+"lilies": "#d161c0",
+"warhol": "#cf70c9"
+},
+"--c-b596ad-ink": {
+"hex": "#b596ad",
+"role": "ink",
+"night": "#b596ad",
+"lilies": "#d161c0",
+"warhol": "#d279cc"
+},
+"--c-b79ee0-ink": {
+"hex": "#b79ee0",
+"role": "ink",
+"night": "#b79ee0",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-b88cff-bg": {
+"hex": "#b88cff",
+"role": "bg",
+"night": "#b88cff",
+"lilies": "#d161c1",
+"warhol": "#e2a9de"
+},
+"--c-b88cff-ink": {
+"hex": "#b88cff",
+"role": "ink",
+"night": "#b88cff",
+"lilies": "#d161c1",
+"warhol": "#e2a9de"
+},
+"--c-b88fa8-ink": {
+"hex": "#b88fa8",
+"role": "ink",
+"night": "#b88fa8",
+"lilies": "#d161c1",
+"warhol": "#d176cb"
+},
+"--c-b89bb4-ink": {
+"hex": "#b89bb4",
+"role": "ink",
+"night": "#b89bb4",
+"lilies": "#d260c1",
+"warhol": "#d47fce"
+},
+"--c-b8a8e0-bg": {
+"hex": "#b8a8e0",
+"role": "bg",
+"night": "#b8a8e0",
+"lilies": "#d062c1",
+"warhol": "#e2a6de"
+},
+"--c-b8a8e0-ink": {
+"hex": "#b8a8e0",
+"role": "ink",
+"night": "#b8a8e0",
+"lilies": "#d062c1",
+"warhol": "#e2a6de"
+},
+"--c-b8bcc6-ink": {
+"hex": "#b8bcc6",
+"role": "ink",
+"night": "#b8bcc6",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-b8ffd9-bg": {
+"hex": "#b8ffd9",
+"role": "bg",
+"night": "#b8ffd9",
+"lilies": "#91a0e8",
+"warhol": "#e6a0e1"
+},
+"--c-b98aa6-ink": {
+"hex": "#b98aa6",
+"role": "ink",
+"night": "#b98aa6",
+"lilies": "#d161c1",
+"warhol": "#d073ca"
+},
+"--c-b98aa8-ink": {
+"hex": "#b98aa8",
+"role": "ink",
+"night": "#b98aa8",
+"lilies": "#d161c1",
+"warhol": "#d073ca"
+},
+"--c-b98ba3-ink": {
+"hex": "#b98ba3",
+"role": "ink",
+"night": "#b98ba3",
+"lilies": "#d161c0",
+"warhol": "#d173ca"
+},
+"--c-b98cff-bg": {
+"hex": "#b98cff",
+"role": "bg",
+"night": "#b98cff",
+"lilies": "#d161c1",
+"warhol": "#e2a9de"
+},
+"--c-b98cff-ink": {
+"hex": "#b98cff",
+"role": "ink",
+"night": "#b98cff",
+"lilies": "#d161c1",
+"warhol": "#e2a9de"
+},
+"--c-b99cf0-ink": {
+"hex": "#b99cf0",
+"role": "ink",
+"night": "#b99cf0",
+"lilies": "#d062c0",
+"warhol": "#e3aadf"
+},
+"--c-b9a3b4-ink": {
+"hex": "#b9a3b4",
+"role": "ink",
+"night": "#b9a3b4",
+"lilies": "#d260c0",
+"warhol": "#d786d1"
+},
+"--c-b9a6de-ink": {
+"hex": "#b9a6de",
+"role": "ink",
+"night": "#b9a6de",
+"lilies": "#d260c1",
+"warhol": "#e1a3dc"
+},
+"--c-b9b0cf-ink": {
+"hex": "#b9b0cf",
+"role": "ink",
+"night": "#b9b0cf",
+"lilies": "#d062c0",
+"warhol": "#dfa0db"
+},
+"--c-bcb0e0-ink": {
+"hex": "#bcb0e0",
+"role": "ink",
+"night": "#bcb0e0",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-bcb0e8-ink": {
+"hex": "#bcb0e8",
+"role": "ink",
+"night": "#bcb0e8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-bcd6ff-ink": {
+"hex": "#bcd6ff",
+"role": "ink",
+"night": "#bcd6ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-bcdcff-bg": {
+"hex": "#bcdcff",
+"role": "bg",
+"night": "#bcdcff",
+"lilies": "#95a3e9",
+"warhol": "#e7a4e2"
+},
+"--c-bfe3ff-ink": {
+"hex": "#bfe3ff",
+"role": "ink",
+"night": "#bfe3ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-bfe6ff-bg": {
+"hex": "#bfe6ff",
+"role": "bg",
+"night": "#bfe6ff",
+"lilies": "#98a6ea",
+"warhol": "#e8a6e3"
+},
+"--c-bfe6ff-ink": {
+"hex": "#bfe6ff",
+"role": "ink",
+"night": "#bfe6ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c01030-bg": {
+"hex": "#c01030",
+"role": "bg",
+"night": "#c01030",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-c0325a-bg": {
+"hex": "#c0325a",
+"role": "bg",
+"night": "#c0325a",
+"lilies": "#d161c1",
+"warhol": "#b53dad"
+},
+"--c-c04a52-bg": {
+"hex": "#c04a52",
+"role": "bg",
+"night": "#c04a52",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-c08a22-bg": {
+"hex": "#c08a22",
+"role": "bg",
+"night": "#c08a22",
+"lilies": "#d161c1",
+"warhol": "#aa39a2"
+},
+"--c-c08a22-ink": {
+"hex": "#c08a22",
+"role": "ink",
+"night": "#c08a22",
+"lilies": "#d161c1",
+"warhol": "#aa39a2"
+},
+"--c-c0aed4-bg": {
+"hex": "#c0aed4",
+"role": "bg",
+"night": "#c0aed4",
+"lilies": "#d161c0",
+"warhol": "#e0a2dc"
+},
+"--c-c0aed4-ink": {
+"hex": "#c0aed4",
+"role": "ink",
+"night": "#c0aed4",
+"lilies": "#d161c0",
+"warhol": "#e0a2dc"
+},
+"--c-c0d4ff-bg": {
+"hex": "#c0d4ff",
+"role": "bg",
+"night": "#c0d4ff",
+"lilies": "#99a7ea",
+"warhol": "#e8a7e3"
+},
+"--c-c23578-bg": {
+"hex": "#c23578",
+"role": "bg",
+"night": "#c23578",
+"lilies": "#d161c0",
+"warhol": "#b93eb1"
+},
+"--c-c39bf0-ink": {
+"hex": "#c39bf0",
+"role": "ink",
+"night": "#c39bf0",
+"lilies": "#d161c1",
+"warhol": "#e2a9de"
+},
+"--c-c3a6d0-ink": {
+"hex": "#c3a6d0",
+"role": "ink",
+"night": "#c3a6d0",
+"lilies": "#d162c0",
+"warhol": "#dd99d8"
+},
+"--c-c44a6e-bg": {
+"hex": "#c44a6e",
+"role": "bg",
+"night": "#c44a6e",
+"lilies": "#d161c0",
+"warhol": "#c34bbb"
+},
+"--c-c4607f-bg": {
+"hex": "#c4607f",
+"role": "bg",
+"night": "#c4607f",
+"lilies": "#d161c0",
+"warhol": "#c95bc1"
+},
+"--c-c4607f-ink": {
+"hex": "#c4607f",
+"role": "ink",
+"night": "#c4607f",
+"lilies": "#d161c0",
+"warhol": "#c95bc1"
+},
+"--c-c4691f-bg": {
+"hex": "#c4691f",
+"role": "bg",
+"night": "#c4691f",
+"lilies": "#d161c0",
+"warhol": "#aa39a3"
+},
+"--c-c47a00-ink": {
+"hex": "#c47a00",
+"role": "ink",
+"night": "#c47a00",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-c47a64-bg": {
+"hex": "#c47a64",
+"role": "bg",
+"night": "#c47a64",
+"lilies": "#d161c0",
+"warhol": "#ca5fc2"
+},
+"--c-c4884a-bg": {
+"hex": "#c4884a",
+"role": "bg",
+"night": "#c4884a",
+"lilies": "#d161c0",
+"warhol": "#c34bbb"
+},
+"--c-c4a0b4-ink": {
+"hex": "#c4a0b4",
+"role": "ink",
+"night": "#c4a0b4",
+"lilies": "#d161c1",
+"warhol": "#d98bd3"
+},
+"--c-c4d4e8-ink": {
+"hex": "#c4d4e8",
+"role": "ink",
+"night": "#c4d4e8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c6a6ff-ink": {
+"hex": "#c6a6ff",
+"role": "ink",
+"night": "#c6a6ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c77dff-ink": {
+"hex": "#c77dff",
+"role": "ink",
+"night": "#c77dff",
+"lilies": "#d161c0",
+"warhol": "#df9eda"
+},
+"--c-c77ea3-ink": {
+"hex": "#c77ea3",
+"role": "ink",
+"night": "#c77ea3",
+"lilies": "#d161c0",
+"warhol": "#d174cb"
+},
+"--c-c78ab0-ink": {
+"hex": "#c78ab0",
+"role": "ink",
+"night": "#c78ab0",
+"lilies": "#d161c1",
+"warhol": "#d47dce"
+},
+"--c-c78bff-ink": {
+"hex": "#c78bff",
+"role": "ink",
+"night": "#c78bff",
+"lilies": "#d161c0",
+"warhol": "#e2a8de"
+},
+"--c-c78fbf-ink": {
+"hex": "#c78fbf",
+"role": "ink",
+"night": "#c78fbf",
+"lilies": "#d161c1",
+"warhol": "#d581cf"
+},
+"--c-c79ab4-ink": {
+"hex": "#c79ab4",
+"role": "ink",
+"night": "#c79ab4",
+"lilies": "#d260c1",
+"warhol": "#d889d2"
+},
+"--c-c79bd8-ink": {
+"hex": "#c79bd8",
+"role": "ink",
+"night": "#c79bd8",
+"lilies": "#d260c0",
+"warhol": "#dc97d8"
+},
+"--c-c79bff-ink": {
+"hex": "#c79bff",
+"role": "ink",
+"night": "#c79bff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c7a9d6-ink": {
+"hex": "#c7a9d6",
+"role": "ink",
+"night": "#c7a9d6",
+"lilies": "#d062c0",
+"warhol": "#dfa0db"
+},
+"--c-c7adff-ink": {
+"hex": "#c7adff",
+"role": "ink",
+"night": "#c7adff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c7b2ff-bg": {
+"hex": "#c7b2ff",
+"role": "bg",
+"night": "#c7b2ff",
+"lilies": "#8b9be7",
+"warhol": "#e59be0"
+},
+"--c-c7b6e6-ink": {
+"hex": "#c7b6e6",
+"role": "ink",
+"night": "#c7b6e6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c8102e-ink": {
+"hex": "#c8102e",
+"role": "ink",
+"night": "#c8102e",
+"lilies": "#d161c1",
+"warhol": "#a2369b"
+},
+"--c-c89ab4-ink": {
+"hex": "#c89ab4",
+"role": "ink",
+"night": "#c89ab4",
+"lilies": "#d161c0",
+"warhol": "#d88ad3"
+},
+"--c-c8a6d8-ink": {
+"hex": "#c8a6d8",
+"role": "ink",
+"night": "#c8a6d8",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-c8a8ff-ink": {
+"hex": "#c8a8ff",
+"role": "ink",
+"night": "#c8a8ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c8b8c8-ink": {
+"hex": "#c8b8c8",
+"role": "ink",
+"night": "#c8b8c8",
+"lilies": "#d260c0",
+"warhol": "#e0a1db"
+},
+"--c-c94a86-bg": {
+"hex": "#c94a86",
+"role": "bg",
+"night": "#c94a86",
+"lilies": "#d161c0",
+"warhol": "#c44fbc"
+},
+"--c-c98aa8-ink": {
+"hex": "#c98aa8",
+"role": "ink",
+"night": "#c98aa8",
+"lilies": "#d260c1",
+"warhol": "#d47fce"
+},
+"--c-c98aff-ink": {
+"hex": "#c98aff",
+"role": "ink",
+"night": "#c98aff",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-c98ca6-bg": {
+"hex": "#c98ca6",
+"role": "bg",
+"night": "#c98ca6",
+"lilies": "#d161c0",
+"warhol": "#d580cf"
+},
+"--c-c98ca6-ink": {
+"hex": "#c98ca6",
+"role": "ink",
+"night": "#c98ca6",
+"lilies": "#d161c0",
+"warhol": "#d580cf"
+},
+"--c-c9a0b8-ink": {
+"hex": "#c9a0b8",
+"role": "ink",
+"night": "#c9a0b8",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-c9a23f-ink": {
+"hex": "#c9a23f",
+"role": "ink",
+"night": "#c9a23f",
+"lilies": "#d161c1",
+"warhol": "#c246b9"
+},
+"--c-c9a2c4-ink": {
+"hex": "#c9a2c4",
+"role": "ink",
+"night": "#c9a2c4",
+"lilies": "#d161c1",
+"warhol": "#da91d5"
+},
+"--c-c9a3b8-ink": {
+"hex": "#c9a3b8",
+"role": "ink",
+"night": "#c9a3b8",
+"lilies": "#d161c0",
+"warhol": "#db91d6"
+},
+"--c-c9a3ba-ink": {
+"hex": "#c9a3ba",
+"role": "ink",
+"night": "#c9a3ba",
+"lilies": "#d161c0",
+"warhol": "#db91d6"
+},
+"--c-c9a4bc-ink": {
+"hex": "#c9a4bc",
+"role": "ink",
+"night": "#c9a4bc",
+"lilies": "#d161c1",
+"warhol": "#db92d6"
+},
+"--c-c9a6b8-ink": {
+"hex": "#c9a6b8",
+"role": "ink",
+"night": "#c9a6b8",
+"lilies": "#d161c0",
+"warhol": "#db94d6"
+},
+"--c-c9a6bf-ink": {
+"hex": "#c9a6bf",
+"role": "ink",
+"night": "#c9a6bf",
+"lilies": "#d161c0",
+"warhol": "#db94d6"
+},
+"--c-c9a6c0-ink": {
+"hex": "#c9a6c0",
+"role": "ink",
+"night": "#c9a6c0",
+"lilies": "#d161c0",
+"warhol": "#db94d6"
+},
+"--c-c9a6c4-ink": {
+"hex": "#c9a6c4",
+"role": "ink",
+"night": "#c9a6c4",
+"lilies": "#d161c0",
+"warhol": "#db94d6"
+},
+"--c-c9a6d6-ink": {
+"hex": "#c9a6d6",
+"role": "ink",
+"night": "#c9a6d6",
+"lilies": "#d161c0",
+"warhol": "#df9eda"
+},
+"--c-c9a6ff-bg": {
+"hex": "#c9a6ff",
+"role": "bg",
+"night": "#c9a6ff",
+"lilies": "#7f90e5",
+"warhol": "#e291dc"
+},
+"--c-c9a6ff-ink": {
+"hex": "#c9a6ff",
+"role": "ink",
+"night": "#c9a6ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c9aee0-ink": {
+"hex": "#c9aee0",
+"role": "ink",
+"night": "#c9aee0",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-c9b2c9-ink": {
+"hex": "#c9b2c9",
+"role": "ink",
+"night": "#c9b2c9",
+"lilies": "#d260c1",
+"warhol": "#de9dda"
+},
+"--c-c9b6ee-bg": {
+"hex": "#c9b6ee",
+"role": "bg",
+"night": "#c9b6ee",
+"lilies": "#7e8fe4",
+"warhol": "#e290dc"
+},
+"--c-c9b6f0-ink": {
+"hex": "#c9b6f0",
+"role": "ink",
+"night": "#c9b6f0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-c9b8c4-ink": {
+"hex": "#c9b8c4",
+"role": "ink",
+"night": "#c9b8c4",
+"lilies": "#d161c1",
+"warhol": "#e0a1dc"
+},
+"--c-c9c9d6-bg": {
+"hex": "#c9c9d6",
+"role": "bg",
+"night": "#c9c9d6",
+"lilies": "#798be3",
+"warhol": "#e18cdb"
+},
+"--c-caa0bd-ink": {
+"hex": "#caa0bd",
+"role": "ink",
+"night": "#caa0bd",
+"lilies": "#d260c1",
+"warhol": "#da90d5"
+},
+"--c-caa0ff-ink": {
+"hex": "#caa0ff",
+"role": "ink",
+"night": "#caa0ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-caa23a-bg": {
+"hex": "#caa23a",
+"role": "bg",
+"night": "#caa23a",
+"lilies": "#d161c0",
+"warhol": "#c143b8"
+},
+"--c-caa6e6-bg": {
+"hex": "#caa6e6",
+"role": "bg",
+"night": "#caa6e6",
+"lilies": "#d062c0",
+"warhol": "#e3aadf"
+},
+"--c-cbb3c6-ink": {
+"hex": "#cbb3c6",
+"role": "ink",
+"night": "#cbb3c6",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-cbb6e6-bg": {
+"hex": "#cbb6e6",
+"role": "bg",
+"night": "#cbb6e6",
+"lilies": "#7688e3",
+"warhol": "#e089da"
+},
+"--c-cbb6e6-ink": {
+"hex": "#cbb6e6",
+"role": "ink",
+"night": "#cbb6e6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-cbb8d6-ink": {
+"hex": "#cbb8d6",
+"role": "ink",
+"night": "#cbb8d6",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-cd9bb6-ink": {
+"hex": "#cd9bb6",
+"role": "ink",
+"night": "#cd9bb6",
+"lilies": "#d161c0",
+"warhol": "#da8ed4"
+},
+"--c-cdb3cf-ink": {
+"hex": "#cdb3cf",
+"role": "ink",
+"night": "#cdb3cf",
+"lilies": "#d161c0",
+"warhol": "#e0a2dc"
+},
+"--c-cdb4ff-ink": {
+"hex": "#cdb4ff",
+"role": "ink",
+"night": "#cdb4ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-cdbfa6-bg": {
+"hex": "#cdbfa6",
+"role": "bg",
+"night": "#cdbfa6",
+"lilies": "#d260c0",
+"warhol": "#dc97d8"
+},
+"--c-cdbff2-ink": {
+"hex": "#cdbff2",
+"role": "ink",
+"night": "#cdbff2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-cdd2db-ink": {
+"hex": "#cdd2db",
+"role": "ink",
+"night": "#cdd2db",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ce2b37-ink": {
+"hex": "#ce2b37",
+"role": "ink",
+"night": "#ce2b37",
+"lilies": "#d161c1",
+"warhol": "#bb3eb2"
+},
+"--c-cf3f74-bg": {
+"hex": "#cf3f74",
+"role": "bg",
+"night": "#cf3f74",
+"lilies": "#d161c0",
+"warhol": "#c34bbb"
+},
+"--c-cfa8c4-ink": {
+"hex": "#cfa8c4",
+"role": "ink",
+"night": "#cfa8c4",
+"lilies": "#d260c1",
+"warhol": "#dd9ad9"
+},
+"--c-cfa9c2-ink": {
+"hex": "#cfa9c2",
+"role": "ink",
+"night": "#cfa9c2",
+"lilies": "#d161c1",
+"warhol": "#de9bd9"
+},
+"--c-cfc0cc-ink": {
+"hex": "#cfc0cc",
+"role": "ink",
+"night": "#cfc0cc",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-cfc4ec-ink": {
+"hex": "#cfc4ec",
+"role": "ink",
+"night": "#cfc4ec",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-cfe6ff-bg": {
+"hex": "#cfe6ff",
+"role": "bg",
+"night": "#cfe6ff",
+"lilies": "#a8b4ed",
+"warhol": "#ebb4e7"
+},
+"--c-cfe8ff-bg": {
+"hex": "#cfe8ff",
+"role": "bg",
+"night": "#cfe8ff",
+"lilies": "#a8b4ed",
+"warhol": "#ebb4e7"
+},
+"--c-d04f8f-ink": {
+"hex": "#d04f8f",
+"role": "ink",
+"night": "#d04f8f",
+"lilies": "#d161c1",
+"warhol": "#c758c0"
+},
+"--c-d06aff-ink": {
+"hex": "#d06aff",
+"role": "ink",
+"night": "#d06aff",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-d0708a-ink": {
+"hex": "#d0708a",
+"role": "ink",
+"night": "#d0708a",
+"lilies": "#d161c1",
+"warhol": "#d071c9"
+},
+"--c-d14a8c-bg": {
+"hex": "#d14a8c",
+"role": "bg",
+"night": "#d14a8c",
+"lilies": "#d161c0",
+"warhol": "#c655bf"
+},
+"--c-d1603c-bg": {
+"hex": "#d1603c",
+"role": "bg",
+"night": "#d1603c",
+"lilies": "#d161c0",
+"warhol": "#c34abb"
+},
+"--c-d2aae8-bg": {
+"hex": "#d2aae8",
+"role": "bg",
+"night": "#d2aae8",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-d2aae8-ink": {
+"hex": "#d2aae8",
+"role": "ink",
+"night": "#d2aae8",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-d45a94-bg": {
+"hex": "#d45a94",
+"role": "bg",
+"night": "#d45a94",
+"lilies": "#d161c0",
+"warhol": "#cb63c4"
+},
+"--c-d52b1e-ink": {
+"hex": "#d52b1e",
+"role": "ink",
+"night": "#d52b1e",
+"lilies": "#d161c1",
+"warhol": "#b63dae"
+},
+"--c-d59cb4-ink": {
+"hex": "#d59cb4",
+"role": "ink",
+"night": "#d59cb4",
+"lilies": "#d161c1",
+"warhol": "#dc95d7"
+},
+"--c-d6316f-bg": {
+"hex": "#d6316f",
+"role": "bg",
+"night": "#d6316f",
+"lilies": "#d161c0",
+"warhol": "#c146b9"
+},
+"--c-d66a7e-ink": {
+"hex": "#d66a7e",
+"role": "ink",
+"night": "#d66a7e",
+"lilies": "#d161c1",
+"warhol": "#d071c9"
+},
+"--c-d6abc4-ink": {
+"hex": "#d6abc4",
+"role": "ink",
+"night": "#d6abc4",
+"lilies": "#d161c1",
+"warhol": "#e0a1dc"
+},
+"--c-d6b2cb-ink": {
+"hex": "#d6b2cb",
+"role": "ink",
+"night": "#d6b2cb",
+"lilies": "#d062c1",
+"warhol": "#e2a6de"
+},
+"--c-d79433-bg": {
+"hex": "#d79433",
+"role": "bg",
+"night": "#d79433",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-d8a06a-ink": {
+"hex": "#d8a06a",
+"role": "ink",
+"night": "#d8a06a",
+"lilies": "#d161c0",
+"warhol": "#d072ca"
+},
+"--c-d8a87c-bg": {
+"hex": "#d8a87c",
+"role": "bg",
+"night": "#d8a87c",
+"lilies": "#d161c1",
+"warhol": "#d47fcf"
+},
+"--c-d8a9bb-bg": {
+"hex": "#d8a9bb",
+"role": "bg",
+"night": "#d8a9bb",
+"lilies": "#d161c1",
+"warhol": "#e0a1dc"
+},
+"--c-d8a9bb-ink": {
+"hex": "#d8a9bb",
+"role": "ink",
+"night": "#d8a9bb",
+"lilies": "#d161c1",
+"warhol": "#e0a1dc"
+},
+"--c-d8b8a8-ink": {
+"hex": "#d8b8a8",
+"role": "ink",
+"night": "#d8b8a8",
+"lilies": "#d260c0",
+"warhol": "#e0a1db"
+},
+"--c-d8b8d2-ink": {
+"hex": "#d8b8d2",
+"role": "ink",
+"night": "#d8b8d2",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-d8c4e8-ink": {
+"hex": "#d8c4e8",
+"role": "ink",
+"night": "#d8c4e8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-d8cff2-ink": {
+"hex": "#d8cff2",
+"role": "ink",
+"night": "#d8cff2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-d8e4f8-bg": {
+"hex": "#d8e4f8",
+"role": "bg",
+"night": "#d8e4f8",
+"lilies": "#aab5ed",
+"warhol": "#ecb6e8"
+},
+"--c-d8e4f8-ink": {
+"hex": "#d8e4f8",
+"role": "ink",
+"night": "#d8e4f8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-d8f0ff-bg": {
+"hex": "#d8f0ff",
+"role": "bg",
+"night": "#d8f0ff",
+"lilies": "#b1bbef",
+"warhol": "#edbcea"
+},
+"--c-d8fff0-bg": {
+"hex": "#d8fff0",
+"role": "bg",
+"night": "#d8fff0",
+"lilies": "#b1bbef",
+"warhol": "#edbcea"
+},
+"--c-d97706-ink": {
+"hex": "#d97706",
+"role": "ink",
+"night": "#d97706",
+"lilies": "#d161c1",
+"warhol": "#a738a0"
+},
+"--c-d98a24-bg": {
+"hex": "#d98a24",
+"role": "bg",
+"night": "#d98a24",
+"lilies": "#d161c1",
+"warhol": "#be3fb5"
+},
+"--c-d99f30-ink": {
+"hex": "#d99f30",
+"role": "ink",
+"night": "#d99f30",
+"lilies": "#d161c1",
+"warhol": "#c247b9"
+},
+"--c-d9a3ff-bg": {
+"hex": "#d9a3ff",
+"role": "bg",
+"night": "#d9a3ff",
+"lilies": "#7c8ee4",
+"warhol": "#e18fdc"
+},
+"--c-d9c89a-bg": {
+"hex": "#d9c89a",
+"role": "bg",
+"night": "#d9c89a",
+"lilies": "#d260c0",
+"warhol": "#dc97d8"
+},
+"--c-da291c-ink": {
+"hex": "#da291c",
+"role": "ink",
+"night": "#da291c",
+"lilies": "#d161c1",
+"warhol": "#b83db0"
+},
+"--c-dcb5ff-ink": {
+"hex": "#dcb5ff",
+"role": "ink",
+"night": "#dcb5ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-dce8ff-bg": {
+"hex": "#dce8ff",
+"role": "bg",
+"night": "#dce8ff",
+"lilies": "#b5bff0",
+"warhol": "#eebfeb"
+},
+"--c-dce8ff-ink": {
+"hex": "#dce8ff",
+"role": "ink",
+"night": "#dce8ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-dd0000-ink": {
+"hex": "#dd0000",
+"role": "ink",
+"night": "#dd0000",
+"lilies": "#d161c0",
+"warhol": "#a6379e"
+},
+"--c-ddccff-ink": {
+"hex": "#ddccff",
+"role": "ink",
+"night": "#ddccff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ddd0ff-bg": {
+"hex": "#ddd0ff",
+"role": "bg",
+"night": "#ddd0ff",
+"lilies": "#a9b4ed",
+"warhol": "#ebb5e8"
+},
+"--c-dfa55e-ink": {
+"hex": "#dfa55e",
+"role": "ink",
+"night": "#dfa55e",
+"lilies": "#d260c1",
+"warhol": "#cf6ec8"
+},
+"--c-e0407e-bg": {
+"hex": "#e0407e",
+"role": "bg",
+"night": "#e0407e",
+"lilies": "#d161c1",
+"warhol": "#c859c0"
+},
+"--c-e0743a-bg": {
+"hex": "#e0743a",
+"role": "bg",
+"night": "#e0743a",
+"lilies": "#d161c0",
+"warhol": "#c654be"
+},
+"--c-e0791c-ink": {
+"hex": "#e0791c",
+"role": "ink",
+"night": "#e0791c",
+"lilies": "#d161c1",
+"warhol": "#bd3fb5"
+},
+"--c-e08a3a-bg": {
+"hex": "#e08a3a",
+"role": "bg",
+"night": "#e08a3a",
+"lilies": "#d161c0",
+"warhol": "#c654be"
+},
+"--c-e0b0c8-ink": {
+"hex": "#e0b0c8",
+"role": "ink",
+"night": "#e0b0c8",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-e0bdd2-ink": {
+"hex": "#e0bdd2",
+"role": "ink",
+"night": "#e0bdd2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e0c98a-ink": {
+"hex": "#e0c98a",
+"role": "ink",
+"night": "#e0c98a",
+"lilies": "#d260c1",
+"warhol": "#da90d5"
+},
+"--c-e0fbff-bg": {
+"hex": "#e0fbff",
+"role": "bg",
+"night": "#e0fbff",
+"lilies": "#b9c2f1",
+"warhol": "#efc3ec"
+},
+"--c-e2d2e0-ink": {
+"hex": "#e2d2e0",
+"role": "ink",
+"night": "#e2d2e0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e3dcf2-ink": {
+"hex": "#e3dcf2",
+"role": "ink",
+"night": "#e3dcf2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e6b8d6-ink": {
+"hex": "#e6b8d6",
+"role": "ink",
+"night": "#e6b8d6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e6c6ff-ink": {
+"hex": "#e6c6ff",
+"role": "ink",
+"night": "#e6c6ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e6cfe0-ink": {
+"hex": "#e6cfe0",
+"role": "ink",
+"night": "#e6cfe0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e6e8ec-bg": {
+"hex": "#e6e8ec",
+"role": "bg",
+"night": "#e6e8ec",
+"lilies": "#acb7ee",
+"warhol": "#ecb8e9"
+},
+"--c-e79a84-ink": {
+"hex": "#e79a84",
+"role": "ink",
+"night": "#e79a84",
+"lilies": "#d161c1",
+"warhol": "#da91d5"
+},
+"--c-e79ac4-ink": {
+"hex": "#e79ac4",
+"role": "ink",
+"night": "#e79ac4",
+"lilies": "#d161c1",
+"warhol": "#e0a1dc"
+},
+"--c-e7b186-ink": {
+"hex": "#e7b186",
+"role": "ink",
+"night": "#e7b186",
+"lilies": "#d161c1",
+"warhol": "#db92d6"
+},
+"--c-e7c6d9-ink": {
+"hex": "#e7c6d9",
+"role": "ink",
+"night": "#e7c6d9",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e7c7d8-bg": {
+"hex": "#e7c7d8",
+"role": "bg",
+"night": "#e7c7d8",
+"lilies": "#8898e7",
+"warhol": "#e499df"
+},
+"--c-e7c9dc-ink": {
+"hex": "#e7c9dc",
+"role": "ink",
+"night": "#e7c9dc",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e85d04-ink": {
+"hex": "#e85d04",
+"role": "ink",
+"night": "#e85d04",
+"lilies": "#d161c1",
+"warhol": "#b13ba9"
+},
+"--c-e879a0-bg": {
+"hex": "#e879a0",
+"role": "bg",
+"night": "#e879a0",
+"lilies": "#d260c1",
+"warhol": "#d889d2"
+},
+"--c-e879a0-ink": {
+"hex": "#e879a0",
+"role": "ink",
+"night": "#e879a0",
+"lilies": "#d260c1",
+"warhol": "#d889d2"
+},
+"--c-e8b53a-bg": {
+"hex": "#e8b53a",
+"role": "bg",
+"night": "#e8b53a",
+"lilies": "#d260c1",
+"warhol": "#c85ac1"
+},
+"--c-e8b53a-ink": {
+"hex": "#e8b53a",
+"role": "ink",
+"night": "#e8b53a",
+"lilies": "#d260c1",
+"warhol": "#c85ac1"
+},
+"--c-e8b8d2-ink": {
+"hex": "#e8b8d2",
+"role": "ink",
+"night": "#e8b8d2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8c24a-bg": {
+"hex": "#e8c24a",
+"role": "bg",
+"night": "#e8c24a",
+"lilies": "#d161c1",
+"warhol": "#cc66c5"
+},
+"--c-e8c470-ink": {
+"hex": "#e8c470",
+"role": "ink",
+"night": "#e8c470",
+"lilies": "#d260c0",
+"warhol": "#d683d0"
+},
+"--c-e8c7d8-ink": {
+"hex": "#e8c7d8",
+"role": "ink",
+"night": "#e8c7d8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8c8d8-ink": {
+"hex": "#e8c8d8",
+"role": "ink",
+"night": "#e8c8d8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8c8dd-ink": {
+"hex": "#e8c8dd",
+"role": "ink",
+"night": "#e8c8dd",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8cbdb-ink": {
+"hex": "#e8cbdb",
+"role": "ink",
+"night": "#e8cbdb",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8d4f2-ink": {
+"hex": "#e8d4f2",
+"role": "ink",
+"night": "#e8d4f2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8d8e6-ink": {
+"hex": "#e8d8e6",
+"role": "ink",
+"night": "#e8d8e6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8d8ea-bg": {
+"hex": "#e8d8ea",
+"role": "bg",
+"night": "#e8d8ea",
+"lilies": "#9ca9eb",
+"warhol": "#e8aae4"
+},
+"--c-e8d8ee-ink": {
+"hex": "#e8d8ee",
+"role": "ink",
+"night": "#e8d8ee",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8d9ff-bg": {
+"hex": "#e8d9ff",
+"role": "bg",
+"night": "#e8d9ff",
+"lilies": "#b2bcef",
+"warhol": "#edbdea"
+},
+"--c-e8ddff-ink": {
+"hex": "#e8ddff",
+"role": "ink",
+"night": "#e8ddff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e8e0c0-bg": {
+"hex": "#e8e0c0",
+"role": "bg",
+"night": "#e8e0c0",
+"lilies": "#8293e5",
+"warhol": "#e394dd"
+},
+"--c-e8f4ff-bg": {
+"hex": "#e8f4ff",
+"role": "bg",
+"night": "#e8f4ff",
+"lilies": "#c1c9f2",
+"warhol": "#f1c9ee"
+},
+"--c-e8fff6-bg": {
+"hex": "#e8fff6",
+"role": "bg",
+"night": "#e8fff6",
+"lilies": "#c1c9f2",
+"warhol": "#f1c9ee"
+},
+"--c-e9b7cf-ink": {
+"hex": "#e9b7cf",
+"role": "ink",
+"night": "#e9b7cf",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-e9b9cf-ink": {
+"hex": "#e9b9cf",
+"role": "ink",
+"night": "#e9b9cf",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-eafff4-ink": {
+"hex": "#eafff4",
+"role": "ink",
+"night": "#eafff4",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ece2f5-ink": {
+"hex": "#ece2f5",
+"role": "ink",
+"night": "#ece2f5",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ece4f7-bg": {
+"hex": "#ece4f7",
+"role": "bg",
+"night": "#ece4f7",
+"lilies": "#b5bff0",
+"warhol": "#eebfeb"
+},
+"--c-ece4f7-ink": {
+"hex": "#ece4f7",
+"role": "ink",
+"night": "#ece4f7",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ece6f2-ink": {
+"hex": "#ece6f2",
+"role": "ink",
+"night": "#ece6f2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ef4135-ink": {
+"hex": "#ef4135",
+"role": "ink",
+"night": "#ef4135",
+"lilies": "#d161c0",
+"warhol": "#c95bc1"
+},
+"--c-ef912c-ink": {
+"hex": "#ef912c",
+"role": "ink",
+"night": "#ef912c",
+"lilies": "#d161c0",
+"warhol": "#c655bf"
+},
+"--c-efc196-bg": {
+"hex": "#efc196",
+"role": "bg",
+"night": "#efc196",
+"lilies": "#d161c1",
+"warhol": "#e1a4dd"
+},
+"--c-efd7e6-ink": {
+"hex": "#efd7e6",
+"role": "ink",
+"night": "#efd7e6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-efe4ef-ink": {
+"hex": "#efe4ef",
+"role": "ink",
+"night": "#efe4ef",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-efe6ff-bg": {
+"hex": "#efe6ff",
+"role": "bg",
+"night": "#efe6ff",
+"lilies": "#bfc7f2",
+"warhol": "#f0c8ee"
+},
+"--c-efe6ff-ink": {
+"hex": "#efe6ff",
+"role": "ink",
+"night": "#efe6ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-efeaff-bg": {
+"hex": "#efeaff",
+"role": "bg",
+"night": "#efeaff",
+"lilies": "#c3cbf3",
+"warhol": "#f1cbef"
+},
+"--c-efeaff-ink": {
+"hex": "#efeaff",
+"role": "ink",
+"night": "#efeaff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0559b-ink": {
+"hex": "#f0559b",
+"role": "ink",
+"night": "#f0559b",
+"lilies": "#d161c0",
+"warhol": "#d174cb"
+},
+"--c-f0a9cd-ink": {
+"hex": "#f0a9cd",
+"role": "ink",
+"night": "#f0a9cd",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0c860-ink": {
+"hex": "#f0c860",
+"role": "ink",
+"night": "#f0c860",
+"lilies": "#d161c1",
+"warhol": "#d37dce"
+},
+"--c-f0d9e5-ink": {
+"hex": "#f0d9e5",
+"role": "ink",
+"night": "#f0d9e5",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0dbe8-ink": {
+"hex": "#f0dbe8",
+"role": "ink",
+"night": "#f0dbe8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0dcc0-ink": {
+"hex": "#f0dcc0",
+"role": "ink",
+"night": "#f0dcc0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0dcea-ink": {
+"hex": "#f0dcea",
+"role": "ink",
+"night": "#f0dcea",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0dceb-bg": {
+"hex": "#f0dceb",
+"role": "bg",
+"night": "#f0dceb",
+"lilies": "#a6b2ed",
+"warhol": "#ebb2e7"
+},
+"--c-f0dceb-ink": {
+"hex": "#f0dceb",
+"role": "ink",
+"night": "#f0dceb",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0e6ef-bg": {
+"hex": "#f0e6ef",
+"role": "bg",
+"night": "#f0e6ef",
+"lilies": "#b0baef",
+"warhol": "#edbbea"
+},
+"--c-f0e6ef-ink": {
+"hex": "#f0e6ef",
+"role": "ink",
+"night": "#f0e6ef",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0e6ff-ink": {
+"hex": "#f0e6ff",
+"role": "ink",
+"night": "#f0e6ff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f0f4ff-bg": {
+"hex": "#f0f4ff",
+"role": "bg",
+"night": "#f0f4ff",
+"lilies": "#c9d0f4",
+"warhol": "#f3d0f0"
+},
+"--c-f1bf00-ink": {
+"hex": "#f1bf00",
+"role": "ink",
+"night": "#f1bf00",
+"lilies": "#d161c0",
+"warhol": "#b53cad"
+},
+"--c-f2a90f-ink": {
+"hex": "#f2a90f",
+"role": "ink",
+"night": "#f2a90f",
+"lilies": "#d161c1",
+"warhol": "#c041b7"
+},
+"--c-f2c258-ink": {
+"hex": "#f2c258",
+"role": "ink",
+"night": "#f2c258",
+"lilies": "#d161c1",
+"warhol": "#d278cc"
+},
+"--c-f2d894-ink": {
+"hex": "#f2d894",
+"role": "ink",
+"night": "#f2d894",
+"lilies": "#d161c0",
+"warhol": "#e1a5dd"
+},
+"--c-f2ecff-bg": {
+"hex": "#f2ecff",
+"role": "bg",
+"night": "#f2ecff",
+"lilies": "#c5ccf3",
+"warhol": "#f2cdef"
+},
+"--c-f2ecff-ink": {
+"hex": "#f2ecff",
+"role": "ink",
+"night": "#f2ecff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f3ecff-ink": {
+"hex": "#f3ecff",
+"role": "ink",
+"night": "#f3ecff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f3edfc-ink": {
+"hex": "#f3edfc",
+"role": "ink",
+"night": "#f3edfc",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f4c94f-ink": {
+"hex": "#f4c94f",
+"role": "ink",
+"night": "#f4c94f",
+"lilies": "#d161c1",
+"warhol": "#d073ca"
+},
+"--c-f4efff-bg": {
+"hex": "#f4efff",
+"role": "bg",
+"night": "#f4efff",
+"lilies": "#c8cff4",
+"warhol": "#f2cff0"
+},
+"--c-f4f8ff-bg": {
+"hex": "#f4f8ff",
+"role": "bg",
+"night": "#f4f8ff",
+"lilies": "#cdd3f5",
+"warhol": "#f4d4f1"
+},
+"--c-f545d8-ink": {
+"hex": "#f545d8",
+"role": "ink",
+"night": "#f545d8",
+"lilies": "#d161c1",
+"warhol": "#ce6cc7"
+},
+"--c-f59e0b-ink": {
+"hex": "#f59e0b",
+"role": "ink",
+"night": "#f59e0b",
+"lilies": "#d161c0",
+"warhol": "#c041b7"
+},
+"--c-f5c343-bg": {
+"hex": "#f5c343",
+"role": "bg",
+"night": "#f5c343",
+"lilies": "#d161c0",
+"warhol": "#ce6bc7"
+},
+"--c-f5c95c-ink": {
+"hex": "#f5c95c",
+"role": "ink",
+"night": "#f5c95c",
+"lilies": "#d161c1",
+"warhol": "#d47dce"
+},
+"--c-f5e3ef-ink": {
+"hex": "#f5e3ef",
+"role": "ink",
+"night": "#f5e3ef",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f6b8dd-bg": {
+"hex": "#f6b8dd",
+"role": "bg",
+"night": "#f6b8dd",
+"lilies": "#8898e7",
+"warhol": "#e499df"
+},
+"--c-f6ecff-ink": {
+"hex": "#f6ecff",
+"role": "ink",
+"night": "#f6ecff",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-f75ba4-ink": {
+"hex": "#f75ba4",
+"role": "ink",
+"night": "#f75ba4",
+"lilies": "#d161c0",
+"warhol": "#d47ece"
+},
+"--c-fd58a2-ink": {
+"hex": "#fd58a2",
+"role": "ink",
+"night": "#fd58a2",
+"lilies": "#d161c0",
+"warhol": "#d580cf"
+},
+"--c-ff0000-bg": {
+"hex": "#ff0000",
+"role": "bg",
+"night": "#ff0000",
+"lilies": "#d161c1",
+"warhol": "#bf40b7"
+},
+"--c-ff2a12-ink": {
+"hex": "#ff2a12",
+"role": "ink",
+"night": "#ff2a12",
+"lilies": "#d161c0",
+"warhol": "#c44dbc"
+},
+"--c-ff2a5a-bg": {
+"hex": "#ff2a5a",
+"role": "bg",
+"night": "#ff2a5a",
+"lilies": "#d161c1",
+"warhol": "#ca5fc3"
+},
+"--c-ff2f92-bg": {
+"hex": "#ff2f92",
+"role": "bg",
+"night": "#ff2f92",
+"lilies": "#d161c0",
+"warhol": "#cb63c4"
+},
+"--c-ff3a18-bg": {
+"hex": "#ff3a18",
+"role": "bg",
+"night": "#ff3a18",
+"lilies": "#d161c0",
+"warhol": "#c552bd"
+},
+"--c-ff3d6a-ink": {
+"hex": "#ff3d6a",
+"role": "ink",
+"night": "#ff3d6a",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ff3d7d-ink": {
+"hex": "#ff3d7d",
+"role": "ink",
+"night": "#ff3d7d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ff3ea0-bg": {
+"hex": "#ff3ea0",
+"role": "bg",
+"night": "#ff3ea0",
+"lilies": "#d260c1",
+"warhol": "#cf6ec8"
+},
+"--c-ff3ea0-ink": {
+"hex": "#ff3ea0",
+"role": "ink",
+"night": "#ff3ea0",
+"lilies": "#d260c1",
+"warhol": "#cf6ec8"
+},
+"--c-ff3f9e-bg": {
+"hex": "#ff3f9e",
+"role": "bg",
+"night": "#ff3f9e",
+"lilies": "#d161c0",
+"warhol": "#cf6fc9"
+},
+"--c-ff3f9e-ink": {
+"hex": "#ff3f9e",
+"role": "ink",
+"night": "#ff3f9e",
+"lilies": "#d161c0",
+"warhol": "#cf6fc9"
+},
+"--c-ff44b8-ink": {
+"hex": "#ff44b8",
+"role": "ink",
+"night": "#ff44b8",
+"lilies": "#d161c1",
+"warhol": "#d073ca"
+},
+"--c-ff4d5e-ink": {
+"hex": "#ff4d5e",
+"role": "ink",
+"night": "#ff4d5e",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-ff4d80-ink": {
+"hex": "#ff4d80",
+"role": "ink",
+"night": "#ff4d80",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-ff4f6a-bg": {
+"hex": "#ff4f6a",
+"role": "bg",
+"night": "#ff4f6a",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-ff4f96-ink": {
+"hex": "#ff4f96",
+"role": "ink",
+"night": "#ff4f96",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-ff4f9f-bg": {
+"hex": "#ff4f9f",
+"role": "bg",
+"night": "#ff4f9f",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-ff4fa0-bg": {
+"hex": "#ff4fa0",
+"role": "bg",
+"night": "#ff4fa0",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-ff4fa0-ink": {
+"hex": "#ff4fa0",
+"role": "ink",
+"night": "#ff4fa0",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-ff4fa3-bg": {
+"hex": "#ff4fa3",
+"role": "bg",
+"night": "#ff4fa3",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-ff58c2-ink": {
+"hex": "#ff58c2",
+"role": "ink",
+"night": "#ff58c2",
+"lilies": "#d161c1",
+"warhol": "#d582d0"
+},
+"--c-ff5a1a-ink": {
+"hex": "#ff5a1a",
+"role": "ink",
+"night": "#ff5a1a",
+"lilies": "#d161c1",
+"warhol": "#c653be"
+},
+"--c-ff5a2a-bg": {
+"hex": "#ff5a2a",
+"role": "bg",
+"night": "#ff5a2a",
+"lilies": "#d161c1",
+"warhol": "#ca5fc3"
+},
+"--c-ff5a5a-ink": {
+"hex": "#ff5a5a",
+"role": "ink",
+"night": "#ff5a5a",
+"lilies": "#d161c0",
+"warhol": "#d683d0"
+},
+"--c-ff5da8-bg": {
+"hex": "#ff5da8",
+"role": "bg",
+"night": "#ff5da8",
+"lilies": "#d260c0",
+"warhol": "#d786d1"
+},
+"--c-ff5f5f-ink": {
+"hex": "#ff5f5f",
+"role": "ink",
+"night": "#ff5f5f",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5f7a-ink": {
+"hex": "#ff5f7a",
+"role": "ink",
+"night": "#ff5f7a",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5f8a-ink": {
+"hex": "#ff5f8a",
+"role": "ink",
+"night": "#ff5f8a",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5f9e-bg": {
+"hex": "#ff5f9e",
+"role": "bg",
+"night": "#ff5f9e",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5f9e-ink": {
+"hex": "#ff5f9e",
+"role": "ink",
+"night": "#ff5f9e",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5fa0-bg": {
+"hex": "#ff5fa0",
+"role": "bg",
+"night": "#ff5fa0",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5fa0-ink": {
+"hex": "#ff5fa0",
+"role": "ink",
+"night": "#ff5fa0",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5fa8-bg": {
+"hex": "#ff5fa8",
+"role": "bg",
+"night": "#ff5fa8",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff5fa8-ink": {
+"hex": "#ff5fa8",
+"role": "ink",
+"night": "#ff5fa8",
+"lilies": "#d161c1",
+"warhol": "#d787d2"
+},
+"--c-ff6a1e-ink": {
+"hex": "#ff6a1e",
+"role": "ink",
+"night": "#ff6a1e",
+"lilies": "#d161c0",
+"warhol": "#c756bf"
+},
+"--c-ff6a2a-bg": {
+"hex": "#ff6a2a",
+"role": "bg",
+"night": "#ff6a2a",
+"lilies": "#d161c1",
+"warhol": "#ca5fc3"
+},
+"--c-ff6a6a-bg": {
+"hex": "#ff6a6a",
+"role": "bg",
+"night": "#ff6a6a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ff6b6b-bg": {
+"hex": "#ff6b6b",
+"role": "bg",
+"night": "#ff6b6b",
+"lilies": "#d260c1",
+"warhol": "#da90d5"
+},
+"--c-ff6b78-ink": {
+"hex": "#ff6b78",
+"role": "ink",
+"night": "#ff6b78",
+"lilies": "#d260c1",
+"warhol": "#da90d5"
+},
+"--c-ff6d6d-ink": {
+"hex": "#ff6d6d",
+"role": "ink",
+"night": "#ff6d6d",
+"lilies": "#d161c0",
+"warhol": "#db92d6"
+},
+"--c-ff6f8f-ink": {
+"hex": "#ff6f8f",
+"role": "ink",
+"night": "#ff6f8f",
+"lilies": "#d260c1",
+"warhol": "#db93d6"
+},
+"--c-ff6fb0-bg": {
+"hex": "#ff6fb0",
+"role": "bg",
+"night": "#ff6fb0",
+"lilies": "#d260c1",
+"warhol": "#db93d6"
+},
+"--c-ff6fb0-ink": {
+"hex": "#ff6fb0",
+"role": "ink",
+"night": "#ff6fb0",
+"lilies": "#d260c1",
+"warhol": "#db93d6"
+},
+"--c-ff6fc0-ink": {
+"hex": "#ff6fc0",
+"role": "ink",
+"night": "#ff6fc0",
+"lilies": "#d260c1",
+"warhol": "#db93d6"
+},
+"--c-ff741a-ink": {
+"hex": "#ff741a",
+"role": "ink",
+"night": "#ff741a",
+"lilies": "#d161c1",
+"warhol": "#c653be"
+},
+"--c-ff7a1a-ink": {
+"hex": "#ff7a1a",
+"role": "ink",
+"night": "#ff7a1a",
+"lilies": "#d161c1",
+"warhol": "#c653be"
+},
+"--c-ff7a1e-bg": {
+"hex": "#ff7a1e",
+"role": "bg",
+"night": "#ff7a1e",
+"lilies": "#d161c0",
+"warhol": "#c756bf"
+},
+"--c-ff7a2a-bg": {
+"hex": "#ff7a2a",
+"role": "bg",
+"night": "#ff7a2a",
+"lilies": "#d161c1",
+"warhol": "#ca5fc3"
+},
+"--c-ff7a4d-ink": {
+"hex": "#ff7a4d",
+"role": "ink",
+"night": "#ff7a4d",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-ff7a6e-bg": {
+"hex": "#ff7a6e",
+"role": "bg",
+"night": "#ff7a6e",
+"lilies": "#d161c1",
+"warhol": "#db92d6"
+},
+"--c-ff7a6e-ink": {
+"hex": "#ff7a6e",
+"role": "ink",
+"night": "#ff7a6e",
+"lilies": "#d161c1",
+"warhol": "#db92d6"
+},
+"--c-ff7a7a-bg": {
+"hex": "#ff7a7a",
+"role": "bg",
+"night": "#ff7a7a",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ff7a7a-ink": {
+"hex": "#ff7a7a",
+"role": "ink",
+"night": "#ff7a7a",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ff7a92-ink": {
+"hex": "#ff7a92",
+"role": "ink",
+"night": "#ff7a92",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ff7ab0-bg": {
+"hex": "#ff7ab0",
+"role": "bg",
+"night": "#ff7ab0",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ff7ab0-ink": {
+"hex": "#ff7ab0",
+"role": "ink",
+"night": "#ff7ab0",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ff7ab8-bg": {
+"hex": "#ff7ab8",
+"role": "bg",
+"night": "#ff7ab8",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ff7ab8-ink": {
+"hex": "#ff7ab8",
+"role": "ink",
+"night": "#ff7ab8",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ff7d9c-ink": {
+"hex": "#ff7d9c",
+"role": "ink",
+"night": "#ff7d9c",
+"lilies": "#d161c0",
+"warhol": "#df9eda"
+},
+"--c-ff7fb4-ink": {
+"hex": "#ff7fb4",
+"role": "ink",
+"night": "#ff7fb4",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-ff8080-bg": {
+"hex": "#ff8080",
+"role": "bg",
+"night": "#ff8080",
+"lilies": "#d062c0",
+"warhol": "#dfa0db"
+},
+"--c-ff85b8-ink": {
+"hex": "#ff85b8",
+"role": "ink",
+"night": "#ff85b8",
+"lilies": "#d260c1",
+"warhol": "#e1a3dc"
+},
+"--c-ff85be-ink": {
+"hex": "#ff85be",
+"role": "ink",
+"night": "#ff85be",
+"lilies": "#d260c1",
+"warhol": "#e1a3dc"
+},
+"--c-ff8a1e-ink": {
+"hex": "#ff8a1e",
+"role": "ink",
+"night": "#ff8a1e",
+"lilies": "#d161c0",
+"warhol": "#c756bf"
+},
+"--c-ff8a2e-ink": {
+"hex": "#ff8a2e",
+"role": "ink",
+"night": "#ff8a2e",
+"lilies": "#d161c1",
+"warhol": "#cb62c4"
+},
+"--c-ff8a3a-bg": {
+"hex": "#ff8a3a",
+"role": "bg",
+"night": "#ff8a3a",
+"lilies": "#d161c1",
+"warhol": "#ce6bc7"
+},
+"--c-ff8a3a-ink": {
+"hex": "#ff8a3a",
+"role": "ink",
+"night": "#ff8a3a",
+"lilies": "#d161c1",
+"warhol": "#ce6bc7"
+},
+"--c-ff8a3d-bg": {
+"hex": "#ff8a3d",
+"role": "bg",
+"night": "#ff8a3d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ff8a3d-ink": {
+"hex": "#ff8a3d",
+"role": "ink",
+"night": "#ff8a3d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ff8a4a-bg": {
+"hex": "#ff8a4a",
+"role": "bg",
+"night": "#ff8a4a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ff8a5c-ink": {
+"hex": "#ff8a5c",
+"role": "ink",
+"night": "#ff8a5c",
+"lilies": "#d161c0",
+"warhol": "#d685d1"
+},
+"--c-ff8ac0-bg": {
+"hex": "#ff8ac0",
+"role": "bg",
+"night": "#ff8ac0",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-ff8ac0-ink": {
+"hex": "#ff8ac0",
+"role": "ink",
+"night": "#ff8ac0",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-ff8ec4-ink": {
+"hex": "#ff8ec4",
+"role": "ink",
+"night": "#ff8ec4",
+"lilies": "#d260c0",
+"warhol": "#e3aadf"
+},
+"--c-ff8fa8-ink": {
+"hex": "#ff8fa8",
+"role": "ink",
+"night": "#ff8fa8",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fb8-bg": {
+"hex": "#ff8fb8",
+"role": "bg",
+"night": "#ff8fb8",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fbb-ink": {
+"hex": "#ff8fbb",
+"role": "ink",
+"night": "#ff8fbb",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fbd-ink": {
+"hex": "#ff8fbd",
+"role": "ink",
+"night": "#ff8fbd",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fc0-bg": {
+"hex": "#ff8fc0",
+"role": "bg",
+"night": "#ff8fc0",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fc0-ink": {
+"hex": "#ff8fc0",
+"role": "ink",
+"night": "#ff8fc0",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fc4-bg": {
+"hex": "#ff8fc4",
+"role": "bg",
+"night": "#ff8fc4",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fc4-ink": {
+"hex": "#ff8fc4",
+"role": "ink",
+"night": "#ff8fc4",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fd0-bg": {
+"hex": "#ff8fd0",
+"role": "bg",
+"night": "#ff8fd0",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff8fd0-ink": {
+"hex": "#ff8fd0",
+"role": "ink",
+"night": "#ff8fd0",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff90cf-ink": {
+"hex": "#ff90cf",
+"role": "ink",
+"night": "#ff90cf",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ff9a2a-bg": {
+"hex": "#ff9a2a",
+"role": "bg",
+"night": "#ff9a2a",
+"lilies": "#d161c1",
+"warhol": "#ca5fc3"
+},
+"--c-ff9a3a-bg": {
+"hex": "#ff9a3a",
+"role": "bg",
+"night": "#ff9a3a",
+"lilies": "#d161c1",
+"warhol": "#ce6bc7"
+},
+"--c-ff9a3d-ink": {
+"hex": "#ff9a3d",
+"role": "ink",
+"night": "#ff9a3d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ff9a5e-bg": {
+"hex": "#ff9a5e",
+"role": "bg",
+"night": "#ff9a5e",
+"lilies": "#d161c1",
+"warhol": "#d786d1"
+},
+"--c-ff9a6e-ink": {
+"hex": "#ff9a6e",
+"role": "ink",
+"night": "#ff9a6e",
+"lilies": "#d161c1",
+"warhol": "#db92d6"
+},
+"--c-ff9a9a-ink": {
+"hex": "#ff9a9a",
+"role": "ink",
+"night": "#ff9a9a",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ff9ac8-bg": {
+"hex": "#ff9ac8",
+"role": "bg",
+"night": "#ff9ac8",
+"lilies": "#7386e2",
+"warhol": "#df87d9"
+},
+"--c-ff9ad0-bg": {
+"hex": "#ff9ad0",
+"role": "bg",
+"night": "#ff9ad0",
+"lilies": "#7386e2",
+"warhol": "#df87d9"
+},
+"--c-ff9ad0-ink": {
+"hex": "#ff9ad0",
+"role": "ink",
+"night": "#ff9ad0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ff9db4-bg": {
+"hex": "#ff9db4",
+"role": "bg",
+"night": "#ff9db4",
+"lilies": "#7688e3",
+"warhol": "#e089da"
+},
+"--c-ff9dc6-ink": {
+"hex": "#ff9dc6",
+"role": "ink",
+"night": "#ff9dc6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ff9ec4-bg": {
+"hex": "#ff9ec4",
+"role": "bg",
+"night": "#ff9ec4",
+"lilies": "#7789e3",
+"warhol": "#e08ada"
+},
+"--c-ff9ec6-bg": {
+"hex": "#ff9ec6",
+"role": "bg",
+"night": "#ff9ec6",
+"lilies": "#7789e3",
+"warhol": "#e08ada"
+},
+"--c-ff9ec6-ink": {
+"hex": "#ff9ec6",
+"role": "ink",
+"night": "#ff9ec6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ff9ec9-ink": {
+"hex": "#ff9ec9",
+"role": "ink",
+"night": "#ff9ec9",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ff9f1c-ink": {
+"hex": "#ff9f1c",
+"role": "ink",
+"night": "#ff9f1c",
+"lilies": "#d161c0",
+"warhol": "#c655bf"
+},
+"--c-ff9fc6-ink": {
+"hex": "#ff9fc6",
+"role": "ink",
+"night": "#ff9fc6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ff9fce-ink": {
+"hex": "#ff9fce",
+"role": "ink",
+"night": "#ff9fce",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffa24a-ink": {
+"hex": "#ffa24a",
+"role": "ink",
+"night": "#ffa24a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffa8c0-bg": {
+"hex": "#ffa8c0",
+"role": "bg",
+"night": "#ffa8c0",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
+},
+"--c-ffae6a-ink": {
+"hex": "#ffae6a",
+"role": "ink",
+"night": "#ffae6a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ffb02e-ink": {
+"hex": "#ffb02e",
+"role": "ink",
+"night": "#ffb02e",
+"lilies": "#d161c1",
+"warhol": "#cb62c4"
+},
+"--c-ffb066-bg": {
+"hex": "#ffb066",
+"role": "bg",
+"night": "#ffb066",
+"lilies": "#d260c0",
+"warhol": "#d98cd4"
+},
+"--c-ffb0cc-ink": {
+"hex": "#ffb0cc",
+"role": "ink",
+"night": "#ffb0cc",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffb0cf-ink": {
+"hex": "#ffb0cf",
+"role": "ink",
+"night": "#ffb0cf",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffb0db-bg": {
+"hex": "#ffb0db",
+"role": "bg",
+"night": "#ffb0db",
+"lilies": "#8999e7",
+"warhol": "#e49adf"
+},
+"--c-ffb0e8-bg": {
+"hex": "#ffb0e8",
+"role": "bg",
+"night": "#ffb0e8",
+"lilies": "#8999e7",
+"warhol": "#e49adf"
+},
+"--c-ffb14a-bg": {
+"hex": "#ffb14a",
+"role": "bg",
+"night": "#ffb14a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffb23a-ink": {
+"hex": "#ffb23a",
+"role": "ink",
+"night": "#ffb23a",
+"lilies": "#d161c1",
+"warhol": "#ce6bc7"
+},
+"--c-ffb24a-bg": {
+"hex": "#ffb24a",
+"role": "bg",
+"night": "#ffb24a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffb27a-ink": {
+"hex": "#ffb27a",
+"role": "ink",
+"night": "#ffb27a",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ffb3d6-ink": {
+"hex": "#ffb3d6",
+"role": "ink",
+"night": "#ffb3d6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffb3d9-bg": {
+"hex": "#ffb3d9",
+"role": "bg",
+"night": "#ffb3d9",
+"lilies": "#8c9be7",
+"warhol": "#e59ce0"
+},
+"--c-ffb3d9-ink": {
+"hex": "#ffb3d9",
+"role": "ink",
+"night": "#ffb3d9",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffb43d-bg": {
+"hex": "#ffb43d",
+"role": "bg",
+"night": "#ffb43d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ffb43d-ink": {
+"hex": "#ffb43d",
+"role": "ink",
+"night": "#ffb43d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ffb45e-ink": {
+"hex": "#ffb45e",
+"role": "ink",
+"night": "#ffb45e",
+"lilies": "#d161c1",
+"warhol": "#d786d1"
+},
+"--c-ffb46a-bg": {
+"hex": "#ffb46a",
+"role": "bg",
+"night": "#ffb46a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ffb6d6-bg": {
+"hex": "#ffb6d6",
+"role": "bg",
+"night": "#ffb6d6",
+"lilies": "#8f9ee8",
+"warhol": "#e69fe1"
+},
+"--c-ffb84a-bg": {
+"hex": "#ffb84a",
+"role": "bg",
+"night": "#ffb84a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffb84d-bg": {
+"hex": "#ffb84d",
+"role": "bg",
+"night": "#ffb84d",
+"lilies": "#d161c0",
+"warhol": "#d37acd"
+},
+"--c-ffb894-bg": {
+"hex": "#ffb894",
+"role": "bg",
+"night": "#ffb894",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ffb8d6-ink": {
+"hex": "#ffb8d6",
+"role": "ink",
+"night": "#ffb8d6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffb8d8-bg": {
+"hex": "#ffb8d8",
+"role": "bg",
+"night": "#ffb8d8",
+"lilies": "#91a0e8",
+"warhol": "#e6a0e1"
+},
+"--c-ffb8d8-ink": {
+"hex": "#ffb8d8",
+"role": "ink",
+"night": "#ffb8d8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffb9d6-ink": {
+"hex": "#ffb9d6",
+"role": "ink",
+"night": "#ffb9d6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffc0d8-bg": {
+"hex": "#ffc0d8",
+"role": "bg",
+"night": "#ffc0d8",
+"lilies": "#99a7ea",
+"warhol": "#e8a7e3"
+},
+"--c-ffc0e2-bg": {
+"hex": "#ffc0e2",
+"role": "bg",
+"night": "#ffc0e2",
+"lilies": "#99a7ea",
+"warhol": "#e8a7e3"
+},
+"--c-ffc24a-ink": {
+"hex": "#ffc24a",
+"role": "ink",
+"night": "#ffc24a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffc41f-bg": {
+"hex": "#ffc41f",
+"role": "bg",
+"night": "#ffc41f",
+"lilies": "#d161c0",
+"warhol": "#c757bf"
+},
+"--c-ffc41f-ink": {
+"hex": "#ffc41f",
+"role": "ink",
+"night": "#ffc41f",
+"lilies": "#d161c0",
+"warhol": "#c757bf"
+},
+"--c-ffc4dc-bg": {
+"hex": "#ffc4dc",
+"role": "bg",
+"night": "#ffc4dc",
+"lilies": "#9daaeb",
+"warhol": "#e9abe5"
+},
+"--c-ffc4e2-bg": {
+"hex": "#ffc4e2",
+"role": "bg",
+"night": "#ffc4e2",
+"lilies": "#9daaeb",
+"warhol": "#e9abe5"
+},
+"--c-ffc4e2-ink": {
+"hex": "#ffc4e2",
+"role": "ink",
+"night": "#ffc4e2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffc83d-bg": {
+"hex": "#ffc83d",
+"role": "bg",
+"night": "#ffc83d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ffc83d-ink": {
+"hex": "#ffc83d",
+"role": "ink",
+"night": "#ffc83d",
+"lilies": "#d161c1",
+"warhol": "#cf6ec8"
+},
+"--c-ffc8a8-bg": {
+"hex": "#ffc8a8",
+"role": "bg",
+"night": "#ffc8a8",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
+},
+"--c-ffc8a8-ink": {
+"hex": "#ffc8a8",
+"role": "ink",
+"night": "#ffc8a8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffc8e0-ink": {
+"hex": "#ffc8e0",
+"role": "ink",
+"night": "#ffc8e0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffcc8f-bg": {
+"hex": "#ffcc8f",
+"role": "bg",
+"night": "#ffcc8f",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ffcc8f-ink": {
+"hex": "#ffcc8f",
+"role": "ink",
+"night": "#ffcc8f",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ffce00-ink": {
+"hex": "#ffce00",
+"role": "ink",
+"night": "#ffce00",
+"lilies": "#d161c1",
+"warhol": "#bf40b7"
+},
+"--c-ffcf3a-ink": {
+"hex": "#ffcf3a",
+"role": "ink",
+"night": "#ffcf3a",
+"lilies": "#d161c1",
+"warhol": "#ce6bc7"
+},
+"--c-ffcf4a-bg": {
+"hex": "#ffcf4a",
+"role": "bg",
+"night": "#ffcf4a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffcf6a-ink": {
+"hex": "#ffcf6a",
+"role": "ink",
+"night": "#ffcf6a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ffcf9a-ink": {
+"hex": "#ffcf9a",
+"role": "ink",
+"night": "#ffcf9a",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd06a-ink": {
+"hex": "#ffd06a",
+"role": "ink",
+"night": "#ffd06a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ffd08f-bg": {
+"hex": "#ffd08f",
+"role": "bg",
+"night": "#ffd08f",
+"lilies": "#d161c1",
+"warhol": "#e3abdf"
+},
+"--c-ffd0e4-bg": {
+"hex": "#ffd0e4",
+"role": "bg",
+"night": "#ffd0e4",
+"lilies": "#a9b4ed",
+"warhol": "#ebb5e8"
+},
+"--c-ffd0e6-bg": {
+"hex": "#ffd0e6",
+"role": "bg",
+"night": "#ffd0e6",
+"lilies": "#a9b4ed",
+"warhol": "#ebb5e8"
+},
+"--c-ffd0e6-ink": {
+"hex": "#ffd0e6",
+"role": "ink",
+"night": "#ffd0e6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd0ec-bg": {
+"hex": "#ffd0ec",
+"role": "bg",
+"night": "#ffd0ec",
+"lilies": "#a9b4ed",
+"warhol": "#ebb5e8"
+},
+"--c-ffd100-ink": {
+"hex": "#ffd100",
+"role": "ink",
+"night": "#ffd100",
+"lilies": "#d161c1",
+"warhol": "#bf40b7"
+},
+"--c-ffd23a-bg": {
+"hex": "#ffd23a",
+"role": "bg",
+"night": "#ffd23a",
+"lilies": "#d161c1",
+"warhol": "#ce6bc7"
+},
+"--c-ffd24a-bg": {
+"hex": "#ffd24a",
+"role": "bg",
+"night": "#ffd24a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffd24a-ink": {
+"hex": "#ffd24a",
+"role": "ink",
+"night": "#ffd24a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffd257-ink": {
+"hex": "#ffd257",
+"role": "ink",
+"night": "#ffd257",
+"lilies": "#d161c1",
+"warhol": "#d581cf"
+},
+"--c-ffd54a-bg": {
+"hex": "#ffd54a",
+"role": "bg",
+"night": "#ffd54a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffd54a-ink": {
+"hex": "#ffd54a",
+"role": "ink",
+"night": "#ffd54a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffd6d6-bg": {
+"hex": "#ffd6d6",
+"role": "bg",
+"night": "#ffd6d6",
+"lilies": "#afbaee",
+"warhol": "#edbae9"
+},
+"--c-ffd6ea-bg": {
+"hex": "#ffd6ea",
+"role": "bg",
+"night": "#ffd6ea",
+"lilies": "#afbaee",
+"warhol": "#edbae9"
+},
+"--c-ffd6ea-ink": {
+"hex": "#ffd6ea",
+"role": "ink",
+"night": "#ffd6ea",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd76a-ink": {
+"hex": "#ffd76a",
+"role": "ink",
+"night": "#ffd76a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ffd7ea-ink": {
+"hex": "#ffd7ea",
+"role": "ink",
+"night": "#ffd7ea",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd7f0-ink": {
+"hex": "#ffd7f0",
+"role": "ink",
+"night": "#ffd7f0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd98a-ink": {
+"hex": "#ffd98a",
+"role": "ink",
+"night": "#ffd98a",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-ffd9a0-ink": {
+"hex": "#ffd9a0",
+"role": "ink",
+"night": "#ffd9a0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd9a8-bg": {
+"hex": "#ffd9a8",
+"role": "bg",
+"night": "#ffd9a8",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
+},
+"--c-ffd9b4-ink": {
+"hex": "#ffd9b4",
+"role": "ink",
+"night": "#ffd9b4",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd9de-ink": {
+"hex": "#ffd9de",
+"role": "ink",
+"night": "#ffd9de",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd9ea-bg": {
+"hex": "#ffd9ea",
+"role": "bg",
+"night": "#ffd9ea",
+"lilies": "#b2bcef",
+"warhol": "#edbdea"
+},
+"--c-ffd9ea-ink": {
+"hex": "#ffd9ea",
+"role": "ink",
+"night": "#ffd9ea",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffd9ec-bg": {
+"hex": "#ffd9ec",
+"role": "bg",
+"night": "#ffd9ec",
+"lilies": "#b2bcef",
+"warhol": "#edbdea"
+},
+"--c-ffd9ec-ink": {
+"hex": "#ffd9ec",
+"role": "ink",
+"night": "#ffd9ec",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffdca6-ink": {
+"hex": "#ffdca6",
+"role": "ink",
+"night": "#ffdca6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffdca8-bg": {
+"hex": "#ffdca8",
+"role": "bg",
+"night": "#ffdca8",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
+},
+"--c-ffdcef-bg": {
+"hex": "#ffdcef",
+"role": "bg",
+"night": "#ffdcef",
+"lilies": "#b5bff0",
+"warhol": "#eebfeb"
+},
+"--c-ffdcef-ink": {
+"hex": "#ffdcef",
+"role": "ink",
+"night": "#ffdcef",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffe06a-ink": {
+"hex": "#ffe06a",
+"role": "ink",
+"night": "#ffe06a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ffe07a-ink": {
+"hex": "#ffe07a",
+"role": "ink",
+"night": "#ffe07a",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ffe08a-bg": {
+"hex": "#ffe08a",
+"role": "bg",
+"night": "#ffe08a",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-ffe08a-ink": {
+"hex": "#ffe08a",
+"role": "ink",
+"night": "#ffe08a",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-ffe0a8-bg": {
+"hex": "#ffe0a8",
+"role": "bg",
+"night": "#ffe0a8",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
+},
+"--c-ffe0b0-bg": {
+"hex": "#ffe0b0",
+"role": "bg",
+"night": "#ffe0b0",
+"lilies": "#8999e7",
+"warhol": "#e49adf"
+},
+"--c-ffe0ea-bg": {
+"hex": "#ffe0ea",
+"role": "bg",
+"night": "#ffe0ea",
+"lilies": "#b9c2f1",
+"warhol": "#efc3ec"
+},
+"--c-ffe14a-bg": {
+"hex": "#ffe14a",
+"role": "bg",
+"night": "#ffe14a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffe14a-ink": {
+"hex": "#ffe14a",
+"role": "ink",
+"night": "#ffe14a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ffe27a-bg": {
+"hex": "#ffe27a",
+"role": "bg",
+"night": "#ffe27a",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ffe27a-ink": {
+"hex": "#ffe27a",
+"role": "ink",
+"night": "#ffe27a",
+"lilies": "#d161c0",
+"warhol": "#de9bd9"
+},
+"--c-ffe2db-ink": {
+"hex": "#ffe2db",
+"role": "ink",
+"night": "#ffe2db",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffe3a0-ink": {
+"hex": "#ffe3a0",
+"role": "ink",
+"night": "#ffe3a0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffe3f1-bg": {
+"hex": "#ffe3f1",
+"role": "bg",
+"night": "#ffe3f1",
+"lilies": "#bcc5f1",
+"warhol": "#f0c5ed"
+},
+"--c-ffe3f1-ink": {
+"hex": "#ffe3f1",
+"role": "ink",
+"night": "#ffe3f1",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffe4c0-bg": {
+"hex": "#ffe4c0",
+"role": "bg",
+"night": "#ffe4c0",
+"lilies": "#99a7ea",
+"warhol": "#e8a7e3"
+},
+"--c-ffe4d8-bg": {
+"hex": "#ffe4d8",
+"role": "bg",
+"night": "#ffe4d8",
+"lilies": "#b1bbef",
+"warhol": "#edbcea"
+},
+"--c-ffe4ef-bg": {
+"hex": "#ffe4ef",
+"role": "bg",
+"night": "#ffe4ef",
+"lilies": "#bdc6f1",
+"warhol": "#f0c6ed"
+},
+"--c-ffe58a-bg": {
+"hex": "#ffe58a",
+"role": "bg",
+"night": "#ffe58a",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-ffe6b0-bg": {
+"hex": "#ffe6b0",
+"role": "bg",
+"night": "#ffe6b0",
+"lilies": "#8999e7",
+"warhol": "#e49adf"
+},
+"--c-ffe6f2-ink": {
+"hex": "#ffe6f2",
+"role": "ink",
+"night": "#ffe6f2",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffe6f4-ink": {
+"hex": "#ffe6f4",
+"role": "ink",
+"night": "#ffe6f4",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffe79a-bg": {
+"hex": "#ffe79a",
+"role": "bg",
+"night": "#ffe79a",
+"lilies": "#7386e2",
+"warhol": "#df87d9"
+},
+"--c-ffe8f2-bg": {
+"hex": "#ffe8f2",
+"role": "bg",
+"night": "#ffe8f2",
+"lilies": "#c1c9f2",
+"warhol": "#f1c9ee"
+},
+"--c-ffe9a3-bg": {
+"hex": "#ffe9a3",
+"role": "bg",
+"night": "#ffe9a3",
+"lilies": "#7c8ee4",
+"warhol": "#e18fdc"
+},
+"--c-ffe9a8-ink": {
+"hex": "#ffe9a8",
+"role": "ink",
+"night": "#ffe9a8",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-ffe9f4-bg": {
+"hex": "#ffe9f4",
+"role": "bg",
+"night": "#ffe9f4",
+"lilies": "#c2caf2",
+"warhol": "#f1caee"
+},
+"--c-ffe9f4-ink": {
+"hex": "#ffe9f4",
+"role": "ink",
+"night": "#ffe9f4",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-fff0a0-ink": {
+"hex": "#fff0a0",
+"role": "ink",
+"night": "#fff0a0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-fff0d8-bg": {
+"hex": "#fff0d8",
+"role": "bg",
+"night": "#fff0d8",
+"lilies": "#b1bbef",
+"warhol": "#edbcea"
+},
+"--c-fff2f9-bg": {
+"hex": "#fff2f9",
+"role": "bg",
+"night": "#fff2f9",
+"lilies": "#cbd2f4",
+"warhol": "#f3d2f1"
+},
+"--c-fff2f9-ink": {
+"hex": "#fff2f9",
+"role": "ink",
+"night": "#fff2f9",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-fff3c0-ink": {
+"hex": "#fff3c0",
+"role": "ink",
+"night": "#fff3c0",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-fff3fb-bg": {
+"hex": "#fff3fb",
+"role": "bg",
+"night": "#fff3fb",
+"lilies": "#ccd3f4",
+"warhol": "#f3d3f1"
+},
+"--c-fff4d6-ink": {
+"hex": "#fff4d6",
+"role": "ink",
+"night": "#fff4d6",
+"lilies": "#242a61",
+"warhol": "#401c47"
+},
+"--c-fff6e6-bg": {
+"hex": "#fff6e6",
+"role": "bg",
+"night": "#fff6e6",
+"lilies": "#bfc7f2",
+"warhol": "#f0c8ee"
+},
+"--c-ffffff-bg": {
+"hex": "#ffffff",
+"role": "bg",
+"night": "#ffffff",
+"lilies": "#ffffff",
+"warhol": "#ffffff"
+},
+"--c-ffffff-ink": {
+"hex": "#ffffff",
+"role": "ink",
+"night": "#ffffff",
+"lilies": "#ffffff",
+"warhol": "#ffffff"
+}
+}

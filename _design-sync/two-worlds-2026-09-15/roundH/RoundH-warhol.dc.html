@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/alter-design-system-202b0364-d17d-4d34-949f-a5799dc3b3c6/tokens/fonts.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Jost:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+  <style>
+    body { margin:0; background:#14060f; }
+    a { color:#ff8fc0; } a:hover { color:#ffb3d4; }
+    @keyframes rhBreathe { 0%,100% { transform:scale(1); } 50% { transform:scale(1.055); } }
+    @keyframes jGlint { 0% { transform:translateX(-135%) rotate(0.001deg); } 55%, 100% { transform:translateX(135%) rotate(0.001deg); } }
+    @keyframes jpAlive { 0%,100% { transform:scale(1); } 50% { transform:scale(1.04); } }
+  </style>
+</helmet>
+<section style="padding:30px 30px 80px; font-family:'Jost',sans-serif; display:flex; flex-direction:column; gap:30px; background:#14060f; min-height:100vh; box-sizing:border-box; width:1360px;">
+  <div style="display:flex; flex-direction:column; gap:6px;">
+    <div style="font-size:11px; font-weight:800; letter-spacing:2px; color:#ff8fc0;">ROUND H &middot; TWO WORLDS</div>
+    <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:26px; color:#fff2f9; line-height:1;">Your pick, across the whole app</div>
+    <div style="font-size:12.5px; font-weight:600; color:#9a6a86; max-width:920px; text-wrap:pretty;">Home and the tool library as before, plus the three screens the palette hasn&rsquo;t touched yet: the open stack sheet, the planner, and the breathing player. Both of your choices live in this one page &mdash; flip the <b>world</b> tweak to swap every screen at once.</div>
+    <div style="display:flex; align-items:center; gap:18px; margin-top:10px; flex-wrap:wrap;">
+      <span style="padding:7px 16px; border-radius:12px; background:#ff4fa0; border:2.5px solid #160510; box-shadow:0 3px 0 #160510; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#160510;">{{worldName}}</span>
+      <sc-for list="{{legend}}" as="l" hint-placeholder-count="4">
+        <span style="display:flex; align-items:center; gap:7px;">
+          <span style="width:20px; height:20px; border-radius:50%; background:{{l.c}}; border:2px solid #160510;"></span>
+          <span style="font-size:10.5px; font-weight:800; letter-spacing:1.4px; color:#8a6d85;">{{l.k}}</span>
+        </span>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:26px;">
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">home</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H home — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:18px 20px 0; position:relative;">
+          <div style="flex:none; height:28px;"></div>
+          <div style="flex:none; margin-top:12px; transform:translateY(13px);">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <sc-for list="{{p.bars}}" as="b" hint-placeholder-count="5"><span style="flex:1; height:13px; border-radius:999px; background:{{b}};"></span></sc-for>
+              <i class="ti ti-chevron-right" style="font-size:15px; color:{{p.inkSoft}};"></i>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(5,1fr); gap:9px; margin-top:11px; margin-right:24px;">
+              <sc-for list="{{p.streakIcons}}" as="si" hint-placeholder-count="5"><i class="ti {{si.i}}" style="font-size:17px; color:{{si.c}}; text-align:center;"></i></sc-for>
+            </div>
+          </div>
+          <div style="flex:none; text-align:center; margin-top:56px; font-weight:800; font-size:15px; letter-spacing:6px; color:{{p.inkSoft}};">SUNDAY · AUGUST 2</div>
+          <div style="flex:none; display:flex; justify-content:center; margin-top:63px; transform:scale(0.91);">
+            <button style="width:198px; height:198px; border-radius:50%; border:none; background:{{p.accent}}; box-shadow:0 0 0 12px {{p.discRing}}, 0 0 70px {{p.discBloom}}; cursor:pointer; display:flex; align-items:center; justify-content:center;"><i class="ti ti-player-play-filled" style="font-size:76px; color:{{p.onAccent}};"></i></button>
+          </div>
+          <div style="flex:none; text-align:center; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:36px; color:{{p.ink}}; margin-top:29px;">What now?</div>
+          <div style="flex:none; text-align:center; font-size:16px; font-weight:700; color:{{p.inkSoft}}; margin-top:4px;">evening · one gentle thing?</div>
+          <div style="flex:none; display:flex; justify-content:center; margin-top:18px; transform:translateY(12px) scale(1.06);">
+            <button style="display:flex; align-items:center; gap:9px; padding:12px 24px; border-radius:22px; border:none; background:{{p.plannerBg}}; box-shadow:0 4px 0 {{p.cardOff}}; cursor:pointer; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16.5px; color:#f3ecff;"><i class="ti ti-calendar" style="font-size:17px;"></i>Planner</button>
+          </div>
+          <div style="flex:none; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:78px; padding:0 34px; transform:scale(0.96);">
+            <sc-for list="{{p.row1}}" as="t" hint-placeholder-count="4">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                <span style="position:relative; width:50px; height:50px;">
+                  <span style="position:absolute; inset:0; transform:translate(-6px,-6px); border-radius:20px; background:{{t.s2}};"></span>
+                  <span style="position:absolute; inset:0; transform:translate(-3px,-3px); border-radius:20px; background:{{t.s1}};"></span>
+                  <span style="position:absolute; inset:0; border-radius:18px; background:{{t.c}}; box-shadow:{{t.lip}}; display:flex; align-items:center; justify-content:center;"><i class="ti {{t.i}}" style="font-size:22px; color:{{t.glyph}};"></i></span>
+                </span>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{t.label}}; text-align:center; line-height:1.1; max-width:80px;">{{t.n}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="flex:none; display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px 0 20px;">
+            <span style="font-size:9px; font-weight:800; letter-spacing:2px; color:{{p.inkSoft}};">TOOLS</span>
+            <i class="ti ti-chevron-down" style="font-size:20px; color:{{p.inkSoft}};"></i>
+          </div>
+        </div>
+        <div style="position:absolute; left:0; right:0; top:18px; display:flex; align-items:center; gap:14px; padding:0 20px; transform:translateY(12px);">
+          <span style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; transform:translate(-1px,1px) scale(1.5); transform-origin:left center;"><i class="ti ti-adjustments-horizontal" style="font-size:18px; color:{{p.inkSoft}};"></i></span>
+          <span style="flex:1;"></span>
+          <span style="position:absolute; left:50%; transform:translate(-50%, -8px); display:flex; flex-direction:column; align-items:center; gap:2px;"><i class="ti ti-chevron-up" style="font-size:20px; color:{{p.inkSoft}};"></i><span style="font-size:9px; font-weight:800; letter-spacing:2px; color:{{p.inkSoft}};">JOURNEY</span></span>
+          <span style="border:2px solid {{p.leafBd}}; background:{{p.leafBg}}; padding:5px 11px; border-radius:999px; display:flex; align-items:center;"><i class="ti ti-leaf" style="font-size:15px; color:{{p.leafIc}};"></i></span>
+          <span style="display:flex; align-items:center; gap:6px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:20px; color:{{p.gold}}; text-shadow:0 1.5px 0 {{p.goldEdge}};"><i class="ti ti-diamond-filled" style="font-size:17px;"></i>1,240</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">tool library</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H tools — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:18px 20px 0;">
+          <div style="flex:none; height:28px;"></div>
+          <div style="flex:none; display:flex; flex-direction:column; align-items:center; gap:2px; margin-top:6px;"><i class="ti ti-chevron-up" style="font-size:20px; color:{{p.inkSoft}};"></i><span style="font-size:9px; font-weight:800; letter-spacing:2px; color:{{p.inkSoft}};">HOME</span></div>
+          <div style="position:absolute; left:0; right:0; top:18px; display:flex; align-items:center; gap:14px; padding:0 20px; transform:translateY(12px);"><span style="width:28px; height:28px; display:flex; align-items:center; justify-content:center; transform:translate(-1px,1px) scale(1.5); transform-origin:left center;"><i class="ti ti-adjustments-horizontal" style="font-size:18px; color:{{p.inkSoft}};"></i></span><span style="flex:1;"></span><span style="border:2px solid {{p.leafBd}}; background:{{p.leafBg}}; padding:5px 11px; border-radius:999px; display:flex; align-items:center;"><i class="ti ti-leaf" style="font-size:15px; color:{{p.leafIc}};"></i></span><span style="display:flex; align-items:center; gap:6px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:20px; color:{{p.gold}}; text-shadow:0 1.5px 0 {{p.goldEdge}};"><i class="ti ti-diamond-filled" style="font-size:17px;"></i>1,240</span></div>
+          <div style="flex:1; min-height:0; overflow:hidden; position:relative; margin-top:40px;">
+            <div style="padding:10px 24px 0;">
+              <div style="font-size:9.5px; font-weight:800; letter-spacing:1.8px; color:{{p.inkSoft}}; padding-left:4px; margin-bottom:12px;">FOR YOU NOW</div>
+              <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px 8px;">
+                <sc-for list="{{p.sugg}}" as="tl" hint-placeholder-count="3">
+                  <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                    <span style="position:relative; width:70px; height:70px;">
+                      <span style="position:absolute; inset:0; transform:translate(-7px,-7px); border-radius:23px; background:{{tl.sh1}};"></span>
+                      <span style="position:absolute; inset:0; transform:translate(-4px,-4px); border-radius:23px; background:{{tl.sh2}};"></span>
+                      <span style="position:absolute; inset:0; border-radius:23px; background:{{tl.c}}; box-shadow:{{tl.lip}}; display:flex; align-items:center; justify-content:center;"><i class="ti {{tl.i}}" style="font-size:32px; color:{{tl.glyph}};"></i></span>
+                    </span>
+                    <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{tl.label}}; text-align:center; line-height:1.1; max-width:104px;">{{tl.n}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); align-content:start; gap:24px 8px; padding:24px 24px 12px;">
+              <sc-for list="{{p.folders}}" as="tl" hint-placeholder-count="12">
+                <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                  <span style="position:relative; width:70px; height:70px;">
+                    <span style="position:absolute; inset:0; border-radius:23px; background:{{tl.c}}; box-shadow:{{tl.lip}}; display:flex; align-items:center; justify-content:center;"><i class="ti {{tl.i}}" style="font-size:32px; color:{{tl.glyph}};"></i></span>
+                  </span>
+                  <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{tl.label}}; text-align:center; line-height:1.1; max-width:104px;">{{tl.n}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute; left:18px; bottom:18px; width:62px; height:62px; border-radius:50%; background:{{p.accent}}; box-shadow:0 0 0 12px {{p.discRing}}, {{p.puckLip}}; display:flex; align-items:center; justify-content:center;"><i class="ti ti-home" style="font-size:26px; color:{{p.onAccent}};"></i></div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">stack open · the sheet</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H stack open — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:18px 20px 0; position:relative;">
+          <div style="flex:none; height:28px;"></div>
+          <div style="flex:none; text-align:center; margin-top:80px; font-weight:800; font-size:15px; letter-spacing:6px; color:{{p.inkSoft}};">SUNDAY · AUGUST 2</div>
+          <div style="flex:none; display:flex; justify-content:center; margin-top:60px; transform:scale(0.91);">
+            <button style="width:198px; height:198px; border-radius:50%; border:none; background:{{p.accent}}; box-shadow:0 0 0 12px {{p.discRing}}, 0 0 70px {{p.discBloom}}; display:flex; align-items:center; justify-content:center;"><i class="ti ti-player-play-filled" style="font-size:76px; color:{{p.onAccent}};"></i></button>
+          </div>
+          <div style="flex:none; display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:60px; padding:0 34px; transform:scale(0.96);">
+            <sc-for list="{{p.row1o}}" as="t" hint-placeholder-count="4">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                <span style="position:relative; width:50px; height:50px;">
+                  <span style="position:absolute; inset:0; transform:translate(-6px,-6px); border-radius:20px; background:{{t.s2}};"></span>
+                  <span style="position:absolute; inset:0; transform:translate(-3px,-3px); border-radius:20px; background:{{t.s1}};"></span>
+                  <span style="position:absolute; inset:0; border-radius:18px; background:{{t.c}}; box-shadow:{{t.lip2}}; display:flex; align-items:center; justify-content:center;"><i class="ti {{t.i}}" style="font-size:22px; color:{{t.glyph}};"></i></span>
+                </span>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{t.label2}}; text-align:center; line-height:1.1; max-width:80px;">{{t.n}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:absolute; inset:0; background:rgba(40,20,60,.45); z-index:38;"></div>
+        <div style="position:absolute; left:0; right:0; bottom:0; z-index:40; box-sizing:border-box; background:{{p.sheetBg}}; box-shadow:0 -4px 0 {{p.cardOff}}; border-radius:28px 28px 0 0; padding:12px 22px 26px; display:flex; flex-direction:column; gap:15px;">
+          <div style="width:64px; height:5px; border-radius:3px; background:{{p.grab}}; align-self:center;"></div>
+          <div style="display:flex; align-items:center; gap:14px;">
+            <span style="width:54px; height:54px; flex:none; border-radius:19px; background:{{p.stackCoin.c}}; box-shadow:{{p.stackCoin.lip}}; display:flex; align-items:center; justify-content:center;"><i class="ti ti-sunrise" style="font-size:26px; color:{{p.stackCoin.glyph}};"></i></span>
+            <span style="display:flex; flex-direction:column; gap:1px;">
+              <span style="font-size:10px; font-weight:800; letter-spacing:1.8px; color:{{p.kickC}};">MORNING · MOVE</span>
+              <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:24px; color:{{p.ink}}; line-height:1.1;">Morning Stack</span>
+            </span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:11px;">
+                <span style="{{s.coin}}"><i class="ti {{s.ic}}" style="font-size:16px; color:#fff2f9;"></i></span>
+                <span style="font-weight:700; font-size:15.5px; color:{{p.ink}};">{{s.nm}}</span>
+                <span style="margin-left:auto; font-size:13px; font-weight:700; color:{{p.inkSoft}};">{{s.len}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <sc-for list="{{chips}}" as="c" hint-placeholder-count="3"><span style="{{c.sty}}">{{c.t}}</span></sc-for>
+            <span style="{{p.chipMore}}">more</span>
+          </div>
+          <button style="width:100%; height:56px; border-radius:18px; border:none; background:{{p.accent}}; color:{{p.onAccent}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; cursor:pointer; box-shadow:{{p.puckLip}};" style-active="transform:translateY(4px); box-shadow:0 1px 0 {{p.cardOff}};">Start · 2 min</button>
+          <button style="display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:14px; border:none; background:{{p.editBg}}; color:{{p.plannerBg}}; font-family:'Jost',sans-serif; font-weight:700; font-size:14px; cursor:pointer; text-align:left;" style-active="transform:translateY(2px);">
+            <i class="ti ti-adjustments" style="font-size:17px;"></i>open the editor
+            <span style="padding:2px 8px; border-radius:7px; background:{{p.plannerBg}}; color:#f3ecff; font-size:10.5px; font-weight:800;">plus</span>
+            <i class="ti ti-chevron-right" style="font-size:15px; margin-left:auto;"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">planner · today</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H planner — {{p.name}}">
+        <div style="position:absolute; top:46px; left:0; right:0; height:52px; display:flex; align-items:center; justify-content:space-between; padding:0 20px;">
+          <div style="flex:1; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:24px; color:{{p.ink}};">Today</div>
+          <div style="flex:none; display:flex; align-items:center; gap:6px;">
+            <div style="width:34px; height:34px; border-radius:11px; background:{{p.accent}}; color:{{p.onAccent}}; display:flex; align-items:center; justify-content:center; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px;">D</div>
+            <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; color:{{p.inkFaint}}; padding:0 3px;">W</div>
+            <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; color:{{p.inkFaint}}; padding:0 3px;">M</div>
+          </div>
+          <span style="flex:1; display:flex; justify-content:flex-end; align-items:center; gap:5px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:{{p.gold}}; text-shadow:0 1.5px 0 {{p.goldEdge}};"><i class="ti ti-diamond-filled" style="font-size:15px;"></i>1,240</span>
+        </div>
+        <div style="position:absolute; top:112px; left:0; right:0; bottom:0;">
+          <sc-for list="{{hours}}" as="h" hint-placeholder-count="5">
+            <div style="position:absolute; left:52px; right:0; top:{{h.t}}px; border-top:1.5px solid {{p.hairline}};"></div>
+            <div style="position:absolute; left:6px; top:{{h.t}}px; transform:translateY(-50%); width:40px; text-align:center; font-family:'Baloo 2',sans-serif; font-size:15px; font-weight:700; color:{{p.inkFaint}};">{{h.lab}}</div>
+          </sc-for>
+          <sc-for list="{{blocks}}" as="b" hint-placeholder-count="4">
+            <div style="{{b.sty}}">
+              <div style="display:flex; align-items:center; gap:9px;"><i class="ti {{b.ic}}" style="{{b.icSty}}"></i><div style="{{b.nmSty}}">{{b.nm}}</div></div>
+              <div style="{{b.metaSty}}">{{b.meta}}</div>
+              <sc-if value="{{b.remOn}}" hint-placeholder-val="{{ false }}"><div style="{{b.remSty}}"></div></sc-if>
+              <sc-if value="{{b.checkOn}}" hint-placeholder-val="{{ false }}">
+                <span style="position:absolute; right:12px; top:12px; width:24px; height:24px; border-radius:50%; background:{{p.ink}}; display:flex; align-items:center; justify-content:center;"><i class="ti ti-check" style="font-size:14px; color:#ffc41f;"></i></span>
+              </sc-if>
+            </div>
+          </sc-for>
+          <div style="position:absolute; left:58px; right:20px; top:530px; height:98px; box-sizing:border-box; border-radius:20px; border:2.5px dashed {{p.inkFaint}}; display:flex; align-items:center; justify-content:center;">
+            <span style="font-size:12.5px; font-weight:700; color:{{p.inkFaint}};">add what happened</span>
+          </div>
+          <div style="position:absolute; left:52px; right:0; top:297px; border-top:3px solid {{p.nowC}}; box-shadow:0 0 12px {{p.nowGlow}}; z-index:14;"></div>
+          <div style="position:absolute; right:16px; top:297px; transform:translateY(-52%); background:{{p.nowC}}; color:{{p.nowTxt}}; border-radius:999px; padding:3px 12px 4px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:12px; letter-spacing:.8px; z-index:15; box-shadow:0 0 12px {{p.nowGlow}};">NOW</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">player · breathing</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H player — {{p.name}}">
+        <div style="position:absolute; top:64px; left:13px; right:13px; display:flex; gap:8px;">
+          <sc-for list="{{segs}}" as="g" hint-placeholder-count="5">
+            <div style="flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:10px;">
+              <div style="{{g.bar}}"></div>
+              <i class="ti {{g.ic}}" style="{{g.icSty}}"></i>
+            </div>
+          </sc-for>
+        </div>
+        <button style="position:absolute; top:124px; left:16px; z-index:20; background:none; border:none; padding:8px; color:{{p.inkSoft}}; font-size:21px; cursor:pointer; line-height:1;" style-active="transform:scale(.94);"><i class="ti ti-x"></i></button>
+        <div style="position:absolute; top:132px; left:20%; right:20%; text-align:center; font-size:14px; font-weight:700; color:{{p.inkSoft}};">Box breath · step 3 of 5</div>
+        <button style="position:absolute; top:124px; right:16px; z-index:20; background:none; border:none; padding:8px; color:{{p.inkSoft}}; font-size:21px; cursor:pointer; line-height:1;" style-active="transform:scale(.94);"><i class="ti ti-settings"></i></button>
+        <div style="position:absolute; top:222px; left:0; right:0; display:flex; justify-content:center;">
+          <div style="width:218px; height:218px; box-sizing:border-box; border:4px solid {{p.orbBd}}; border-radius:50%; background:{{p.orbBg}}; box-shadow:0 0 0 12px {{p.discRing}}, 0 0 70px {{p.discBloom}}; animation:rhBreathe 8s ease-in-out infinite;"></div>
+        </div>
+        <div style="position:absolute; top:534px; left:8%; right:8%; text-align:center; display:flex; flex-direction:column; align-items:center; gap:13px;">
+          <span style="font-family:'Jost',sans-serif; font-size:26px; font-weight:700; letter-spacing:1px; color:{{p.ink}}; line-height:1.2;">Breathe in</span>
+          <span style="font-family:'Jost',sans-serif; font-size:20px; font-weight:700; color:{{p.inkSoft}}; min-height:26px; margin-top:-6px;">3</span>
+          <div style="width:176px; height:6px; border-radius:4px; background:{{p.track}}; overflow:hidden;">
+            <div style="height:100%; width:40%; border-radius:4px; background:{{p.accent}};"></div>
+          </div>
+        </div>
+        <div style="position:absolute; left:25px; right:25px; bottom:46px; display:flex; flex-direction:column; gap:9px;">
+          <div style="position:relative; height:8px; border-radius:5px; background:{{p.track}};">
+            <div style="position:absolute; left:0; top:0; bottom:0; width:34%; border-radius:5px; background:{{p.scrubFill}};"></div>
+            <div style="position:absolute; top:50%; left:34%; width:22px; height:22px; border-radius:50%; background:{{p.accent}}; box-shadow:{{p.knobLip}}; transform:translate(-50%,-50%);"></div>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:space-between; font-family:'Baloo 2',sans-serif; font-size:13px; font-weight:700; color:{{p.inkSoft}};">
+            <span>2:10</span><span>-4:50</span>
+          </div>
+          <div style="display:flex; align-items:center; justify-content:center; gap:32px; margin-top:8px;">
+            <button style="background:none; border:none; color:{{p.gold}}; font-size:32px; cursor:pointer; padding:4px; line-height:1;" style-active="transform:scale(.94);"><i class="ti ti-rewind-backward-15"></i></button>
+            <button style="width:82px; height:82px; border-radius:50%; background:{{p.accent}}; border:none; color:{{p.onAccent}}; font-size:30px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 10px {{p.discRing}}, {{p.puckLip}};" style-active="transform:translateY(4px);"><i class="ti ti-player-pause-filled"></i></button>
+            <button style="background:none; border:none; color:{{p.gold}}; font-size:32px; cursor:pointer; padding:4px; line-height:1;" style-active="transform:scale(.94);"><i class="ti ti-rewind-forward-15"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">you · settings</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H you — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:18px 20px 0;">
+          <div style="flex:none; height:28px;"></div>
+          <div style="flex:none; display:flex; align-items:center; margin-top:10px;">
+            <div style="font-family:'Baloo 2',sans-serif; font-weight:700; font-size:24px; color:{{p.ink}};">You</div>
+            <span style="margin-left:auto; display:flex; align-items:center; gap:6px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:20px; color:{{p.gold}}; text-shadow:0 1.5px 0 {{p.goldEdge}};"><i class="ti ti-diamond-filled" style="font-size:17px;"></i>1,240</span>
+          </div>
+          <div style="flex:none; display:flex; align-items:center; gap:15px; margin-top:22px;">
+            <div style="width:64px; height:64px; border-radius:50%; background:{{p.accent}}; box-shadow:0 0 0 8px {{p.discRing}}; display:flex; align-items:center; justify-content:center; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:28px; color:{{p.onAccent}};">D</div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:20px; color:{{p.ink}};">David</div>
+              <div style="font-size:13px; font-weight:700; color:{{p.inkSoft}};">Pathfinder · day 21</div>
+            </div>
+          </div>
+          <div style="flex:none; display:flex; flex-direction:column; gap:10px; margin-top:26px;">
+            <sc-for list="{{youRows}}" as="r" hint-placeholder-count="6">
+              <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:{{r.bg}}; box-shadow:{{r.rowLip}};">
+                <span style="width:40px; height:40px; flex:none; border-radius:14px; background:{{r.c}}; box-shadow:{{r.coinLip}}; display:flex; align-items:center; justify-content:center;"><i class="ti {{r.ic}}" style="font-size:20px; color:#fff2f9;"></i></span>
+                <span style="flex:1; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15.5px; color:{{p.ink}};">{{r.nm}}</span>
+                <span style="font-size:12.5px; font-weight:700; color:{{p.inkSoft}};">{{r.val}}</span>
+                <i class="ti ti-chevron-right" style="font-size:16px; color:{{p.inkSoft}};"></i>
+              </div>
+            </sc-for>
+            <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; border:2.5px dashed {{p.inkFaint}}; color:{{p.inkFaint}};">
+              <i class="ti ti-settings-2" style="font-size:18px;"></i>
+              <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15.5px;">Advanced</span>
+              <i class="ti ti-chevron-right" style="font-size:16px; margin-left:auto;"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">picker · it happened</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H picker — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:18px 20px 0;">
+          <div style="flex:none; height:28px;"></div>
+          <div style="flex:none; margin-top:10px;">
+            <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:26px; color:{{p.ink}};">What was it?</div>
+            <div style="font-size:13.5px; font-weight:700; color:{{p.inkSoft}}; margin-top:3px;">that untracked hour, in one tap</div>
+          </div>
+          <div style="flex:none; display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:22px;">
+            <sc-for list="{{pickTiles}}" as="d" hint-placeholder-count="8">
+              <div style="{{d.sty}}">
+                <i class="ti {{d.ic}}" style="{{d.icSty}}"></i>
+                <span style="{{d.nmSty}}">{{d.nm}}</span>
+                <sc-if value="{{d.on}}" hint-placeholder-val="{{ false }}"><i class="ti ti-check" style="position:absolute; top:10px; right:12px; font-size:18px; color:{{p.ink}};"></i></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position:absolute; left:0; right:0; bottom:0; box-sizing:border-box; background:{{p.sheetBg}}; box-shadow:0 -4px 0 {{p.cardOff}}; border-radius:28px 28px 0 0; padding:16px 20px 26px; display:flex; align-items:center; gap:12px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;">
+            <span style="font-size:10px; font-weight:800; letter-spacing:1.8px; color:{{p.kickC}};">PICKED · 2</span>
+            <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:{{p.ink}};">focus and a call</span>
+          </div>
+          <button style="width:44px; height:44px; flex:none; border-radius:50%; background:transparent; border:2.5px solid {{p.ghostBd}}; color:{{p.inkSoft}}; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;" style-active="transform:scale(.94);"><i class="ti ti-x"></i></button>
+          <button style="height:48px; flex:none; padding:0 22px; border-radius:16px; border:none; background:{{p.accent}}; color:{{p.onAccent}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; cursor:pointer; box-shadow:{{p.puckLip}};" style-active="transform:translateY(4px); box-shadow:0 1px 0 {{p.cardOff}};">Add these</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">folder · breathe</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H folder — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:18px 20px 0;">
+          <div style="flex:none; height:28px;"></div>
+          <div style="flex:none; display:flex; align-items:center; gap:10px; margin-top:10px;">
+            <i class="ti ti-chevron-left" style="font-size:24px; color:{{p.inkSoft}};"></i>
+            <div style="font-family:'Baloo 2',sans-serif; font-weight:700; font-size:24px; color:{{p.ink}};">Breathe</div>
+            <span style="margin-left:auto; display:flex; align-items:center; gap:6px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:20px; color:{{p.gold}}; text-shadow:0 1.5px 0 {{p.goldEdge}};"><i class="ti ti-diamond-filled" style="font-size:17px;"></i>1,240</span>
+          </div>
+          <div style="flex:none; display:grid; grid-template-columns:repeat(3,1fr); gap:24px 8px; margin-top:30px; padding:0 8px;">
+            <sc-for list="{{folderTools}}" as="tl" hint-placeholder-count="6">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                <span style="width:70px; height:70px; border-radius:23px; background:{{tl.c}}; box-shadow:{{tl.lip}}; display:flex; align-items:center; justify-content:center;"><i class="ti {{tl.i}}" style="font-size:32px; color:#fff2f9;"></i></span>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px; color:{{tl.label}}; text-align:center; line-height:1.1; max-width:104px;">{{tl.n}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:none; margin-top:36px; padding:0 8px;">
+            <div style="font-size:9.5px; font-weight:800; letter-spacing:1.8px; color:{{p.inkSoft}};">HOW LONG</div>
+            <div style="display:flex; gap:9px; margin-top:12px;">
+              <sc-for list="{{rail}}" as="c" hint-placeholder-count="4"><span style="{{c.sty}}">{{c.t}}</span></sc-for>
+            </div>
+            <div style="font-size:13px; font-weight:600; color:{{p.inkSoft}}; margin-top:12px;">I&rsquo;d say 20m &mdash; your call.</div>
+          </div>
+        </div>
+        <div style="position:absolute; left:20px; right:20px; bottom:24px; display:flex; gap:12px;">
+          <div style="position:absolute; left:-2px; bottom:0;"></div>
+          <button style="flex:1; height:56px; border-radius:18px; border:none; background:{{p.accent}}; color:{{p.onAccent}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; cursor:pointer; box-shadow:{{p.puckLip}};" style-active="transform:translateY(4px); box-shadow:0 1px 0 {{p.cardOff}};">Start · 20 min</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">journey · the climb</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H journey — {{p.name}}">
+        <div style="position:absolute; inset:0; background:{{p.skyWash}};"></div>
+        <div style="position:absolute; inset:0; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; padding:64px 20px 30px;">
+          <sc-for list="{{jFuture}}" as="n" hint-placeholder-count="3">
+            <div style="{{n.wrap}}">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <span style="{{n.sty}}"><i class="ti {{n.i}}" style="font-size:34px; color:#fff2f9;"></i></span>
+                <span style="font-size:14px; font-weight:700; color:{{p.ink}};">{{n.nm}}</span>
+              </div>
+            </div>
+          </sc-for>
+          <div style="padding:6px 0;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+              <span style="width:110px; height:110px; border-radius:50%; background:repeating-linear-gradient(45deg, #f5c343 0 14px, #b08a1e 14px 28px); box-shadow:inset 0 5px 0 rgba(255,255,255,.28), inset 0 -7px 0 rgba(0,0,0,.28), 0 9px 20px {{p.nodeSh}}, 0 0 40px rgba(255,196,31,.45); display:flex; align-items:center; justify-content:center; position:relative; animation:jpAlive 2.8s cubic-bezier(.22,.9,.3,1) infinite;">
+                <span style="position:absolute; inset:-2px; border-radius:50%; overflow:hidden; pointer-events:none;"><span style="position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.55) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite;"></span></span>
+                <i class="ti ti-lungs" style="font-size:46px; color:#fff2f9;"></i>
+              </span>
+              <span style="display:flex; flex-direction:column; align-items:center; gap:1px;">
+                <span style="font-family:'Baloo 2',sans-serif; font-size:20px; font-weight:800; line-height:1; color:{{p.ink}};">Again tonight</span>
+                <span style="font-size:12.5px; font-weight:700; color:{{p.inkSoft}};">up next · one minute</span>
+              </span>
+            </div>
+          </div>
+          <sc-for list="{{jDone}}" as="n" hint-placeholder-count="2">
+            <div style="{{n.wrap}}">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:10px;">
+                <span style="{{n.sty}}"><i class="ti {{n.i}}" style="font-size:34px; color:#fff2f9;"></i></span>
+                <span style="display:flex; align-items:center; gap:6px; font-size:14px; font-weight:700; color:{{p.ink}};">{{n.nm}}<i class="ti ti-check" style="font-size:14px; color:{{p.jade}};"></i></span>
+              </div>
+            </div>
+          </sc-for>
+          <div style="width:100%; padding:14px 0 4px;">
+            <div style="width:100%; box-sizing:border-box; border-radius:18px; box-shadow:0 5px 0 {{p.cardOff}}; overflow:hidden; position:relative; background:repeating-linear-gradient(0deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1.5px, transparent 1.5px 16px), {{p.chapterBg}}; display:flex; align-items:center; gap:12px; padding:13px 15px;">
+              <span style="position:absolute; inset:-2px; border-radius:16px; overflow:hidden; pointer-events:none;"><span style="position:absolute; inset:-45%; background:linear-gradient(115deg, transparent 44%, rgba(255,255,255,.32) 50%, transparent 56%); animation:jGlint 3.4s ease-in-out infinite;"></span></span>
+              <span style="position:relative; flex:1; display:flex; flex-direction:column; gap:2px;">
+                <span style="font-size:9.5px; font-weight:800; letter-spacing:2.2px; color:#f3ecff;">TODAY · CHAPTER 1</span>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:21px; color:#f3ecff; line-height:1.02;">The Spark</span>
+              </span>
+              <i class="ti ti-sparkles" style="position:relative; font-size:22px; color:#f3ecff;"></i>
+            </div>
+          </div>
+          <div style="width:100%; box-sizing:border-box; display:flex; align-items:center; gap:10px; padding:16px 0 0;">
+            <span style="flex:1; height:2px; border-radius:1px; background:{{p.divLine}};"></span>
+            <span style="display:flex; align-items:baseline; gap:7px;"><span style="font-size:9px; font-weight:800; letter-spacing:2.4px; color:{{p.divKick}};">BOOK ONE</span><span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; line-height:1; color:{{p.ink}};">The Climb</span></span>
+            <span style="flex:1; height:2px; border-radius:1px; background:{{p.divLine}};"></span>
+          </div>
+          <div style="flex:1;"></div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="font-size:9px; font-weight:800; letter-spacing:2px; color:{{p.inkSoft}};">HOME</span>
+            <i class="ti ti-chevron-down" style="font-size:20px; color:{{p.inkSoft}};"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">picker sheet · add a step</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H picker sheet — {{p.name}}">
+        <div style="position:absolute; inset:0; padding:74px 22px; display:flex; flex-direction:column; gap:14px; filter:blur(2px); opacity:.5;">
+          <sc-for list="{{edSlabs}}" as="s" hint-placeholder-count="3">
+            <div style="flex:none; height:56px; border-radius:18px; background:{{s.c}}; box-shadow:{{s.lip}}; display:flex; align-items:center; gap:10px; padding:0 16px;">
+              <i class="ti {{s.i}}" style="font-size:18px; color:{{p.ink}};"></i>
+              <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; color:{{p.ink}};">{{s.n}}</span>
+              <span style="margin-left:auto; font-size:13px; font-weight:700; color:{{s.meta}};">{{s.t}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position:absolute; inset:0; background:rgba(40,20,60,.45);"></div>
+        <div style="position:absolute; left:0; right:0; bottom:0; box-sizing:border-box; background:{{p.sheetBg}}; box-shadow:0 -4px 0 {{p.cardOff}}; border-radius:28px 28px 0 0; padding:12px 22px 26px; display:flex; flex-direction:column; gap:16px;">
+          <div style="width:64px; height:5px; border-radius:3px; background:{{p.grab}}; align-self:center;"></div>
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <span style="font-size:10px; font-weight:800; letter-spacing:1.8px; color:{{p.kickC}};">MORNING STACK</span>
+            <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:23px; color:{{p.ink}};">Add a step</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:20px 8px;">
+            <sc-for list="{{sheetTools}}" as="tl" hint-placeholder-count="6">
+              <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
+                <span style="width:64px; height:64px; border-radius:21px; background:{{tl.c}}; box-shadow:{{tl.lip2}}; display:flex; align-items:center; justify-content:center;"><i class="ti {{tl.i}}" style="font-size:29px; color:#fff2f9;"></i></span>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:12.5px; color:{{tl.label2}}; text-align:center; line-height:1.1;">{{tl.n}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <div style="font-size:9.5px; font-weight:800; letter-spacing:1.8px; color:{{p.inkSoft}};">HOW LONG</div>
+            <div style="display:flex; gap:9px; margin-top:10px;">
+              <sc-for list="{{railStep}}" as="c" hint-placeholder-count="4"><span style="{{c.sty}}">{{c.t}}</span></sc-for>
+            </div>
+            <div style="font-size:13px; font-weight:600; color:{{p.inkSoft}}; margin-top:10px;">I&rsquo;d say 1m &mdash; your call.</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:12px;">
+            <button style="width:44px; height:44px; flex:none; border-radius:50%; background:transparent; border:2.5px solid {{p.ghostBd}}; color:{{p.inkSoft}}; font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;" style-active="transform:scale(.94);"><i class="ti ti-x"></i></button>
+            <button style="flex:1; height:52px; border-radius:16px; border:none; background:{{p.accent}}; color:{{p.onAccent}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; cursor:pointer; box-shadow:{{p.puckLip}};" style-active="transform:translateY(4px); box-shadow:0 1px 0 {{p.cardOff}};">Add it · 1m</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">onboarding · the spark</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.introBg}};" data-screen-label="H intro — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:44px 28px 32px;">
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:center; font-weight:800; font-size:27px; line-height:1.45; color:{{p.introInk}}; text-align:center; text-wrap:balance;">
+            <p style="margin:0 0 20px;">Everyone is born with a <span style="color:{{p.hlGold}}; text-shadow:0 1.5px 0 {{p.hlEdge}};">spark</span>.</p>
+            <p style="margin:0 0 20px;">Life buries it. Under noise, under screens, under Tuesdays.</p>
+            <p style="margin:0 0 20px;">It never goes out. It <span style="color:{{p.hlPink}}; text-shadow:0 1.5px 0 {{p.hlEdge}};">waits</span>.</p>
+            <p style="margin:0 0 20px;">My whole job is keeping <span style="color:{{p.hlGold}}; text-shadow:0 1.5px 0 {{p.hlEdge}};">yours</span> lit.</p>
+            <p style="margin:0;">I'm <span style="color:{{p.hlPink}}; text-shadow:0 1.5px 0 {{p.hlEdge}};">Alter</span>, your guardian.</p>
+          </div>
+          <button style="width:100%; height:58px; border-radius:18px; border:none; background:{{p.accent}}; color:{{p.onAccent}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; cursor:pointer; box-shadow:{{p.puckLip}}; display:flex; align-items:center; justify-content:center; gap:10px;" style-active="transform:translateY(4px); box-shadow:0 1px 0 {{p.cardOff}};">Let&rsquo;s go<i class="ti ti-player-play-filled" style="font-size:17px;"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">onboarding · worksheet</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.introBg}};" data-screen-label="H worksheet — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:54px 22px 32px;">
+          <div style="flex:none; display:flex; gap:6px;">
+            <sc-for list="{{obSegs}}" as="s" hint-placeholder-count="7"><span style="{{s.sty}}"></span></sc-for>
+          </div>
+          <button style="width:42px; height:42px; margin-top:18px; border-radius:13px; border:2.5px solid {{p.ghostBd}}; background:transparent; color:{{p.inkSoft}}; font-size:17px; cursor:pointer;" style-active="transform:scale(.94);"><i class="ti ti-chevron-left"></i></button>
+          <div style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+            <div style="font-weight:800; font-size:24px; line-height:1.4; color:{{p.ink}}; text-align:center; text-wrap:balance;">Let me guide you through a slow <span style="color:{{p.hlBlue}};">breath</span> and a <span style="color:{{p.hlPurple}};">muscle release</span>. It is the fastest switch your <span style="color:{{p.hlBlue}};">body</span> has for calling off the <span style="color:{{p.hlPink}}; text-shadow:0 1.5px 0 {{p.hlEdge}};">stress</span> response.</div>
+            <div style="font-weight:700; font-size:15px; color:{{p.inkSoft}}; text-align:center; margin:32px 0 14px;">How much time can you give it?</div>
+            <div style="display:flex; gap:10px; justify-content:center;">
+              <sc-for list="{{obDurs}}" as="d" hint-placeholder-count="4"><button style="{{d.sty}}" style-active="transform:translateY(2px);">{{d.t}}</button></sc-for>
+            </div>
+          </div>
+          <button style="width:100%; height:58px; border-radius:18px; border:none; background:{{p.accent}}; color:{{p.onAccent}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:18px; cursor:pointer; box-shadow:{{p.puckLip}}; display:flex; align-items:center; justify-content:center; gap:10px;" style-active="transform:translateY(4px); box-shadow:0 1px 0 {{p.cardOff}};">Next<i class="ti ti-player-play-filled" style="font-size:17px;"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; color:#8a6d85; padding-left:4px;">collection · binder</div>
+      <div style="flex:none; width:402px; height:874px; border:3px solid #160510; border-radius:38px; overflow:hidden; box-shadow:0 8px 0 #160510; position:relative; font-family:'Jost',sans-serif; background:{{p.bg}};" data-screen-label="H collection — {{p.name}}">
+        <div style="height:100%; box-sizing:border-box; display:flex; flex-direction:column; padding:54px 18px 26px;">
+          <div style="flex:none; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:30px; color:{{p.ink}};">Collection</div>
+            <button style="width:42px; height:42px; border-radius:50%; border:2.5px solid {{p.ghostBd}}; background:transparent; color:{{p.inkSoft}}; font-size:17px; cursor:pointer;" style-active="transform:scale(.94);"><i class="ti ti-x"></i></button>
+          </div>
+          <div style="align-self:flex-start; display:inline-flex; align-items:center; gap:7px; background:{{p.pillInk}}; border:2px solid {{p.gold}}; border-radius:13px; padding:7px 14px; color:{{p.gold}}; font-weight:800; font-size:14px; letter-spacing:.4px; margin-bottom:14px;"><i class="ti ti-cards" style="font-size:16px;"></i>12 / 24 COLLECTED</div>
+          <div style="flex:none; display:flex; gap:8px; margin-bottom:18px;">
+            <span style="flex:1; text-align:center; padding:10px 0; border-radius:13px; background:{{p.accent}}; background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.28) 0 13px, transparent 13px 26px); box-shadow:{{p.tabLip}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14.5px; color:{{p.onAccent}};">Marks</span>
+            <span style="flex:1; text-align:center; padding:10px 0; border-radius:13px; background:{{p.track}}; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14.5px; color:{{p.inkSoft}};">Trophies</span>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <sc-for list="{{colCards}}" as="c" hint-placeholder-count="4">
+              <div style="{{c.sty}}">
+                <span style="{{c.disc}}"><i class="ti {{c.ic}}" style="font-size:24px; color:{{c.icC}};"></i></span>
+                <span style="font-size:9px; font-weight:800; letter-spacing:2px; color:{{c.kickC}}; margin-top:10px;">{{c.kick}}</span>
+                <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:16px; color:{{c.nmC}}; line-height:1.1; margin-top:2px;">{{c.nm}}</span>
+                <span style="display:flex; gap:5px; margin-top:10px;">
+                  <sc-for list="{{c.pips}}" as="pp" hint-placeholder-count="4"><span style="{{pp.sty}}"></span></sc-for>
+                </span>
+                <sc-if value="{{c.lockOn}}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:11px; font-weight:700; color:{{p.inkSoft}}; margin-top:8px;">{{c.lockMsg}}</span>
+                  <span style="width:100%; height:5px; border-radius:3px; background:{{p.track}}; margin-top:6px; overflow:hidden;"><span style="display:block; height:100%; width:40%; border-radius:3px; background:{{p.gold}};"></span></span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-weight:800; font-size:13px; letter-spacing:2px; color:{{p.gold}}; margin:20px 2px 10px;">TROPHIES</div>
+          <div style="display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:18px; background:{{p.surface}}; box-shadow:0 4px 0 {{p.cardOff}};">
+            <span style="width:40px; height:40px; flex:none; border-radius:14px; background:{{p.gold}}; box-shadow:{{p.trophyLip}}; display:flex; align-items:center; justify-content:center;"><i class="ti ti-trophy" style="font-size:20px; color:#160510;"></i></span>
+            <span style="display:flex; flex-direction:column; gap:1px;">
+              <span style="font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15.5px; color:{{p.ink}};">First goal</span>
+              <span style="font-size:12px; font-weight:700; color:{{p.inkSoft}};">12 sessions &middot; June 28</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;world&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Water Lilies · moonlit — your #2, as ranked&quot;,&quot;Warhol FLIPPED — your #6, as ranked&quot;],&quot;default&quot;:&quot;Warhol FLIPPED — your #6, as ranked&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;World&quot;}}">
+class Component extends DCLogic {
+  /* Round H · the user's two picks from Round G, applied across the app.
+     World 1 = my #7 · Water Lilies TOTAL, your #2 (moonlit), AS RANKED: build(FAVS[46], 5, 0, 0).
+     World 2 = my #1 · Warhol FLIPPED, your #6, AS RANKED: build(FAVS[45], 0, 0, 0).
+     The `world` prop flips every screen at once. */
+  state = { ready: false };
+  async componentDidMount() {
+    const mod = await import('./roundd-core.js');
+    this.core = mod.makeCore(false, 'Hard lip, lighter');
+    this.setState({ ready: true });
+  }
+  renderVals() {
+    if (!this.core) return {};
+    const core = this.core;
+    const warhol = /warhol/i.test(String(this.props.world || ''));
+    const w = warhol ? core.build(core.FAVS[45], 0, 0, 0, undefined, 0) : core.build(core.FAVS[46], 5, 0, 0, undefined, 0);
+    const ground = w.legend[0].c, ink = w.ink, acc = w.accent;
+    const mx = (a, pa, b) => `color-mix(in srgb, ${a} ${pa}%, ${b})`;
+    const lip = (c, d) => `0 ${d}px 0 ${mx(c, 62, ink)}`;
+    const stripes = 'background-image:repeating-linear-gradient(115deg, rgba(255,255,255,.28) 0 13px, transparent 13px 26px);';
+    const inkFaint = mx(ink, 30, ground);
+    const lg = core.h2h(ground)[2];
+    const fix = c => { const [h, s, l] = core.h2h(c); return l >= lg - 0.02 ? core.hsl2hex(h, s, Math.max(0.32, lg - 0.14)) : c; };
+    const hue = i => fix(w.folders[i].c);
+    const mv = fix(w.row1[0].c);
+    const row1o = w.row1.map((t, i) => ({ ...t, lip2: i === 0 ? `0 0 0 3.5px ${acc}, 0 4px 0 3.5px ${mx(t.c, 62, ink)}` : t.lip, label2: i === 0 ? acc : t.label }));
+    const B = (nm, ic, c, t, h, kind, meta) => {
+      let sty = `position:absolute; left:58px; right:20px; top:${t}px; height:${h}px; box-sizing:border-box; border-radius:20px; padding:11px 14px;`;
+      if (kind === 'next') sty += `background:${mx(c, 16, ground)}; border:2.5px solid ${c};`;
+      else sty += `background:${c}; box-shadow:${lip(c, 4)};`;
+      const nowY = 297, elapsed = Math.max(0, Math.min(h, nowY - t));
+      return {
+        remOn: kind === 'live',
+        remSty: `position:absolute; left:0; right:0; top:${elapsed}px; bottom:0; border-radius:0 0 20px 20px; background-image:repeating-linear-gradient(45deg, rgba(255,255,255,.25) 0 14px, transparent 14px 30px);`,
+        nm, meta, ic, sty,
+        icSty: `font-size:17px; color:${ink};`,
+        nmSty: `font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:${ink};`,
+        metaSty: `font-size:12px; font-weight:700; color:${kind === 'next' ? mx(ink, 62, ground) : mx(ink, 66, c)}; margin-top:2px;`,
+        checkOn: kind === 'done',
+      };
+    };
+    const blocks = [
+      B('Deep work', 'ti-code', hue(2), 40, 200, 'done', '12:00 – 1:30'),
+      B('Reset walk', 'ti-walk', hue(6), 252, 98, 'live', '1:30 – 2:15'),
+      B('Gym', 'ti-run', mv, 390, 133, 'next', '2:30 – 3:30'),
+      B('Journal', 'ti-pencil', hue(5), 640, 78, 'next', '4:15 – 4:45'),
+    ];
+    const hours = [['12 pm', 40], ['1', 180], ['2', 320], ['3', 460], ['4', 600]].map(([lab, t]) => ({ lab, t }));
+    const segIcs = ['ti-wave-sine', 'ti-chevrons-up', 'ti-wave-square', 'ti-wave-saw-tool', 'ti-switch-horizontal'];
+    const segs = segIcs.map((ic, i) => ({
+      ic,
+      bar: `height:12px; width:100%; border-radius:7px; ${i < 2 ? `background:${mx(acc, 55, ground)};` : i === 2 ? `background:${acc};` : `background:${mx(ink, 12, ground)};`}`,
+      icSty: `font-size:15px; color:${i === 2 ? ink : inkFaint};`,
+    }));
+    const steps = [['ti-bolt', 'wake shake', '30s', hue(6)], ['ti-lungs', 'three deep breaths', '1m', hue(1)], ['ti-droplet', 'cold splash', '30s', hue(2)]].map(([ic, nm, len, c]) => ({
+      ic, nm, len,
+      coin: `width:30px; height:30px; flex:none; border-radius:11px; background:${c}; box-shadow:${lip(c, 3)}; display:flex; align-items:center; justify-content:center;`,
+    }));
+    const chipBase = `min-height:34px; padding:0 15px; border-radius:12px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; display:inline-flex; align-items:center;`;
+    const chips = [['2m', true], ['5m', false], ['10m', false]].map(([t, sel]) => ({
+      t,
+      sty: chipBase + (sel ? `background:${acc}; ${stripes} color:${w.onAccent}; box-shadow:${lip(acc, 3)};` : `background:${mx(ink, 10, ground)}; color:${mx(ink, 75, ground)};`),
+    }));
+    const youRows = [
+      ['ti-bell', 'Reminders', '8:00 · 21:30', hue(2)],
+      ['ti-volume', 'Sound & voice', 'Maya · soft', hue(1)],
+      ['ti-palette', 'Appearance', warhol ? 'Warhol FLIPPED' : 'Water Lilies', acc],
+      ['ti-flame', 'Streak & goals', '21 days', w.row1[0].c],
+      ['ti-user', 'Account', 'david', hue(0)],
+      ['ti-lock', 'Data & privacy', '', hue(3)],
+    ].map(([ic, nm, val, c]) => ({
+      ic, nm, val, c,
+      bg: `linear-gradient(100deg, ${mx(c, 20, ground)} 0%, ${mx(c, 10, ground)} 100%)`,
+      rowLip: `0 3px 0 ${mx(ink, 16, ground)}`,
+      coinLip: lip(c, 3),
+    }));
+    const pickTiles = [
+      ['Move', 'ti-run', mv, false], ['Nourish', 'ti-salad', hue(6), false],
+      ['Focus', 'ti-code', hue(2), true], ['Create', 'ti-brush', hue(5), false],
+      ['Connect', 'ti-heart', hue(0), true], ['Play', 'ti-device-tv', hue(11), false],
+      ['Restore', 'ti-moon', hue(1), false], ['Upkeep', 'ti-shirt', hue(3), false],
+    ].map(([nm, ic, c, on]) => ({
+      nm, ic, on,
+      sty: `position:relative; height:86px; box-sizing:border-box; border-radius:20px; padding:12px 14px; display:flex; flex-direction:column; justify-content:space-between; align-items:flex-start; ` +
+        (on ? `background:${c}; ${stripes} box-shadow:${lip(c, 4)};` : `background:${mx(c, 14, ground)}; border:2.5px solid ${c};`),
+      icSty: `font-size:24px; color:${on ? ink : mx(c, 72, ink)};`,
+      nmSty: `font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px; color:${ink};`,
+    }));
+    const folderTools = [['Box breath', 'ti-wave-square', 1], ['4-7-8', 'ti-wave-saw-tool', 7], ['Sigh', 'ti-chevrons-up', 2], ['Nostril', 'ti-switch-horizontal', 10], ['Calming', 'ti-wave-sine', 6], ['Sleep', 'ti-zzz', 3]].map(([n, i, fi]) => {
+      const c = hue(fi);
+      return { n, i, c, lip: lip(c, 5), label: mx(c, 55, ink) };
+    });
+    const jade = core.lum('#2fa87a', -0.05);
+    const node = (c, done) => `width:84px; height:84px; border-radius:50%; background:${c}; box-shadow:inset 0 5px 0 rgba(255,255,255,.22), inset 0 -7px 0 rgba(0,0,0,.24), 0 8px 16px ${mx(ink, 25, 'transparent')}${done ? `, 0 0 0 4px ${jade}` : ''}; display:flex; align-items:center; justify-content:center;`;
+    const jN = ([nm, i, fi, off, done]) => ({ nm, i, wrap: `padding:10px 0; transform:translateX(${off}px);`, sty: node(hue(fi), done) });
+    const jFuture = [['Settle', 'ti-leaf', 1, 24], ['Close the day', 'ti-moon-stars', 10, -22], ['Breathe · morning', 'ti-lungs', 2, 26]].map(jN);
+    const jDone = [['The Gap', 'ti-wave-sine', 6, -28, true], ['Plan your day', 'ti-map-2', 3, 22, true]].map(jN);
+    const edSlabs = [['Wake shake', 'ti-bolt', hue(6), '30s'], ['Three deep breaths', 'ti-lungs', hue(1), '1m'], ['Cold splash', 'ti-droplet', hue(2), '30s']].map(([n, i, c, t]) => ({ n, i, c, t, lip: lip(c, 4), meta: mx(ink, 66, c) }));
+    const sheetTools = folderTools.map((t, i) => ({ ...t, lip2: i === 0 ? `0 0 0 3.5px ${t.c}, 0 5px 0 3.5px ${mx(t.c, 62, ink)}` : lip(t.c, 5), label2: i === 0 ? mx(t.c, 78, ink) : t.label }));
+    const railC = hue(1);
+    const railStep = [['30s', false], ['1m', true], ['2m', false], ['5m', false]].map(([t, on]) => ({
+      t,
+      sty: `min-height:40px; padding:0 16px; border-radius:12px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; display:inline-flex; align-items:center; ` +
+        (on ? `background:${mx(railC, 16, ground)}; box-shadow:0 0 0 3px ${railC}; color:${ink};` : `background:${mx(ink, 10, ground)}; color:${mx(ink, 75, ground)};`),
+    }));
+    const rail = [['10m', false], ['15m', false], ['20m', true], ['30m', false]].map(([t, on]) => ({
+      t,
+      sty: `min-height:40px; padding:0 16px; border-radius:12px; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:14px; display:inline-flex; align-items:center; ` +
+        (on ? `background:${mx(railC, 16, ground)}; box-shadow:0 0 0 3px ${railC}; color:${ink};` : `background:${mx(ink, 10, ground)}; color:${mx(ink, 75, ground)};`),
+    }));
+    const goldC = core.lum('#d9a441', -0.14);
+    const obSegs = [hue(2), hue(2), hue(6), hue(6), hue(5), hue(5), hue(0)].map((c, i) => ({
+      sty: `flex:1; height:8px; border-radius:4px; background:${i < 2 ? c : mx(c, 40, ground)};`,
+    }));
+    const obDurs = [['30s', hue(2), false], ['1 min', hue(5), true], ['2 min', hue(0), false], ['3 min', mv, false]].map(([t, c, on]) => ({
+      t,
+      sty: `flex:1; max-width:92px; padding:16px 0; border-radius:14px; border:none; background:${mx(c, 22, ground)}; color:${ink}; font-family:'Jost',sans-serif; font-weight:800; font-size:16px; cursor:pointer; box-shadow:` +
+        (on ? `0 0 0 3px ${mx(c, 90, ink)}, 0 4px 0 ${mx(ink, 30, ground)}; transform:translateY(-2px);` : `0 0 0 2.5px ${mx(c, 55, ground)}, 0 4px 0 ${mx(ink, 30, ground)};`),
+    }));
+    const pip = on => ({ sty: `width:9px; height:9px; border-radius:50%; ${on ? `background:${goldC};` : `background:${mx(ink, 16, ground)};`}` });
+    const cardBase = `position:relative; box-sizing:border-box; border-radius:20px; padding:16px 14px; display:flex; flex-direction:column; align-items:flex-start; overflow:hidden;`;
+    const colCard = (ic, kick, nm, bg, discBg, icC, pipsOn) => ({
+      ic, kick, nm, icC, lockOn: false,
+      sty: cardBase + `background:${bg}; box-shadow:0 5px 0 ${mx(ink, 30, ground)};`,
+      disc: `width:46px; height:46px; border-radius:50%; background:${discBg}; display:flex; align-items:center; justify-content:center;`,
+      kickC: 'rgba(22,5,16,.62)', nmC: '#160510',
+      pips: [0, 1, 2, 3].map(i => pip(i < pipsOn)),
+    });
+    const colCards = [
+      colCard('ti-arrow-back-up', 'PRISM · SHINING', 'Came back', 'linear-gradient(120deg,#e8b4d8 0%,#b4d8e8 35%,#d8e8b4 70%,#e8ccb4 100%)', 'rgba(22,5,16,.14)', '#160510', 2),
+      colCard('ti-flame', 'BURST', '21 in a row', `radial-gradient(120% 120% at 50% 20%, ${core.lum(goldC, 0.18)} 0%, ${goldC} 70%)`, 'rgba(22,5,16,.16)', '#160510', 3),
+      { ...colCard('ti-moon-stars', 'COSMOS', 'Depth', `radial-gradient(140% 140% at 30% 15%, ${mx('#8a5cf0', 45, '#1a0b2e')} 0%, #1a0b2e 75%)`, mx('#8a5cf0', 30, '#1a0b2e'), '#e8dcff', 2), kickC: mx('#b8a0e8', 80, '#fff'), nmC: '#f0e8ff' },
+      { ...colCard('ti-crown', 'NEXT MARK', 'King of the week', mx(ink, 12, ground), mx(ink, 18, ground), mx(ink, 55, ground), 0), kickC: mx(ink, 50, ground), nmC: ink, lockOn: true, lockMsg: '3 more perfect days' },
+    ];
+    const p = {
+      introBg: `linear-gradient(175deg, ${mx(w.plannerBg, 26, ground)} 0%, ${ground} 60%)`,
+      hlGold: warhol ? '#ffc41f' : core.hsl2hex(core.h2h(acc)[0], 0.8, 0.44), hlPink: warhol ? '#ffc41f' : core.hsl2hex(core.h2h(acc)[0], 0.8, 0.44), hlBlue: warhol ? '#ffc41f' : core.hsl2hex(core.h2h(acc)[0], 0.8, 0.44), hlPurple: warhol ? '#ffc41f' : core.hsl2hex(core.h2h(acc)[0], 0.8, 0.44),
+      hlEdge: warhol ? 'rgba(22,5,16,.45)' : 'transparent',
+      pillInk: mx(ink, 85, ground),
+      tabLip: `0 3px 0 ${mx(ink, 30, ground)}`,
+      trophyLip: `0 3px 0 ${mx(goldC, 55, ink)}`,
+      ghostBd: mx(ink, 20, ground),
+      ...w, ground, inkFaint,
+      hairline: mx(ink, 8, ground),
+      track: mx(ink, 18, ground),
+      gold: '#ffc41f',
+      goldEdge: 'rgba(22,5,16,.42)',
+      sheetBg: core.lum(w.surface, 0.05),
+      introInk: mx(ink, 78, ground),
+      leafIc: core.lum('#2fa87a', -0.1),
+      leafBd: mx('#2fa87a', 60, ground),
+      leafBg: mx('#34d39a', 16, ground),
+      jade,
+      nodeSh: mx(ink, 25, 'transparent'),
+      skyWash: `linear-gradient(0deg, transparent 0%, transparent 35%, ${mx(ink, 8, 'transparent')} 72%, ${mx(ink, 20, 'transparent')} 100%)`,
+      chapterBg: `linear-gradient(115deg, ${w.plannerBg}, ${mx(w.plannerBg, 78, ground)})`,
+      divLine: mx(acc, 30, ground),
+      divKick: mx(acc, 70, ink),
+      scrubFill: mx(acc, 60, ground),
+      knobLip: lip(acc, 3),
+      orbBg: `radial-gradient(120% 120% at 32% 26%, ${core.lum(acc, 0.03)} 0%, ${core.lum(acc, -0.07)} 66%)`,
+      grab: mx(ink, 28, 'transparent'),
+      orbBd: mx(acc, 62, ink),
+      nowGlow: warhol ? 'rgba(255,196,31,.75)' : mx(acc, 85, 'transparent'),
+      nowC: warhol ? '#ffc41f' : ink,
+      nowTxt: warhol ? '#160510' : '#fff2f9',
+      chipMore: chipBase + `background:transparent; box-sizing:border-box; border:2.5px dashed ${inkFaint}; color:${mx(ink, 60, ground)};`,
+      editBg: mx(w.plannerBg, 14, w.surface),
+      stackCoin: w.row1[0], kickC: w.row1[0].label,
+      row1o,
+    };
+    return {
+      p, blocks, hours, segs, steps, chips, youRows, pickTiles, folderTools, rail, jFuture, jDone, edSlabs, sheetTools, railStep, obSegs, obDurs, colCards,
+      legend: w.legend,
+      worldName: warhol ? 'Warhol FLIPPED — your #6, as ranked' : 'Water Lilies TOTAL · moonlit — your #2, as ranked',
+    };
+  }
+}
+</script>
+</body>
+</html>
