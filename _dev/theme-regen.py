@@ -40,6 +40,13 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         # ground and the strip disappears exactly when it has nothing to say. This is the one fill that
         # must never equal the ground, so it is a token, not a remapped literal.
         '--t-track': '#2e1a28' if T is None else blend(T['ink'], T['ground'], 0.18),
+        # THE PRIMARY BUTTON'S LIP (David 2026-09-15: "Let's go button looks cheap ... the color and the
+        # shadow"). He was reacting to a real deviation: the app gives its primary a 3px near-black outline
+        # AND a near-black 5px lip, which reads as depth on night's near-black ground and as a harsh cheap
+        # outline under gold on a light one. The frame's own CTA carries NO border and a lip in the BUTTON'S
+        # OWN HUE darkened — color-mix(accent 62%, ink). Computed for Warhol that is #af8751, which is
+        # exactly what the prototype renders. Night keeps #160510, so it stays byte-identical.
+        '--t-lip': '#160510' if T is None else blend(T['accent'], T['ink'], 0.62),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }

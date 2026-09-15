@@ -32,6 +32,21 @@ for path in ('index.html', 'app.js'):
             name = '--c-%s-%s' % (m.group(0).lstrip('#').lower(), ROLE.match(scan[m.end():m.end()+14]).group(1) if ROLE.match(scan[m.end():m.end()+14]) else '?')
             if name in table: continue
         BAD.append((path, scan[:m.start()].count('\n') + 1, m.group(0)))
+# SEMANTIC TOKEN COMPLETENESS. A var(--t-*) that no block defines makes its whole CSS declaration
+# invalid at computed-value time, so the property silently falls back to `none` — which is how a
+# dropped --t-halo-ring deleted the home stone's halo in every world without any error anywhere.
+src = open('index.html').read()
+used = set(re.findall(r'var\((--t-[a-z-]+)\)', src))
+gs = src.index('/* ===== THEME ENGINE')
+blocks = {}
+for key, sel in (('night', ':root{'), ('lilies', ':root[data-theme="lilies"]{'), ('warhol', ':root[data-theme="warhol"]{')):
+    i = src.index(sel, gs) + len(sel)
+    blocks[key] = src[i:src.index('}', i)]
+for tok in sorted(used):
+    for key, body in blocks.items():
+        if tok + ':' not in body:
+            BAD.append(('index.html', 0, '%s is used but the %s block never defines it' % (tok, key)))
+
 if BAD:
     print('THEME GATE: FAIL — %d unregistered color literal(s):' % len(BAD))
     for p, ln, h in BAD[:25]: print('  %s:%d  %s' % (p, ln, h))

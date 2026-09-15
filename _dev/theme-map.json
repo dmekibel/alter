@@ -9154,5 +9154,12 @@
 "night": "#ffc83d",
 "lilies": "#ca16af",
 "warhol": "#ffc41f"
+},
+"--c-160510-onaccent": {
+"hex": "#160510",
+"role": "onaccent",
+"night": "#160510",
+"lilies": "#1c2050",
+"warhol": "#3a2a05"
 }
 }

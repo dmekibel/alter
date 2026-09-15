@@ -146,3 +146,36 @@ sanctioned exemption from the theme gate — a French flag is blue-white-red in 
 | night | 111 | 109 | 1 | 1 — the pre-existing animation gate |
 | lilies | 111 | 100 | 10 | 1 — the same one |
 | warhol | 111 | 100 | 10 | 1 — the same one |
+
+---
+
+# ROUND 4 (v1440) — the primary button
+David: *"Let's go button looks cheap the color and the shadow."* Not taste — a real deviation from the
+frame, extracted from the running prototype (Warhol, "onboarding · the spark"):
+
+| property | frame | app before | app now |
+|---|---|---|---|
+| background | `#ffd062` | `#ffd062` | `#ffd062` |
+| border | **none** | `3px solid #160510`-mapped (near-black) | `3px solid #af8751` |
+| box-shadow | `0 5px 0` **`#af8751`** | `0 5px 0` near-black | `0 5px 0` `#af8751` |
+| radius | 18px | 15px | 15px |
+| label | `#3a2a05` | mapped ink | `#3a2a05` (onaccent) |
+
+`#af8751` is not eyeballed: it is `color-mix(accent 62%, ink)` — the doc's own `lip()` under
+`shadowMode: 'Hard lip, lighter'` — and computing it independently gives `#af8751`, byte-identical to
+what the prototype renders. So the lip is now a `--t-lip` token: night `#160510` (unchanged, byte-identical),
+Water Lilies `#914b9a`, Warhol `#af8751`. A near-black lip reads as depth on night's near-black ground and
+as a cheap hard outline under gold on a light one; the frame's answer is a lip in the button's OWN hue.
+
+**STILL OPEN, David's call:** the frame carries **no border at all** and an 18px radius. I tinted the
+existing 3px border rather than deleting it, because removing it is geometry, not color, and night's
+border is his own canon. One word and it goes borderless in the day worlds.
+
+**A BUG THIS ROUND CAUGHT IN ITSELF.** Inserting `--t-lip` into the regenerator silently dropped
+`--t-halo-ring`. An undefined `var()` makes its whole declaration invalid at computed-value time, so the
+home stone's `box-shadow` fell back to `none` — the halo vanished in all three worlds, with no error
+anywhere. Only `designAudit` caught it ("stone halo · got none"). `_dev/theme-check.py` now fails the ship
+when any `var(--t-*)` used in index.html is missing from any of the three blocks.
+
+## Round 4 gates, at 430x932
+night 111 gates · 109 PASS · 1 SKIP · 1 FAIL (the pre-existing animation gate).
