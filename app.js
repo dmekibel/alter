@@ -752,15 +752,15 @@
   // ---- 8-DOMAIN taxonomy (DESIGN-BRIEF §24) — the canonical palette. Colors live at the CATEGORY level and drive EVERY calendar bubble (plan, real, celebration). ----
   // Domain palette — the ORIGINAL varied/beautiful set restored (David 2026-06-25: collapsing the energy family to orange made it "ugly orange"). Each domain its own colour; drift is the solid dark-red.
   var DOM = {
-    move:    { l: "Move",    e: "🏃", c: THC("#ff8a3a","bg"), light: THC("#ffa24a","ink"), dark: THC("#ff741a","ink"), ring: THC("#ffcf9a","ink"), ink: THC("#4a2400","onpiece"), ti: "ti-run" },
-    nourish: { l: "Nourish", e: "🍎", c: THC("#34d39a","bg"), light: THC("#5fe0b2","ink"), dark: THC("#22c089","ink"), ring: THC("#9fe8cf","ink"), ink: THC("#0a3326","onpiece"), ti: "ti-bowl-spoon" },
-    focus:   { l: "Focus",   e: "🎯", c: THC("#36b3f0","bg"), light: THC("#5ec4f5","ink"), dark: THC("#22a6e8","ink"), ring: THC("#aadcf8","ink"), ink: THC("#08283c","onpiece"), ti: "ti-brain" },
-    create:  { l: "Create",  e: "🎨", c: THC("#b07aff","bg"), light: THC("#c7adff","ink"), dark: THC("#9a5cf0","ink"), ring: THC("#ddccff","ink"), ink: THC("#241548","onpiece"), ti: "ti-palette" },
-    connect: { l: "Connect", e: "💛", c: THC("#ff5fa0","bg"), light: THC("#ff7ab0","ink"), dark: THC("#ff4f96","ink"), ring: THC("#ffb3d6","ink"), ink: THC("#4a1126","onpiece"), ti: "ti-users" },
-    play:    { l: "Play",    e: "🎮", c: THC("#ffc83d","bg"), light: THC("#f0c860","ink"), dark: THC("#c08a22","ink"), ring: THC("#f2d894","ink"), ink: THC("#4a3000","onpiece"), ti: "ti-device-gamepad-2" }, // ONE PLAY GOLD (David 2026-07-30): var(--c-ffc83d-ink), the value the toolbox/editor/picker surfaces already used. The old var(--c-d99f30-ink) split the domain in two — the newer surfaces were built to the bright gold and the registry stayed dark, so a Play block and a Play tool never matched.
-    restore: { l: "Restore", e: "🌙", c: THC("#2ab8c4","bg"), light: THC("#5fd6df","ink"), dark: THC("#1f9aa6","ink"), ring: THC("#a3e4e9","ink"), ink: THC("#06343a","onpiece"), ti: "ti-moon" },
-    upkeep:  { l: "Upkeep",  e: "🧹", c: THC("#7f9bc4","bg"), light: THC("#9fb6d8","ink"), dark: THC("#6781a8","ink"), ring: THC("#c4d4e8","ink"), ink: THC("#16243a","onpiece"), ti: "ti-shirt" }, // ti-shirt, the picker artifact's Upkeep glyph — and ti-broom does not EXIST in the loaded Tabler webfont (3.31.0 resolves it to content:none), so every Upkeep coin and folder glyph was rendering blank
-    drift:   { l: "Drift",   e: "🌫️", c: THC("#565b66","bg"), light: THC("#b8bcc6","ink"), dark: THC("#2a2d34","ink"), ring: THC("#7a808c","ink"), ink: THC("#cdd2db","onpiece"), ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
+    move:    { l: "Move",    e: "🏃", c: THC("#ff8a3a","bg"), light: THC("#ffa24a","bg"), dark: THC("#ff741a","bg"), ring: THC("#ffcf9a","bg"), ink: THC("#4a2400","onpiece"), ti: "ti-run" },
+    nourish: { l: "Nourish", e: "🍎", c: THC("#34d39a","bg"), light: THC("#5fe0b2","bg"), dark: THC("#22c089","bg"), ring: THC("#9fe8cf","bg"), ink: THC("#0a3326","onpiece"), ti: "ti-bowl-spoon" },
+    focus:   { l: "Focus",   e: "🎯", c: THC("#36b3f0","bg"), light: THC("#5ec4f5","bg"), dark: THC("#22a6e8","bg"), ring: THC("#aadcf8","bg"), ink: THC("#08283c","onpiece"), ti: "ti-brain" },
+    create:  { l: "Create",  e: "🎨", c: THC("#b07aff","bg"), light: THC("#c7adff","bg"), dark: THC("#9a5cf0","bg"), ring: THC("#ddccff","bg"), ink: THC("#241548","onpiece"), ti: "ti-palette" },
+    connect: { l: "Connect", e: "💛", c: THC("#ff5fa0","bg"), light: THC("#ff7ab0","bg"), dark: THC("#ff4f96","bg"), ring: THC("#ffb3d6","bg"), ink: THC("#4a1126","onpiece"), ti: "ti-users" },
+    play:    { l: "Play",    e: "🎮", c: THC("#ffc83d","bg"), light: THC("#f0c860","bg"), dark: THC("#c08a22","bg"), ring: THC("#f2d894","bg"), ink: THC("#4a3000","onpiece"), ti: "ti-device-gamepad-2" }, // ONE PLAY GOLD (David 2026-07-30): var(--c-ffc83d-ink), the value the toolbox/editor/picker surfaces already used. The old var(--c-d99f30-ink) split the domain in two — the newer surfaces were built to the bright gold and the registry stayed dark, so a Play block and a Play tool never matched.
+    restore: { l: "Restore", e: "🌙", c: THC("#2ab8c4","bg"), light: THC("#5fd6df","bg"), dark: THC("#1f9aa6","bg"), ring: THC("#a3e4e9","bg"), ink: THC("#06343a","onpiece"), ti: "ti-moon" },
+    upkeep:  { l: "Upkeep",  e: "🧹", c: THC("#7f9bc4","bg"), light: THC("#9fb6d8","bg"), dark: THC("#6781a8","bg"), ring: THC("#c4d4e8","bg"), ink: THC("#16243a","onpiece"), ti: "ti-shirt" }, // ti-shirt, the picker artifact's Upkeep glyph — and ti-broom does not EXIST in the loaded Tabler webfont (3.31.0 resolves it to content:none), so every Upkeep coin and folder glyph was rendering blank
+    drift:   { l: "Drift",   e: "🌫️", c: THC("#565b66","bg"), light: THC("#b8bcc6","bg"), dark: THC("#2a2d34","bg"), ring: THC("#7a808c","bg"), ink: THC("#cdd2db","onpiece"), ti: "ti-windmill" }   // neutral COOL-GRAY "void/wasted" — colorless vs the jewel domains, not muddy mauve (David 2026-06-27)
   };
   var CAT2DOM = { energy: "move", work: "focus", love: "connect", hobby: "play", vice: "drift" };
   // 5 SUPERCATEGORIES (David 2026-06-29): Energy · Work · Love · Hobbies · Other — the compact layer ABOVE the 8 domains. Tabler icons, never emojis. Drives the bento picker overview (+ onboarding + plan flow). Each domain belongs to exactly one supercat. (Hobbies split back OUT of Love — Love = people, Hobbies = creating/play.)
@@ -2142,14 +2142,14 @@
     "Eat, move, sleep, breathe. The floor everything else stands on.": "\u0415\u0434\u0430, \u0434\u0432\u0438\u0436\u0435\u043d\u0438\u0435, \u0441\u043e\u043d, \u0434\u044b\u0445\u0430\u043d\u0438\u0435. \u041f\u043e\u043b, \u043d\u0430 \u043a\u043e\u0442\u043e\u0440\u043e\u043c \u0441\u0442\u043e\u0438\u0442 \u0432\u0441\u0451 \u043e\u0441\u0442\u0430\u043b\u044c\u043d\u043e\u0435.",
     "Live it. The record now shows who you actually are.": "\u0416\u0438\u0432\u0438 \u044d\u0442\u043e. \u0417\u0430\u043f\u0438\u0441\u044c \u0442\u0435\u043f\u0435\u0440\u044c \u043f\u043e\u043a\u0430\u0437\u044b\u0432\u0430\u0435\u0442, \u043a\u0442\u043e \u0442\u044b \u043d\u0430 \u0441\u0430\u043c\u043e\u043c \u0434\u0435\u043b\u0435." });
   var JP_WORLDS = [ // JOURNEY WORLDS (David 2026-07-03 epic: "colorful and exciting and mysterious"): each chapter is a BIOME with its own jewel hue — the future glows in color, never gray. Aligned 1:1 with JP_CHAPTERS.
-    { c: THC("#ff8a3a","bg"), g: THC("#3a1a08","ink") },  // I    Ember — why you're here
-    { c: THC("#b07aff","bg"), g: THC("#241038","ink") },  // II   Starlight — who you are
-    { c: THC("#5fa8ff","bg"), g: THC("#0e2240","ink") },  // III  Shield — the obstacle OS
-    { c: THC("#2ec4b6","bg"), g: THC("#083430","ink") },  // IV   Lakes — your big three
-    { c: THC("#ffc41f","bg"), g: THC("#3a2a06","ink") },  // V    Crown — masterpiece day
-    { c: THC("#4dd0e1","bg"), g: THC("#062e36","ink") },  // VI   Circuits — your algorithms
-    { c: THC("#34d39a","bg"), g: THC("#06351f","ink") },  // VII  Roots — the fundamentals
-    { c: THC("#ff5fa8","bg"), g: THC("#3a0a24","ink") }   // VIII Radiance — soul force
+    { c: THC("#ff8a3a","bg"), g: THC("#3a1a08","bg") },  // I    Ember — why you're here
+    { c: THC("#b07aff","bg"), g: THC("#241038","bg") },  // II   Starlight — who you are
+    { c: THC("#5fa8ff","bg"), g: THC("#0e2240","bg") },  // III  Shield — the obstacle OS
+    { c: THC("#2ec4b6","bg"), g: THC("#083430","bg") },  // IV   Lakes — your big three
+    { c: THC("#ffc41f","bg"), g: THC("#3a2a06","bg") },  // V    Crown — masterpiece day
+    { c: THC("#4dd0e1","bg"), g: THC("#062e36","bg") },  // VI   Circuits — your algorithms
+    { c: THC("#34d39a","bg"), g: THC("#06351f","bg") },  // VII  Roots — the fundamentals
+    { c: THC("#ff5fa8","bg"), g: THC("#3a0a24","bg") }   // VIII Radiance — soul force
   ];
   var JP_ICON = { plan: "ti-map-2", settle: "ti-wind", am: "ti-sunrise", pm: "ti-moon", onething: "ti-star" }; // node-key → Tabler symbol (no emojis — match the day-viewer language)
   var JP_LESSON = [ // chapter guide content — shown in chapterSheet(ci) when the user taps a chapter banner
@@ -6387,15 +6387,15 @@
   // the Round 28 override table uses for this hue family (ti-calendar-check is not one of the sweep's seven, so it tunes
   // with its family's ti-map-2 blue rather than silently ignoring every per-chapter correction); `kick` = the kicker word.
   var JS_TYPE = {
-    practice:  { ic: "lungs",              hk: "lungs",              hue: THC("#ff4fa0","ink"),            kick: "PRACTICE" },
-    longprac:  { ic: "lungs",              hk: "lungs",              hue: THC("#ff4fa0","ink"),            kick: "LONG PRACTICE" },
-    lesson:    { ic: "player-play-filled", hk: "player-play-filled", hue: THC("#ffc83d","ink"),            kick: "LESSON" },
-    worksheet: { ic: "scribble",           hk: "scribble",           hue: THC("#34d39a","ink"),            kick: "WORKSHEET" },
-    planned:   { ic: "calendar-check",     hk: "map-2",              hue: THC("#36b3f0","ink"),            kick: "PLANNED" },
-    plan:      { ic: "map-2",              hk: "map-2",              hue: THC("#36b3f0","ink"),            kick: "PLANNED" },
-    reflect:   { ic: "moon-stars",         hk: "moon-stars",         hue: THC("#ff5fa0","ink"),            kick: "REFLECT" },
+    practice:  { ic: "lungs",              hk: "lungs",              hue: THC("#ff4fa0","bg"),            kick: "PRACTICE" },
+    longprac:  { ic: "lungs",              hk: "lungs",              hue: THC("#ff4fa0","bg"),            kick: "LONG PRACTICE" },
+    lesson:    { ic: "player-play-filled", hk: "player-play-filled", hue: THC("#ffc83d","bg"),            kick: "LESSON" },
+    worksheet: { ic: "scribble",           hk: "scribble",           hue: THC("#34d39a","bg"),            kick: "WORKSHEET" },
+    planned:   { ic: "calendar-check",     hk: "map-2",              hue: THC("#36b3f0","bg"),            kick: "PLANNED" },
+    plan:      { ic: "map-2",              hk: "map-2",              hue: THC("#36b3f0","bg"),            kick: "PLANNED" },
+    reflect:   { ic: "moon-stars",         hk: "moon-stars",         hue: THC("#ff5fa0","bg"),            kick: "REFLECT" },
     card:      { ic: "cards",              hk: "cards",              hue: "hsl(272 100% 78%)",  kick: "THE CARD" },
-    settle:    { ic: "leaf",               hk: "leaf",               hue: THC("#2ab8c4","ink"),            kick: "SETTLE" }
+    settle:    { ic: "leaf",               hk: "leaf",               hue: THC("#2ab8c4","bg"),            kick: "SETTLE" }
   };
   // Round 28's OVERRIDES, transcribed verbatim from its logic class (the colour table David tuned chapter by chapter).
   var JS_OVR = {
@@ -8490,9 +8490,9 @@
   var TBX2 = true;             // kill-switch: false restores the old 2x4 home grid + full-tool ground shelf exactly.
   var TBX_PLUS = true;         // BETA: assume the user pays — full access, incl. custom-editing the tools (David 2026-07-23). ONE flag, consulted at every Plus gate (currently the dose-card "Adjust steps & timing" row). true → the row is FUNCTIONAL (opens the composer); the PLUS badge stays visible (it signals the future paywall). Flip to false when shipping to non-payers → the row falls back to the whisper toast.
   var TBX_TOOLDOM = { stretch: "move", relax: "restore", breathe: "restore", meditate: "focus", reprogram: "create", mantra: "create", gratitude: "connect" }; // STACK_TOOLS id → toolbox domain hue (for custom-stack tile face + peek coins; STACK_TOOLS carry no domain token)
-  var TBX_HEX = { move: THC("#ff8a3a","ink"), nourish: THC("#34d39a","ink"), focus: THC("#36b3f0","ink"), create: THC("#b07aff","ink"), connect: THC("#ff5fa0","ink"), play: THC("#ffc83d","ink"), restore: THC("#2ab8c4","ink"), upkeep: THC("#7f9bc4","ink") }; // toolbox domain hexes (mirrored as CSS vars on .tbx). These now MATCH the DOM registry exactly — play was the last divergence (var(--c-ffc83d-ink) here vs var(--c-d99f30-ink) there) and David unified on this brighter gold 2026-07-30, so a Play tool and a Play block finally read as one domain.
+  var TBX_HEX = { move: THC("#ff8a3a","bg"), nourish: THC("#34d39a","bg"), focus: THC("#36b3f0","bg"), create: THC("#b07aff","bg"), connect: THC("#ff5fa0","bg"), play: THC("#ffc83d","bg"), restore: THC("#2ab8c4","bg"), upkeep: THC("#7f9bc4","bg") }; // toolbox domain hexes (mirrored as CSS vars on .tbx). These now MATCH the DOM registry exactly — play was the last divergence (var(--c-ffc83d-ink) here vs var(--c-d99f30-ink) there) and David unified on this brighter gold 2026-07-30, so a Play tool and a Play block finally read as one domain.
   var TBX_BOLT = THC("#ff4fa0","ink"), TBX_SEALBG = THC("#241328","ink"), TBX_SEALINK = THC("#ffc41f","ink"), TBX_PINK = THC("#ff5fa8","ink"), TBX_INK = THC("#160510","ink"); // literal hexes from DESIGN-EXTRACT (the raise-stakes bolt step + the log-step seal are NOT domain vars).
-  function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + "," + (TBX_HEX[tok] || THC("#63d3c9","ink")) + ")"); } // domain token → CSS var WITH ITS HEX AS THE FALLBACK; literal hex passes through. A step's colour is stored as this string and travels between surfaces (Session Editor → stack → picker), so it must survive landing somewhere that doesn't declare that var — an unresolved var() paints TRANSPARENT, which is how a Play coin went invisible in the picker the moment --play stopped being mirrored there.
+  function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + "," + (TBX_HEX[tok] || THC("#63d3c9","bg")) + ")"); } // domain token → CSS var WITH ITS HEX AS THE FALLBACK; literal hex passes through. A step's colour is stored as this string and travels between surfaces (Session Editor → stack → picker), so it must survive landing somewhere that doesn't declare that var — an unresolved var() paints TRANSPARENT, which is how a Play coin went invisible in the picker the moment --play stopped being mirrored there.
   function tbxLip(colExpr) { return "0 4px 0 color-mix(in srgb, " + colExpr + " 45%, var(--c-000000-ink))"; } // the universal hard-offset lip idiom (DESIGN-EXTRACT §0); color-mix already ships in this app (index.html .obv-gate)
   // Registry: every named item from DESIGN-EXTRACT §3 (16 stacks + 12 plain tools). peek = the deduped coin colors verbatim from §3 (the dedup rule — drop steps whose color equals the face or an earlier coin, max 2 — was applied at design time; "Can't Sleep" legitimately renders ONE coin). track = best-effort map onto STACK_TOOLS ids so Start actually runs; step durations scale to the chosen dose. kicker = the dose-card context line. steps (Caught Scrolling only) = the design's plain-word script; every other stack derives its steps from the track's real tools (reuses already-gated tool copy). def = default dose (minutes).
   // 2026-08-01 PRACTICE GRID: the seven grid stacks also carry `bands` (structural dose folding, see tbxTrackForDose) and `what`/`why` (the dose card's two gated lines). Both are OPTIONAL — a stack without them keeps the legacy single `track` + no lines.
@@ -12796,14 +12796,14 @@
   // SHELL: #virtueSheet reuses every .gv-* class the grove sheet uses and only re-points --gvhue — one sheet grammar, two menus.
   var VRT_ORDER = ["courage", "discipline", "love", "wisdom", "hope", "curiosity", "gratitude", "zest"];
   var VRT = { // hue = the flame colour the frames paint for that virtue; dec = the default declaration (the player rewrites it); hint = the carving-grid line
-    courage:    { name: "Courage",    hue: THC("#ff8a3a","ink"), dec: "I am willing to act in the presence of fear.",        hint: "I am willing to act in the presence of fear" },
-    discipline: { name: "Discipline", hue: THC("#f2a90f","ink"), dec: "I keep my word to myself, especially when it's hard.", hint: "I keep my word to myself" },
-    love:       { name: "Love",       hue: THC("#ff3f9e","ink"), dec: "The people I love hear from me first.",               hint: "the people I love hear from me first" },
-    wisdom:     { name: "Wisdom",     hue: THC("#b07aff","ink"), dec: "I stop and ask what this moment needs.",              hint: "I stop and ask what this moment needs" },
-    hope:       { name: "Hope",       hue: THC("#f5c95c","ink"), dec: "There is a way through.",                             hint: "there is a way through" },
-    curiosity:  { name: "Curiosity",  hue: THC("#2ab8c4","ink"), dec: "I ask one more question.",                            hint: "I ask one more question" },
-    gratitude:  { name: "Gratitude",  hue: THC("#34d39a","ink"), dec: "I say thanks out loud, the same day.",                hint: "I notice what I'm given" },
-    zest:       { name: "Zest",       hue: THC("#ff8a3a","ink"), dec: "I show up with energy.",                              hint: "I show up with energy" }
+    courage:    { name: "Courage",    hue: THC("#ff8a3a","bg"), dec: "I am willing to act in the presence of fear.",        hint: "I am willing to act in the presence of fear" },
+    discipline: { name: "Discipline", hue: THC("#f2a90f","bg"), dec: "I keep my word to myself, especially when it's hard.", hint: "I keep my word to myself" },
+    love:       { name: "Love",       hue: THC("#ff3f9e","bg"), dec: "The people I love hear from me first.",               hint: "the people I love hear from me first" },
+    wisdom:     { name: "Wisdom",     hue: THC("#b07aff","bg"), dec: "I stop and ask what this moment needs.",              hint: "I stop and ask what this moment needs" },
+    hope:       { name: "Hope",       hue: THC("#f5c95c","bg"), dec: "There is a way through.",                             hint: "there is a way through" },
+    curiosity:  { name: "Curiosity",  hue: THC("#2ab8c4","bg"), dec: "I ask one more question.",                            hint: "I ask one more question" },
+    gratitude:  { name: "Gratitude",  hue: THC("#34d39a","bg"), dec: "I say thanks out loud, the same day.",                hint: "I notice what I'm given" },
+    zest:       { name: "Zest",       hue: THC("#ff8a3a","bg"), dec: "I show up with energy.",                              hint: "I show up with energy" }
   };
   // THE CRAFT: the lantern is recast as the evidence piles up. Thresholds are the FRAME'S OWN numbers (15B prints "since 25
   // moments", "at 120 moments", "at 365 moments"), not a guess — the strip only ever counts moments she chose to write.
@@ -13650,11 +13650,11 @@
     { id: "nature-white-shrub",    c: "nature", n: "White Shrub",     p: 70, h: 0.85 },
     { id: "nature-berry-bush",     c: "nature", n: "Berry Bush",      p: 80, h: 0.9 },
     { id: "nature-pink-bush",      c: "nature", n: "Pink Bush",       p: 90, h: 0.9 },
-    { id: "light-mushroom-light",  c: "light",  n: "Mushroom Light",  p: 50, h: 0.6, glow: THC("#ffd98a","ink") },
-    { id: "light-firefly-jar",     c: "light",  n: "Firefly Jar",     p: 55, h: 0.7, glow: THC("#ffe27a","ink") },
-    { id: "light-lantern-string",  c: "light",  n: "Lantern String",  p: 75, h: 0.9, glow: THC("#ffb45e","ink") },
-    { id: "light-zen-lantern",     c: "light",  n: "Zen Lantern",     p: 85, h: 1.0, glow: THC("#ffd06a","ink") },
-    { id: "light-lamp-post",       c: "light",  n: "Lamp Post",       p: 90, h: 1.5, glow: THC("#ffe9a8","ink") },
+    { id: "light-mushroom-light",  c: "light",  n: "Mushroom Light",  p: 50, h: 0.6, glow: THC("#ffd98a","bg") },
+    { id: "light-firefly-jar",     c: "light",  n: "Firefly Jar",     p: 55, h: 0.7, glow: THC("#ffe27a","bg") },
+    { id: "light-lantern-string",  c: "light",  n: "Lantern String",  p: 75, h: 0.9, glow: THC("#ffb45e","bg") },
+    { id: "light-zen-lantern",     c: "light",  n: "Zen Lantern",     p: 85, h: 1.0, glow: THC("#ffd06a","bg") },
+    { id: "light-lamp-post",       c: "light",  n: "Lamp Post",       p: 90, h: 1.5, glow: THC("#ffe9a8","bg") },
     { id: "paths-stepping-stones", c: "paths",  n: "Stepping Stones", p: 45, h: 0.5 },
     { id: "paths-fence",           c: "paths",  n: "Fence",           p: 50, h: 0.7 },
     { id: "paths-birdbath",        c: "paths",  n: "Birdbath",        p: 80, h: 0.9 },

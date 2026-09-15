@@ -10099,5 +10099,243 @@
 "night": "#1c1030",
 "lilies": "#f3ecff",
 "warhol": "#f3ecff"
+},
+"--c-ffa24a-bg": {
+"hex": "#ffa24a",
+"role": "bg",
+"night": "#ffa24a",
+"lilies": "#d161c1",
+"warhol": "#d277cc"
+},
+"--c-ff741a-bg": {
+"hex": "#ff741a",
+"role": "bg",
+"night": "#ff741a",
+"lilies": "#d161c1",
+"warhol": "#c653be"
+},
+"--c-ffcf9a-bg": {
+"hex": "#ffcf9a",
+"role": "bg",
+"night": "#ffcf9a",
+"lilies": "#7386e2",
+"warhol": "#df87d9"
+},
+"--c-5fe0b2-bg": {
+"hex": "#5fe0b2",
+"role": "bg",
+"night": "#5fe0b2",
+"lilies": "#d161c0",
+"warhol": "#cf70c9"
+},
+"--c-22c089-bg": {
+"hex": "#22c089",
+"role": "bg",
+"night": "#22c089",
+"lilies": "#d161c1",
+"warhol": "#aa39a2"
+},
+"--c-9fe8cf-bg": {
+"hex": "#9fe8cf",
+"role": "bg",
+"night": "#9fe8cf",
+"lilies": "#d161c1",
+"warhol": "#e1a6dd"
+},
+"--c-5ec4f5-bg": {
+"hex": "#5ec4f5",
+"role": "bg",
+"night": "#5ec4f5",
+"lilies": "#d260c1",
+"warhol": "#d47fce"
+},
+"--c-22a6e8-bg": {
+"hex": "#22a6e8",
+"role": "bg",
+"night": "#22a6e8",
+"lilies": "#d161c0",
+"warhol": "#c248ba"
+},
+"--c-aadcf8-bg": {
+"hex": "#aadcf8",
+"role": "bg",
+"night": "#aadcf8",
+"lilies": "#7c8ee4",
+"warhol": "#e18fdc"
+},
+"--c-c7adff-bg": {
+"hex": "#c7adff",
+"role": "bg",
+"night": "#c7adff",
+"lilies": "#8696e6",
+"warhol": "#e497de"
+},
+"--c-ddccff-bg": {
+"hex": "#ddccff",
+"role": "bg",
+"night": "#ddccff",
+"lilies": "#a5b1ec",
+"warhol": "#ebb2e7"
+},
+"--c-ff4f96-bg": {
+"hex": "#ff4f96",
+"role": "bg",
+"night": "#ff4f96",
+"lilies": "#d161c0",
+"warhol": "#d37bcd"
+},
+"--c-ffb3d6-bg": {
+"hex": "#ffb3d6",
+"role": "bg",
+"night": "#ffb3d6",
+"lilies": "#8c9be7",
+"warhol": "#e59ce0"
+},
+"--c-f0c860-bg": {
+"hex": "#f0c860",
+"role": "bg",
+"night": "#f0c860",
+"lilies": "#d161c1",
+"warhol": "#d37dce"
+},
+"--c-f2d894-bg": {
+"hex": "#f2d894",
+"role": "bg",
+"night": "#f2d894",
+"lilies": "#d161c0",
+"warhol": "#e1a5dd"
+},
+"--c-5fd6df-bg": {
+"hex": "#5fd6df",
+"role": "bg",
+"night": "#5fd6df",
+"lilies": "#d161c0",
+"warhol": "#cf6fc9"
+},
+"--c-1f9aa6-bg": {
+"hex": "#1f9aa6",
+"role": "bg",
+"night": "#1f9aa6",
+"lilies": "#d161c1",
+"warhol": "#a13699"
+},
+"--c-a3e4e9-bg": {
+"hex": "#a3e4e9",
+"role": "bg",
+"night": "#a3e4e9",
+"lilies": "#d062c0",
+"warhol": "#e3a9df"
+},
+"--c-9fb6d8-bg": {
+"hex": "#9fb6d8",
+"role": "bg",
+"night": "#9fb6d8",
+"lilies": "#d260c1",
+"warhol": "#dd9ad9"
+},
+"--c-6781a8-bg": {
+"hex": "#6781a8",
+"role": "bg",
+"night": "#6781a8",
+"lilies": "#d161c1",
+"warhol": "#c34cbb"
+},
+"--c-c4d4e8-bg": {
+"hex": "#c4d4e8",
+"role": "bg",
+"night": "#c4d4e8",
+"lilies": "#8696e6",
+"warhol": "#e497de"
+},
+"--c-b8bcc6-bg": {
+"hex": "#b8bcc6",
+"role": "bg",
+"night": "#b8bcc6",
+"lilies": "#d161c1",
+"warhol": "#df9fdb"
+},
+"--c-7a808c-bg": {
+"hex": "#7a808c",
+"role": "bg",
+"night": "#7a808c",
+"lilies": "#d161c0",
+"warhol": "#c145b9"
+},
+"--c-083430-bg": {
+"hex": "#083430",
+"role": "bg",
+"night": "#083430",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-3a2a06-bg": {
+"hex": "#3a2a06",
+"role": "bg",
+"night": "#3a2a06",
+"lilies": "#6c80e0",
+"warhol": "#dc82d5"
+},
+"--c-062e36-bg": {
+"hex": "#062e36",
+"role": "bg",
+"night": "#062e36",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-06351f-bg": {
+"hex": "#06351f",
+"role": "bg",
+"night": "#06351f",
+"lilies": "#6d80e0",
+"warhol": "#dc82d6"
+},
+"--c-3a0a24-bg": {
+"hex": "#3a0a24",
+"role": "bg",
+"night": "#3a0a24",
+"lilies": "#6c7fe0",
+"warhol": "#dc81d5"
+},
+"--c-f2a90f-bg": {
+"hex": "#f2a90f",
+"role": "bg",
+"night": "#f2a90f",
+"lilies": "#d161c1",
+"warhol": "#c041b7"
+},
+"--c-f5c95c-bg": {
+"hex": "#f5c95c",
+"role": "bg",
+"night": "#f5c95c",
+"lilies": "#d161c1",
+"warhol": "#d47dce"
+},
+"--c-ffd98a-bg": {
+"hex": "#ffd98a",
+"role": "bg",
+"night": "#ffd98a",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
+},
+"--c-ffb45e-bg": {
+"hex": "#ffb45e",
+"role": "bg",
+"night": "#ffb45e",
+"lilies": "#d161c1",
+"warhol": "#d786d1"
+},
+"--c-ffd06a-bg": {
+"hex": "#ffd06a",
+"role": "bg",
+"night": "#ffd06a",
+"lilies": "#d062c0",
+"warhol": "#da8fd5"
+},
+"--c-ffe9a8-bg": {
+"hex": "#ffe9a8",
+"role": "bg",
+"night": "#ffe9a8",
+"lilies": "#8192e5",
+"warhol": "#e293dd"
 }
 }
