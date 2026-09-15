@@ -10792,6 +10792,7 @@
     S.audio = S.audio || { voice: 1, bg: 1 };
     if (S.audio.voice == null) S.audio.voice = 1;
     if (S.audio.bg == null) S.audio.bg = 1;
+    if (S.audio.cue == null) S.audio.cue = 0.5; // @SEC:THEME-adjacent: 0.5 x CUE_HEADROOM(2) = exactly the strike that shipped before it had a level of its own. Guarded read, additive, no SCHEMA bump.
     if (S.audio.bed == null) S.audio.bed = BED_DEFAULT.slice(); /* David 2026-09-09: BED_DEFAULT is now EMPTY — a fresh save opens with no backdrop at all (was birds, 2026-08-20) */
     if (!S.audioMigPad) S.audioMigPad = 1; /* the 2026-07-01 "everyone gets the peaceful pad" one-time migration is SPENT. The flag stays stamped so no save can re-run it, but its WRITE is gone: birds is the default now, and MIG 8→9 turns that un-chosen pad into it. */
     if (S.audio.appMusic == null) S.audio.appMusic = false;
@@ -14902,7 +14903,7 @@
     var ck = breathCueKey(), CU = BREATH_CUES[ck] || BREATH_CUES.off, ph = clock.phases, st = clock.starts, n = 0, i;
     if (ck !== "off" && gate) for (i = 0; i < ph.length; i++) {
       if (st[i] <= fromMs + 1) continue; // already heard, or the boundary the ear is standing on this instant — the engines' own _bSup owns that one
-      try { CU.hit(ph[i].kind, ctx, gate, ph[i].ms / 1000, atSec + (st[i] - fromMs) / 1000); } catch (e) {}
+      try { cueHit(CU, ph[i].kind, ctx, gate, ph[i].ms / 1000, atSec + (st[i] - fromMs) / 1000); } catch (e) {}
       if (keys) keys[(kpre || "") + i] = 1; n++;
     }
     if (tone) { var q = 0; for (var ms = fromMs; ms <= clock.total && q < BREATH_SCHED_MAX; ms += BREATH_SCHED_STEP, q++) { var s = clock.at(ms); if (!s) break; try { tone.update(s.level, s.phase, atSec + (ms - fromMs) / 1000); } catch (e) {} } }
@@ -14935,6 +14936,24 @@
   // `at` (optional 3rd arg to update) schedules against an explicit time instead of ctx.currentTime, so DEV.breathTone can
   // pre-schedule a whole cycle into an OfflineAudioContext and MEASURE the rendered waveform rather than anyone claiming
   // it sounds fine. Returns { update, setPhase, stop, probe, ready } or null.
+  // THE CUE'S OWN LEVEL (David 2026-09-15: "add volume to the cue sound separate from the tone sound
+  // cuz cue feels way too quiet and tone too loud"). The tone got its own level on 2026-09-09; the cue
+  // had none, so the only way to hear the phase strikes was to raise everything. It cannot ride on
+  // _bsPart alone — the woodblock strikes a noise buffer with its own gain and never goes through it —
+  // so the level wraps the OUTPUT NODE instead, which every cue set reaches whatever it builds.
+  // HEADROOM: the stored value is doubled, so the default 0.5 is EXACTLY today's strike and the slider
+  // can take it to twice that. Nothing about the existing mix changes until David moves it.
+  var CUE_HEADROOM = 2;
+  function cueVol() { try { return (S.audio && S.audio.cue != null) ? S.audio.cue : 0.5; } catch (e) { return 0.5; } }
+  function cueHit(set, k, ctx, out, durSec, at) {
+    if (!set || !ctx) return;
+    try {
+      var lvl = Math.max(0, cueVol()) * CUE_HEADROOM;
+      if (!(lvl > 0)) return;                                  // muted: strike nothing rather than schedule a silent oscillator
+      var g = ctx.createGain(); g.gain.value = lvl; g.connect(out || ctx.destination);
+      set.hit(k, ctx, g, durSec, at);
+    } catch (e) {}
+  }
   function toneVol() { try { return (S.audio && S.audio.tone != null) ? S.audio.tone : 1; } catch (e) { return 1; } } // THE GUIDING TONE'S OWN LEVEL (David 2026-09-09: "I would wanna be able to control the volume of those things as well"). It rides no bus of its own — makeBreathSustain reads this on EVERY update() call, so the slider is heard on the next frame, in the session you are in.
   var BOWL_TONE_CEIL = 0.155; // the Bowl is a REAL file normalised to about -23 dBFS RMS, where the synthesized voices are raw noise a filter then throws most of away — so its ceiling has to sit an order of magnitude above theirs to land at the SAME loudness. Measured, not guessed: DEV.breathTone("bowl") vs DEV.breathTone("ocean") must agree within ~3 dB of rendered RMS at level 1.
   // ===== THE NO-SIREN LAW (David 2026-09-09: "I don't want any sound to sound like a siren because that will give
@@ -15160,7 +15179,7 @@
       if (stopped) return;
       var el = (ctx.currentTime - t0) * 1000, s = clock.at(el);
       if (tone) tone.update(s.level, s.phase);
-      if (s.phaseIdx !== last) { last = s.phaseIdx; try { CU.hit(s.phase, ctx, out, s.phaseDur / 1000); } catch (e) {} }
+      if (s.phaseIdx !== last) { last = s.phaseIdx; try { cueHit(CU, s.phase, ctx, out, s.phaseDur / 1000); } catch (e) {} }
       if (el >= clock.total + 500) stopAll();
     }
     iv = setInterval(step, 40); step();
@@ -15186,13 +15205,13 @@
     }
     head("visual"); chips(BREATH_VIZ_KEYS, function (k) { return BREATH_VIZ[k].name; }, breathVizKey, function (k) { S.breathViz = k; }, false);
     head("cue sound"); chips(BREATH_CUE_KEYS, function (k) { return BREATH_CUES[k].name; }, breathCueKey, function (k) { S.breathCue = k; }, true);
-    head("guiding tone"); chips(["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; }, true);
+    head("guiding tone"); chips(["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; }, "tone");
     return { stop: stopPrev };
   }
   // BREATH VOLUME SLIDERS (BUILD 2026-07-19, David: "there's no volume options"): the same two master buses as the player's Sound panel (Voice = spoken cues, Sound = the breath sound + bed), live. Rendered into any container — the picker AND the in-session cog share this exact control. Compact.
   function breathVolRows(host) {
     S.audio = S.audio || { voice: 1, bg: 1 };
-    [["Voice", "voice"], ["Sound", "bg"], ["Tone", "tone"]].forEach(function (kv) { // Tone = the breath's guiding tone, its own level since 2026-09-09. setAudioVol stores a bus-less kind without touching a bus, and makeBreathSustain reads it live.
+    [["Voice", "voice"], ["Sound", "bg"], ["Cue", "cue"], ["Tone", "tone"]].forEach(function (kv) { // Cue = the phase strikes, their own level since 2026-09-15 (David: "cue feels way too quiet and tone too loud") — // Tone = the breath's guiding tone, its own level since 2026-09-09. setAudioVol stores a bus-less kind without touching a bus, and makeBreathSustain reads it live.
       var row = document.createElement("div"); row.style.cssText = "display:flex;align-items:center;gap:10px;margin-top:8px;width:100%;max-width:360px;";
       var lab = document.createElement("span"); lab.textContent = tr(kv[0]); lab.style.cssText = "flex:0 0 52px;font-size:11.5px;font-weight:800;color:var(--c-9a86c0-ink);letter-spacing:.3px;"; row.appendChild(lab);
       var s = document.createElement("input"); s.type = "range"; s.min = "0"; s.max = "100"; s.value = Math.round((S.audio[kv[1]] != null ? S.audio[kv[1]] : 1) * 100); s.style.cssText = "flex:1;accent-color:var(--c-9a7cff-ink);height:24px;";
@@ -15326,7 +15345,7 @@
       if (el >= totalMs) { lab.textContent = tr("Done ✓"); sub.textContent = tr("carry the calm with you"); paintPhase(null); if (tone) tone.update(0, "rest"); paintBars(totalMs); VIZ.paint(vnodes, clock.at(totalMs)); if (!ov._ending) { ov._ending = 1; setTimeout(function () { finish(false); }, 1400); } return; }
       var s = clock.at(el);
       if (s.phaseIdx !== curIdx) { curIdx = s.phaseIdx; lab.textContent = s.label; var F = phases[s.phaseIdx]; sub.textContent = tr(F.name).toLowerCase() + " · " + (LADDER ? (F.si + 1) + " / " + stages.length : (F.c + 1) + " / " + F.cyc); // tr() 2026-08-15: this sub-line printed the raw EN pattern name in RU mode ("4-7-8 breath" under a Russian cue) — a standing latinAudit failure on the surface this pass rebuilt
-        try { if (actx && !_bwSchedK[s.phaseIdx]) CU.hit(s.phase, actx, bgBus() || actx.destination, s.phaseDur / 1000); } catch (e) {} MEDIASESSION.pos(totalMs / 1000, el / 1000); } // ONE cue per phase entry — and only if the schedule-ahead pass did not already plant this boundary on the context clock (that is the copy that survives a lock; striking it here too would double it) — so the sound, the word and the picture can never disagree about when the phase turned
+        try { if (actx && !_bwSchedK[s.phaseIdx]) cueHit(CU, s.phase, actx, bgBus() || actx.destination, s.phaseDur / 1000); } catch (e) {} MEDIASESSION.pos(totalMs / 1000, el / 1000); } // ONE cue per phase entry — and only if the schedule-ahead pass did not already plant this boundary on the context clock (that is the copy that survives a lock; striking it here too would double it) — so the sound, the word and the picture can never disagree about when the phase turned
       if (tone) tone.update(s.level, s.phase); // the tone follows the clock's LEVEL every frame, so its contour IS the visual's contour (and there is no boundary event left to snap)
       paintPhase(s); paintBars(el); VIZ.paint(vnodes, s);
     }
@@ -17358,11 +17377,13 @@
     function breathRow(labelKey, keys, nameOf, getCur, setCur, vol) {
       var r = row(labelKey), cw = add(r, "div", "ps-chips"); cw.style.flexWrap = "wrap";
       keys.forEach(function (k) { bPaints.push(chip(cw, tr(nameOf(k)), true, 11, function () { return getCur() === k; }, function () { setCur(k); save(); bPaints.forEach(function (p) { p(); }); if (_breathLive) { try { _breathLive(); } catch (e) {} } })); }); // _breathLive = the running breath surface re-reads the prefs on its next frame
-      if (vol) slider(r, function () { return S.audio.tone != null ? S.audio.tone : 1; }, function (v) { setAudioVol("tone", v); }); // THE THIRD LAYER (David 2026-09-09: "I would wanna be able to control the volume of those things as well"). Voice and backdrop already had one; the guiding tone was a fixed ceiling nobody could reach. Same slider as the backdrop row, and makeBreathSustain reads S.audio.tone on every update, so it moves the sound you are hearing right now.
+      // ONE LEVEL PER ROW (David 2026-09-15). `vol` is the audio key the row owns — "cue" or "tone" —
+      // so the phase strikes and the guiding tone are mixed against each other instead of together.
+      if (vol) slider(r, function () { var d = vol === "cue" ? 0.5 : 1; return S.audio[vol] != null ? S.audio[vol] : d; }, function (v) { setAudioVol(vol, v); }); // THE THIRD LAYER (David 2026-09-09: "I would wanna be able to control the volume of those things as well"). Voice and backdrop already had one; the guiding tone was a fixed ceiling nobody could reach. Same slider as the backdrop row, and makeBreathSustain reads S.audio.tone on every update, so it moves the sound you are hearing right now.
     }
     if (hasBreath) {
       if (isStack) { add(card, "div", "ps-title", tr("Breathing")); add(card, "div", "ps-kick", tr("sound")); }
-      breathRow("cue", BREATH_CUE_KEYS, function (k) { return BREATH_CUES[k].name; }, breathCueKey, function (k) { S.breathCue = k; });
+      breathRow("cue", BREATH_CUE_KEYS, function (k) { return BREATH_CUES[k].name; }, breathCueKey, function (k) { S.breathCue = k; }, "cue");
       breathRow("tone", ["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; }, true);
       add(card, "div", "ps-kick", tr("visual"));
       breathRow("visual", BREATH_VIZ_KEYS, function (k) { return BREATH_VIZ[k].name; }, breathVizKey, function (k) { S.breathViz = k; });
@@ -17590,7 +17611,7 @@
       if (tk !== _bTk) { if (_bTone) { try { _bTone.stop(); } catch (e) {} } _bTone = null; _bTk = tk; if (tk !== "off" && ctx) { try { _bTone = makeBreathSustain(tk, ctx); } catch (e) { _bTone = null; } } } // picked live from the Sound panel the gear opens, so a change lands in the session you are in
       if (_bTone) _bTone.update(s.level, s.phase);
       var key = (_bRun ? _bRun.a : 0) + ":" + s.phaseIdx;
-      if (key !== _bPh) { _bPh = key; if (_bSup) { _bSup = false; return; } if (_bSchedK[key]) return; try { if (ctx) { var ck = breathCueKey(); (BREATH_CUES[ck] || BREATH_CUES.off).hit(s.phase, ctx, bgBus() || ctx.destination, s.phaseDur / 1000); _bHits.push({ t: +curElapsed().toFixed(2), ph: s.phase, key: key, set: ck }); if (_bHits.length > 200) _bHits.shift(); } } catch (e) {} } // the receipt records the boundary AND which set was live at it — "off" is a real, silent set, and a log that hid that would be lying by omission // ONE hit per phase ENTRY. _bSup is set by every jump (pause, seek, ±15, act-nav, the end of a fast-scan) so landing mid-phase never fires a cue the ear already had.
+      if (key !== _bPh) { _bPh = key; if (_bSup) { _bSup = false; return; } if (_bSchedK[key]) return; try { if (ctx) { var ck = breathCueKey(); cueHit((BREATH_CUES[ck] || BREATH_CUES.off), s.phase, ctx, bgBus() || ctx.destination, s.phaseDur / 1000); _bHits.push({ t: +curElapsed().toFixed(2), ph: s.phase, key: key, set: ck }); if (_bHits.length > 200) _bHits.shift(); } } catch (e) {} } // the receipt records the boundary AND which set was live at it — "off" is a real, silent set, and a log that hid that would be lying by omission // ONE hit per phase ENTRY. _bSup is set by every jump (pause, seek, ±15, act-nav, the end of a fast-scan) so landing mid-phase never fires a cue the ear already had.
     }
     var _bLiveHook = function () { _bTk = null; if (playing) breathSchedFrom(curElapsed()); }; _breathLive = _bLiveHook; // a settings change forces the tone to be re-made from the new key on the next frame — AND replants the schedule from where we are, or the pick would exist only while the screen is on
     // ===== THE VISUAL REGISTRY, ON THE FRONT DOOR (David 2026-08-19: "the wave visualization still doesn't work").
@@ -22011,7 +22032,7 @@
     var SR = 44100, kinds = ["in", "hold", "out", "rest"];
     return Promise.all(kinds.map(function (k) {
       var oac = new OfflineAudioContext(1, SR * 4, SR);
-      try { CU.hit(k, oac, oac.destination, 4); } catch (e) {}
+      try { cueHit(CU, k, oac, oac.destination, 4); } catch (e) {}
       return oac.startRendering().then(function (buf) { var d = buf.getChannelData(0), st = _bacStats(d, SR);
         return { phase: k, peak: st.peak, rms: st.rms, decaySec: st.decaySec, centroidHz: +_bacCentroid(d, 0, Math.floor(SR * 0.25), SR).toFixed(1) }; });
     })).then(function (rows) {
@@ -22030,7 +22051,7 @@
         var tone = (tk !== "off") ? makeBreathSustain(tk, oac) : null, last = -1, t;
         for (t = 0; t <= clock.total; t += 20) { var s = clock.at(t);
           if (tone) tone.update(s.level, s.phase, t / 1000);
-          if (s.phaseIdx !== last) { last = s.phaseIdx; try { CU.hit(s.phase, oac, oac.destination, s.phaseDur / 1000, t / 1000); } catch (e) {} } }
+          if (s.phaseIdx !== last) { last = s.phaseIdx; try { cueHit(CU, s.phase, oac, oac.destination, s.phaseDur / 1000, t / 1000); } catch (e) {} } }
         return oac.startRendering().then(function (buf) {
           var d = buf.getChannelData(0), st = clock.starts, i, tp = 0, fr = 0, fn = 0;
           for (var k = 0; k < st.length; k++) { var a = Math.floor(st[k] / 1000 * SR), b = Math.min(d.length, a + Math.floor(0.06 * SR)); for (i = a; i < b; i++) if (Math.abs(d[i]) > tp) tp = Math.abs(d[i]); }
