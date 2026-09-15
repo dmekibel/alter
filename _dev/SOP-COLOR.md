@@ -33,10 +33,15 @@ separate the Warhol tool tiles (Heart is `#d787d2` on a `#df86d9` ground — 1.0
    can reach: `DEV.colorAudit()`. **Zero failures, or a named reason per failure.** The surfaces that
    matter: start, onboarding intro, home (idle and up-next), tools, an open folder, an open dose card,
    planner, journey, settings.
-3. `DEV.designAudit()` in NIGHT, on the idle home — geometry unchanged.
-4. Anything the audit reports, fix at the ROLE, not at the site. A single mis-roled literal is usually
+3. `DEV.designAudit()` in NIGHT, on the idle home — geometry unchanged. A gate a newer round has
+   replaced reports SKIP with the round that replaced it (`skipR38`), never a silent deletion and never
+   a standing red.
+4. NIGHT IS CANON. `colorAudit` run in night reports David's OWN choices — a label in its own hue at
+   1.08:1, the settings chips on the settings ground. Those are informational, never a to-do. The gate
+   is calibrated to the DAY worlds, whose job is to re-express night without breaking it.
+5. Anything the audit reports, fix at the ROLE, not at the site. A single mis-roled literal is usually
    dozens of elements; patching one selector leaves the rest to reach David one screenshot at a time.
-5. Only then ship.
+6. Only then ship.
 
 ## WHY THE OLD LOOP FAILED, so it is not repeated
 

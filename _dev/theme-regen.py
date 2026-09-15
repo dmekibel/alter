@@ -83,6 +83,14 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         # THE PLANNER PILL, from the frames: border 0 and a soft rgba(ink,.14) lip, not an ink outline.
         '--t-pillbd': ('#160510' if T is None else 'transparent'),
         '--t-pillsh': ('#160510' if T is None else rgba(T['ink'], '.14')),
+        # the 2c planner pill has its OWN violet lip at night (#4e2f96, a locked designAudit gate) —
+        # collapsing it onto the base pill's ink lip changed NIGHT, which is not allowed.
+        '--t-pillsh2c': ('#4e2f96' if T is None else rgba(T['ink'], '.14')),
+        # TEXT ON A TIMELINE SEGMENT. Night writes the domain's LIGHT shade there, which reads on a
+        # near-black board; on a light world that shade is a coin sitting on a coin (1.07:1). Night keeps
+        # its own value exactly (100% of the shade); the day worlds take the on-piece light instead.
+        '--t-segmix': ('100%' if T is None else '0%'),
+        '--t-segink': ('transparent' if T is None else '#f3ecff'),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }

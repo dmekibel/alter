@@ -10365,5 +10365,12 @@
 "night": "#f3ecff",
 "lilies": "#f3ecff",
 "warhol": "#f3ecff"
+},
+"--c-3a0822-ink": {
+"hex": "#3a0822",
+"role": "ink",
+"night": "#3a0822",
+"lilies": "#21265a",
+"warhol": "#391840"
 }
 }

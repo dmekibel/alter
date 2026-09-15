@@ -3050,7 +3050,7 @@
       DOM_ORDER.forEach(function (d) {
         var acts = (by[d] || []).slice(); if (!acts.length) return; var D = DOM[d];
         acts.sort(function (x, y) { return (isCustom(x) ? 0 : 1) - (isCustom(y) ? 0 : 1); }); // your own first — those are the ones you actually edit/remove here
-        var sh = add(body, "div", "habit-dh"); sh.style.color = D.light; sh.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
+        var sh = add(body, "div", "habit-dh"); sh.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; sh.innerHTML = '<i class="ti ' + D.ti + '"></i> ' + D.l;
         var row = add(body, "div", "habit-row");
         var expanded = !!openDom[d], shown = expanded ? acts : acts.slice(0, CAP);
         shown.forEach(function (a) {
@@ -3061,8 +3061,8 @@
           if (custom) { chip.style.cursor = "pointer"; chip.onclick = function () { openSub = (openSub === custom ? null : custom); adding = false; drawHabitsSheet(); }; var del = document.createElement("i"); del.className = "ti ti-x habit-del"; chip.appendChild(del); del.onclick = function (e) { e.stopPropagation(); S.acts = (S.acts || []).filter(function (c) { return c !== custom; }); openSub = null; save(); drawHabitsSheet(); }; }
         });
         var rest = acts.length - shown.length;
-        if (rest > 0) { var mo = add(row, "span", "bchip more"); mo.style.background = mixHex(D.c, THC("#160510","bg"), 0.5); mo.style.color = D.light; mo.textContent = "+" + rest + " more"; mo.onclick = function () { openDom[d] = true; drawHabitsSheet(); }; }
-        else if (expanded && acts.length > CAP) { var le = add(row, "span", "bchip more"); le.style.background = mixHex(D.c, THC("#160510","bg"), 0.5); le.style.color = D.light; le.textContent = "less"; le.onclick = function () { openDom[d] = false; drawHabitsSheet(); }; }
+        if (rest > 0) { var mo = add(row, "span", "bchip more"); mo.style.background = mixHex(D.c, THC("#160510","bg"), 0.5); mo.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; mo.textContent = "+" + rest + " more"; mo.onclick = function () { openDom[d] = true; drawHabitsSheet(); }; }
+        else if (expanded && acts.length > CAP) { var le = add(row, "span", "bchip more"); le.style.background = mixHex(D.c, THC("#160510","bg"), 0.5); le.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; le.textContent = "less"; le.onclick = function () { openDom[d] = false; drawHabitsSheet(); }; }
         if (openSub && openSub.domain === d) drawSubEditor(body, openSub, D);
       });
       if (!adding) { var ab = add(body, "div", "bento-add"); ab.innerHTML = '<i class="ti ti-plus"></i> add a habit / activity'; ab.onclick = function () { adding = true; drawHabitsSheet(); }; }
@@ -3079,7 +3079,7 @@
     // sub-habit editor for ONE parent: lists its children as mini-chips, add/remove tap-driven (David 2026-06-27)
     function drawSubEditor(parent_, p, D) {
       var pan = add(parent_, "div", "subhab-pan"); pan.style.borderColor = D.c;
-      var hd = add(pan, "div", "subhab-hd"); hd.style.color = D.light; hd.innerHTML = '<i class="ti ' + tiClass(p) + '"></i> ' + esc(p.title) + ' · sub-habits';
+      var hd = add(pan, "div", "subhab-hd"); hd.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; hd.innerHTML = '<i class="ti ' + tiClass(p) + '"></i> ' + esc(p.title) + ' · sub-habits';
       p.children = p.children || [];
       var srow = add(pan, "div", "habit-row");
       if (!p.children.length) add(srow, "div", "subhab-empty", "no sub-habits yet · break it into smaller steps");
@@ -3874,7 +3874,7 @@
       // face (activity color + elapsed) and the gold paused face are UNCHANGED and still follow the 07-21 decision. Do not bring the shape-shifter
       // back for this state. So the NEXT-UP branch is gone: both idle sub-states render the one bare pink home.
       p.classList.remove("puck-pill", "puck-wide"); p.classList.add("puck-bare");
-      paintDisc(THC("#ff5fa8","bg"), THC("#ffffff","bg"), "ti-home");
+      paintDisc(THC("#ff5fa8","accent"), THC("#ffffff","bg"), "ti-home"); // the home button is the world ACCENT, as the frames draw it — as a coin it sat at 1.13:1 on both day grounds, and paintDisc writes !important so the CSS could never win
       disc.classList.remove("gpk-nextbadge"); // no play badge in this state either
       txt.style.setProperty("display", "none");
       p._discAct = null; // no _discAct → the disc click falls through to puckGoHome()
@@ -6303,7 +6303,7 @@
     if (c.fx & JL_FX_RAIN) jlAdd(jlAdd(card, "span", "jl-l-rain jl-glis"), "span", "jl-fx", "animation-duration:" + c.rb + "s;");
     if (c.fx & JL_FX_SPARK) jlAdd(card, "span", "jl-l-spark jl-fx");
     var mid = jlAdd(card, "span", "jl-card-mid");
-    jlAdd(mid, "span", "jl-lock-kick", "color:" + c.k + ";").textContent = tr("CHAPTER") + " " + c.ch;
+    jlAdd(mid, "span", "jl-lock-kick", "color:color-mix(in srgb, " + c.k + " var(--t-lblmix), var(--t-lblink));").textContent = tr("CHAPTER") + " " + c.ch;
     jlAdd(mid, "span", "jl-lock-name jl-fx", "background-image:" + c.g + ";animation-duration:" + c.tf + "s;").textContent = tr(c.n);
     jlAdd(card, "i", "ti ti-lock jl-lock-ico");
     return row;
@@ -8746,6 +8746,10 @@
     add(head, "span", "tbx-panel-count", cat.items.length + " " + tr("inside")); add(head, "i", "ti ti-chevron-up tbx-panel-chev");
     head.onclick = function () { var bento = head.closest ? head.closest(".tbx-bento") : panel.parentNode; try { tbxOpenCat(cat.id, bento); } catch (e) {} }; // tap header = close
     var ig = add(panel, "div", "tbx-grid tbx-panel-grid"); cat.items.forEach(function (iid) { tbxTile(ig, iid); });
+    if (cat.mine) { // the Stacks folder also carries your customs and Build, as the frame draws it
+      try { ((S.tools && S.tools.tbxCustom) || []).forEach(function (c) { if (c && c.id) tbxTile(ig, c.id); }); } catch (e) {}
+      tbxBuilderTile(ig);
+    }
     return panel;
   }
   function tbxOpenCat(catId, bento) { // SINGLE-OPEN category. Toggle on tap. Opening removes any existing panel first; a dose card inside a closing panel goes with it (resync openStack).
@@ -15847,9 +15851,9 @@
           else { card.style.height = "0px"; card.style.border = "none"; card.style.background = "none"; card.style.boxShadow = "none"; card.style.visibility = "hidden"; } // started exactly at the block top → no ghost head. visibility:hidden — a 0px card's title text still painted (overflow) and bled through the young charge up close (David device 2026-07-03)
           // (2a) TRACKED stretch — rendered from SECOND ZERO (David device 2026-07-03: "printing doesn't start from the very beginning"): the old `now > _tsm + 0.5` gate was minute-granular, leaving up to a minute of emptiness before the first paint; now the seg is born at 0px and tickCharge grows it per second. Sliver (<10px) = clean color line; content appears as space allows (emoji ≥7px via tickCharge, full label on the next minute-rebuild ≥15px).
           var _segH = flowSpan(_knots, _tsm, _nowX - _tsm), _seg = add(cal, "div", "matchseg chgseg" + (_segH < 10 ? " sliver" : "") + voltClass(k)); /* BATTERY PHYSICS: the live charge prints at the day's voltage */ _seg.style.top = topFor(_tsm) + "px"; _seg.style.height = _segH + "px"; _seg.style.left = "32px"; _seg.style.right = "14px"; _seg.dataset.mn = _tsm; _seg.dataset.dur = Math.max(0, _nowX - _tsm); _seg.dataset.ic = tiClass(b); _seg.dataset.lc = D.light; _seg.style.borderRadius = _R + " " + _R + " 0 0"; _seg.style.borderBottom = "none"; _seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; _seg.style.borderColor = mixHex(D.c, THC("#ffffff","edge"), 0.2); _seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
-          if (_segH >= 15) { var _ssc = add(_seg, "div", "mscn"); _ssc.style.color = D.light; _ssc.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> <i class="ti ti-circle-check"></i>'; } else if (_segH >= 7) { var _se = add(_seg, "div", "msemoji"); _se.innerHTML = tiIcon(b); _se.style.cssText = "position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;line-height:1;color:var(--c-fff2f9-ink);"; }
+          if (_segH >= 15) { var _ssc = add(_seg, "div", "mscn"); _ssc.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; _ssc.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> <i class="ti ti-circle-check"></i>'; } else if (_segH >= 7) { var _se = add(_seg, "div", "msemoji"); _se.innerHTML = tiIcon(b); _se.style.cssText = "position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;line-height:1;color:var(--c-fff2f9-ink);"; }
           // (2b) Batch 3 #3 (David 2026-07-03, reverses the old "nothing below the line while tracking" rule — DAVID'S CALL): SHOW the committed future stretch (now → block end) as a faint dashed plan bar, continuous below the bright tracked segment. This is the "keep going N more" you committed — it should be visible ahead of you, not blank.
-          if (be > now + 0.5) { var _fh2 = flowH(_knots, now, be - now), _cf = add(cal, "div", "calblk lane futurebar committedfut"); _cf.style.top = topFor(now) + "px"; _cf.style.height = _fh2 + "px"; _cf.style.left = "32px"; _cf.style.right = "14px"; _cf.dataset.mn = now; _cf.dataset.dur = (be - now); _cf.style.background = _matte; _cf.style.borderColor = THC("#160510","bg"); _cf.style.borderStyle = "dashed"; _cf.style.borderTop = "none"; _cf.style.boxShadow = "none"; _cf.style.opacity = "0.72"; _cf.style.borderRadius = "0 0 " + _R + " " + _R; _cf.style.pointerEvents = "none"; if (_fh2 >= 16) { var _cfl = add(_cf, "div", "cn"); _cfl.style.color = D.light; _cfl.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>'; } } // borderTop:none — the now-line IS the seam; a dashed top edge under it read as a glitch up close
+          if (be > now + 0.5) { var _fh2 = flowH(_knots, now, be - now), _cf = add(cal, "div", "calblk lane futurebar committedfut"); _cf.style.top = topFor(now) + "px"; _cf.style.height = _fh2 + "px"; _cf.style.left = "32px"; _cf.style.right = "14px"; _cf.dataset.mn = now; _cf.dataset.dur = (be - now); _cf.style.background = _matte; _cf.style.borderColor = THC("#160510","bg"); _cf.style.borderStyle = "dashed"; _cf.style.borderTop = "none"; _cf.style.boxShadow = "none"; _cf.style.opacity = "0.72"; _cf.style.borderRadius = "0 0 " + _R + " " + _R; _cf.style.pointerEvents = "none"; if (_fh2 >= 16) { var _cfl = add(_cf, "div", "cn"); _cfl.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; _cfl.innerHTML = tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>'; } } // borderTop:none — the now-line IS the seam; a dashed top edge under it read as a glitch up close
         } else { // NOT tracking → ONE continuous bar: dark-past top + matte-future bottom, split cleanly at the now-line. CLEAN, no embossed inset ring / dark drop-shadow (David 2026-07-21: the now block looked janky/embossed)
           card.style.background = "none"; card.style.borderColor = mixHex(D.c, THC("#ffffff","bg"), 0.16); card.style.boxShadow = "none";
           var _cardH = Math.max(1, flowH(_knots, bs, be - bs)), _splitPct = Math.max(0, Math.min(100, (topFor(now) - topFor(bs)) / _cardH * 100)); // split ALIGNED to the now-line on the flowed card (was a raw time-fraction that drifted off the line)
@@ -15863,9 +15867,9 @@
         var seg = add(cal, "div", "matchseg" + voltClass(k)); seg.style.top = topFor(_pm.start) + "px"; seg.style.height = _mh + "px"; seg.style.left = "32px"; seg.style.right = "14px"; /* BATTERY PHYSICS: matched charge keeps the voltage of the day it was lived */
         seg.style.background = "repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)"; seg.style.borderColor = mixHex(D.c, THC("#ffffff","edge"), 0.2); seg.style.boxShadow = "0 4px 12px rgba(0,0,0,.3)";
         seg.dataset.mn = _pm.start; seg.dataset.dur = (_pm.end - _pm.start);
-        var _sc = add(seg, "div", "mscn"); _sc.style.color = D.light; _sc.innerHTML = (_mh >= 40 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : tiIcon(b) + ' ') + '<i class="ti ti-circle-check"></i>'; // short matched bar = just the icon + ✓ on the right (clean symbol-box, no cramped faint text) — David 2026-07-21
+        var _sc = add(seg, "div", "mscn"); _sc.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; _sc.innerHTML = (_mh >= 40 ? (tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span> ') : tiIcon(b) + ' ') + '<i class="ti ti-circle-check"></i>'; // short matched bar = just the icon + ✓ on the right (clean symbol-box, no cramped faint text) — David 2026-07-21
       }
-      var ink = (status === "ok" && !partial) || _straddle ? THC("#ffffff","ink") : D.light; // striped/done + NOW = WHITE bold label (Gym, Claude code); quiet/outlined = domain-colour label (Lunch, Read) — canon mockup
+      var ink = "color-mix(in srgb, " + (((status === "ok" && !partial) || _straddle) ? THC("#ffffff","bg") : D.light) + " var(--t-segmix), var(--t-segink))"; // striped/done + NOW = WHITE bold label (Gym, Claude code); quiet/outlined = domain-colour label (Lunch, Read) — canon mockup
       var cn = add(card, "div", "cn"); cn.style.color = ink; if (_straddle) cn.style.fontWeight = "800";
       var _sn = (b.subs || []).length, _dc = (b.subs || []).filter(function (s) { return s.done; }).length;
       cn.innerHTML = !b.title ? '<i class="ti ti-hand-finger"></i> tap to choose' : ((b.pin ? '<i class="ti ti-pin"></i> ' : "") + tiIcon(b) + ' <span class="cn-t">' + esc(b.title) + '</span>' + (_sn ? ' <span class="step-n">' + _dc + '/' + _sn + '</span>' : "") + armorGlyph(b) + goalGlyph(b) + amVirtueGlyph(b)); /* minimalist (David 2026-07-20): dropped the ✨ sparkle on done titles — the gold ring + stripes already say "done", the mockup has clean icon+name only */
@@ -15979,7 +15983,7 @@
         card.style.background = drift ? mixHex(D.c, THC("#160510","bg"), 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)") : mixHex(D.c, THC("#160510","bg"), 0.84); card.style.borderColor = onp ? mixHex(D.c, THC("#ffffff","edge"), 0.2) : mixHex(D.c, THC("#160510","bg"), 0.16); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--c-160510-ink),0 5px 12px rgba(0,0,0,.4)"; // matched real = deep stripes · drift = dark mauve · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         if (!drift) { var _vc = voltClass(k); if (_vc) card.classList.add(_vc.trim()); } /* BATTERY PHYSICS: lived charge carries the day's voltage — drift stays calm gray, never dimmed further */
-        var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>'; // minimalist: no sparkle (David 2026-07-20)
+        var cn = add(card, "div", "cn"); cn.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; cn.innerHTML = tiIcon(e) + ' <span class="cn-t">' + esc(e.title) + '</span>'; // minimalist: no sparkle (David 2026-07-20)
         card.dataset.dur = it.e - it.s; card.dataset.ic = tiClass(e); card.dataset.c = D.c; card.dataset.ink = D.ink; degrade(card);
         if (card.classList.contains("lbl-i") || card.classList.contains("lbl-s")) { card._swOpen = (function (ee) { return function () { logEdit(ee, k); }; })(e); } // small bubble → carries its open-fn for the swipe-select cluster gesture (David 2026-06-28)
         if (drift) { var dl = add(card, "div", "csub", "drifted"); dl.style.color = D.ink; }
@@ -16013,7 +16017,7 @@
         card.style.background = drift ? mixHex(D.c, THC("#160510","bg"), 0.5) : onp ? ("repeating-linear-gradient(45deg," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + "," + mixHex(D.c, THC("#ffffff","bg"), 0.06) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 11px," + mixHex(D.c, THC("#ffffff","ink"), 0.28) + " 22px)") : mixHex(D.c, THC("#160510","bg"), 0.84); card.style.borderColor = onp ? mixHex(D.c, THC("#ffffff","edge"), 0.2) : mixHex(D.c, THC("#160510","bg"), 0.16); card.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,.08),0 3px 0 var(--c-160510-ink)"; // live on-plan = deep stripes · no neon/shine (David 2026-06-27)
         if (onp) card.classList.add("onplan"); else if (drift) card.classList.add("drift");
         if (!drift) { var _vc = voltClass(k); if (_vc) card.classList.add(_vc.trim()); } /* BATTERY PHYSICS: lived charge carries the day's voltage — drift stays calm gray, never dimmed further */
-        var cn = add(card, "div", "cn"); cn.style.color = D.light; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> <span class="cn-t">' + esc(t.title) + '</span><span class="cn-el"> · <span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span></span>'; // C9b (David 2026-07-02): the elapsed rides inside .cn-el so a thin bar can hide it as ONE unit (separator included) — timer text appears only once the block has room
+        var cn = add(card, "div", "cn"); cn.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; cn.innerHTML = '<i class="ti ti-player-play-filled"></i> <span class="cn-t">' + esc(t.title) + '</span><span class="cn-el"> · <span class="live-elapsed" data-tid="' + t.id + '">' + elapsedStr(t) + '</span></span>'; // C9b (David 2026-07-02): the elapsed rides inside .cn-el so a thin bar can hide it as ONE unit (separator included) — timer text appears only once the block has room
         card.dataset.ic = tiClass(t); card.dataset.c = D.c; card.dataset.ink = D.ink; degrade(card); // density by height: a short sliver hides its text (the now-line readout shows it); once tall enough the title+elapsed live ON the bubble (David 2026-06-27)
         // live controls now live in the pull-up dock (#liveDock) — no redundant in-card stop (David 2026-06-25)
         var gT = add(card, "div", "gript");
@@ -16076,7 +16080,7 @@
     var dom = domainOf(b), D = DOM[dom] || DOM.focus, HP = pullHourPx;
     var panel = add(cal, "div", "edgeinsp");
     var ct = parseFloat(card.style.top) || 0; panel.style.top = Math.max(2, ct - 6) + "px";
-    var h = add(panel, "div", "ei-head"); h.style.color = D.light; h.innerHTML = tiIcon(b) + ' <span>' + esc(b.title || tr("Block")) + '</span>';
+    var h = add(panel, "div", "ei-head"); h.style.color = "color-mix(in srgb, " + D.light + " var(--t-segmix), var(--t-segink))"; h.innerHTML = tiIcon(b) + ' <span>' + esc(b.title || tr("Block")) + '</span>';
     add(panel, "div", "ei-lab", tr("start")); var st = add(panel, "div", "ei-step");
     var minus = add(st, "button"); minus.innerHTML = '<i class="ti ti-minus"></i>';
     function _t24(m) { return pad(Math.floor(m / 60) % 24) + ":" + pad(m % 60); } // 24h — no am/pm latin leak in RU (B4)
@@ -22499,7 +22503,7 @@
       }
       if (!e.children.length && (e.textContent || "").trim() && r.height >= 8) {
         var tc = lum(cs.color), tb = behind(e);
-        if (tc != null && tb != null && ratio(tc, tb) < 3) {
+        if (tc != null && tb != null && ratio(tc, tb) < 2.2) { // 2.2 sits just below the design's OWN secondary floor: his frames put secondary text at 2.38:1 and the Planner label at 2.95:1, so a 3.0 gate flagged HIS design and would train me to "fix" correct work
           if (!seen["T" + id]) { seen["T" + id] = 1; out.push("UNREADABLE · \"" + (e.textContent || "").trim().slice(0, 22) + "\" · " + cs.color + " · " + ratio(tc, tb).toFixed(2) + ":1"); }
         }
       }
@@ -22519,6 +22523,10 @@
     // plus the generated _dev/theme-map.json. Switch Look → Night to re-assert all 111 gates.
     // Known cost, named not hidden: ~4 gates carry a radius or a border alongside their color and are
     // skipped whole, so those few geometry assertions only run in night.
+    function skipR38(name) { // a gate for the shelf Round 38 replaced — reported, never silently dropped
+      out.push("SKIP · " + name + " · superseded by Round 38 (flat grid: Build lives in the Stacks folder, FOR YOU NOW is row one, the deck scrolls away)");
+      return true;
+    }
     function chk(name, pass, got, want) {
       // A gate is a night-canon COLOR lock when its want quotes a color, or when its name quotes one
       // with the /*canon*/ marker (the audit prints that marker literally, so it doubles as the flag).
@@ -22622,7 +22630,7 @@
       chk("plan button lip 0 4px 0 " + (_2c ? THC("#4e2f96","ink") : THC("#160510","ink")), ps.indexOf(_plip) >= 0 && /0px\s+4px\s+0px/.test(ps), ps.slice(0, 46), _plip + " 0px 4px 0px");
       if (_2c) chk("planner pill 2c recipe (violet, r22, borderless)", pcs.backgroundColor === "rgb(138, 92, 240)" && Math.round(parseFloat(pcs.borderTopLeftRadius)) === 22 && parseFloat(pcs.borderTopWidth || 0) === 0, pcs.backgroundColor + " r" + pcs.borderTopLeftRadius + " b" + (pcs.borderTopWidth || "0px"), "rgb(138,92,240) at r22px, no border"); }
     if (topGrid) { var gc = getComputedStyle(topGrid).gridTemplateColumns; chk("top-eight grid 4×64px tracks", gc === "64px 64px 64px 64px", gc, "64px 64px 64px 64px"); } // TILE-BIGGER (David 2026-07-23): track 54→64 (face 46→54, ×--tun-tbx-tile default 1)
-    chk("builder tile present (pinned 8th)", !!document.querySelector("#tbxGridTop .tbx-cell-build"), document.querySelector("#tbxGridTop .tbx-cell-build") ? "present" : "missing", "present"); // BUILD-CUSTOM (David 2026-07-23): the create-purple "Build" tile is always the last top-8 cell
+    skipR38("builder tile present (pinned 8th)") || chk("builder tile present (pinned 8th)", !!document.querySelector("#tbxGridTop .tbx-cell-build"), document.querySelector("#tbxGridTop .tbx-cell-build") ? "present" : "missing", "present"); // BUILD-CUSTOM (David 2026-07-23): the create-purple "Build" tile is always the last top-8 cell
     chk("edges cleared (no side door tabs on the home face)", !el("tfDoorPlanner") && !el("tfDoorGarden"), (el("tfDoorPlanner") ? "planner tab present " : "") + (el("tfDoorGarden") ? "garden tab present" : "") || "none", "neither tab renders"); // HOME 2c §3
     // FACE-UP + DECK-CLEARS-THE-FOLD (David 2026-07-27 device "the face rides too low… the deck names are clipped"). Both gates measure against the HOME ZONE slab, never against a viewport-absolute Y: #tfWorld's scrollTop varies with the landing retry, so an absolute Y would false-FAIL a correct board.
     var hz = el("tfWorldHome");
@@ -22776,10 +22784,10 @@
       chk("board fills the phone (2c)", Math.abs(_tz - _want) < 0.011 && _cls === _wantCls && Math.abs(_bw - _wantBw) <= 2, "scale " + _tz + (_cls ? " (scaled)" : " (1:1)") + " · board renders " + Math.round(_bw) + "px at vw " + window.innerWidth, _want.toFixed(4) + " = clamp(vw/402, 1, 1.15), class " + (_wantCls ? "on" : "off") + ", board " + Math.round(_wantBw) + "px wide");
     })();
     var _hcard = document.querySelector("#tfWorldGround .tbx-hero");
-    chk("hero card fills the tools column", !!_hcard && Math.abs(_nr(_hcard).width - _gzw) <= 1, _hcard ? (Math.round(_nr(_hcard).width * 10) / 10 + "px of " + Math.round(_gzw * 10) / 10) : "no hero card", "= the column (370 at the artboard's width — the frame's own hero width)");
+    skipR38("hero card fills the tools column") || chk("hero card fills the tools column", !!_hcard && Math.abs(_nr(_hcard).width - _gzw) <= 1, _hcard ? (Math.round(_nr(_hcard).width * 10) / 10 + "px of " + Math.round(_gzw * 10) / 10) : "no hero card", "= the column (370 at the artboard's width — the frame's own hero width)");
     // …and it is 80 TALL, which is not a padded number: 13+13 of padding around the mid column's own two lines (a 9px/1.5 kicker that
     // wraps to 26 + a 17px Baloo title at 28). The app shipped 68 because every one of those constants was a size small.
-    chk("hero card 80px tall (frame)", !!_hcard && Math.abs(_hcard.offsetHeight - 80) <= 1, _hcard ? _hcard.offsetHeight + "px" : "no hero card", "80px — the frame's card, height driven by its own type");
+    skipR38("hero card 80px tall (frame)") || chk("hero card 80px tall (frame)", !!_hcard && Math.abs(_hcard.offsetHeight - 80) <= 1, _hcard ? _hcard.offsetHeight + "px" : "no hero card", "80px — the frame's card, height driven by its own type");
     var _gtop = el("tbxGridTop");
     if (_gtop && _hcard && _hcard.offsetParent === _gtop.offsetParent) { var _g2h = _hcard.offsetTop - (_gtop.offsetTop + _gtop.offsetHeight);
       chk("grid→hero hand-off 16px", Math.abs(_g2h - 16) <= 1, Math.round(_g2h) + "px", "16px = the column's own 12px gap + the FIRST card's 4px margin (card two carries none — measured)"); }
@@ -22822,9 +22830,9 @@
       var _absTop = function (n) { var t = 0, p = n, guard = 0; while (p && p !== _wv && guard++ < 40) { t += p.offsetTop; p = p.offsetParent; } return p === _wv ? t : NaN; };
       if (_deck && _deck.offsetHeight > 0) {
         var _seat = _absTop(_deck) - _max2; // where the deck's top sits inside the viewport once the column is parked at the landing
-        chk("tools landing seats the deck", isFinite(_seat) && _seat >= 68 && _seat <= _wv.clientHeight / 2, (isFinite(_seat) ? Math.round(_seat) : "unmeasurable") + "px from the screen top", "68px…half a viewport (row one parks under the HUD, never mid-screen)");
+        skipR38("tools landing seats the deck") || chk("tools landing seats the deck", isFinite(_seat) && _seat >= 68 && _seat <= _wv.clientHeight / 2, (isFinite(_seat) ? Math.round(_seat) : "unmeasurable") + "px from the screen top", "68px…half a viewport (row one parks under the HUD, never mid-screen)");
         var _gap2 = _absTop(el("tbxGridTop")) - (_absTop(_deck) + _deck.offsetHeight);
-        chk("deck hands straight into the grid", isFinite(_gap2) && _gap2 <= 20, (isFinite(_gap2) ? Math.round(_gap2) : "unmeasurable") + "px between the deck and the grid", "≤20px (the frame hands row one into row two at 11; ≤60 was loose enough to ship the 25px gap David caught on device)");
+        skipR38("deck hands straight into the grid") || chk("deck hands straight into the grid", isFinite(_gap2) && _gap2 <= 20, (isFinite(_gap2) ? Math.round(_gap2) : "unmeasurable") + "px between the deck and the grid", "≤20px (the frame hands row one into row two at 11; ≤60 was loose enough to ship the 25px gap David caught on device)");
       } else {
         var _tail = (_hz2.offsetTop + _hz2.offsetHeight) - _max2; // px of home still on screen at the tools landing
         chk("tools landing clears home", _tail <= 2, Math.round(_tail) + "px of home visible", "≤2px (with no deck to ride up, home must leave entirely)");
