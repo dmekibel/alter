@@ -150,8 +150,17 @@ def remap(c, role, T):
         out = bodyInk(T)
     elif b == 'structural':
         if role == 'bg':
-            t = min(1.0, l/0.45)
-            return blend(T['surface'], T['ground'], t)
+            # THE NESTING RAMP (David 2026-09-15, and DEV.colorAudit's own numbers). Night stacks four
+            # levels of surface — page #160510, card #251d40, panel #2a1626, inner — and reads them apart
+            # because they are spread across real lightness. The design's day pair is NOT: ground #df86d9
+            # against surface #d476cc is 1.05:1, so a ramp drawn between them compresses every level into
+            # one colour and the whole nest collapses (his "the heart and the recovery look borderline
+            # invisible", and the audit's twelve 1.00-1.14:1 pieces). So the ramp runs from the ground
+            # DOWN TOWARD INK instead, which keeps the ground exactly where the design puts it while
+            # giving each level above it somewhere distinct to land. Monotonic: a lighter source in
+            # night is always a more separated piece here, so nesting order survives.
+            t = min(1.0, l / 0.45)
+            return blend(T['ink'], T['ground'], t * 0.34)
         out = blend(T['ink'], T['surface'], 1 - min(1.0, l/0.45) * 0.26)
     else:
         out = coin(c, T)

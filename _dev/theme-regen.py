@@ -67,6 +67,13 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         # the same rgba paints a black smear across the bottom of the screen (David 2026-09-15, his own
         # Warhol settings frame). The fade takes the world's ground instead, so it still melts.
         '--t-fade': ('rgba(13,5,15,.94)' if T is None else rgba(T['ground'], '.94')),
+        # WHAT A LIP MIXES TOWARD. A hard lip is authored as `color-mix(hue 45%, #000)`. Black is a
+        # structural literal, so the engine mapped it onto the day GROUND — and a lip mixed toward the
+        # ground is the ground: Warhol's Heart tile came out #d787d2 with a #db86d6 lip and floated
+        # with nothing under it (David: "the heart and the recovery look borderline invisible"). Its
+        # FILL was byte-correct against the frame the whole time; the lip was the defect. Night keeps
+        # black; the day worlds mix toward their own ink, which is what the frames' lips actually are.
+        '--t-lipbase': ('#000000' if T is None else T['ink']),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }

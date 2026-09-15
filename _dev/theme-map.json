@@ -45,8 +45,8 @@
 "hex": "#02160c",
 "role": "bg",
 "night": "#02160c",
-"lilies": "#7083e1",
-"warhol": "#de84d8"
+"lilies": "#6f81dd",
+"warhol": "#d982d3"
 },
 "--c-032428-ink": {
 "hex": "#032428",
@@ -59,8 +59,8 @@
 "hex": "#04041a",
 "role": "bg",
 "night": "#04041a",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d781d2"
 },
 "--c-04202f-ink": {
 "hex": "#04202f",
@@ -87,8 +87,8 @@
 "hex": "#05101e",
 "role": "bg",
 "night": "#05101e",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80da",
+"warhol": "#d680d0"
 },
 "--c-052a1f-ink": {
 "hex": "#052a1f",
@@ -108,15 +108,15 @@
 "hex": "#060a14",
 "role": "bg",
 "night": "#060a14",
-"lilies": "#7083e1",
-"warhol": "#de84d8"
+"lilies": "#6f81dc",
+"warhol": "#d881d3"
 },
 "--c-062e1a-bg": {
 "hex": "#062e1a",
 "role": "bg",
 "night": "#062e1a",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-062e36-ink": {
 "hex": "#062e36",
@@ -150,8 +150,8 @@
 "hex": "#071018",
 "role": "bg",
 "night": "#071018",
-"lilies": "#6f82e1",
-"warhol": "#de84d7"
+"lilies": "#6e80db",
+"warhol": "#d781d1"
 },
 "--c-07351f-ink": {
 "hex": "#07351f",
@@ -164,15 +164,15 @@
 "hex": "#08191f",
 "role": "bg",
 "night": "#08191f",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-08283c-bg": {
 "hex": "#08283c",
 "role": "bg",
 "night": "#08283c",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cd7ac8"
 },
 "--c-08283c-ink": {
 "hex": "#08283c",
@@ -206,15 +206,15 @@
 "hex": "#0a0a12",
 "role": "bg",
 "night": "#0a0a12",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d881d2"
 },
 "--c-0a0a1e-bg": {
 "hex": "#0a0a1e",
 "role": "bg",
 "night": "#0a0a1e",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-0a3326-ink": {
 "hex": "#0a3326",
@@ -248,8 +248,8 @@
 "hex": "#0a4a2a",
 "role": "bg",
 "night": "#0a4a2a",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778d0",
+"warhol": "#c977c5"
 },
 "--c-0b0308-ink": {
 "hex": "#0b0308",
@@ -276,22 +276,22 @@
 "hex": "#0c0418",
 "role": "bg",
 "night": "#0c0418",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d881d2"
 },
 "--c-0c0510-bg": {
 "hex": "#0c0510",
 "role": "bg",
 "night": "#0c0510",
-"lilies": "#7083e1",
-"warhol": "#de85d8"
+"lilies": "#6f82dd",
+"warhol": "#d982d4"
 },
 "--c-0c0a1c-bg": {
 "hex": "#0c0a1c",
 "role": "bg",
 "night": "#0c0a1c",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-0c0d10-ink": {
 "hex": "#0c0d10",
@@ -311,8 +311,8 @@
 "hex": "#0c2b2c",
 "role": "bg",
 "night": "#0c2b2c",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d07ccb"
 },
 "--c-0c3a5a-ink": {
 "hex": "#0c3a5a",
@@ -325,8 +325,8 @@
 "hex": "#0c3d29",
 "role": "bg",
 "night": "#0c3d29",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-0c3d29-ink": {
 "hex": "#0c3d29",
@@ -353,8 +353,8 @@
 "hex": "#0d050f",
 "role": "bg",
 "night": "#0d050f",
-"lilies": "#7083e1",
-"warhol": "#de85d8"
+"lilies": "#6f82de",
+"warhol": "#da83d4"
 },
 "--c-0d1230-ink": {
 "hex": "#0d1230",
@@ -367,15 +367,15 @@
 "hex": "#0d1626",
 "role": "bg",
 "night": "#0d1626",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6c7dd7",
+"warhol": "#d17dcd"
 },
 "--c-0d2038-bg": {
 "hex": "#0d2038",
 "role": "bg",
 "night": "#0d2038",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cd7ac8"
 },
 "--c-0d271a-ink": {
 "hex": "#0d271a",
@@ -388,8 +388,8 @@
 "hex": "#0e0618",
 "role": "bg",
 "night": "#0e0618",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d781d2"
 },
 "--c-0e0618-ink": {
 "hex": "#0e0618",
@@ -402,15 +402,15 @@
 "hex": "#0e0717",
 "role": "bg",
 "night": "#0e0717",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d781d2"
 },
 "--c-0e1450-bg": {
 "hex": "#0e1450",
 "role": "bg",
 "night": "#0e1450",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677ce",
+"warhol": "#c676c2"
 },
 "--c-0e1626-ink": {
 "hex": "#0e1626",
@@ -423,8 +423,8 @@
 "hex": "#0e2240",
 "role": "bg",
 "night": "#0e2240",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-0e2240-ink": {
 "hex": "#0e2240",
@@ -465,15 +465,15 @@
 "hex": "#0f2b3a",
 "role": "bg",
 "night": "#0f2b3a",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-100a1a-bg": {
 "hex": "#100a1a",
 "role": "bg",
 "night": "#100a1a",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d80da",
+"warhol": "#d580d0"
 },
 "--c-100c1c-ink": {
 "hex": "#100c1c",
@@ -486,8 +486,8 @@
 "hex": "#10122a",
 "role": "bg",
 "night": "#10122a",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd5",
+"warhol": "#d07ccb"
 },
 "--c-101827-ink": {
 "hex": "#101827",
@@ -500,36 +500,36 @@
 "hex": "#101f14",
 "role": "bg",
 "night": "#101f14",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-120509-bg": {
 "hex": "#120509",
 "role": "bg",
 "night": "#120509",
-"lilies": "#7083e1",
-"warhol": "#de84d8"
+"lilies": "#6f82dd",
+"warhol": "#d982d3"
 },
 "--c-120604-bg": {
 "hex": "#120604",
 "role": "bg",
 "night": "#120604",
-"lilies": "#7083e1",
-"warhol": "#de84d8"
+"lilies": "#6f82dd",
+"warhol": "#d982d4"
 },
 "--c-120718-bg": {
 "hex": "#120718",
 "role": "bg",
 "night": "#120718",
-"lilies": "#6f82e1",
-"warhol": "#de84d7"
+"lilies": "#6e80db",
+"warhol": "#d781d1"
 },
 "--c-120a12-bg": {
 "hex": "#120a12",
 "role": "bg",
 "night": "#120a12",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d881d2"
 },
 "--c-120a12-ink": {
 "hex": "#120a12",
@@ -556,8 +556,8 @@
 "hex": "#12463c",
 "role": "bg",
 "night": "#12463c",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c877c4"
 },
 "--c-12d68f-bg": {
 "hex": "#12d68f",
@@ -577,15 +577,15 @@
 "hex": "#130c1d",
 "role": "bg",
 "night": "#130c1d",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-14060e-bg": {
 "hex": "#14060e",
 "role": "bg",
 "night": "#14060e",
-"lilies": "#7083e1",
-"warhol": "#de84d8"
+"lilies": "#6f81dc",
+"warhol": "#d881d3"
 },
 "--c-14060e-ink": {
 "hex": "#14060e",
@@ -598,8 +598,8 @@
 "hex": "#14060f",
 "role": "bg",
 "night": "#14060f",
-"lilies": "#7083e1",
-"warhol": "#de84d8"
+"lilies": "#6f81dc",
+"warhol": "#d881d3"
 },
 "--c-14060f-ink": {
 "hex": "#14060f",
@@ -612,15 +612,15 @@
 "hex": "#140a1a",
 "role": "bg",
 "night": "#140a1a",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d80da",
+"warhol": "#d580d0"
 },
 "--c-140f26-bg": {
 "hex": "#140f26",
 "role": "bg",
 "night": "#140f26",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-14101d-ink": {
 "hex": "#14101d",
@@ -647,43 +647,43 @@
 "hex": "#143226",
 "role": "bg",
 "night": "#143226",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cc7ac8"
 },
 "--c-150912-bg": {
 "hex": "#150912",
 "role": "bg",
 "night": "#150912",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d781d2"
 },
 "--c-150a1a-bg": {
 "hex": "#150a1a",
 "role": "bg",
 "night": "#150a1a",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d80da",
+"warhol": "#d580d0"
 },
 "--c-150a20-bg": {
 "hex": "#150a20",
 "role": "bg",
 "night": "#150a20",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-15294a-bg": {
 "hex": "#15294a",
 "role": "bg",
 "night": "#15294a",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677cd",
+"warhol": "#c675c2"
 },
 "--c-160510-bg": {
 "hex": "#160510",
 "role": "bg",
 "night": "#160510",
-"lilies": "#7083e1",
-"warhol": "#de84d7"
+"lilies": "#6f81dc",
+"warhol": "#d881d2"
 },
 "--c-160510-ink": {
 "hex": "#160510",
@@ -696,8 +696,8 @@
 "hex": "#160714",
 "role": "bg",
 "night": "#160714",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d781d2"
 },
 "--c-160714-ink": {
 "hex": "#160714",
@@ -710,57 +710,57 @@
 "hex": "#160806",
 "role": "bg",
 "night": "#160806",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d881d2"
 },
 "--c-160a1c-bg": {
 "hex": "#160a1c",
 "role": "bg",
 "night": "#160a1c",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-160a1e-bg": {
 "hex": "#160a1e",
 "role": "bg",
 "night": "#160a1e",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-160a20-bg": {
 "hex": "#160a20",
 "role": "bg",
 "night": "#160a20",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-160b1e-bg": {
 "hex": "#160b1e",
 "role": "bg",
 "night": "#160b1e",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-160b22-bg": {
 "hex": "#160b22",
 "role": "bg",
 "night": "#160b22",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-160b26-bg": {
 "hex": "#160b26",
 "role": "bg",
 "night": "#160b26",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-161020-bg": {
 "hex": "#161020",
 "role": "bg",
 "night": "#161020",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d27ecd"
 },
 "--c-16243a-ink": {
 "hex": "#16243a",
@@ -794,15 +794,15 @@
 "hex": "#164c50",
 "role": "bg",
 "night": "#164c50",
-"lilies": "#697dde",
-"warhol": "#da7fd3"
+"lilies": "#6576cc",
+"warhol": "#c474c0"
 },
 "--c-170811-bg": {
 "hex": "#170811",
 "role": "bg",
 "night": "#170811",
-"lilies": "#6f82e1",
-"warhol": "#de84d7"
+"lilies": "#6e80db",
+"warhol": "#d781d1"
 },
 "--c-170811-ink": {
 "hex": "#170811",
@@ -815,8 +815,8 @@
 "hex": "#17091a",
 "role": "bg",
 "night": "#17091a",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80da",
+"warhol": "#d680d0"
 },
 "--c-17091a-ink": {
 "hex": "#17091a",
@@ -829,71 +829,71 @@
 "hex": "#170a12",
 "role": "bg",
 "night": "#170a12",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-170a15-bg": {
 "hex": "#170a15",
 "role": "bg",
 "night": "#170a15",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-170a1c-bg": {
 "hex": "#170a1c",
 "role": "bg",
 "night": "#170a1c",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-17101f-bg": {
 "hex": "#17101f",
 "role": "bg",
 "night": "#17101f",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-171130-bg": {
 "hex": "#171130",
 "role": "bg",
 "night": "#171130",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-171203-bg": {
 "hex": "#171203",
 "role": "bg",
 "night": "#171203",
-"lilies": "#7083e1",
-"warhol": "#de84d8"
+"lilies": "#6f81dc",
+"warhol": "#d881d3"
 },
 "--c-172648-bg": {
 "hex": "#172648",
 "role": "bg",
 "night": "#172648",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677cd",
+"warhol": "#c675c2"
 },
 "--c-180a14-bg": {
 "hex": "#180a14",
 "role": "bg",
 "night": "#180a14",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-180a1e-bg": {
 "hex": "#180a1e",
 "role": "bg",
 "night": "#180a1e",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-180a2a-bg": {
 "hex": "#180a2a",
 "role": "bg",
 "night": "#180a2a",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-180a30-ink": {
 "hex": "#180a30",
@@ -906,127 +906,127 @@
 "hex": "#180b25",
 "role": "bg",
 "night": "#180b25",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d27ecd"
 },
 "--c-184630-bg": {
 "hex": "#184630",
 "role": "bg",
 "night": "#184630",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677ce",
+"warhol": "#c676c2"
 },
 "--c-190913-bg": {
 "hex": "#190913",
 "role": "bg",
 "night": "#190913",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-190b18-bg": {
 "hex": "#190b18",
 "role": "bg",
 "night": "#190b18",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d80da",
+"warhol": "#d580d0"
 },
 "--c-190d26-bg": {
 "hex": "#190d26",
 "role": "bg",
 "night": "#190d26",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6c7dd7",
+"warhol": "#d17dcd"
 },
 "--c-191334-bg": {
 "hex": "#191334",
 "role": "bg",
 "night": "#191334",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697ad3",
+"warhol": "#cc7ac8"
 },
 "--c-1a0206-bg": {
 "hex": "#1a0206",
 "role": "bg",
 "night": "#1a0206",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d881d2"
 },
 "--c-1a0612-bg": {
 "hex": "#1a0612",
 "role": "bg",
 "night": "#1a0612",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d780d1"
 },
 "--c-1a0712-bg": {
 "hex": "#1a0712",
 "role": "bg",
 "night": "#1a0712",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-1a0813-bg": {
 "hex": "#1a0813",
 "role": "bg",
 "night": "#1a0813",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-1a0a24-bg": {
 "hex": "#1a0a24",
 "role": "bg",
 "night": "#1a0a24",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-1a0b26-bg": {
 "hex": "#1a0b26",
 "role": "bg",
 "night": "#1a0b26",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-1a0c1e-bg": {
 "hex": "#1a0c1e",
 "role": "bg",
 "night": "#1a0c1e",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-1a0e28-bg": {
 "hex": "#1a0e28",
 "role": "bg",
 "night": "#1a0e28",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d17dcc"
 },
 "--c-1a0f26-bg": {
 "hex": "#1a0f26",
 "role": "bg",
 "night": "#1a0f26",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-1a0f2e-bg": {
 "hex": "#1a0f2e",
 "role": "bg",
 "night": "#1a0f2e",
-"lilies": "#6c80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-1a1128-bg": {
 "hex": "#1a1128",
 "role": "bg",
 "night": "#1a1128",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd6",
+"warhol": "#d07ccb"
 },
 "--c-1a1226-bg": {
 "hex": "#1a1226",
 "role": "bg",
 "night": "#1a1226",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d07ccb"
 },
 "--c-1a1440-ink": {
 "hex": "#1a1440",
@@ -1053,57 +1053,57 @@
 "hex": "#1a3a66",
 "role": "bg",
 "night": "#1a3a66",
-"lilies": "#667ade",
-"warhol": "#d97dd2"
+"lilies": "#6272c6",
+"warhol": "#bd70ba"
 },
 "--c-1b0b16-bg": {
 "hex": "#1b0b16",
 "role": "bg",
 "night": "#1b0b16",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-1b0c1a-bg": {
 "hex": "#1b0c1a",
 "role": "bg",
 "night": "#1b0c1a",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-1b1330-bg": {
 "hex": "#1b1330",
 "role": "bg",
 "night": "#1b1330",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd4",
+"warhol": "#cd7ac9"
 },
 "--c-1b1535-bg": {
 "hex": "#1b1535",
 "role": "bg",
 "night": "#1b1535",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-1c0500-bg": {
 "hex": "#1c0500",
 "role": "bg",
 "night": "#1c0500",
-"lilies": "#6f83e1",
-"warhol": "#de84d7"
+"lilies": "#6e81dc",
+"warhol": "#d881d2"
 },
 "--c-1c0512-bg": {
 "hex": "#1c0512",
 "role": "bg",
 "night": "#1c0512",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-1c0612-bg": {
 "hex": "#1c0612",
 "role": "bg",
 "night": "#1c0612",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-1c0612-ink": {
 "hex": "#1c0612",
@@ -1116,36 +1116,36 @@
 "hex": "#1c0616",
 "role": "bg",
 "night": "#1c0616",
-"lilies": "#6f82e1",
-"warhol": "#dd84d7"
+"lilies": "#6e80db",
+"warhol": "#d680d1"
 },
 "--c-1c0814-bg": {
 "hex": "#1c0814",
 "role": "bg",
 "night": "#1c0814",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d80da",
+"warhol": "#d580d0"
 },
 "--c-1c0a17-bg": {
 "hex": "#1c0a17",
 "role": "bg",
 "night": "#1c0a17",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-1c0a18-bg": {
 "hex": "#1c0a18",
 "role": "bg",
 "night": "#1c0a18",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-1c0b15-bg": {
 "hex": "#1c0b15",
 "role": "bg",
 "night": "#1c0b15",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d57fd0"
 },
 "--c-1c0b15-ink": {
 "hex": "#1c0b15",
@@ -1158,36 +1158,36 @@
 "hex": "#1c0d26",
 "role": "bg",
 "night": "#1c0d26",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6c7dd7",
+"warhol": "#d17dcd"
 },
 "--c-1c0d28-bg": {
 "hex": "#1c0d28",
 "role": "bg",
 "night": "#1c0d28",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-1c0e2e-bg": {
 "hex": "#1c0e2e",
 "role": "bg",
 "night": "#1c0e2e",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7cca"
 },
 "--c-1c0e30-bg": {
 "hex": "#1c0e30",
 "role": "bg",
 "night": "#1c0e30",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-1c0f20-bg": {
 "hex": "#1c0f20",
 "role": "bg",
 "night": "#1c0f20",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-1c0f20-ink": {
 "hex": "#1c0f20",
@@ -1200,15 +1200,15 @@
 "hex": "#1c0f22",
 "role": "bg",
 "night": "#1c0f22",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-1c0f26-bg": {
 "hex": "#1c0f26",
 "role": "bg",
 "night": "#1c0f26",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-1c1030-ink": {
 "hex": "#1c1030",
@@ -1221,15 +1221,15 @@
 "hex": "#1c1228",
 "role": "bg",
 "night": "#1c1228",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd5",
+"warhol": "#d07ccb"
 },
 "--c-1c1338-bg": {
 "hex": "#1c1338",
 "role": "bg",
 "night": "#1c1338",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#687ad2",
+"warhol": "#cb79c7"
 },
 "--c-1c2a7a-bg": {
 "hex": "#1c2a7a",
@@ -1249,43 +1249,43 @@
 "hex": "#1d1226",
 "role": "bg",
 "night": "#1d1226",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d07ccb"
 },
 "--c-1d1628-bg": {
 "hex": "#1d1628",
 "role": "bg",
 "night": "#1d1628",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-1d1636-bg": {
 "hex": "#1d1636",
 "role": "bg",
 "night": "#1d1636",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#687ad2",
+"warhol": "#cb79c7"
 },
 "--c-1d5a44-bg": {
 "hex": "#1d5a44",
 "role": "bg",
 "night": "#1d5a44",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c8",
+"warhol": "#bf71bc"
 },
 "--c-1e0a16-bg": {
 "hex": "#1e0a16",
 "role": "bg",
 "night": "#1e0a16",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-1e0b18-bg": {
 "hex": "#1e0b18",
 "role": "bg",
 "night": "#1e0b18",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-1e0b18-ink": {
 "hex": "#1e0b18",
@@ -1298,15 +1298,15 @@
 "hex": "#1e0d18",
 "role": "bg",
 "night": "#1e0d18",
-"lilies": "#6e81e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47ecf"
 },
 "--c-1e0d1a-bg": {
 "hex": "#1e0d1a",
 "role": "bg",
 "night": "#1e0d1a",
-"lilies": "#6e81e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47ecf"
 },
 "--c-1e0d1a-ink": {
 "hex": "#1e0d1a",
@@ -1319,8 +1319,8 @@
 "hex": "#1e0f22",
 "role": "bg",
 "night": "#1e0f22",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-1e1230-ink": {
 "hex": "#1e1230",
@@ -1340,29 +1340,29 @@
 "hex": "#1f0612",
 "role": "bg",
 "night": "#1f0612",
-"lilies": "#6f82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fda",
+"warhol": "#d580d0"
 },
 "--c-1f3658-bg": {
 "hex": "#1f3658",
 "role": "bg",
 "night": "#1f3658",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c8",
+"warhol": "#bf71bc"
 },
 "--c-1f6a3a-bg": {
 "hex": "#1f6a3a",
 "role": "bg",
 "night": "#1f6a3a",
-"lilies": "#657add",
-"warhol": "#d87cd1"
+"lilies": "#6171c4",
+"warhol": "#bb6eb8"
 },
 "--c-1f7268-bg": {
 "hex": "#1f7268",
 "role": "bg",
 "night": "#1f7268",
-"lilies": "#6579dd",
-"warhol": "#d87cd1"
+"lilies": "#606fc3",
+"warhol": "#b96db6"
 },
 "--c-1f9aa6-ink": {
 "hex": "#1f9aa6",
@@ -1389,22 +1389,22 @@
 "hex": "#200a14",
 "role": "bg",
 "night": "#200a14",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-200f30-bg": {
 "hex": "#200f30",
 "role": "bg",
 "night": "#200f30",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd4",
+"warhol": "#ce7bca"
 },
 "--c-201022-bg": {
 "hex": "#201022",
 "role": "bg",
 "night": "#201022",
-"lilies": "#6d81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-201028-ink": {
 "hex": "#201028",
@@ -1417,64 +1417,64 @@
 "hex": "#201042",
 "role": "bg",
 "night": "#201042",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d0",
+"warhol": "#c978c5"
 },
 "--c-20140d-bg": {
 "hex": "#20140d",
 "role": "bg",
 "night": "#20140d",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-202c4e-bg": {
 "hex": "#202c4e",
 "role": "bg",
 "night": "#202c4e",
-"lilies": "#687cde",
-"warhol": "#da7ed3"
+"lilies": "#6475ca",
+"warhol": "#c273be"
 },
 "--c-210e1a-bg": {
 "hex": "#210e1a",
 "role": "bg",
 "night": "#210e1a",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-211031-bg": {
 "hex": "#211031",
 "role": "bg",
 "night": "#211031",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-220719-bg": {
 "hex": "#220719",
 "role": "bg",
 "night": "#220719",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-22091a-bg": {
 "hex": "#22091a",
 "role": "bg",
 "night": "#22091a",
-"lilies": "#6e81e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47ecf"
 },
 "--c-220c1a-bg": {
 "hex": "#220c1a",
 "role": "bg",
 "night": "#220c1a",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-221018-bg": {
 "hex": "#221018",
 "role": "bg",
 "night": "#221018",
-"lilies": "#6d81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-221018-ink": {
 "hex": "#221018",
@@ -1487,22 +1487,22 @@
 "hex": "#221026",
 "role": "bg",
 "night": "#221026",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d17dcc"
 },
 "--c-22102e-bg": {
 "hex": "#22102e",
 "role": "bg",
 "night": "#22102e",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-221030-bg": {
 "hex": "#221030",
 "role": "bg",
 "night": "#221030",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-22103a-ink": {
 "hex": "#22103a",
@@ -1515,8 +1515,8 @@
 "hex": "#221126",
 "role": "bg",
 "night": "#221126",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d07ccc"
 },
 "--c-221126-ink": {
 "hex": "#221126",
@@ -1529,36 +1529,36 @@
 "hex": "#221a30",
 "role": "bg",
 "night": "#221a30",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-221a38-bg": {
 "hex": "#221a38",
 "role": "bg",
 "night": "#221a38",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d0",
+"warhol": "#c978c5"
 },
 "--c-221a3e-bg": {
 "hex": "#221a3e",
 "role": "bg",
 "night": "#221a3e",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c877c4"
 },
 "--c-221b36-bg": {
 "hex": "#221b36",
 "role": "bg",
 "night": "#221b36",
-"lilies": "#6b7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d0",
+"warhol": "#ca78c5"
 },
 "--c-227883-bg": {
 "hex": "#227883",
 "role": "bg",
 "night": "#227883",
-"lilies": "#6377dc",
-"warhol": "#d77ad0"
+"lilies": "#5d6cbe",
+"warhol": "#b369b1"
 },
 "--c-227883-ink": {
 "hex": "#227883",
@@ -1585,15 +1585,15 @@
 "hex": "#231018",
 "role": "bg",
 "night": "#231018",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6c7dd7",
+"warhol": "#d17dcd"
 },
 "--c-231020-bg": {
 "hex": "#231020",
 "role": "bg",
 "night": "#231020",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6c7dd7",
+"warhol": "#d17dcd"
 },
 "--c-23192e-ink": {
 "hex": "#23192e",
@@ -1613,22 +1613,22 @@
 "hex": "#24091c",
 "role": "bg",
 "night": "#24091c",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-241009-bg": {
 "hex": "#241009",
 "role": "bg",
 "night": "#241009",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-241019-bg": {
 "hex": "#241019",
 "role": "bg",
 "night": "#241019",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-241019-ink": {
 "hex": "#241019",
@@ -1641,15 +1641,15 @@
 "hex": "#241020",
 "role": "bg",
 "night": "#241020",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-241022-bg": {
 "hex": "#241022",
 "role": "bg",
 "night": "#241022",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-241022-ink": {
 "hex": "#241022",
@@ -1662,15 +1662,15 @@
 "hex": "#241026",
 "role": "bg",
 "night": "#241026",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d17dcc"
 },
 "--c-241030-bg": {
 "hex": "#241030",
 "role": "bg",
 "night": "#241030",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-241031-ink": {
 "hex": "#241031",
@@ -1683,8 +1683,8 @@
 "hex": "#241038",
 "role": "bg",
 "night": "#241038",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c8"
 },
 "--c-241038-ink": {
 "hex": "#241038",
@@ -1697,15 +1697,15 @@
 "hex": "#241322",
 "role": "bg",
 "night": "#241322",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d07ccc"
 },
 "--c-241328-bg": {
 "hex": "#241328",
 "role": "bg",
 "night": "#241328",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7ccb"
 },
 "--c-241328-ink": {
 "hex": "#241328",
@@ -1718,8 +1718,8 @@
 "hex": "#241335",
 "role": "bg",
 "night": "#241335",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c8"
 },
 "--c-241400-ink": {
 "hex": "#241400",
@@ -1732,15 +1732,15 @@
 "hex": "#241435",
 "role": "bg",
 "night": "#241435",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-241436-bg": {
 "hex": "#241436",
 "role": "bg",
 "night": "#241436",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-241436-ink": {
 "hex": "#241436",
@@ -1753,15 +1753,15 @@
 "hex": "#241534",
 "role": "bg",
 "night": "#241534",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-241548-bg": {
 "hex": "#241548",
 "role": "bg",
 "night": "#241548",
-"lilies": "#697ddf",
-"warhol": "#db80d4"
+"lilies": "#6677ce",
+"warhol": "#c676c2"
 },
 "--c-241548-ink": {
 "hex": "#241548",
@@ -1781,15 +1781,15 @@
 "hex": "#241a04",
 "role": "bg",
 "night": "#241a04",
-"lilies": "#6e82e1",
-"warhol": "#dd83d7"
+"lilies": "#6d7fd9",
+"warhol": "#d47fcf"
 },
 "--c-241a3a-bg": {
 "hex": "#241a3a",
 "role": "bg",
 "night": "#241a3a",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778d0",
+"warhol": "#c977c5"
 },
 "--c-241a46-ink": {
 "hex": "#241a46",
@@ -1802,57 +1802,57 @@
 "hex": "#241b28",
 "role": "bg",
 "night": "#241b28",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd4",
+"warhol": "#cd7ac9"
 },
 "--c-251020-bg": {
 "hex": "#251020",
 "role": "bg",
 "night": "#251020",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-251436-bg": {
 "hex": "#251436",
 "role": "bg",
 "night": "#251436",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-251640-bg": {
 "hex": "#251640",
 "role": "bg",
 "night": "#251640",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c877c4"
 },
 "--c-251d40-bg": {
 "hex": "#251d40",
 "role": "bg",
 "night": "#251d40",
-"lilies": "#697ddf",
-"warhol": "#db80d4"
+"lilies": "#6677ce",
+"warhol": "#c676c2"
 },
 "--c-260818-bg": {
 "hex": "#260818",
 "role": "bg",
 "night": "#260818",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-26091a-bg": {
 "hex": "#26091a",
 "role": "bg",
 "night": "#26091a",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-260b18-bg": {
 "hex": "#260b18",
 "role": "bg",
 "night": "#260b18",
-"lilies": "#6e81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-269ca7-bg": {
 "hex": "#269ca7",
@@ -1865,15 +1865,15 @@
 "hex": "#281c48",
 "role": "bg",
 "night": "#281c48",
-"lilies": "#697ddf",
-"warhol": "#da7fd3"
+"lilies": "#6576cc",
+"warhol": "#c475c1"
 },
 "--c-288968-bg": {
 "hex": "#288968",
 "role": "bg",
 "night": "#288968",
-"lilies": "#6276dc",
-"warhol": "#d77acf"
+"lilies": "#5b6bbc",
+"warhol": "#b067ae"
 },
 "--c-288968-ink": {
 "hex": "#288968",
@@ -1900,8 +1900,8 @@
 "hex": "#29101f",
 "role": "bg",
 "night": "#29101f",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd6",
+"warhol": "#d07ccb"
 },
 "--c-29101f-ink": {
 "hex": "#29101f",
@@ -1928,15 +1928,15 @@
 "hex": "#2a0812",
 "role": "bg",
 "night": "#2a0812",
-"lilies": "#6d81e0",
-"warhol": "#dd83d6"
+"lilies": "#6c7ed7",
+"warhol": "#d27dcd"
 },
 "--c-2a0a1e-bg": {
 "hex": "#2a0a1e",
 "role": "bg",
 "night": "#2a0a1e",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-2a0a1e-ink": {
 "hex": "#2a0a1e",
@@ -1956,15 +1956,15 @@
 "hex": "#2a0c1f",
 "role": "bg",
 "night": "#2a0c1f",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d17dcc"
 },
 "--c-2a0d1c-bg": {
 "hex": "#2a0d1c",
 "role": "bg",
 "night": "#2a0d1c",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d07ccc"
 },
 "--c-2a0d1c-ink": {
 "hex": "#2a0d1c",
@@ -1977,15 +1977,15 @@
 "hex": "#2a0d1e",
 "role": "bg",
 "night": "#2a0d1e",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d07ccc"
 },
 "--c-2a0e02-bg": {
 "hex": "#2a0e02",
 "role": "bg",
 "night": "#2a0e02",
-"lilies": "#6e81e0",
-"warhol": "#dd83d7"
+"lilies": "#6c7ed8",
+"warhol": "#d37ece"
 },
 "--c-2a0e10-ink": {
 "hex": "#2a0e10",
@@ -1998,29 +1998,29 @@
 "hex": "#2a0f1e",
 "role": "bg",
 "night": "#2a0f1e",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd6",
+"warhol": "#d07ccb"
 },
 "--c-2a0f22-bg": {
 "hex": "#2a0f22",
 "role": "bg",
 "night": "#2a0f22",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd6",
+"warhol": "#d07ccb"
 },
 "--c-2a0f26-bg": {
 "hex": "#2a0f26",
 "role": "bg",
 "night": "#2a0f26",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd6",
+"warhol": "#d07ccb"
 },
 "--c-2a0f38-bg": {
 "hex": "#2a0f38",
 "role": "bg",
 "night": "#2a0f38",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697ad3",
+"warhol": "#cc7ac8"
 },
 "--c-2a1020-ink": {
 "hex": "#2a1020",
@@ -2033,29 +2033,29 @@
 "hex": "#2a1024",
 "role": "bg",
 "night": "#2a1024",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd5",
+"warhol": "#d07ccb"
 },
 "--c-2a1030-bg": {
 "hex": "#2a1030",
 "role": "bg",
 "night": "#2a1030",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-2a1109-bg": {
 "hex": "#2a1109",
 "role": "bg",
 "night": "#2a1109",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6c7dd7",
+"warhol": "#d17dcd"
 },
 "--c-2a1220-bg": {
 "hex": "#2a1220",
 "role": "bg",
 "night": "#2a1220",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7cca"
 },
 "--c-2a1220-ink": {
 "hex": "#2a1220",
@@ -2068,15 +2068,15 @@
 "hex": "#2a1226",
 "role": "bg",
 "night": "#2a1226",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7cca"
 },
 "--c-2a1228-bg": {
 "hex": "#2a1228",
 "role": "bg",
 "night": "#2a1228",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7cca"
 },
 "--c-2a1228-ink": {
 "hex": "#2a1228",
@@ -2089,29 +2089,29 @@
 "hex": "#2a1320",
 "role": "bg",
 "night": "#2a1320",
-"lilies": "#6c80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-2a1424-bg": {
 "hex": "#2a1424",
 "role": "bg",
 "night": "#2a1424",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-2a1626-bg": {
 "hex": "#2a1626",
 "role": "bg",
 "night": "#2a1626",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-2a1730-bg": {
 "hex": "#2a1730",
 "role": "bg",
 "night": "#2a1730",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697ad3",
+"warhol": "#cc7ac8"
 },
 "--c-2a1730-ink": {
 "hex": "#2a1730",
@@ -2124,8 +2124,8 @@
 "hex": "#2a1830",
 "role": "bg",
 "night": "#2a1830",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c8"
 },
 "--c-2a1830-ink": {
 "hex": "#2a1830",
@@ -2138,8 +2138,8 @@
 "hex": "#2a1832",
 "role": "bg",
 "night": "#2a1832",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-2a1832-ink": {
 "hex": "#2a1832",
@@ -2152,50 +2152,50 @@
 "hex": "#2a1a47",
 "role": "bg",
 "night": "#2a1a47",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6676cd",
+"warhol": "#c575c1"
 },
 "--c-2a1b48-bg": {
 "hex": "#2a1b48",
 "role": "bg",
 "night": "#2a1b48",
-"lilies": "#697ddf",
-"warhol": "#da7fd3"
+"lilies": "#6576cd",
+"warhol": "#c575c1"
 },
 "--c-2a1c46-bg": {
 "hex": "#2a1c46",
 "role": "bg",
 "night": "#2a1c46",
-"lilies": "#697ddf",
-"warhol": "#da7fd3"
+"lilies": "#6676cd",
+"warhol": "#c575c1"
 },
 "--c-2a1d3e-bg": {
 "hex": "#2a1d3e",
 "role": "bg",
 "night": "#2a1d3e",
-"lilies": "#6a7ddf",
-"warhol": "#db80d4"
+"lilies": "#6677ce",
+"warhol": "#c776c3"
 },
 "--c-2a2030-bg": {
 "hex": "#2a2030",
 "role": "bg",
 "night": "#2a2030",
-"lilies": "#6b7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-2a2147-bg": {
 "hex": "#2a2147",
 "role": "bg",
 "night": "#2a2147",
-"lilies": "#687cde",
-"warhol": "#da7fd3"
+"lilies": "#6575cc",
+"warhol": "#c374c0"
 },
 "--c-2a2150-bg": {
 "hex": "#2a2150",
 "role": "bg",
 "night": "#2a2150",
-"lilies": "#687cde",
-"warhol": "#da7ed3"
+"lilies": "#6474ca",
+"warhol": "#c172be"
 },
 "--c-2a2150-ink": {
 "hex": "#2a2150",
@@ -2215,8 +2215,8 @@
 "hex": "#2a2d34",
 "role": "bg",
 "night": "#2a2d34",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677ce",
+"warhol": "#c676c2"
 },
 "--c-2a2d34-ink": {
 "hex": "#2a2d34",
@@ -2229,8 +2229,8 @@
 "hex": "#2a759f",
 "role": "bg",
 "night": "#2a759f",
-"lilies": "#6074db",
-"warhol": "#d578ce"
+"lilies": "#5867b7",
+"warhol": "#aa63a8"
 },
 "--c-2a9fe0-bg": {
 "hex": "#2a9fe0",
@@ -2264,8 +2264,8 @@
 "hex": "#2b1220",
 "role": "bg",
 "night": "#2b1220",
-"lilies": "#6c80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-2b1220-ink": {
 "hex": "#2b1220",
@@ -2278,22 +2278,22 @@
 "hex": "#2b1622",
 "role": "bg",
 "night": "#2b1622",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-2b1642-bg": {
 "hex": "#2b1642",
 "role": "bg",
 "night": "#2b1642",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c877c4"
 },
 "--c-2c081a-bg": {
 "hex": "#2c081a",
 "role": "bg",
 "night": "#2c081a",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-2c081a-ink": {
 "hex": "#2c081a",
@@ -2313,57 +2313,57 @@
 "hex": "#2c1024",
 "role": "bg",
 "night": "#2c1024",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7cca"
 },
 "--c-2c1224-bg": {
 "hex": "#2c1224",
 "role": "bg",
 "night": "#2c1224",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-2c1226-bg": {
 "hex": "#2c1226",
 "role": "bg",
 "night": "#2c1226",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-2c1442-bg": {
 "hex": "#2c1442",
 "role": "bg",
 "night": "#2c1442",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c877c4"
 },
 "--c-2c1522-bg": {
 "hex": "#2c1522",
 "role": "bg",
 "night": "#2c1522",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-2c1608-bg": {
 "hex": "#2c1608",
 "role": "bg",
 "night": "#2c1608",
-"lilies": "#6d81e0",
-"warhol": "#dd82d6"
+"lilies": "#6b7dd7",
+"warhol": "#d17dcc"
 },
 "--c-2c1c4a-bg": {
 "hex": "#2c1c4a",
 "role": "bg",
 "night": "#2c1c4a",
-"lilies": "#697dde",
-"warhol": "#da7fd3"
+"lilies": "#6576cc",
+"warhol": "#c474c0"
 },
 "--c-2c1e46-bg": {
 "hex": "#2c1e46",
 "role": "bg",
 "night": "#2c1e46",
-"lilies": "#697ddf",
-"warhol": "#da7fd3"
+"lilies": "#6576cc",
+"warhol": "#c475c1"
 },
 "--c-2c2068-ink": {
 "hex": "#2c2068",
@@ -2383,15 +2383,15 @@
 "hex": "#2c6f9e",
 "role": "bg",
 "night": "#2c6f9e",
-"lilies": "#6074db",
-"warhol": "#d578ce"
+"lilies": "#5867b6",
+"warhol": "#a963a8"
 },
 "--c-2d1a38-bg": {
 "hex": "#2d1a38",
 "role": "bg",
 "night": "#2d1a38",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d0",
+"warhol": "#c978c5"
 },
 "--c-2d6e3a-ink": {
 "hex": "#2d6e3a",
@@ -2418,22 +2418,22 @@
 "hex": "#2e1640",
 "role": "bg",
 "night": "#2e1640",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c877c4"
 },
 "--c-2e1850-bg": {
 "hex": "#2e1850",
 "role": "bg",
 "night": "#2e1850",
-"lilies": "#687cde",
-"warhol": "#da7fd3"
+"lilies": "#6575cc",
+"warhol": "#c374c0"
 },
 "--c-2e1a28-bg": {
 "hex": "#2e1a28",
 "role": "bg",
 "night": "#2e1a28",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c8"
 },
 "--c-2e1a28-ink": {
 "hex": "#2e1a28",
@@ -2446,22 +2446,22 @@
 "hex": "#2e1a42",
 "role": "bg",
 "night": "#2e1a42",
-"lilies": "#6a7ddf",
-"warhol": "#db80d4"
+"lilies": "#6677ce",
+"warhol": "#c776c3"
 },
 "--c-2e2408-bg": {
 "hex": "#2e2408",
 "role": "bg",
 "night": "#2e2408",
-"lilies": "#6d81e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7dd6",
+"warhol": "#d17dcc"
 },
 "--c-2e2650-bg": {
 "hex": "#2e2650",
 "role": "bg",
 "night": "#2e2650",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c8",
+"warhol": "#c071bc"
 },
 "--c-2e2650-ink": {
 "hex": "#2e2650",
@@ -2481,36 +2481,36 @@
 "hex": "#2f1026",
 "role": "bg",
 "night": "#2f1026",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd4",
+"warhol": "#ce7bca"
 },
 "--c-2f1524-bg": {
 "hex": "#2f1524",
 "role": "bg",
 "night": "#2f1524",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cd7ac8"
 },
 "--c-2f2552-bg": {
 "hex": "#2f2552",
 "role": "bg",
 "night": "#2f2552",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c8",
+"warhol": "#bf71bc"
 },
 "--c-2f6330-bg": {
 "hex": "#2f6330",
 "role": "bg",
 "night": "#2f6330",
-"lilies": "#6579dd",
-"warhol": "#d87cd1"
+"lilies": "#5f6fc2",
+"warhol": "#b86cb6"
 },
 "--c-2f6b4a-bg": {
 "hex": "#2f6b4a",
 "role": "bg",
 "night": "#2f6b4a",
-"lilies": "#6478dd",
-"warhol": "#d87bd0"
+"lilies": "#5e6ec1",
+"warhol": "#b66bb4"
 },
 "--c-2f7660-ink": {
 "hex": "#2f7660",
@@ -2530,15 +2530,15 @@
 "hex": "#301509",
 "role": "bg",
 "night": "#301509",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6b7cd6",
+"warhol": "#d07ccb"
 },
 "--c-301526-bg": {
 "hex": "#301526",
 "role": "bg",
 "night": "#301526",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cd7ac8"
 },
 "--c-31c38f-bg": {
 "hex": "#31c38f",
@@ -2551,8 +2551,8 @@
 "hex": "#32152e",
 "role": "bg",
 "night": "#32152e",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697ad3",
+"warhol": "#cc7ac8"
 },
 "--c-321a48-ink": {
 "hex": "#321a48",
@@ -2579,22 +2579,22 @@
 "hex": "#33203a",
 "role": "bg",
 "night": "#33203a",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c776c3"
 },
 "--c-33271a-bg": {
 "hex": "#33271a",
 "role": "bg",
 "night": "#33271a",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#6879d1",
+"warhol": "#cb79c6"
 },
 "--c-341226-bg": {
 "hex": "#341226",
 "role": "bg",
 "night": "#341226",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cc7ac8"
 },
 "--c-341226-ink": {
 "hex": "#341226",
@@ -2607,8 +2607,8 @@
 "hex": "#34123f",
 "role": "bg",
 "night": "#34123f",
-"lilies": "#6b7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d0",
+"warhol": "#ca78c5"
 },
 "--c-341530-ink": {
 "hex": "#341530",
@@ -2628,8 +2628,8 @@
 "hex": "#34304e",
 "role": "bg",
 "night": "#34304e",
-"lilies": "#667bde",
-"warhol": "#d97dd2"
+"lilies": "#6272c7",
+"warhol": "#be70ba"
 },
 "--c-34d39a-bg": {
 "hex": "#34d39a",
@@ -2649,36 +2649,36 @@
 "hex": "#35142a",
 "role": "bg",
 "night": "#35142a",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-35142c-bg": {
 "hex": "#35142c",
 "role": "bg",
 "night": "#35142c",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-35290f-bg": {
 "hex": "#35290f",
 "role": "bg",
 "night": "#35290f",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cd7ac8"
 },
 "--c-36203f-bg": {
 "hex": "#36203f",
 "role": "bg",
 "night": "#36203f",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677cd",
+"warhol": "#c675c2"
 },
 "--c-362b1c-bg": {
 "hex": "#362b1c",
 "role": "bg",
 "night": "#362b1c",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d0",
+"warhol": "#c978c5"
 },
 "--c-36b3f0-bg": {
 "hex": "#36b3f0",
@@ -2698,22 +2698,22 @@
 "hex": "#372254",
 "role": "bg",
 "night": "#372254",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c8",
+"warhol": "#c071bc"
 },
 "--c-38060e-bg": {
 "hex": "#38060e",
 "role": "bg",
 "night": "#38060e",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7cd5",
+"warhol": "#cf7bca"
 },
 "--c-3a0822-bg": {
 "hex": "#3a0822",
 "role": "bg",
 "night": "#3a0822",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#cd7ac9"
 },
 "--c-3a0a24-ink": {
 "hex": "#3a0a24",
@@ -2726,29 +2726,29 @@
 "hex": "#3a0e22",
 "role": "bg",
 "night": "#3a0e22",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c8"
 },
 "--c-3a0f1c-bg": {
 "hex": "#3a0f1c",
 "role": "bg",
 "night": "#3a0f1c",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-3a0f24-bg": {
 "hex": "#3a0f24",
 "role": "bg",
 "night": "#3a0f24",
-"lilies": "#6b7fdf",
-"warhol": "#dc81d5"
+"lilies": "#697ad2",
+"warhol": "#cc79c7"
 },
 "--c-3a1030-bg": {
 "hex": "#3a1030",
 "role": "bg",
 "night": "#3a1030",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-3a1126-ink": {
 "hex": "#3a1126",
@@ -2761,57 +2761,57 @@
 "hex": "#3a1208",
 "role": "bg",
 "night": "#3a1208",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#cd7ac9"
 },
 "--c-3a1226-bg": {
 "hex": "#3a1226",
 "role": "bg",
 "night": "#3a1226",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#687ad2",
+"warhol": "#cb79c7"
 },
 "--c-3a1228-bg": {
 "hex": "#3a1228",
 "role": "bg",
 "night": "#3a1228",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#687ad2",
+"warhol": "#cb79c7"
 },
 "--c-3a1230-bg": {
 "hex": "#3a1230",
 "role": "bg",
 "night": "#3a1230",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#687ad2",
+"warhol": "#cb79c7"
 },
 "--c-3a1430-bg": {
 "hex": "#3a1430",
 "role": "bg",
 "night": "#3a1430",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-3a1530-bg": {
 "hex": "#3a1530",
 "role": "bg",
 "night": "#3a1530",
-"lilies": "#6b7edf",
-"warhol": "#db80d5"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-3a1630-bg": {
 "hex": "#3a1630",
 "role": "bg",
 "night": "#3a1630",
-"lilies": "#6b7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-3a1730-bg": {
 "hex": "#3a1730",
 "role": "bg",
 "night": "#3a1730",
-"lilies": "#6b7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d0",
+"warhol": "#ca78c5"
 },
 "--c-3a1730-ink": {
 "hex": "#3a1730",
@@ -2824,8 +2824,8 @@
 "hex": "#3a180c",
 "role": "bg",
 "night": "#3a180c",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cc7ac8"
 },
 "--c-3a1830-ink": {
 "hex": "#3a1830",
@@ -2838,8 +2838,8 @@
 "hex": "#3a1a08",
 "role": "bg",
 "night": "#3a1a08",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#cd7ac9"
 },
 "--c-3a1a08-ink": {
 "hex": "#3a1a08",
@@ -2859,15 +2859,15 @@
 "hex": "#3a1b34",
 "role": "bg",
 "night": "#3a1b34",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778d0",
+"warhol": "#c877c4"
 },
 "--c-3a1b52-bg": {
 "hex": "#3a1b52",
 "role": "bg",
 "night": "#3a1b52",
-"lilies": "#687cde",
-"warhol": "#da7ed3"
+"lilies": "#6475ca",
+"warhol": "#c273bf"
 },
 "--c-3a1d31-ink": {
 "hex": "#3a1d31",
@@ -2880,8 +2880,8 @@
 "hex": "#3a1e42",
 "role": "bg",
 "night": "#3a1e42",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677cd",
+"warhol": "#c675c2"
 },
 "--c-3a1f2e-ink": {
 "hex": "#3a1f2e",
@@ -2894,8 +2894,8 @@
 "hex": "#3a2036",
 "role": "bg",
 "night": "#3a2036",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c776c3"
 },
 "--c-3a2036-ink": {
 "hex": "#3a2036",
@@ -2908,8 +2908,8 @@
 "hex": "#3a2147",
 "role": "bg",
 "night": "#3a2147",
-"lilies": "#687cde",
-"warhol": "#da7fd3"
+"lilies": "#6575cc",
+"warhol": "#c374c0"
 },
 "--c-3a2147-ink": {
 "hex": "#3a2147",
@@ -2922,22 +2922,22 @@
 "hex": "#3a2230",
 "role": "bg",
 "night": "#3a2230",
-"lilies": "#6a7ddf",
-"warhol": "#db80d4"
+"lilies": "#6677ce",
+"warhol": "#c776c3"
 },
 "--c-3a2358-bg": {
 "hex": "#3a2358",
 "role": "bg",
 "night": "#3a2358",
-"lilies": "#677bde",
-"warhol": "#d97dd2"
+"lilies": "#6273c7",
+"warhol": "#be70bb"
 },
 "--c-3a2415-bg": {
 "hex": "#3a2415",
 "role": "bg",
 "night": "#3a2415",
-"lilies": "#6b7edf",
-"warhol": "#db80d5"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-3a2450-ink": {
 "hex": "#3a2450",
@@ -2950,8 +2950,8 @@
 "hex": "#3a2540",
 "role": "bg",
 "night": "#3a2540",
-"lilies": "#697dde",
-"warhol": "#da7fd3"
+"lilies": "#6576cc",
+"warhol": "#c474c0"
 },
 "--c-3a2540-ink": {
 "hex": "#3a2540",
@@ -2964,15 +2964,15 @@
 "hex": "#3a2614",
 "role": "bg",
 "night": "#3a2614",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-3a2640-bg": {
 "hex": "#3a2640",
 "role": "bg",
 "night": "#3a2640",
-"lilies": "#697dde",
-"warhol": "#da7fd3"
+"lilies": "#6576cc",
+"warhol": "#c474c0"
 },
 "--c-3a2a06-ink": {
 "hex": "#3a2a06",
@@ -2985,15 +2985,15 @@
 "hex": "#3a2a08",
 "role": "bg",
 "night": "#3a2a08",
-"lilies": "#6c80e0",
-"warhol": "#dc81d5"
+"lilies": "#6a7bd4",
+"warhol": "#cd7ac9"
 },
 "--c-3a2a4a-bg": {
 "hex": "#3a2a4a",
 "role": "bg",
 "night": "#3a2a4a",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6374c9",
+"warhol": "#c072bd"
 },
 "--c-3a2a55-ink": {
 "hex": "#3a2a55",
@@ -3006,22 +3006,22 @@
 "hex": "#3a2a5e",
 "role": "bg",
 "night": "#3a2a5e",
-"lilies": "#667add",
-"warhol": "#d87dd1"
+"lilies": "#6171c5",
+"warhol": "#bb6eb8"
 },
 "--c-3a2c16-bg": {
 "hex": "#3a2c16",
 "role": "bg",
 "night": "#3a2c16",
-"lilies": "#6b7edf",
-"warhol": "#db80d4"
+"lilies": "#6879d1",
+"warhol": "#ca78c6"
 },
 "--c-3a2f5c-bg": {
 "hex": "#3a2f5c",
 "role": "bg",
 "night": "#3a2f5c",
-"lilies": "#6579dd",
-"warhol": "#d87cd1"
+"lilies": "#6070c4",
+"warhol": "#ba6eb7"
 },
 "--c-3a9ae6-ink": {
 "hex": "#3a9ae6",
@@ -3034,8 +3034,8 @@
 "hex": "#3aa88a",
 "role": "bg",
 "night": "#3aa88a",
-"lilies": "#5d72da",
-"warhol": "#d476cc"
+"lilies": "#5563b1",
+"warhol": "#a35ea2"
 },
 "--c-3ad07f-bg": {
 "hex": "#3ad07f",
@@ -3048,8 +3048,8 @@
 "hex": "#3c1733",
 "role": "bg",
 "night": "#3c1733",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6779d0",
+"warhol": "#c977c5"
 },
 "--c-3c1733-ink": {
 "hex": "#3c1733",
@@ -3090,29 +3090,29 @@
 "hex": "#3d2740",
 "role": "bg",
 "night": "#3d2740",
-"lilies": "#697cde",
-"warhol": "#da7fd3"
+"lilies": "#6576cc",
+"warhol": "#c474c0"
 },
 "--c-3f2688-bg": {
 "hex": "#3f2688",
 "role": "bg",
 "night": "#3f2688",
-"lilies": "#6277dc",
-"warhol": "#d77acf"
+"lilies": "#5c6bbc",
+"warhol": "#b168af"
 },
 "--c-3f8036-bg": {
 "hex": "#3f8036",
 "role": "bg",
 "night": "#3f8036",
-"lilies": "#6176dc",
-"warhol": "#d679cf"
+"lilies": "#5b6abb",
+"warhol": "#af66ad"
 },
 "--c-3f8a5e-bg": {
 "hex": "#3f8a5e",
 "role": "bg",
 "night": "#3f8a5e",
-"lilies": "#6074db",
-"warhol": "#d578ce"
+"lilies": "#5867b7",
+"warhol": "#aa63a8"
 },
 "--c-3fd98e-ink": {
 "hex": "#3fd98e",
@@ -3125,15 +3125,15 @@
 "hex": "#40180a",
 "role": "bg",
 "night": "#40180a",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-43301e-bg": {
 "hex": "#43301e",
 "role": "bg",
 "night": "#43301e",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6676cd",
+"warhol": "#c575c1"
 },
 "--c-433a5e-ink": {
 "hex": "#433a5e",
@@ -3146,15 +3146,15 @@
 "hex": "#44193a",
 "role": "bg",
 "night": "#44193a",
-"lilies": "#697ddf",
-"warhol": "#db80d4"
+"lilies": "#6677ce",
+"warhol": "#c676c2"
 },
 "--c-453a4a-bg": {
 "hex": "#453a4a",
 "role": "bg",
 "night": "#453a4a",
-"lilies": "#667add",
-"warhol": "#d97dd2"
+"lilies": "#6171c5",
+"warhol": "#bc6fb9"
 },
 "--c-45c2ff-ink": {
 "hex": "#45c2ff",
@@ -3188,22 +3188,22 @@
 "hex": "#480f2f",
 "role": "bg",
 "night": "#480f2f",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c877c4"
 },
 "--c-48122f-bg": {
 "hex": "#48122f",
 "role": "bg",
 "night": "#48122f",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c776c3"
 },
 "--c-48123a-bg": {
 "hex": "#48123a",
 "role": "bg",
 "night": "#48123a",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c776c3"
 },
 "--c-48b8e0-ink": {
 "hex": "#48b8e0",
@@ -3230,22 +3230,22 @@
 "hex": "#4a0f2c",
 "role": "bg",
 "night": "#4a0f2c",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c776c3"
 },
 "--c-4a1020-bg": {
 "hex": "#4a1020",
 "role": "bg",
 "night": "#4a1020",
-"lilies": "#6a7edf",
-"warhol": "#db80d4"
+"lilies": "#6778cf",
+"warhol": "#c776c3"
 },
 "--c-4a1126-bg": {
 "hex": "#4a1126",
 "role": "bg",
 "night": "#4a1126",
-"lilies": "#6a7ddf",
-"warhol": "#db80d4"
+"lilies": "#6677ce",
+"warhol": "#c776c3"
 },
 "--c-4a1126-ink": {
 "hex": "#4a1126",
@@ -3258,15 +3258,15 @@
 "hex": "#4a1530",
 "role": "bg",
 "night": "#4a1530",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677cd",
+"warhol": "#c675c2"
 },
 "--c-4a1f38-bg": {
 "hex": "#4a1f38",
 "role": "bg",
 "night": "#4a1f38",
-"lilies": "#687cde",
-"warhol": "#da7fd3"
+"lilies": "#6575cb",
+"warhol": "#c374bf"
 },
 "--c-4a2040-ink": {
 "hex": "#4a2040",
@@ -3279,8 +3279,8 @@
 "hex": "#4a2238",
 "role": "bg",
 "night": "#4a2238",
-"lilies": "#687cde",
-"warhol": "#da7ed3"
+"lilies": "#6475cb",
+"warhol": "#c273bf"
 },
 "--c-4a2238-ink": {
 "hex": "#4a2238",
@@ -3321,8 +3321,8 @@
 "hex": "#4a2a52",
 "role": "bg",
 "night": "#4a2a52",
-"lilies": "#677bde",
-"warhol": "#d97dd2"
+"lilies": "#6272c7",
+"warhol": "#be70bb"
 },
 "--c-4a2b3a-ink": {
 "hex": "#4a2b3a",
@@ -3335,8 +3335,8 @@
 "hex": "#4a2b46",
 "role": "bg",
 "night": "#4a2b46",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c9",
+"warhol": "#c072bd"
 },
 "--c-4a2d40-ink": {
 "hex": "#4a2d40",
@@ -3349,8 +3349,8 @@
 "hex": "#4a3000",
 "role": "bg",
 "night": "#4a3000",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#697ad2",
+"warhol": "#cb79c7"
 },
 "--c-4a3000-ink": {
 "hex": "#4a3000",
@@ -3405,15 +3405,15 @@
 "hex": "#4a3a1e",
 "role": "bg",
 "night": "#4a3a1e",
-"lilies": "#687cde",
-"warhol": "#da7fd3"
+"lilies": "#6575cc",
+"warhol": "#c374c0"
 },
 "--c-4a4068-bg": {
 "hex": "#4a4068",
 "role": "bg",
 "night": "#4a4068",
-"lilies": "#6377dc",
-"warhol": "#d77acf"
+"lilies": "#5d6cbe",
+"warhol": "#b269b0"
 },
 "--c-4a4068-ink": {
 "hex": "#4a4068",
@@ -3454,8 +3454,8 @@
 "hex": "#4b2a44",
 "role": "bg",
 "night": "#4b2a44",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c9",
+"warhol": "#c072bd"
 },
 "--c-4b2a44-ink": {
 "hex": "#4b2a44",
@@ -3531,8 +3531,8 @@
 "hex": "#553a22",
 "role": "bg",
 "night": "#553a22",
-"lilies": "#677bde",
-"warhol": "#d97ed2"
+"lilies": "#6373c8",
+"warhol": "#bf71bc"
 },
 "--c-565b66-ink": {
 "hex": "#565b66",
@@ -3573,8 +3573,8 @@
 "hex": "#5a1838",
 "role": "bg",
 "night": "#5a1838",
-"lilies": "#687cde",
-"warhol": "#da7ed3"
+"lilies": "#6374c9",
+"warhol": "#c172bd"
 },
 "--c-5a2440-ink": {
 "hex": "#5a2440",
@@ -3587,8 +3587,8 @@
 "hex": "#5a2840",
 "role": "bg",
 "night": "#5a2840",
-"lilies": "#667add",
-"warhol": "#d97dd2"
+"lilies": "#6172c6",
+"warhol": "#bd6fb9"
 },
 "--c-5a2942-ink": {
 "hex": "#5a2942",
@@ -3601,43 +3601,43 @@
 "hex": "#5a2a06",
 "role": "bg",
 "night": "#5a2a06",
-"lilies": "#697ddf",
-"warhol": "#da7fd4"
+"lilies": "#6677cd",
+"warhol": "#c675c2"
 },
 "--c-5a2a3c-bg": {
 "hex": "#5a2a3c",
 "role": "bg",
 "night": "#5a2a3c",
-"lilies": "#667add",
-"warhol": "#d97dd2"
+"lilies": "#6171c5",
+"warhol": "#bc6fb9"
 },
 "--c-5a2a48-bg": {
 "hex": "#5a2a48",
 "role": "bg",
 "night": "#5a2a48",
-"lilies": "#667add",
-"warhol": "#d97dd2"
+"lilies": "#6171c5",
+"warhol": "#bc6fb9"
 },
 "--c-5a2c44-bg": {
 "hex": "#5a2c44",
 "role": "bg",
 "night": "#5a2c44",
-"lilies": "#667add",
-"warhol": "#d97dd1"
+"lilies": "#6171c5",
+"warhol": "#bb6fb8"
 },
 "--c-5a2ea8-bg": {
 "hex": "#5a2ea8",
 "role": "bg",
 "night": "#5a2ea8",
-"lilies": "#5e73db",
-"warhol": "#d577cd"
+"lilies": "#5765b4",
+"warhol": "#a661a5"
 },
 "--c-5a3318-bg": {
 "hex": "#5a3318",
 "role": "bg",
 "night": "#5a3318",
-"lilies": "#687cde",
-"warhol": "#da7ed3"
+"lilies": "#6374c9",
+"warhol": "#c172bd"
 },
 "--c-5a3350-ink": {
 "hex": "#5a3350",
@@ -3671,15 +3671,15 @@
 "hex": "#5a4a64",
 "role": "bg",
 "night": "#5a4a64",
-"lilies": "#6277dc",
-"warhol": "#d77acf"
+"lilies": "#5c6bbc",
+"warhol": "#b168af"
 },
 "--c-5a4a6a-bg": {
 "hex": "#5a4a6a",
 "role": "bg",
 "night": "#5a4a6a",
-"lilies": "#6276dc",
-"warhol": "#d679cf"
+"lilies": "#5b6abb",
+"warhol": "#af67ad"
 },
 "--c-5a4a86-ink": {
 "hex": "#5a4a86",
@@ -3706,8 +3706,8 @@
 "hex": "#5aa040",
 "role": "bg",
 "night": "#5aa040",
-"lilies": "#5e72da",
-"warhol": "#d476cc"
+"lilies": "#5563b2",
+"warhol": "#a45fa3"
 },
 "--c-5b7fb8-ink": {
 "hex": "#5b7fb8",
@@ -3741,8 +3741,8 @@
 "hex": "#5e3c22",
 "role": "bg",
 "night": "#5e3c22",
-"lilies": "#667ade",
-"warhol": "#d97dd2"
+"lilies": "#6272c6",
+"warhol": "#bd70ba"
 },
 "--c-5e3c22-ink": {
 "hex": "#5e3c22",
@@ -3755,15 +3755,15 @@
 "hex": "#5e4329",
 "role": "bg",
 "night": "#5e4329",
-"lilies": "#667add",
-"warhol": "#d97dd1"
+"lilies": "#6171c5",
+"warhol": "#bb6eb8"
 },
 "--c-5e636f-bg": {
 "hex": "#5e636f",
 "role": "bg",
 "night": "#5e636f",
-"lilies": "#5f74db",
-"warhol": "#d578cd"
+"lilies": "#5866b6",
+"warhol": "#a962a7"
 },
 "--c-5ec4f5-ink": {
 "hex": "#5ec4f5",
@@ -3902,8 +3902,8 @@
 "hex": "#6a2848",
 "role": "bg",
 "night": "#6a2848",
-"lilies": "#6579dd",
-"warhol": "#d87cd1"
+"lilies": "#5f6fc2",
+"warhol": "#b86cb6"
 },
 "--c-6a2848-ink": {
 "hex": "#6a2848",
@@ -3916,8 +3916,8 @@
 "hex": "#6a3050",
 "role": "bg",
 "night": "#6a3050",
-"lilies": "#6478dd",
-"warhol": "#d87bd0"
+"lilies": "#5e6ec1",
+"warhol": "#b66bb4"
 },
 "--c-6a3050-ink": {
 "hex": "#6a3050",
@@ -3951,8 +3951,8 @@
 "hex": "#6a4a66",
 "role": "bg",
 "night": "#6a4a66",
-"lilies": "#6276dc",
-"warhol": "#d679cf"
+"lilies": "#5b6abb",
+"warhol": "#af67ad"
 },
 "--c-6a4a66-ink": {
 "hex": "#6a4a66",
@@ -3965,8 +3965,8 @@
 "hex": "#6a4a6a",
 "role": "bg",
 "night": "#6a4a6a",
-"lilies": "#6276dc",
-"warhol": "#d679cf"
+"lilies": "#5b6abb",
+"warhol": "#af67ad"
 },
 "--c-6a4a6a-ink": {
 "hex": "#6a4a6a",
@@ -4007,8 +4007,8 @@
 "hex": "#6a5566",
 "role": "bg",
 "night": "#6a5566",
-"lilies": "#6175db",
-"warhol": "#d679ce"
+"lilies": "#5a68b9",
+"warhol": "#ac65ab"
 },
 "--c-6a567e-ink": {
 "hex": "#6a567e",
@@ -4028,8 +4028,8 @@
 "hex": "#6a5a78",
 "role": "bg",
 "night": "#6a5a78",
-"lilies": "#5f74db",
-"warhol": "#d577cd"
+"lilies": "#5766b5",
+"warhol": "#a761a6"
 },
 "--c-6a5a78-ink": {
 "hex": "#6a5a78",
@@ -4098,8 +4098,8 @@
 "hex": "#6b2a48",
 "role": "bg",
 "night": "#6b2a48",
-"lilies": "#6479dd",
-"warhol": "#d87cd1"
+"lilies": "#5f6fc2",
+"warhol": "#b76cb5"
 },
 "--c-6b2a48-ink": {
 "hex": "#6b2a48",
@@ -4119,8 +4119,8 @@
 "hex": "#6b4a2c",
 "role": "bg",
 "night": "#6b4a2c",
-"lilies": "#6478dd",
-"warhol": "#d87bd0"
+"lilies": "#5f6ec1",
+"warhol": "#b76cb4"
 },
 "--c-6b4a2e-ink": {
 "hex": "#6b4a2e",
@@ -4133,8 +4133,8 @@
 "hex": "#6b4a5e",
 "role": "bg",
 "night": "#6b4a5e",
-"lilies": "#6176dc",
-"warhol": "#d679cf"
+"lilies": "#5b6abb",
+"warhol": "#af66ad"
 },
 "--c-6b5680-ink": {
 "hex": "#6b5680",
@@ -4154,8 +4154,8 @@
 "hex": "#6e4260",
 "role": "bg",
 "night": "#6e4260",
-"lilies": "#6276dc",
-"warhol": "#d77acf"
+"lilies": "#5c6bbc",
+"warhol": "#b067ae"
 },
 "--c-6f4a5e-ink": {
 "hex": "#6f4a5e",
@@ -4280,8 +4280,8 @@
 "hex": "#7a4a24",
 "role": "bg",
 "night": "#7a4a24",
-"lilies": "#6478dc",
-"warhol": "#d77bd0"
+"lilies": "#5e6dc0",
+"warhol": "#b56ab3"
 },
 "--c-7a4a62-ink": {
 "hex": "#7a4a62",
@@ -4308,8 +4308,8 @@
 "hex": "#7a4f2e",
 "role": "bg",
 "night": "#7a4f2e",
-"lilies": "#6377dc",
-"warhol": "#d77acf"
+"lilies": "#5d6cbe",
+"warhol": "#b269b0"
 },
 "--c-7a5870-ink": {
 "hex": "#7a5870",
@@ -4455,8 +4455,8 @@
 "hex": "#7d5430",
 "role": "bg",
 "night": "#7d5430",
-"lilies": "#6277dc",
-"warhol": "#d77acf"
+"lilies": "#5c6bbd",
+"warhol": "#b168af"
 },
 "--c-7d5670-ink": {
 "hex": "#7d5670",
@@ -4602,8 +4602,8 @@
 "hex": "#8a2f66",
 "role": "bg",
 "night": "#8a2f66",
-"lilies": "#6176dc",
-"warhol": "#d679cf"
+"lilies": "#5a69ba",
+"warhol": "#ae66ac"
 },
 "--c-8a45cc-bg": {
 "hex": "#8a45cc",
@@ -4616,8 +4616,8 @@
 "hex": "#8a5a72",
 "role": "bg",
 "night": "#8a5a72",
-"lilies": "#5d72da",
-"warhol": "#d476cc"
+"lilies": "#5563b1",
+"warhol": "#a35ea2"
 },
 "--c-8a5cf0-bg": {
 "hex": "#8a5cf0",
@@ -4637,8 +4637,8 @@
 "hex": "#8a5d34",
 "role": "bg",
 "night": "#8a5d34",
-"lilies": "#6175db",
-"warhol": "#d679ce"
+"lilies": "#5a69b9",
+"warhol": "#ad65ab"
 },
 "--c-8a5f76-ink": {
 "hex": "#8a5f76",
@@ -4875,8 +4875,8 @@
 "hex": "#972b56",
 "role": "bg",
 "night": "#972b56",
-"lilies": "#6075db",
-"warhol": "#d678ce"
+"lilies": "#5968b8",
+"warhol": "#ac64aa"
 },
 "--c-972b56-ink": {
 "hex": "#972b56",
@@ -5085,22 +5085,22 @@
 "hex": "#9c5746",
 "role": "bg",
 "night": "#9c5746",
-"lilies": "#5d72da",
-"warhol": "#d476cc"
+"lilies": "#5563b1",
+"warhol": "#a35ea2"
 },
 "--c-9c6233-bg": {
 "hex": "#9c6233",
 "role": "bg",
 "night": "#9c6233",
-"lilies": "#5f74db",
-"warhol": "#d578cd"
+"lilies": "#5866b5",
+"warhol": "#a862a7"
 },
 "--c-9c6b3f-bg": {
 "hex": "#9c6b3f",
 "role": "bg",
 "night": "#9c6b3f",
-"lilies": "#5e73da",
-"warhol": "#d577cd"
+"lilies": "#5664b3",
+"warhol": "#a560a4"
 },
 "--c-9c8fc4-ink": {
 "hex": "#9c8fc4",
@@ -5190,8 +5190,8 @@
 "hex": "#a06f40",
 "role": "bg",
 "night": "#a06f40",
-"lilies": "#5e72da",
-"warhol": "#d476cc"
+"lilies": "#5563b2",
+"warhol": "#a45fa3"
 },
 "--c-a07a48-bg": {
 "hex": "#a07a48",
@@ -5281,8 +5281,8 @@
 "hex": "#a83a5c",
 "role": "bg",
 "night": "#a83a5c",
-"lilies": "#5d72da",
-"warhol": "#d476cc"
+"lilies": "#5563b1",
+"warhol": "#a35ea2"
 },
 "--c-a86a8c-ink": {
 "hex": "#a86a8c",
@@ -5414,8 +5414,8 @@
 "hex": "#aa5a2b",
 "role": "bg",
 "night": "#aa5a2b",
-"lilies": "#5f73db",
-"warhol": "#d577cd"
+"lilies": "#5765b4",
+"warhol": "#a761a5"
 },
 "--c-aa5a2b-ink": {
 "hex": "#aa5a2b",
@@ -5428,8 +5428,8 @@
 "hex": "#aa822c",
 "role": "bg",
 "night": "#aa822c",
-"lilies": "#5e73db",
-"warhol": "#d577cd"
+"lilies": "#5765b4",
+"warhol": "#a661a5"
 },
 "--c-aa822c-ink": {
 "hex": "#aa822c",
@@ -8844,15 +8844,15 @@
 "hex": "#0d0410",
 "role": "bg",
 "night": "#0d0410",
-"lilies": "#7083e1",
-"warhol": "#de85d8"
+"lilies": "#6f82de",
+"warhol": "#da83d4"
 },
 "--c-33192a-bg": {
 "hex": "#33192a",
 "role": "bg",
 "night": "#33192a",
-"lilies": "#6b7fdf",
-"warhol": "#db81d5"
+"lilies": "#687ad2",
+"warhol": "#cb79c7"
 },
 "--c-ff8a1e-bg": {
 "hex": "#ff8a1e",
@@ -8886,8 +8886,8 @@
 "hex": "#565b66",
 "role": "bg",
 "night": "#565b66",
-"lilies": "#6175db",
-"warhol": "#d679ce"
+"lilies": "#5a69b9",
+"warhol": "#ad65ab"
 },
 "--c-9a8cc4-bg": {
 "hex": "#9a8cc4",
@@ -10265,36 +10265,36 @@
 "hex": "#083430",
 "role": "bg",
 "night": "#083430",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7cca"
 },
 "--c-3a2a06-bg": {
 "hex": "#3a2a06",
 "role": "bg",
 "night": "#3a2a06",
-"lilies": "#6c80e0",
-"warhol": "#dc82d5"
+"lilies": "#6a7bd4",
+"warhol": "#ce7bc9"
 },
 "--c-062e36-bg": {
 "hex": "#062e36",
 "role": "bg",
 "night": "#062e36",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7cca"
 },
 "--c-06351f-bg": {
 "hex": "#06351f",
 "role": "bg",
 "night": "#06351f",
-"lilies": "#6d80e0",
-"warhol": "#dc82d6"
+"lilies": "#6a7cd5",
+"warhol": "#cf7ccb"
 },
 "--c-3a0a24-bg": {
 "hex": "#3a0a24",
 "role": "bg",
 "night": "#3a0a24",
-"lilies": "#6c7fe0",
-"warhol": "#dc81d5"
+"lilies": "#697bd3",
+"warhol": "#cd7ac8"
 },
 "--c-f2a90f-bg": {
 "hex": "#f2a90f",

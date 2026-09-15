@@ -5605,7 +5605,7 @@
     var wrap = add(cell, "div", "tfh-facewrap"), hue = tbxVar(it.dom);
     (it.peek || []).slice(0, 2).forEach(function (tok, i) { var sh = add(wrap, "div", "tfh-sh tfh-sh" + (i + 1)); sh.style.background = tbxVar(tok); sh.style.boxShadow = stkShardShadow(stkHexOf(tbxVar(tok)), 50); });
     var face = add(wrap, "div", "tfh-face"); face.style.background = hue; face.style.boxShadow = "0 4px 0 " + tfhDeep(hue); add(face, "i", "ti " + it.ti);
-    var lbl = add(cell, "span", "tfh-lbl", tr(it.name)); lbl.style.color = hue;
+    var lbl = add(cell, "span", "tfh-lbl", tr(it.name)); lbl.style.color = "color-mix(in srgb, " + hue + " var(--t-lblmix), var(--t-lblink))"; // the deck label wears the SAME recipe as the tools grid: its own hue at night, tinted toward ink on a light world (the Round H frames draw #80448e/*canon*/ on a #d161c1/*canon*/ coin). Raw, it sat at 1.28:1 on the Warhol ground.
     cell.onclick = function () { tfhOpenDose(id); };
     return cell;
   }
@@ -8506,7 +8506,7 @@
   var TBX_HEX = { move: THC("#ff8a3a","bg"), nourish: THC("#34d39a","bg"), focus: THC("#36b3f0","bg"), create: THC("#b07aff","bg"), connect: THC("#ff5fa0","bg"), play: THC("#ffc83d","bg"), restore: THC("#2ab8c4","bg"), upkeep: THC("#7f9bc4","bg") }; // toolbox domain hexes (mirrored as CSS vars on .tbx). These now MATCH the DOM registry exactly — play was the last divergence (var(--c-ffc83d-ink) here vs var(--c-d99f30-ink) there) and David unified on this brighter gold 2026-07-30, so a Play tool and a Play block finally read as one domain.
   var TBX_BOLT = THC("#ff4fa0","ink"), TBX_SEALBG = THC("#241328","ink"), TBX_SEALINK = THC("#ffc41f","ink"), TBX_PINK = THC("#ff5fa8","ink"), TBX_INK = THC("#160510","ink"); // literal hexes from DESIGN-EXTRACT (the raise-stakes bolt step + the log-step seal are NOT domain vars).
   function tbxVar(tok) { return (tok && tok.charAt(0) === "#") ? tok : ("var(--" + tok + "," + (TBX_HEX[tok] || THC("#63d3c9","bg")) + ")"); } // domain token → CSS var WITH ITS HEX AS THE FALLBACK; literal hex passes through. A step's colour is stored as this string and travels between surfaces (Session Editor → stack → picker), so it must survive landing somewhere that doesn't declare that var — an unresolved var() paints TRANSPARENT, which is how a Play coin went invisible in the picker the moment --play stopped being mirrored there.
-  function tbxLip(colExpr) { return "0 4px 0 color-mix(in srgb, " + colExpr + " 45%, var(--c-000000-ink))"; } // the universal hard-offset lip idiom (DESIGN-EXTRACT §0); color-mix already ships in this app (index.html .obv-gate)
+  function tbxLip(colExpr) { return "0 4px 0 color-mix(in srgb, " + colExpr + " 45%, var(--t-lipbase))"; } // the universal hard-offset lip idiom (DESIGN-EXTRACT §0); color-mix already ships in this app (index.html .obv-gate)
   // Registry: every named item from DESIGN-EXTRACT §3 (16 stacks + 12 plain tools). peek = the deduped coin colors verbatim from §3 (the dedup rule — drop steps whose color equals the face or an earlier coin, max 2 — was applied at design time; "Can't Sleep" legitimately renders ONE coin). track = best-effort map onto STACK_TOOLS ids so Start actually runs; step durations scale to the chosen dose. kicker = the dose-card context line. steps (Caught Scrolling only) = the design's plain-word script; every other stack derives its steps from the track's real tools (reuses already-gated tool copy). def = default dose (minutes).
   // 2026-08-01 PRACTICE GRID: the seven grid stacks also carry `bands` (structural dose folding, see tbxTrackForDose) and `what`/`why` (the dose card's two gated lines). Both are OPTIONAL — a stack without them keeps the legacy single `track` + no lines.
   function tbxBand(min) { var t = [], a = arguments; for (var i = 1; i < a.length; i += 2) t.push({ k: a[i], d: a[i + 1] }); return { min: min, track: t }; } // terse band literal: tbxBand(<minutes>, k, secs, k, secs …). Hoisted declaration, so TBX_ITEMS' initializer below can call it.
@@ -8724,7 +8724,7 @@
     if (o.stack) { add(wrap, "span", "r38-sh1"); add(wrap, "span", "r38-sh2"); }
     var face = add(wrap, "span", "r38-face");
     face.style.background = o.hue;
-    face.style.boxShadow = (o.sel ? "0 0 0 3px var(--t-accent), " : "") + "0 5px 0 color-mix(in srgb, " + o.hue + " 45%, var(--c-000000-bg))";
+    face.style.boxShadow = (o.sel ? "0 0 0 3px var(--t-accent), " : "") + "0 5px 0 color-mix(in srgb, " + o.hue + " 45%, var(--t-lipbase))";
     add(face, "i", "ti " + o.ti);
     var lb = add(cell, "span", "r38-lb", tr(o.name));
     lb.style.color = o.sel ? "var(--t-accent)" : ("color-mix(in srgb, " + o.hue + " var(--t-lblmix), var(--t-lblink))");
@@ -9065,13 +9065,13 @@
     var wrap = add(host, "div", "sed-set");
     var vk = sedVoiceKey(), vlist = sedVoices(), vnow = vlist.filter(function (v) { return v.k === vk; })[0] || vlist[0];
     var vb = sedSetCard(wrap, "voice", "connect", "ti-microphone", "Voice", tr(vnow.n));
-    if (vb) { var vr = add(vb, "div", "sed-vrow"); vlist.forEach(function (v) { var on = v.k === vk, c = add(vr, "button", "sed-vcard"); var vi = add(c, "i", "ti " + (v.k === "none" ? "ti-microphone-off" : "ti-user")); add(c, "span", "sed-vn", tr(v.n)); add(c, "span", "sed-vs", tr(v.s)); if (on) { c.style.background = tbxCandy(sedHue("connect")); c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("connect") + " 45%, var(--c-000000-ink))"; c.classList.add("on"); } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("connect") + " 34%, var(--c-33192a-ink))"; vi.style.color = sedHue("connect"); } c.onclick = function () { sedSetVoiceKey(v.k); sedPaint(); }; }); }
+    if (vb) { var vr = add(vb, "div", "sed-vrow"); vlist.forEach(function (v) { var on = v.k === vk, c = add(vr, "button", "sed-vcard"); var vi = add(c, "i", "ti " + (v.k === "none" ? "ti-microphone-off" : "ti-user")); add(c, "span", "sed-vn", tr(v.n)); add(c, "span", "sed-vs", tr(v.s)); if (on) { c.style.background = tbxCandy(sedHue("connect")); c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("connect") + " 45%, var(--t-lipbase))"; c.classList.add("on"); } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("connect") + " 34%, var(--c-33192a-ink))"; vi.style.color = sedHue("connect"); } c.onclick = function () { sedSetVoiceKey(v.k); sedPaint(); }; }); }
     var bedsOn = bedKeys(), bedSum = bedsOn.length ? bedsOn.map(function (k) { return tr(BED_NAME[k] || k); }).join(" + ") : tr("None"); // MULTI (2026-08-20): the summary line names every bed in the set, not just one — and reads BED_NAME so a binaural bed picked in the settings card still shows here
     var vol = Math.max(0, Math.min(5, Math.round(((S.audio && S.audio.bg != null ? S.audio.bg : 1)) * 5)));
     var sb = sedSetCard(wrap, "sound", "move", "ti-volume", "Sound", bedSum + " · " + tr(SED_VOLLAB[vol]));
     if (sb) {
       var g = add(sb, "div", "sed-sgrid");
-      SED_BEDS.forEach(function (x) { var on = x.k === "off" ? !bedsOn.length : bedsOn.indexOf(x.k) !== -1, c = add(g, "button", "sed-scell"); var si = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.n)); if (on) { c.style.background = tbxCandy(sedHue("move")); c.style.color = THC("#160510","bg"); c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("move") + " 45%, var(--c-000000-bg))"; } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("move") + " 34%, var(--c-33192a-ink))"; si.style.color = sedHue("move"); } c.onclick = function () { bedSet(bedToggle(x.k)); save(); if (_activeBed) _activeBed(bedKeys()); sedPaint(); }; }); // same one-per-category toggle as the settings card, so the two doors can never disagree
+      SED_BEDS.forEach(function (x) { var on = x.k === "off" ? !bedsOn.length : bedsOn.indexOf(x.k) !== -1, c = add(g, "button", "sed-scell"); var si = add(c, "i", "ti " + x.i); add(c, "span", null, tr(x.n)); if (on) { c.style.background = tbxCandy(sedHue("move")); c.style.color = THC("#160510","bg"); c.style.boxShadow = "0 4px 0 color-mix(in srgb, " + sedHue("move") + " 45%, var(--t-lipbase))"; } else { c.style.borderColor = "color-mix(in srgb, " + sedHue("move") + " 34%, var(--c-33192a-ink))"; si.style.color = sedHue("move"); } c.onclick = function () { bedSet(bedToggle(x.k)); save(); if (_activeBed) _activeBed(bedKeys()); sedPaint(); }; }); // same one-per-category toggle as the settings card, so the two doors can never disagree
       var vr2 = add(sb, "div", "sed-vol"); add(vr2, "i", "ti ti-volume");
       var bars = add(vr2, "span", "sed-bars");
       [1, 2, 3, 4, 5].forEach(function (v) { var bq = add(bars, "button", "sed-bar"); bq.style.height = (7 + v * 4) + "px"; bq.style.background = v <= vol ? sedHue("move") : THC("#2c1522","bg"); bq.setAttribute("aria-label", tr(SED_VOLLAB[v])); bq.onclick = function () { setAudioVol("bg", v / 5); save(); sedPaint(); }; });
@@ -9103,7 +9103,7 @@
     var cat = SED_CATS.filter(function (c) { return c.k === _sed.cat; })[0] || SED_CATS[0];
     var grid = add(sheetb, "div", "sed-toolgrid");
     cat.tools.forEach(function (t) {
-      var b = add(grid, "button", "sed-tool"); var coin = add(b, "span", "sed-toolcoin"); coin.style.background = sedHue(cat.d); coin.style.setProperty("--lip", "color-mix(in srgb, " + sedHue(cat.d) + " 45%, var(--c-000000-ink))"); add(coin, "i", "ti " + t.i);
+      var b = add(grid, "button", "sed-tool"); var coin = add(b, "span", "sed-toolcoin"); coin.style.background = sedHue(cat.d); coin.style.setProperty("--lip", "color-mix(in srgb, " + sedHue(cat.d) + " 45%, var(--t-lipbase))"); add(coin, "i", "ti " + t.i);
       add(b, "span", "sed-tooln", tr(t.t)); add(b, "span", "sed-toolm", sedShort(t.m));
       b.onclick = function () {
         var row = { k: t.sk, m: t.m, t: t.t, i: t.i, d: cat.d, f: { voice: true }, desc: t.desc || "" };
@@ -9147,7 +9147,7 @@
   function pkHue(dom) { return (DOM[dom] || DOM.focus).c; }
   var PK_INK = THC("#2a1730","ink"); // ink-on-a-fill: what a glyph or a label wears when it sits ON a saturated hue. var(--c-160510-ink) is the BORDER/lip ink and never a glyph on a hue (DS source 2026-07-30).
   var PK_EDGE = THC("#34172d","ink"); // THE RESTING FOLDER EDGE (David 2026-07-31, on his frame): ONE neutral plum for all eight cards, a hair lighter than the var(--c-241022-ink) shell so the card has a rim without a colour. The per-domain color-mix(HUE 30%, var(--c-160510-ink)) edge that lived here made Play gold-rimmed and Nourish green-rimmed — the frame shows eight identical edges. Hue on a folder edge is now ONLY the pink pick ring.
-  function pkCoinLip(hex) { return "0 4px 0 " + mixHex(hex, THC("#000000","bg"), 0.55); } // the RESTING coin's lip: 0 4px 0 color-mix(in srgb, HUE 45%, var(--c-000000-ink)) — the hue kept at 45% (mixHex's t is distance TOWARD black) and toward BLACK, never var(--c-160510-ink). David 2026-07-31: 2.5px read thin on device, 4px is the frame.
+  function pkCoinLip(hex) { return "0 4px 0 " + mixHex(hex, THC("#000000","bg"), 0.55); } // the RESTING coin's lip: 0 4px 0 color-mix(in srgb, HUE 45%, var(--t-lipbase)) — the hue kept at 45% (mixHex's t is distance TOWARD black) and toward BLACK, never var(--c-160510-ink). David 2026-07-31: 2.5px read thin on device, 4px is the frame.
   function pkRing() { return "0 0 0 2.5px var(--c-ff4fa0-ink)"; } // THE PICKED EDGE, and the ONLY shadow a picked thing wears (David 2026-07-31, on device): the lip must not survive underneath, or the ring breaks along the bottom instead of closing around the shape.
   function pkIgnite(hex) { return "repeating-linear-gradient(65deg,rgba(255,255,255,.30) 0 13px,rgba(255,255,255,0) 13px 28px)," + hex; } // THE ignition token: a 65°/13px WHITE-VEIL stripe over the flat hue. 65°, not 115° — David's frame leans the bands the other way (bottom-left to top-right); every picked surface (coins, sheet cells, rail chips, the focused queue chip, a picked stack card) inherits from here.
   var PK_DECK_S = 36, PK_Q_S = 48, PK_BUNDLE_S = 56, PK_Q_GLYPH = 20; // the STACK CARD's size on each picker surface (David 2026-07-31, measured off his frames): the folder deck preview (3 across inside a folder, 36px at 375), the queue chip (48, down from an overshot 64, and its glyph is the frame's ~20 rather than 0.34·48), the Stacks/Chains sheet card (56, his reference size, in a compact 4-col grid). stkCard needs the px because the lip, the glyph and the shard fan are all ratios of S.
@@ -9335,7 +9335,7 @@
     var host = _pk.shhead; pkDrain(host); var s = _pk.sheet, M = pkSheetMeta();
     var head = add(host, "div", "pk-shhead");
     if (s.more) { var bk = add(head, "button", "pk-circ"); add(bk, "i", "ti ti-arrow-left"); bk.setAttribute("aria-label", tr("Back")); bk.onclick = function () { s.more = false; s.naming = false; pkPaintSheetHead(); pkPaintSheetBody(); }; }
-    var coin = add(head, "span", "pk-shcoin"); coin.style.background = M.c; coin.style.boxShadow = "0 4px 0 " + mixHex(M.c, THC("#000000","bg"), 0.55) + ", 0 0 0 2.5px var(--c-160510-ink)"; var ci = add(coin, "i", "ti " + M.ti); ci.style.color = PK_INK; // DS: lip = color-mix(HUE 45%, var(--c-000000-ink)) = the hue at 45% toward black, under a 2.5px ink ring; glyph = ink-on-fill
+    var coin = add(head, "span", "pk-shcoin"); coin.style.background = M.c; coin.style.boxShadow = "0 4px 0 " + mixHex(M.c, THC("#000000","bg"), 0.55) + ", 0 0 0 2.5px var(--c-160510-ink)"; var ci = add(coin, "i", "ti " + M.ti); ci.style.color = PK_INK; // DS: lip = color-mix(HUE 45%, var(--t-lipbase)) = the hue at 45% toward black, under a 2.5px ink ring; glyph = ink-on-fill
     var tx = add(head, "span", "pk-shtx"); add(tx, "span", "pk-shl", M.l); add(tx, "span", "pk-shs", M.sub);
     var x = add(head, "button", "pk-circ"); add(x, "i", "ti ti-x"); x.setAttribute("aria-label", tr("Close")); x.onclick = pkCloseSheet;
     if (!s.naming) return;
@@ -16166,7 +16166,7 @@
   var PZ = { stage: {}, sel: null, arm: null, dragged: 0 }, pzLandTok = 0; // staging is per-session and in-memory ON PURPOSE: nothing touches David's data until Save
   function pzById(id) { for (var i = 0; i < DAY_STACKS.length; i++) if (DAY_STACKS[i].id === id) return DAY_STACKS[i]; return null; }
   function pzDrain(n) { while (n.firstChild) n.removeChild(n.firstChild); } // child-drain, never a wipe-and-rebuild (ratchet law)
-  function pzLip(hex) { return "color-mix(in srgb, " + hex + " 45%, var(--c-000000-ink))"; } // the app's own coin-lip recipe (@SEC:EDITOR sed-toolcoin)
+  function pzLip(hex) { return "color-mix(in srgb, " + hex + " 45%, var(--t-lipbase))"; } // the app's own coin-lip recipe (@SEC:EDITOR sed-toolcoin)
   function pzHue(d) { return (DOM[d] || DOM.focus).c; }
   function pzCoins(s) { // "coins = the skeleton's unique non-rest hues in order" — restore IS the rest teal, so it never coins
     if (s._coins) return s._coins;
@@ -22433,6 +22433,75 @@
   window.DEV.you = function () { youMenu(); return "you menu"; };
   window.DEV.vital = function () { characterCard(); return "the vital (PARKED 2026-08-20 — unhooked from the gear, not deleted; David is redesigning it)"; };
   window.DEV.oldSettings = function () { settingsSheet(); return "the pre-2026-08-20 settings sheet (PARKED)"; };
+  // ===== THE COLOR AUDIT (David 2026-09-15: "your audit system is broken if you're able to give me
+  // these mistakes ... make an SOP to fix it"). designAudit checks the HOME BOARD's locked numbers. It
+  // has never checked the one thing that kept reaching him: a color that resolves WRONG. Every defect
+  // he has caught this week is one of exactly three shapes, and all three are mechanical:
+  //   DARK_ORPHAN  — a piece far darker than the ground in a LIGHT world (his "Open awareness is dark,
+  //                  which makes the stack have a dark thing. We never designed there to be a dark thing").
+  //                  Always a fill whose literal was roled as text and resolved to the body ink.
+  //   INVISIBLE    — a piece whose fill is within a hair of what sits behind it (his "in the Warhol,
+  //                  the heart and the recovery look borderline invisible compared to the background").
+  //   UNREADABLE   — text under 3:1 against its own background (the "Load save" class).
+  // It walks what is ACTUALLY PAINTED, so it cannot be fooled by a value being right in the map and
+  // wrong on screen — which is how every one of these got past me.
+  window.DEV.colorAudit = function (opts) {
+    opts = opts || {};
+    var lum = function (c) {
+      var m = String(c).match(/[\d.]+/g); if (!m) return null;
+      if (m.length > 3 && parseFloat(m[3]) < 0.5) return null;   // effectively transparent: not a fill
+      var f = function (v) { v = parseFloat(v) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+      return 0.2126 * f(m[0]) + 0.7152 * f(m[1]) + 0.0722 * f(m[2]);
+    };
+    var ratio = function (a, b) { var hi = Math.max(a, b), lo = Math.min(a, b); return (hi + 0.05) / (lo + 0.05); };
+    var behind = function (e) { // what this element actually sits on
+      for (var p = e.parentElement; p; p = p.parentElement) {
+        var L = lum(getComputedStyle(p).backgroundColor); if (L != null) return L;
+      }
+      return lum(getComputedStyle(document.body).backgroundColor);
+    };
+    // A PIECE IS ALSO SEPARATED BY ITS LIP. The frames draw border:0 and a 5px hard shadow in the
+    // piece's own hue — the Round H Warhol tool library puts Heart at #d787d2/*canon*/ on a #df86d9/*canon*/ ground,
+    // 1.03:1, and it reads because of that lip. So a fill close to its ground is only a FAILURE when
+    // nothing else separates it; flagging the design's own grammar would train me to "fix" correct work.
+    var _sep = function (cs) {
+      if (parseFloat(cs.borderTopWidth) >= 1.5 && lum(cs.borderTopColor) != null) return true;
+      var sh = cs.boxShadow; if (!sh || sh === "none") return false;
+      return /\b([2-9]|[1-9][0-9])px\b/.test(sh);                 // a real offset or spread, not a hairline
+    };
+    var theme = document.documentElement.getAttribute("data-theme") || "night";
+    var groundL = lum(getComputedStyle(document.body).backgroundColor);
+    if (groundL == null) groundL = 0;
+    var light = groundL > 0.18;                                   // a day world
+    var out = [], seen = {};
+    var nodes = [].slice.call(document.querySelectorAll("*"));
+    nodes.forEach(function (e) {
+      var r = e.getBoundingClientRect();
+      if (r.width < 14 || r.height < 14 || r.bottom < 0 || r.top > (window.innerHeight || 900)) return;
+      var cs = getComputedStyle(e);
+      if (cs.visibility === "hidden" || +cs.opacity < 0.25) return;
+      var area = r.width * r.height, id = (e.id || e.className || e.tagName) + "";
+      var own = lum(cs.backgroundColor);
+      if (own != null && area < 90000) {                          // a PIECE, not a page-sized ground
+        var bk = behind(e);
+        if (bk != null) {
+          if (light && own < groundL / 7 && cs.backgroundImage === "none") {
+            if (!seen["D" + id]) { seen["D" + id] = 1; out.push("DARK_ORPHAN · " + id.slice(0, 38) + " · fill " + cs.backgroundColor + " on a light world"); }
+          } else if (ratio(own, bk) < 1.14 && parseFloat(cs.borderRadius) > 4 && !_sep(cs)) {
+            if (!seen["I" + id]) { seen["I" + id] = 1; out.push("INVISIBLE · " + id.slice(0, 38) + " · fill " + cs.backgroundColor + " vs its ground · " + ratio(own, bk).toFixed(2) + ":1"); }
+          }
+        }
+      }
+      if (!e.children.length && (e.textContent || "").trim() && r.height >= 8) {
+        var tc = lum(cs.color), tb = behind(e);
+        if (tc != null && tb != null && ratio(tc, tb) < 3) {
+          if (!seen["T" + id]) { seen["T" + id] = 1; out.push("UNREADABLE · \"" + (e.textContent || "").trim().slice(0, 22) + "\" · " + cs.color + " · " + ratio(tc, tb).toFixed(2) + ":1"); }
+        }
+      }
+    });
+    var head = (out.length ? "COLOR FAILURES (" + out.length + ")" : "COLOR CLEAN") + " · world " + theme + " · ground " + getComputedStyle(document.body).backgroundColor;
+    return opts.array ? out : head + (out.length ? "\n" + out.join("\n") : "");
+  };
   window.DEV.designAudit = function () { // THE SELF-AUDIT (David 2026-07-22 "you need a better self-auditing system"): measures the LIVE idle-home render against the locked board numbers. Run in preview before EVERY home-surface ship; David can run it on-device (dev mode). Returns PASS/FAIL lines — a FAIL means do not ship.
     var W = innerWidth, H = innerHeight, out = [], ok = true;
     // THEME-AWARE (Round H, 2026-09-15). Every color lock in this audit quotes a NIGHT hex — they were
