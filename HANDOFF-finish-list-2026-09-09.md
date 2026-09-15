@@ -29,3 +29,10 @@ say so and it is a one-line change to the remap table.
 (the palette's own secondary set) so domains stay distinguishable, then re-run theme-gen and re-diff.
 
 DEVICE-UNTESTED: all feel — daylight legibility, and the reload-on-switch in Look.
+
+### v1434 — David's four corrections, all correct
+Accent is a SEPARATE palette token (Warhol = gold #ffd062), not a coin — the home stone, its halo and the
+primary button now wear it. WCAG contrast guard kills the light-on-light text. Theme swap keeps you in the
+app. Look row wears the active accent. Plus the one they surfaced: `mixHex(x,"#160510")` means "toward the
+page ground", which inverts on a light world — that was Water Lilies' unreadable navy CTAs.
+Gates: night 112/112, lilies 103 PASS / 0 FAIL, warhol 100 PASS / 1 flaky pre-existing FAIL.
