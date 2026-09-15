@@ -10344,5 +10344,19 @@
 "night": "#fff2f9",
 "lilies": "#f3ecff",
 "warhol": "#f3ecff"
+},
+"--c-ff8a5c-bg": {
+"hex": "#ff8a5c",
+"role": "bg",
+"night": "#ff8a5c",
+"lilies": "#d161c0",
+"warhol": "#d685d1"
+},
+"--c-8ad0ff-bg": {
+"hex": "#8ad0ff",
+"role": "bg",
+"night": "#8ad0ff",
+"lilies": "#d260c0",
+"warhol": "#e2a7de"
 }
 }

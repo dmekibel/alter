@@ -63,6 +63,10 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         # ink for the day worlds (#80448e on a #d161c1 coin = mix(hue 55%, ink)). One recipe, two worlds.
         '--t-lblmix': ('100%' if T is None else '55%'),
         '--t-lblink': ('transparent' if T is None else T['ink']),
+        # EDGE FADES. A scroll fade is authored to melt into night's near-black ground; on a light world
+        # the same rgba paints a black smear across the bottom of the screen (David 2026-09-15, his own
+        # Warhol settings frame). The fade takes the world's ground instead, so it still melts.
+        '--t-fade': ('rgba(13,5,15,.94)' if T is None else rgba(T['ground'], '.94')),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }
