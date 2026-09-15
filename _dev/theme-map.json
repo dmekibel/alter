@@ -9070,5 +9070,89 @@
 "night": "#7ac8ff",
 "lilies": "#d161c0",
 "warhol": "#de9bd9"
+},
+"--c-ffd24a-highlight": {
+"hex": "#ffd24a",
+"role": "highlight",
+"night": "#ffd24a",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
+},
+"--c-ffd24a-accent": {
+"hex": "#ffd24a",
+"role": "accent",
+"night": "#ffd24a",
+"lilies": "#d966c8",
+"warhol": "#ffd062"
+},
+"--c-ff5fa8-highlight": {
+"hex": "#ff5fa8",
+"role": "highlight",
+"night": "#ff5fa8",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
+},
+"--c-ffc41f-highlight": {
+"hex": "#ffc41f",
+"role": "highlight",
+"night": "#ffc41f",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
+},
+"--c-ffc41f-accent": {
+"hex": "#ffc41f",
+"role": "accent",
+"night": "#ffc41f",
+"lilies": "#d966c8",
+"warhol": "#ffd062"
+},
+"--c-fff3c0-highlight": {
+"hex": "#fff3c0",
+"role": "highlight",
+"night": "#fff3c0",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
+},
+"--c-fff3c0-accent": {
+"hex": "#fff3c0",
+"role": "accent",
+"night": "#fff3c0",
+"lilies": "#d966c8",
+"warhol": "#ffd062"
+},
+"--c-ff5fa0-highlight": {
+"hex": "#ff5fa0",
+"role": "highlight",
+"night": "#ff5fa0",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
+},
+"--c-36b3f0-highlight": {
+"hex": "#36b3f0",
+"role": "highlight",
+"night": "#36b3f0",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
+},
+"--c-36b3f0-accent": {
+"hex": "#36b3f0",
+"role": "accent",
+"night": "#36b3f0",
+"lilies": "#d966c8",
+"warhol": "#ffd062"
+},
+"--c-ffcf6a-highlight": {
+"hex": "#ffcf6a",
+"role": "highlight",
+"night": "#ffcf6a",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
+},
+"--c-ffc83d-highlight": {
+"hex": "#ffc83d",
+"role": "highlight",
+"night": "#ffc83d",
+"lilies": "#ca16af",
+"warhol": "#ffc41f"
 }
 }

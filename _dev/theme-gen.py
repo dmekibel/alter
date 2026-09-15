@@ -42,9 +42,11 @@ def blend(a, b, t):
 THEMES = {
     'lilies': dict(
         ground='#7285e2', surface='#5d72da', ink='#1c2050', accent='#d966c8', onAccent='#1c2050',
+        highlight='#ca16af',   # the doc's hlGold for this world: hsl2hex(h(accent), .8, .44)
         mono=(h2h('#d966c8')[0], 0.55), flatten=True),        # coins=3 + it=5 (moonlit)
     'warhol': dict(
         ground='#df86d9', surface='#d476cc', ink='#2c1035', accent='#ffd062', onAccent='#3a2a05',
+        highlight='#ffc41f',   # the doc's hlGold for Warhol, verbatim — the gold the intro emphasis words wear
         mono=(h2h('#df86d9')[0], 0.50), flatten=False),       # coins=4
 }
 
@@ -107,6 +109,10 @@ def remap(c, role, T):
     h, s, l = h2h(c)
     if role == 'accent': return T['accent']
     if role == 'onaccent': return T['onAccent']
+    # HIGHLIGHT is the doc's own hlGold/hlPink/hlBlue — in BOTH day worlds all three collapse to one
+    # emphasis color (Warhol #ffc41f, Water Lilies #ca16af). It is what makes the intro's key words and
+    # the guardian mark read as the palette instead of as flat dark ink.
+    if role == 'highlight': return T['highlight']
     if c == '#ffffff':
         # a white FILL is a specular highlight and stays white; white TEXT must flip on a light ground
         return c if role == 'bg' else blend(T['ink'], T['surface'], 0.88)  # white is PRIMARY text

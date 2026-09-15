@@ -30,6 +30,16 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         '--t-accent': acc,
         '--t-on-accent': '#ffffff' if T is None else T['onAccent'],
         '--t-ink-soft': '#b2a6d8' if T is None else inkSoft(T),
+        '--t-highlight': '#ffd24a' if T is None else T['highlight'],
+        # the ALTER wordmark stays WHITE in every world (David 2026-09-15: "on the Home Screen Warhol
+        # alter should be white") — it is a display mark over the ground, not body copy.
+        '--t-wordmark': '#ffffff',
+        # THE EMPTY TRACK (David 2026-09-15: "the streaks bar on top should be visible even if nothing
+        # is planned"). An unfilled pill was authored as a near-black plum, which read against night's
+        # near-black ground by being slightly lighter — on a light world the same remap lands it ON the
+        # ground and the strip disappears exactly when it has nothing to say. This is the one fill that
+        # must never equal the ground, so it is a token, not a remapped literal.
+        '--t-track': '#2e1a28' if T is None else blend(T['ink'], T['ground'], 0.18),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }

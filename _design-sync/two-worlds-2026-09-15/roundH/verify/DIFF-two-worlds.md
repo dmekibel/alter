@@ -100,3 +100,49 @@ and a hex in a `c:` / `color:` DATA property is a domain FILL, not text (287 sit
 
 The stone-halo gate is no longer skipped in the day worlds: it reads its expected hue from `--t-halo-ring`,
 so it still asserts the frame's 11px/.09 + 64px/.28 recipe in all three worlds and only the hue moves.
+
+---
+
+# ROUND 3 (v1437) — "I thought we designed it correctly in Claude design with yellow and stuff"
+He was right again, and this time the answer was sitting in a frame I had not opened.
+
+**EXTRACTED — frame "onboarding · the spark", Warhol** (this is the authority, read off the running
+prototype's computed styles, not inferred):
+| element | value |
+|---|---|
+| ground | `linear-gradient(175deg, …)` |
+| body copy | the theme ink |
+| emphasis words `spark` / `waits` / `yours` / `Alter` | **`#ffc41f`**, weight 800, 27px |
+| CTA | `#ffd062` (accent), 346x58, r18 |
+
+The doc computes `hlGold / hlPink / hlBlue` and in **both** day worlds collapses all three into ONE
+highlight: Warhol `#ffc41f`, Water Lilies `hsl2hex(h(accent), .8, .44)` = `#ca16af`. My round-2 contrast
+guard had swept those words into flat dark ink — technically legible, and exactly the "ugly" David named.
+Fixed with a `highlight` role (night keeps its own gold-and-pink pair untouched). The app's `HUES` map
+highlights precisely those four words already, so the port is one-for-one with the frame.
+
+Also this round:
+- **The ALTER wordmark is white in every world** (`--t-wordmark`) — it is a display mark over the ground,
+  not body copy, so the contrast guard had no business flattening it.
+- **The guardian mark wears the palette**: star = `--t-accent`, halo + glint = `--t-highlight`. It was
+  rendering pure dark, which is what David meant by "the icon should not be just pure dark".
+- **The first-run CTA** (`.ob-btn`) is the world's accent, matching the frame's `#ffd062` button.
+- **The streak strip stays visible with nothing planned** (`--t-track`). The unfilled pill was authored as
+  a near-black plum that read against night's near-black ground by being slightly LIGHTER; remapped onto a
+  light world it landed on the ground and vanished exactly when the strip had nothing to say. It is now a
+  token — the one fill that must never equal the ground. Measured: pill `rgb(191,113,187)` on a
+  `rgb(221,132,215)` ground.
+
+**A REAL BUG THIS ROUND FOUND, shipped in v1429-v1436.** The first pass treated a hex inside an HTML
+attribute (`stroke="#ffd24a"`) as a whole JS string literal and rewrote it to `stroke=THC("#ffd24a","ink")`
+— invalid markup. 34 attributes across 12 lines, including **every flag in the language picker**, which had
+been rendering with no fills at all. Repaired: UI marks now use string concatenation with the right role,
+and the 17 national flag colors are restored as plain hexes and listed in `_dev/theme-fixed.json`, the only
+sanctioned exemption from the theme gate — a French flag is blue-white-red in every world.
+
+## Round 3 gates, at 430x932
+| world | gates | PASS | SKIP | FAIL |
+|---|---|---|---|---|
+| night | 111 | 109 | 1 | 1 — the pre-existing animation gate |
+| lilies | 111 | 100 | 10 | 1 — the same one |
+| warhol | 111 | 100 | 10 | 1 — the same one |
