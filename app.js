@@ -144,7 +144,7 @@
   function audioClaimed() { return _asClaimed; }
   function voiceBus() { sharedAudioCtx(); audioClaim(); return _voiceBus; }
   function bgBus() { sharedAudioCtx(); audioClaim(); return _bgBus; }
-  function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : kind === "voice" ? _voiceBus : null; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; } // a kind with NO bus (David 2026-09-09: "tone", the breath guiding tone's own level) stores the pref and stops there — makeBreathSustain reads it live on every update, so it needs no master gain of its own. Before this, any kind that was not "bg" fell through to the VOICE bus.
+  function setAudioVol(kind, v) { sharedAudioCtx(); var bus = kind === "bg" ? _bgBus : kind === "voice" ? _voiceBus : null; if (bus) { try { bus.gain.value = v; } catch (e) {} } S.audio = S.audio || { voice: 1, bg: 1 }; S.audio[kind] = v; if (kind === "cue" || kind === "tone") { try { applyLiveVol(kind); } catch (e) {} } } // a kind with NO bus (David 2026-09-09: "tone", the breath guiding tone's own level) stores the pref and stops there — makeBreathSustain reads it live on every update, so it needs no master gain of its own. Before this, any kind that was not "bg" fell through to the VOICE bus.
   // PEACEFUL PAD (David 2026-07-01): the original meditation drone he liked best — an open A pad (A2·E3·A3) with a gentle breathing swell, that slowly + OCCASIONALLY drifts to a warm neighbour chord (F2·C3·A3, common A3 top) and back for a touch of nuance. Reused for the tool bed AND the whole-app music. Returns { stop }.
   var _padLive = 0; // how many peaceful pads are actually sounding — the honest receipt DEV.beds() reads (a lit chip is not a running oscillator)
   function startPad(ctx, out, level) {
@@ -14943,14 +14943,31 @@
   // so the level wraps the OUTPUT NODE instead, which every cue set reaches whatever it builds.
   // HEADROOM: the stored value is doubled, so the default 0.5 is EXACTLY today's strike and the slider
   // can take it to twice that. Nothing about the existing mix changes until David moves it.
+  // LIVE LEVELS (David 2026-09-15: "regardless of which volume I make it, it stays super loud"). Both
+  // breath engines SCHEDULE AHEAD — the screen-lock lane (2026-08-23) pre-plants a whole cycle of gain
+  // automation and a run of cue strikes into the future. A level read at scheduling time is therefore
+  // BAKED IN: moving the slider mid-session changed a number nothing was going to read again. So the
+  // level lives on its own GainNode, outside the scheduled automation, and every live node is updated
+  // the moment the slider moves. This is why the engine measured correct offline and did nothing on
+  // his phone — the offline render schedules and plays in one breath, so it could never show the bug.
+  var _liveVol = { cue: [], tone: [] };
+  function volNode(kind, ctx, out) {
+    var g = ctx.createGain();
+    g.gain.value = Math.max(0, kind === "cue" ? cueVol() * CUE_HEADROOM : toneVol());
+    if (out) g.connect(out);
+    var a = _liveVol[kind]; if (a) { a.push(g); if (a.length > 48) a.splice(0, a.length - 48); } // finished strikes are inert; the cap just stops the list growing forever
+    return g;
+  }
+  function applyLiveVol(kind) {
+    var lvl = Math.max(0, kind === "cue" ? cueVol() * CUE_HEADROOM : toneVol());
+    (_liveVol[kind] || []).forEach(function (g) { try { g.gain.value = lvl; } catch (e) {} });
+  }
   var CUE_HEADROOM = 2;
   function cueVol() { try { return (S.audio && S.audio.cue != null) ? S.audio.cue : 0.5; } catch (e) { return 0.5; } }
   function cueHit(set, k, ctx, out, durSec, at) {
     if (!set || !ctx) return;
     try {
-      var lvl = Math.max(0, cueVol()) * CUE_HEADROOM;
-      if (!(lvl > 0)) return;                                  // muted: strike nothing rather than schedule a silent oscillator
-      var g = ctx.createGain(); g.gain.value = lvl; g.connect(out || ctx.destination);
+      var g = volNode("cue", ctx, out || ctx.destination); // live: setAudioVol("cue") reaches it even after the strike is scheduled
       set.hit(k, ctx, g, durSec, at);
     } catch (e) {}
   }
@@ -14972,7 +14989,11 @@
   function makeBreathSustain(key, ctx) { try {
     if (!ctx) return null;
     var _bb = bgBus(), out = (_bb && _bb.context === ctx) ? _bb : ctx.destination, t00 = ctx.currentTime, TAU = 0.08, stopped = false, curKind = "rest", _lv = 0; // the bg bus belongs to the SHARED context; an OfflineAudioContext render (DEV.breathTone) has to land on its own destination or the connect throws across contexts
-    var master = ctx.createGain(); master.gain.setValueAtTime(0.0002, t00); master.connect(out);
+    var master = ctx.createGain(); master.gain.setValueAtTime(0.0002, t00);
+    // THE LEVEL IS NOT PART OF THE AUTOMATION. master carries the breath's own shape (scheduled, often
+    // far ahead); tvol carries the user's level and is written live. Multiplying them in the graph is
+    // what lets the slider move a tone whose gain curve was planted minutes ago.
+    var tvol = volNode("tone", ctx, out); master.connect(tvol);
     var lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.Q.value = 0.4; lp.frequency.setValueAtTime(340, t00); lp.connect(master);
     var noise = null, src = null, bp = null, gust = null, span = 0, ceil = 0.055, lpSpan = 900, restMul = 0.45, bpBase = 0, bpSpan = 0; // span stays on the handle at 0: nothing in the 2026-09-09 set is pitched, and DEV.breathTone reads tone.span to decide whether a pitch measurement is even meaningful
     var _rdy = null, _rdyGo = null; // resolves once an ASYNC source has attached (the Bowl's recording). Null = nothing to wait for.
@@ -14999,7 +15020,7 @@
       if (stopped) return;
       var t = (at != null) ? at : ctx.currentTime, L = level < 0 ? 0 : (level > 1.2 ? 1.2 : level);
       if (kind) curKind = kind;
-      var g = ceil * (0.14 + 0.86 * L) * toneVol(); if (curKind === "rest") g *= restMul; // an empty-lung rest drops back so the near-silence itself reads as "stay out"; it never goes to zero, or the return would click. toneVol() is read LIVE, so a slider drag lands on the next frame (David 2026-09-09).
+      var g = ceil * (0.14 + 0.86 * L); if (curKind === "rest") g *= restMul; // toneVol is NOT here any more — it rides on tvol, live (2026-09-15) // an empty-lung rest drops back so the near-silence itself reads as "stay out"; it never goes to zero, or the return would click. toneVol() is read LIVE, so a slider drag lands on the next frame (David 2026-09-09).
       try { master.gain.setTargetAtTime(g < 0.0002 ? 0.0002 : g, t, TAU); } catch (e) {}
       if (bp) { var w = gust ? (1 + 0.15 * (0.6 * Math.sin(6.2832 * gust.a * (t - t00) + gust.p) + 0.4 * Math.sin(6.2832 * gust.b * (t - t00) + gust.q))) : 1;
         try { bp.frequency.setTargetAtTime((bpBase + bpSpan * L) * w, t, TAU); } catch (e) {} } // wind / breath: the BAND rides the breath (and the gust wanders it), so the lowpass is out of their signal path entirely
