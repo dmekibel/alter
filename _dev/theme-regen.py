@@ -59,6 +59,10 @@ for key, T in (('night', None), ('lilies', THEMES['lilies']), ('warhol', THEMES[
         '--t-bg-journey': ('#1c0612' if T is None
                            else ('linear-gradient(180deg,#8797e6 0%,#7285e2 52%,#596fdd 100%)' if key == 'lilies'
                                  else 'linear-gradient(180deg,#df86d9 0%,#df86d9 45%,' + blend(T['accent'], T['ground'], 0.24) + ' 100%)')),
+        # A COIN'S LABEL. Round 38 draws it in the coin's OWN hue; the Round H frames tint it toward
+        # ink for the day worlds (#80448e on a #d161c1 coin = mix(hue 55%, ink)). One recipe, two worlds.
+        '--t-lblmix': ('100%' if T is None else '55%'),
+        '--t-lblink': ('transparent' if T is None else T['ink']),
         '--t-halo-ring': rgba(halo, '.09'),
         '--t-halo-bloom': rgba(halo, '.28'),
     }

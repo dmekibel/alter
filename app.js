@@ -8566,7 +8566,18 @@
   var TBX_TOP = ["firstLight", "breatheLadder", "body", "mind", "heart", "vision", "shutdown"];
   var TBX_SECOND = ["cantSleep", "lockTheWin", "feelBetter", "body", "heart", "mind", "vision", "fullStack"];                    // DEAD DATA since 2026-08-01 (the second grid was removed 2026-07-23; the practice grid then took the top row). Kept only as a record of the old composition — nothing reads it.
   // MOMENT-KEYED FOLDERS (David 2026-08-01): the grid is the practice you choose; the folders are the moments that choose you. Every demoted stack lives in exactly the folder whose moment it answers, each alongside the plain tools for that moment. Dom hues are unchanged from the shipped squares (wins inherits Settle's gold).
+  // ROUND 38 · FLAT GRID (ported 2026-09-15, David: "this is canon except with the new colors as well").
+  // Twelve folders, three columns, one symbol each. The first six are the moment-keyed folders that
+  // shipped 2026-08-01, unchanged; the six before them are the practice folders the frame adds, each
+  // grouping stacks and tools the app ALREADY ships — nothing invented, nothing new authored.
+  // Stacks is first and holds your own: the two named stacks, your customs, and Build.
   var TBX_CATS = [
+    { id: "stacks",   name: "Stacks",   dom: "connect", ti: "ti-stack-2",         items: ["firstLight", "shutdown"], mine: true },
+    { id: "breathe",  name: "Breathe",  dom: "restore", ti: "ti-lungs",           items: ["breatheLadder", "t_breathe", "t_relax"] },
+    { id: "meditate", name: "Meditate", dom: "focus",   ti: "ti-moon",            items: ["t_meditate", "t_bodyScan", "t_patience"] },
+    { id: "body",     name: "Body",     dom: "upkeep",  ti: "ti-body-scan",       items: ["body", "t_stretch", "t_shakeOff", "t_climb"] },
+    { id: "heart",    name: "Heart",    dom: "connect", ti: "ti-heart",           items: ["heart", "t_journal", "t_tapping"] },
+    { id: "vision",   name: "Vision",   dom: "create",  ti: "ti-eye",             items: ["vision", "mind", "t_mantra"] },
     { id: "catch",   name: "Catch",   dom: "nourish", ti: "ti-hand-stop",       items: ["caughtScrolling", "urgeWave", "t_tapping", "t_breathe"] },
     { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["spunUp", "fullStack", "t_shakeOff", "t_relax"] },
     { id: "recover", name: "Recover", dom: "connect", ti: "ti-heart-handshake", items: ["iMessedUp", "emptyTank", "feelBetter", "t_journal"] },
@@ -8687,19 +8698,33 @@
     play.onclick = function () { try { tbxLaunch(hero.stackId, tbxDose(hero.stackId)); } catch (e) {} }; // heroes run the default dose directly, NO dose card (decision 5)
     return row;
   }
-  function tbxSquare(host, cat) { // a collapsible mini-bento: 2x2 preview of the category's item coins + the name; NO abstract category icon on the face (the contents preview IS the signifier)
-    var sq = add(host, "button", "tbx-square"); sq.setAttribute("aria-label", tr(cat.name)); sq.setAttribute("data-tbxcat", cat.id);
-    // THE FOLDER BOX'S WASH + LIP (David's device review 2026-08-14). The frame mixes the folder's own hue at 12% into var(--c-120a12-ink) and lips it
-    // at 16% into black; the app's pre-2c recipe was 16% into var(--c-14060e-ink) over a 20% lip, which read as a lighter, flatter box. Only the two
-    // MIX BASES are design constants — the hue itself still comes from the folder registry, never a typed hex (law 4).
-    var _f2c = tfh2c();
-    sq.style.background = _f2c ? ("color-mix(in srgb, " + tbxVar(cat.dom) + " 12%, var(--c-120a12-bg))") : ("color-mix(in srgb, " + tbxVar(cat.dom) + " 16%, var(--c-14060e-ink))");
-    sq.style.boxShadow = "0 4px 0 color-mix(in srgb, " + tbxVar(cat.dom) + (_f2c ? " 16%, var(--c-000000-ink))" : " 20%, var(--c-000000-ink))");
-    var prev = add(sq, "div", "tbx-sq-prev");
-    cat.items.slice(0, 4).forEach(function (iid) { var it = TBX_ITEMS[iid]; if (!it) return; var mc = add(prev, "div", "tbx-sq-mini"); mc.style.background = tbxVar(it.dom); mc.style.boxShadow = _f2c ? ("0 3px 0 " + tfhDeep(tbxVar(it.dom))) : tbxLip(tbxVar(it.dom)); add(mc, "i", "ti " + it.ti); }); // the 2c chip takes the frame's 3px offset on the card language's own deep hue (tfhDeep, the deck/grid lip colour) — the 4px color-mix 45% lip is the pre-2c chip
-    var nm = add(sq, "span", "tbx-sq-name", tr(cat.name)); nm.style.color = tbxVar(cat.dom);
-    sq.onclick = function () { try { tbxOpenCat(cat.id, host); } catch (e) {} };
-    return sq;
+  // ===== ROUND 38 · THE COIN (ported 2026-09-15). Every number is quoted from the frame's own logic:
+  // coin 70, radius round(70*.33)=23, glyph round(70*.455)=32, shard offsets max(5,round(70*.106))=7
+  // and half of it, lip `0 5px 0 color-mix(hue 45%, #000)`, label Baloo 2 800 at 13px capped to 104px.
+  // A STACK carries two shards behind its face; a FOLDER is a single flat coin. Selection adds the
+  // frame's 3px accent ring and turns the label to the accent. Night draws a label in the coin's own
+  // hue; the day worlds tint it toward ink the way the Round H frame renders it (#80448e/*canon*/ there).
+  function tbxCoin(host, o) { // o: {name, hue, ti, stack, sel, onTap, data}
+    var cell = add(host, "button", "r38-tile" + (o.sel ? " on" : ""));
+    if (o.data) cell.setAttribute(o.data[0], o.data[1]);
+    cell.setAttribute("aria-label", tr(o.name));
+    var wrap = add(cell, "span", "r38-wrap");
+    if (o.stack) { add(wrap, "span", "r38-sh1"); add(wrap, "span", "r38-sh2"); }
+    var face = add(wrap, "span", "r38-face");
+    face.style.background = o.hue;
+    face.style.boxShadow = (o.sel ? "0 0 0 3px var(--t-accent), " : "") + "0 5px 0 color-mix(in srgb, " + o.hue + " 45%, var(--c-000000-bg))";
+    add(face, "i", "ti " + o.ti);
+    var lb = add(cell, "span", "r38-lb", tr(o.name));
+    lb.style.color = o.sel ? "var(--t-accent)" : ("color-mix(in srgb, " + o.hue + " var(--t-lblmix), var(--t-lblink))");
+    if (o.onTap) cell.onclick = o.onTap;
+    return cell;
+  }
+  function tbxSquare(host, cat) { // ROUND 38: a folder is a FLAT COIN wearing one symbol — not the old
+    // wash box with a 2x2 preview. The frame's "folder look" tweak offers four minis as the alternative;
+    // David's pick, and every screenshot he sent, is the single symbol.
+    return tbxCoin(host, { name: cat.name, hue: tbxVar(cat.dom), ti: cat.ti.replace(/^ti-/, "ti-"),
+      stack: !!cat.mine, sel: _tbxOpenCat === cat.id, data: ["data-tbxcat", cat.id],
+      onTap: function () { try { tbxOpenCat(cat.id, host); } catch (e) {} } });
   }
   function tbxBuildPanel(cat) { // the expanded category panel: category-hue wash card, header (tap to close) + full-tile 4-up item grid. Inserted as a grid child right after the tapped square (grid-column:1/-1).
     var d = tbxVar(cat.dom);
@@ -8833,35 +8858,35 @@
     go.onclick = function () { var nm = (inp.value || tr("My stack")).trim() || tr("My stack"); ov.remove(); cb(nm); };
     setTimeout(function () { try { inp.focus(); inp.select(); } catch (e) {} }, 60);
   }
-  function renderToolbox2() { // the main renderer: drains the GROUND zone and builds the toolbox column. Child-drain only (ratchet convention). Called from renderOnePageWorld in place of renderGroundTools when TBX2.
+  function tbxSuggestIds() { // "FOR YOU NOW rotates with the day" (frame note). Morning leads with the
+    // morning stack, as the frame shows; the other two windows pick from what the app already ships.
+    var h = new Date().getHours();
+    if (h < 11) return ["firstLight", "beforeDeepWork", "t_shakeOff"];
+    if (h < 17) return ["beforeDeepWork", "t_breathe", "fullStack"];
+    return ["shutdown", "t_evening", "cantSleep"];
+  }
+  function renderToolbox2() { // ROUND 38 · FLAT GRID. Drains the GROUND zone and builds the toolbox
+    // column: a FOR YOU NOW row of three suggested stacks, then the twelve folders as one 3-col grid.
+    // Child-drain only (ratchet convention). The open-panel mechanics are unchanged — tbxOpenCat and
+    // tbxBuildDose already do exactly what the frame's two open grammars describe.
     if (!TBX2) return;
     var ground = groundZone(); if (!ground) return;
     while (ground.firstChild) ground.removeChild(ground.firstChild);
     _tbxOpenStack = null; _tbxOpenCat = null;
     var root = add(ground, "div", "tbx");
-    // PLAN BUTTON MOVED (David 2026-07-23 device): the Plan-my-day sticker now lives on the HOME FACE (renderHomeFace → #tfCtrls, tbxPlanButton), directly under the circle block, visible at rest. It is NO LONGER the first toolbox-scroll section — the top-eight grid is now the first scroll-in content (verdict #4). It exists ONCE.
-    // THE PRACTICE GRID (David 2026-08-01, Option A): the 7 of TBX_TOP in FIXED DESIGN ORDER + the pinned 8th "Build" tile. NOT tbxOrder'd — the arc (wake → regulate → body → mind → heart → aim → close) is the teaching, and a grid that reshuffles itself by usage teaches nothing. Folders keep usage ordering.
-    var top = add(root, "div", "tbx-grid tbx-grid-main"); top.id = "tbxGridTop";
-    // 2c DEDUPE (David's screen recording 2026-08-14, the deck-anchored law): on the 2c face the practice DECK rides up out of the home
-    // board and becomes row one of the tools screen. The eight stacks are therefore SPLIT, not duplicated — the deck carries its four
-    // (TFH_HEROES) and this grid renders exactly the four it does not. Derived by filtering, never a second hardcoded list, so the arc's
-    // order survives and adding a hero to the deck removes it from the grid in the same breath. Off the 2c face (and with TBX2 false)
-    // nothing changes: the full seven + the pinned builder render exactly as shipped.
-    var gridIds = tfh2c() ? TBX_TOP.filter(function (id) { return TFH_HEROES.indexOf(id) < 0; }) : TBX_TOP;
-    gridIds.forEach(function (id) { tbxTile(top, id); });
-    tbxBuilderTile(top); // the builder tile is ALWAYS position 8 (pinned last)
-    // CONSEQUENCE, flagged in the handoff: user-built customs no longer rise into this grid (the grid is exactly these 8 by design). They stay in S.tools.tbxCustom, keep their ids, and remain reachable/launchable through the picker's Stacks sheet (pkStacks) — but they have no shelf tile until David rules on where they live.
-    // Flow = practice grid → hero rows → intro → moment folders. Every demoted stack (beforeDeepWork, caughtScrolling, urgeWave, spunUp, iMessedUp, emptyTank, cantSleep, lockTheWin, feelBetter, fullStack) is reachable in the folders below and/or as a contextual hero. TBX_SECOND is dead data.
-    tbxHeroes().forEach(function (hero) { tbxHeroRow(root, hero); });
-    add(root, "div", "tbx-intro", tr("For when you need something specific: one box to settle, one to go deeper."));
-    var bento = add(root, "div", "tbx-bento"); TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
-    // THE SHELF'S RESTING STATE BELONGS HERE, with the nodes that were just created (David device 2026-08-15, "the home screen
-    // was broken"). Every row above is a BRAND NEW element with no inline state = visible, while the scroll cascade still holds
-    // the old ones; at home rest the shelf therefore lit up over the board and stayed lit (the master tick re-renders once a
-    // minute, so this fired on every face, every hour — not an evening bug). Hooking renderOnePageWorld was not enough: one user
-    // action can run this renderer again AFTER that hook. Re-arming at the end of the renderer itself cannot be out-ordered.
+    add(root, "div", "r38-sec", tr("FOR YOU NOW"));
+    var sugg = add(root, "div", "r38-grid tbx-sugg");
+    tbxSuggestIds().forEach(function (id) {
+      var it = tbxItem(id); if (!it) return;
+      tbxCoin(sugg, { name: it.name, hue: tbxVar(it.dom), ti: it.ti, stack: true,
+        sel: _tbxOpenStack === id, data: ["data-tbxsugg", id],
+        onTap: function () { try { tbxOpenDose(id, sugg); } catch (e) {} } });
+    });
+    var bento = add(root, "div", "r38-grid tbx-bento");
+    TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
     try { tcResyncSoon(); } catch (e) {}
   }
+
   Object.assign(I18N.ru, { // TOOLBOX strings (B4 law: EN source + RU dict in the same commit). RU тире kept where native. Keys duplicated with the low I18N-DICT block keep their canonical value (this assign runs earlier → the later block wins on conflict).
     "Plan my day": "План на день", "First Light": "Первый свет", "Before Deep Work": "Перед фокусом", "Caught Scrolling": "Залип в ленте", "Urge Wave": "Волна тяги", "Spun Up": "На взводе", "I Messed Up": "Я оступился", "Empty Tank": "Пустой бак", "Shutdown": "Отбой",
     "Can't Sleep": "Не спится", "Lock the Win": "Закрепи победу", "Feel Better": "Полегчает", "Body": "Тело", "Heart": "Сердце", "Mind": "Ум", "Vision": "Образ", "Full Stack": "Полный сброс",
