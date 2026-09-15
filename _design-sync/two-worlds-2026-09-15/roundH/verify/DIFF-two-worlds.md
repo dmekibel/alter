@@ -59,3 +59,44 @@ Everything about FEEL. The preview cannot judge gesture, scroll or animation, an
 so it could not judge animation at all. Specifically unconfirmed until David opens it on the phone:
 how the two day worlds read in daylight, whether the mono-coin flattening is livable (see PORT-SPEC §
 "Two consequences"), and the reload-on-switch in `Look`.
+
+---
+
+# ROUND 2 (v1434) — David's rejection of v1429, and what was actually wrong
+His four points, all correct, all confirmed against the running prototype:
+
+1. **"the Warhol color lacking the yellow entirely so the middle button ain't yellow."** True, and it was
+   the real miss. `build()` returns a separate **`accent`** token — Warhol FLIPPED's is `#ffd062` — and I
+   had collapsed it into the mono coin set, deleting the one color that makes Warhol read as Warhol.
+   Prototype home frame, extracted: the 180px disc is `#ffd062` r50%, the plan pill is `#d37acd`
+   (plannerBg, a coin — that one was already right), the 48px grid tiles are coins.
+   Fixed with an `accent` / `onaccent` role named PER CALL SITE (never inferred from the hex, since the
+   same pink is an ordinary coin everywhere else): the home stone, its halo, and the start-screen primary.
+   Now measured in-app: `#tfTile` = `rgb(255,208,98)`, halo = `rgba(255,208,98,.09)`. Matches.
+2. **"the other light color being not very legible."** True. Night is light-on-dark, so a light saturated
+   hex re-hued onto a light day ground landed light-on-light: "Load save" was `#d98bd3` on a `#dd84d7`
+   ground — **1.05:1**. Fixed with a measured contrast guard (WCAG): any ink-role result under 3:1 against
+   the theme ground falls back to the design's own ink / inkSoft, keeping the night build's
+   primary-vs-secondary hierarchy (muted source → inkSoft, saturated → full ink). Nothing already readable
+   was touched. Also swept the 179 three-digit hexes (`#fff`) the first pass's regex never matched.
+3. **"when u switch theme it should not take u back to start screen each time."** Fixed: `themeSet()` sets
+   a one-shot sessionStorage flag and `showStartScreen()` stands down for exactly that reload. A real
+   relaunch still gets the full arrival. Verified: `startScreenShown: false` after a live switch.
+4. **"the icon for Warhol should have yellow not just pink."** Fixed: the Look row's mark is now the active
+   world's `--t-accent`. Measured: `rgb(255,208,98)` on the Warhol row.
+
+**A fifth problem the fixes surfaced**, which David would have hit next: the app darkens by mixing toward
+`#160510`, which means *toward the page ground* — in night those coincide, on a light world they are
+opposites. Water Lilies' CTAs and discs were rendering unreadable navy (`#242a61` on `#7285e2`). Two
+re-rolings fixed it: a dark hex in `mixHex`'s second argument now resolves to the theme GROUND (46 sites),
+and a hex in a `c:` / `color:` DATA property is a domain FILL, not text (287 sites).
+
+## Round 2 gates, at 430x932
+| world | gates | PASS | SKIP | FAIL |
+|---|---|---|---|---|
+| night | 112 | **112** | 0 | **0** |
+| lilies | 112 | 103 | 9 | **0** |
+| warhol | 111 | 100 | 10 | 1 — the pre-existing animation gate, which also passed on other runs (it is flaky, and it fails identically on the untouched build at git HEAD) |
+
+The stone-halo gate is no longer skipped in the day worlds: it reads its expected hue from `--t-halo-ring`,
+so it still asserts the frame's 11px/.09 + 64px/.28 recipe in all three worlds and only the hue moves.

@@ -41,12 +41,30 @@ def blend(a, b, t):
 # ---------- the two worlds, exactly as build() returns them ----------
 THEMES = {
     'lilies': dict(
-        ground='#7285e2', surface='#5d72da', ink='#1c2050', accent='#d966c8',
+        ground='#7285e2', surface='#5d72da', ink='#1c2050', accent='#d966c8', onAccent='#1c2050',
         mono=(h2h('#d966c8')[0], 0.55), flatten=True),        # coins=3 + it=5 (moonlit)
     'warhol': dict(
-        ground='#df86d9', surface='#d476cc', ink='#2c1035', accent='#ffd062',
+        ground='#df86d9', surface='#d476cc', ink='#2c1035', accent='#ffd062', onAccent='#3a2a05',
         mono=(h2h('#df86d9')[0], 0.50), flatten=False),       # coins=4
 }
+
+def relL(c):
+    """WCAG relative luminance."""
+    def ch(v):
+        v /= 255.0
+        return v/12.92 if v <= 0.03928 else ((v+0.055)/1.055) ** 2.4
+    n = c.lstrip('#')
+    r, g, b = (ch(int(n[i:i+2], 16)) for i in (0, 2, 4))
+    return 0.2126*r + 0.7152*g + 0.0722*b
+
+def contrast(a, b):
+    la, lb = relL(a), relL(b)
+    hi, lo = max(la, lb), min(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+def inkSoft(T):
+    """The design's inkSoft token, color-mix(ink 62%, ground), as a concrete hex."""
+    return blend(T['ink'], T['ground'], 0.62)
 
 def coin(c, T):
     """The design's M(): mono remap, then it=5's lightness flattening for lilies."""
@@ -70,23 +88,47 @@ def band(c):
     return 'coin'                                     # domain hues
 
 def remap(c, role, T):
-    if c == '#ffffff':                                # specular highlights stay white everywhere
-        return c
+    """role: bg = a fill, ink = text/border/shadow, accent = the ONE primary action color.
+
+    THE ACCENT ROLE (added 2026-09-15 after David: "the Warhol color lacking the yellow entirely so
+    the middle button ain't yellow"). The design's palette is NOT just a ground plus a coin family —
+    build() returns a separate `accent`, and in Warhol FLIPPED that accent is the gold #ffd062 that
+    the home stone and the primary button wear. Collapsing it into the mono coin set was the miss:
+    it deleted the one color that makes Warhol read as Warhol. Accent sites are named per call site,
+    never inferred from the hex, because the same pink is an ordinary coin nearly everywhere else.
+
+    THE CONTRAST GUARD (same round, David: "the other light color being not very legible"). Night is
+    light-on-dark, so a LIGHT SATURATED hex is almost always text or a glyph that was legible because
+    its ground was near-black. Re-hued onto a light day ground it lands light-on-light and disappears
+    (#ff8fc0 became #de9bd9 on a #df86d9 ground — 1.05:1, invisible). So every ink-role result is
+    measured against the theme ground and anything under 3:1 falls back to the design's own inkSoft
+    token. Measured, not taste: no color is changed that was already readable.
+    """
     h, s, l = h2h(c)
+    if role == 'accent': return T['accent']
+    if role == 'onaccent': return T['onAccent']
+    if c == '#ffffff':
+        # a white FILL is a specular highlight and stays white; white TEXT must flip on a light ground
+        return c if role == 'bg' else blend(T['ink'], T['surface'], 0.88)  # white is PRIMARY text
     b = band(c)
     if b == 'light':
-        # POLARITY FLIP: light-on-dark text becomes dark-on-light ink.
         if role == 'bg':
             return blend('#ffffff', T['ground'], min(1.0, (l-0.80)/0.20) * 0.72)
-        return blend(T['ink'], T['surface'], 0.88)
-    if b == 'structural':
+        out = blend(T['ink'], T['surface'], 0.88)
+    elif b == 'structural':
         if role == 'bg':
-            # one ramp: the deepest night black lands on the theme ground, lighter panels on its surface
             t = min(1.0, l/0.45)
             return blend(T['surface'], T['ground'], t)
-        # ink borders and hard lips stay dark in every world; lighter sources lift slightly
-        return blend(T['ink'], T['surface'], 1 - min(1.0, l/0.45) * 0.26)
-    return coin(c, T)
+        out = blend(T['ink'], T['surface'], 1 - min(1.0, l/0.45) * 0.26)
+    else:
+        out = coin(c, T)
+        if role == 'bg':
+            return out
+    if contrast(out, T['ground']) < 3.0:
+        # Keep the hierarchy the night build had: a MUTED source was secondary text, so it lands on the
+        # design's inkSoft; a saturated one was primary text or a glyph and lands on full ink.
+        out = inkSoft(T) if s < 0.45 else blend(T['ink'], T['surface'], 0.88)
+    return out
 
 # ---------- role detection ----------
 BG_PROPS = re.compile(r'(background|fill|gradient)', re.I)
