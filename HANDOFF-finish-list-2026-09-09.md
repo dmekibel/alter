@@ -36,3 +36,10 @@ primary button now wear it. WCAG contrast guard kills the light-on-light text. T
 app. Look row wears the active accent. Plus the one they surfaced: `mixHex(x,"#160510")` means "toward the
 page ground", which inverts on a light world — that was Water Lilies' unreadable navy CTAs.
 Gates: night 112/112, lilies 103 PASS / 0 FAIL, warhol 100 PASS / 1 flaky pre-existing FAIL.
+
+### v1437 — the highlight color, and a bug the round found
+Round H's intro frame highlights spark/waits/yours/Alter in #ffc41f with a #ffd062 CTA; the round-2 contrast
+guard had flattened them to dark ink. Added a `highlight` role (Warhol #ffc41f, Lilies #ca16af), white ALTER
+wordmark, palette-colored guardian mark, accent CTA, and a `--t-track` token so the streak strip stays
+visible with nothing planned. Found + fixed a real bug live since v1429: hexes inside HTML attributes were
+rewritten to invalid markup (34 attributes, including every language-picker flag).
