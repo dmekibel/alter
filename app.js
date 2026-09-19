@@ -1309,7 +1309,7 @@
           if (S.guide && S.guide.fd) S.guide.fd.sp = 1;
           try { earn(10, { label: "first-commit", srcEl: pw }); celebrateGated(THC("#ffd24a","ink"), 1); } catch (e) {}
           save(); ov.remove();
-          try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else { c.remove(); try { drawJourney(true); } catch (e) {} } } catch (e) { try { drawJourney(true); } catch (e2) {} } // Initiate AND Celebrate — the campfire card (SN-239) names why re-committing daily is the design
+          if (!NO_POPUPS) try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else { c.remove(); try { drawJourney(true); } catch (e) {} } } catch (e) { try { drawJourney(true); } catch (e2) {} } // Initiate AND Celebrate — the campfire card (SN-239) names why re-committing daily is the design
         });
         add(sealZone, "div", "ob-sb", tr("hold to promise")).style.cssText = "text-align:center;margin-top:2px;";
       }
@@ -1364,7 +1364,7 @@
       { k: "line", t: "Know this going in: motivation is a campfire, never a furnace. It dies overnight, by design. Re-lighting it IS the streak." },
       { k: "seal", line: "I re-light the fire. Every morning.", holdMs: function (ctx) { return ({ 2: 1000, 5: 1600, 7: 2200, 14: 3000 })[+(ctx.days || 2)] || 1600; }, onSeal: function (ctx) { S.profile = S.profile || {}; S.profile.pact = { ts: Date.now(), days: ctx.days || 2 }; if (S.guide && S.guide.fd) S.guide.fd.sp = 1; try { earn(10, { label: "first-commit" }); celebrateGated(THC("#ffd24a","ink"), 1); } catch (e) {} save(); } },
       { k: "line", t: "Fist to chest · say YES, out loud or inside." }],
-      onDone: function () { try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else c.remove(); } catch (e) {} } },
+      onDone: function () { if (NO_POPUPS) return; try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else c.remove(); } catch (e) {} } },
     fd2: { c: THC("#36b3f0","bg"), beats: [
       { k: "line", t: "Your self-image is a thermostat. It pulls you back to whatever \u201csomeone like me\u201d does.", big: true, orb: true },
       { k: "mirror", q: "Finish it honestly: \u201cSomeone like me usually…\u201d", save: "selfStory", onPick: function (o) { S.profile = S.profile || {}; S.profile.selfStory = o.tag; save(); }, opts: [
@@ -1431,6 +1431,7 @@
       ], lastLabel: tr("I felt it ✓"),
       onFinish: function (skipped) { if (skipped) return;
         try { if (S.guide && S.guide.fd) S.guide.fd.s3 = 1; save(); } catch (e) {}
+        if (NO_POPUPS) { try { drawJourney(true); } catch (e) {} return; }
         setTimeout(function () { try { var c = mlCard(); if (renderDeckCard(c, "catch")) { mlBtn(c, "Got it", true, function () { c.remove(); try { drawJourney(true); } catch (e) {} }); } else { c.remove(); try { drawJourney(true); } catch (e) {} } } catch (e) { try { drawJourney(true); } catch (e2) {} } }, 450);
       }
     });
@@ -3914,6 +3915,8 @@
   function leaveHomeForPlayer() { if (ONEPAGE) { try { teardownWorld(); } catch (e) {} } /* return the adopted journey trail to #journeyPath + drop the one-page scroll before any other surface opens (single-owner: the overlay/pane owns the trail again) */ var tf = el("trackerFull"); if (tf) { tf.classList.remove("on", "tf-bg", "tf-home"); tf.style.height = ""; tf.style.opacity = ""; } document.body.classList.remove("home-pane"); TF_OPEN = false; TF_ANIM = false; HOME_MODE = false; } // §10f.7 (David 2026-07-13): launching a tool/session from home hides the home cockpit INSTANTLY so it never lingers behind — or jarringly re-reveals after — the tool player (the cockpit and the player are one surface, you never see both). The player is opaque + full-screen; on its close renderAll lands on the panes below.
   function openHomeInstant() { var tf = el("trackerFull"); if (!tf || TF_OPEN || TF_ANIM) return; if (ONEPAGE) _worldPositioned = false; HOME_MODE = true; TF_MODE = null; TF_MODE_USERSET = false; TF_OPEN = true; _ringP = 0; tf.style.height = ""; tf.style.opacity = ""; tf.style.borderRadius = ""; tf.classList.remove("tf-bg"); tf.classList.add("on"); renderTrackerFull(); } // §10f.7 boot landing: show the home cockpit with NO morph (the start screen z-200 covers it until Continue; morphing from an unlaid-out dock at boot would misfire)
   // ===== LANDING CONTRACT (Parcel A, David 2026-07-21 "cockpit came back and looks horrible") — a flow launched FROM HOME must RE-OPEN home on close, not fall through to the panes below. leaveHomeForPlayer() tears the home cockpit down (Z-2 blocker, HOME-PLAYER-GRAMMAR PART 6); without this every tool/session close from home landed on journey/planner (or an old-era face resurfaced). Purely-additive module flags, no SCHEMA touch. =====
+  var NO_POPUPS = true;    // THE POP-UP CULL (David 2026-09-20: "get rid of every pop-up in the app... finish and go straight to the home screen"). ONE flag: every unsolicited interstitial — the post-stack "Session complete" card, every pre/post 0-10 tension gauge wrapped around a flow, the Rewire keep-mantra offer, the auto-dealt theory cards after a lesson / the morning switch, the EFT "want another round?" card — is gated on it. Flip to false and every one of them returns byte-identical. The inventory (what went, what stayed, and why) is _dev/POPUP-INVENTORY-2026-09-20.md. State writes that USED to live inside a killed card (earn/celebrate/log/save) were all kept on the silent path; the only thing that stops being written is the S.tools.gauge efficacy row for the culled gauges and S.mantra from the Rewire offer — both readers are null-guarded.
+  function gaugeOrSkip(title, sub, cb) { if (NO_POPUPS) { cb(null); return; } gauge010(title, sub, cb); } // the ONE seam for the culled gauges: no popup = a null reading, and every downstream delta/ledger path already guards on null
   var LAND_V2 = true;      // kill-switch: flip false on device if re-opening home on close misbehaves (falls back to the old pane-landing)
   var TRANS_V2 = false;    // W2 TRANSITION GRAMMAR kill-switch (DEFAULT false = DARK; behavior is byte-identical to today when off). ONE slide-over-scrim grammar (generalizes the create-sheet): the incoming surface arrives opaque on top / the outgoing slides away as ONE opaque layer — NEVER a two-live-DOM opacity crossfade (the DESIGN-STUDIO A2 ghost). David flips true on device to preview. Every new transition path is gated on this; false never reaches the new code.
   var NAV_V2 = true;       // R3 COMPASS ROSE (David 2026-07-21 "kill the 4-button tab bar; home is the center of the world"). TRUE = the bottom #nav bar dies app-wide (body.navv2, CSS display:none), replaced by the GUARDIAN PUCK (bottom-left, tap = home) + the HOME FACE DOORS (story strip = planner door · top-left journey glyph · top-right garden glyph · gem-row avatar = settings). FALSE = no body.navv2 class → the old 4-button bar exactly as before (all its DOM + handlers left intact). Tap-based only this pass; swipe-axis travel comes device-tested later.
@@ -15659,6 +15662,7 @@
     function sudsPost(origPre, prevRating, pass) {
       gauge010("And now? Same scale.", "0 = gone, 10 = all-consuming", function (post) {
         if (post <= 2 || (origPre - post) >= 3 || pass >= 2) closeTapping(origPre, post); // low enough, big total drop, or capped at 3 passes
+        else if (NO_POPUPS) closeTapping(origPre, post); // POP-UP CULL: no "want another round?" card — the run closes out
         else offerAnother(origPre, post, pass, prevRating - post); // still charged and moving (or worth one more shot) — re-rate drives the decision, exactly like real EFT
       });
     }
@@ -19078,6 +19082,7 @@
     ov.querySelector(".bw-x").onclick = function () { if (ov.parentNode) ov.remove(); try { landAfterFlow(); } catch (e) {} }; // LANDING CONTRACT (Parcel A): closing the chained-card stack early re-opens home if launched from home
   }
   function stackComplete(n) {
+    if (NO_POPUPS) { try { earn(8, { catK: "love" }); celebrateGated(THC("#9a7cff","ink"), curStreak() || 1); save(); renderAll(); } catch (e) {} try { if (!landAfterFlow()) openHome(); } catch (e) {} return; } // THE POP-UP CULL: the session ends ON HOME. Identical ledger writes, no terminal card. landAfterFlow covers the home-launched flows (the whole toolbox); openHome is the fallback so a stack started anywhere else still lands home instead of falling through to the panes.
     var ov = document.createElement("div"); ov.id = "breatheOv"; document.body.appendChild(ov);
     var box = add(ov, "div"); box.style.cssText = "text-align:center;color:var(--c-f0e6ef-ink);font-family:var(--bub);";
     box.innerHTML = '<div style="font-size:46px;color:var(--c-9a7cff-ink);"><i class="ti ti-circle-check"></i></div><div style="font-size:24px;font-weight:800;margin-top:10px;">Session complete</div><div style="font-size:13px;color:var(--c-b39ab0-ink);margin-top:6px;">' + n + ' tool' + (n === 1 ? "" : "s") + ' · carry the calm with you</div>';
@@ -19384,7 +19389,7 @@
   }
   function runRitual(tod, mins) { // pre-gauge → the composed ritual (drift-tap ON) → post-gauge → ledger
     mins = mins || 5; var am = tod === "am";
-    gauge010("Where's the tension right now?", "gut answer · no wrong number", function (pre) {
+    gaugeOrSkip("Where's the tension right now?", "gut answer · no wrong number", function (pre) {
       var segs = composeRitual({ timeOfDay: tod, mins: mins });
       try { TTS.unlock(); TTS.warm(segs.map(function (s) { return s.text; })); } catch (e) {}
       timelinePlayer({
@@ -19393,10 +19398,10 @@
         segments: segs,
         onFinish: function (skip) {
           if (skip) return;
-          gauge010("And now?", "same scale · just notice", function (post) {
-            S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
-            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "ritual-" + tod + mins, pre: pre, post: post });
-            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+          gaugeOrSkip("And now?", "same scale · just notice", function (post) {
+            if (pre != null || post != null) { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+              S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "ritual-" + tod + mins, pre: pre, post: post });
+              if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); }
             var delta = (pre != null && post != null) ? pre - post : null;
             save();
             toast(delta != null && delta > 0 ? "✦ " + delta + (delta === 1 ? " point" : " points") + " lighter · noted." : "done. showing up IS the practice.");
@@ -20033,12 +20038,12 @@
       { k: { id: "deep", name: "Love & embodiment", ti: "ti-heart", col: THC("#ff5fa0","bg") }, intro: "Now, love and embodiment.", rawSegs: deepSeq.map(function (t) { return { text: t, label: t.length > 64 ? "" : t, sub: t.length > 64 ? t : "", gap: deepCad }; }) },
       { k: { id: "mantra", name: "Rewire", ti: "ti-quote", col: THC("#ffc83d","bg") }, d: 60 }
     ];
-    gauge010("Where's the tension right now?", "gut answer, no wrong number", function (pre) {
+    gaugeOrSkip("Where's the tension right now?", "gut answer, no wrong number", function (pre) {
       runStackCarousel(track, function () {
-        gauge010("And now?", "same scale, just notice", function (post) {
-          S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
-          S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "full" + mins + (tapOn ? "t" : ""), pre: pre, post: post });
-          if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+        gaugeOrSkip("And now?", "same scale, just notice", function (post) {
+          if (pre != null || post != null) { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "full" + mins + (tapOn ? "t" : ""), pre: pre, post: post });
+            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); }
           var delta = (pre != null && post != null) ? pre - post : null;
           try { earn(12, { catK: "love" }); celebrateGated(THC("#9a7cff","ink"), 1); } catch (e) {}
           save(); renderAll();
@@ -20075,12 +20080,12 @@
   // The relief-door ritual: pre-gauge → the micro-stack → post-gauge → the DELTA, kindly. Every run feeds the efficacy ledger (S.tools.gauge) — over time the app learns what moves YOUR number.
   function runRitualReset(mins) {
     var track = (STACK_PACKS.filter(function (p) { return p.min === (mins || 5); })[0] || STACK_PACKS[0]).track.map(function (t) { return { k: t.k, d: t.d }; });
-    gauge010("Where's the tension right now?", "gut answer · no wrong number", function (pre) {
+    gaugeOrSkip("Where's the tension right now?", "gut answer · no wrong number", function (pre) {
       runStack(track, 0, function (n) {
-        gauge010("And now?", "same scale · just notice", function (post) {
-          S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
-          S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "reset" + (mins || 5), pre: pre, post: post });
-          if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+        gaugeOrSkip("And now?", "same scale · just notice", function (post) {
+          if (pre != null || post != null) { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "reset" + (mins || 5), pre: pre, post: post });
+            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); }
           var delta = (pre != null && post != null) ? pre - post : null;
           try { earn(8, { catK: "love" }); celebrateGated(THC("#9a7cff","ink"), 1); } catch (e) {}
           save(); renderAll();
@@ -20093,12 +20098,12 @@
   var RESET_ZONES = [["surface", "One surface", "ti-square-rounded"], ["floor", "The floor", "ti-layout-distribute-horizontal"], ["desk", "Your desk", "ti-device-desktop"], ["sink", "The sink", "ti-bath"]];
   function resetSprint(zonePre) {
     function run(zone) {
-      gauge010(tr("How heavy does the space feel?"), tr("gut answer · no wrong number"), function (pre) {
+      gaugeOrSkip(tr("How heavy does the space feel?"), tr("gut answer · no wrong number"), function (pre) {
         resetTimer(zone, 10, function () {
-          gauge010(tr("And now?"), tr("same scale · just notice"), function (post) {
-            S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
-            S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "reset-space", zone: zone[0], pre: pre, post: post });
-            if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100);
+          gaugeOrSkip(tr("And now?"), tr("same scale · just notice"), function (post) {
+            if (pre != null || post != null) { S.tools = S.tools || {}; S.tools.gauge = S.tools.gauge || [];
+              S.tools.gauge.push({ k: todayK(), t: Date.now(), stack: "reset-space", zone: zone[0], pre: pre, post: post });
+              if (S.tools.gauge.length > 120) S.tools.gauge = S.tools.gauge.slice(-100); }
             var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: tr("Reset") + " · " + tr(zone[1]), mins: 10, catK: "energy", domain: "upkeep", color: DOM.upkeep.c });
             S.lastTidy = todayK(); try { tickTool("reset"); earn(10, {}); celebrateGated(DOM.upkeep.c, 1); } catch (e) {}
             var delta = (pre != null && post != null) ? pre - post : null; save(); renderAll();
@@ -20497,6 +20502,7 @@
         try { if (S.guide && S.guide.fd && !S.guide.fd.done && !S.guide.fd.s0) { S.guide.fd.s0 = 1; save(); try { drawJourney(true); } catch (e) {} } } catch (e) {} // Day-1 rebuild: the Switch IS Lesson 1 — completing it lights the first stone
         if (opts.lesson) return; // the lesson's landing (NAME/CHECK/PLACE/SEAL) replaces the deck card + gauge
         var toGauge = function () { try { S.gaugeK = null; gaugeOpen(function () {}); } catch (e) {} };
+        if (NO_POPUPS) { toGauge(); return; }
         try { var c = mlCard(); if (renderDeckCard(c, "am-open")) { mlBtn(c, "Good", true, function () { c.remove(); toGauge(); }); } else { c.remove(); toGauge(); } } catch (e) { toGauge(); } } // → deal an am-open card (why the morning switch mattered), then the gauge = the day's voice gate
     });
   }
@@ -20754,7 +20760,7 @@
   function reprogramTool(onDone) {
     reprogramPick(function (line) {
     beatRunner({
-      onFinish: function (skipped) { if (onDone) onDone(); if (!skipped) setTimeout(function () { offerKeepMantra(); }, 450); }, // ORGAN I: a completed Rewire → keep the line as your nightly mantra
+      onFinish: function (skipped) { if (onDone) onDone(); if (!skipped && !NO_POPUPS) setTimeout(function () { offerKeepMantra(); }, 450); }, // ORGAN I: a completed Rewire → keep the line as your nightly mantra (POP-UP CULL 2026-09-20: the auto-offer is gated; offerKeepMantra itself is intact and still reachable via DEV.keepMantra)
       id: "reprogram", title: "Visualisation", logTitle: "Visualisation", catK: "love", color: THC("#9a5cf0","bg"), spark: 7, voiceProf: VPROF.relax,
       intro: {
         tag: "install a new self-belief · 2 to 3 min",
