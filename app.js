@@ -15679,19 +15679,64 @@
     }
     build();
   }
+  // ===== THE MANTRA IS ONE TEXT, READ IN ORDER (David device 2026-09-20) =====
+  // MANTRA_LINES is the SINGLE SOURCE for the mantra ("Rewire"): the full ordered set from
+  // meditation-scripts/mantra-self-affirmation.txt, strings byte-identical to the shipped solo player
+  // so every recorded voice clip still hashes. The old 6-line curated stack pool is DELETED — a stack
+  // slot used to hand a shuffled 6-line pool to the line-pool filler, so 30-75s of mantra came out as
+  // 2-3 random fragments with none of the substance.
+  var MANTRA_LINES = ["I have absolute trust in myself.", "My instincts are unerring, my thoughts are clear,", "and my feelings guide me wisely.", "I am the sole authority on what is best for me.", "I love myself unconditionally.", "I embrace my mistakes and imperfections fully,", "and continue to love who I am.", "I hold deep respect for myself", "and unwavering confidence in my abilities.", "I vow to keep evolving, never ceasing to improve.", "I push beyond my comfort zone every single day.", "I will do whatever it takes to become a greater person.", "I bring joy to others. My aura radiates positivity.", "I am athletic, intelligent, loving, and ambitious,", "yet I savor life and cherish this beautiful planet.", "I deserve the very best.", "My life is phenomenal, spontaneous and overflowing with love.", "I find joy within myself, and don't take things too seriously.", "I do not judge reality; I accept it.", "I am indifferent to others' opinions of me.", "I am the master of my life,", "fully aware of what's best for me.", "What would I do if I wasn't afraid?"];
+  // THE DOSE TIERS (David 2026-09-20: "the morning stack has to be consistent"). No day-cycling pointer: the same
+  // lines come every morning, in text order, and a longer slot simply reaches further down. 1 = the core said every
+  // single time · 2 = the next ring · 3 = the whole text. A two-line sentence always shares a tier, so a sentence is
+  // never cut in half.
+  var MANTRA_TIER = [1, 2, 2, 3, 1, 2, 2, 3, 3, 3, 2, 3, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1, 1];
+  var MANTRA_GAP_MIN = 3, MANTRA_GAP_MAX = 9; // the say-it-back hold may grow into a long slot, but only this far
+  var MANTRA_WPS = 3.3; // measured pace of the recorded clips (words per second) — used to FIT lines to a slot
+  function mantraSpeakSec(l) { return Math.max(1.4, String(l).trim().split(/\s+/).length / MANTRA_WPS); }
+  function mantraAffirmGap(sp) { return Math.max(PK.affirmMin, Math.min(PK.affirmMax, sp * PK.affirmMul)); } // the say-it-back beat the player itself applies to `affirm` segs
+  // DOSE-TIERED, ALWAYS IN TEXT ORDER (David device 2026-09-20). The mantra is a TEXT, so the morning stack must be
+  // the same text every morning: the tier-1 core always, tier 2 when the slot fits the whole of it, tier 3 (the entire
+  // mantra) when it fits that. No pointer, no rotation, no shuffle — two runs at the same length are byte-identical.
+  // Leftover slot time is spread evenly across the say-it-back holds (clamped 3-9s) with the remainder on the last
+  // hold, so the act still lands on its promised dose instead of ending early. S.tools.mantraPos is left untouched
+  // (harmless legacy state, no SCHEMA change).
+  function mantraRead(secs, gapOf, advance) {
+    secs = Math.max(8, secs || 40); if (typeof gapOf !== "function") gapOf = mantraAffirmGap;
+    S.tools = S.tools || {};
+    function fit(maxTier) {
+      var lines = [], gaps = [], speech = 0, hold = 0;
+      for (var i = 0; i < MANTRA_LINES.length; i++) {
+        if ((MANTRA_TIER[i] || 3) > maxTier) continue;
+        var sp = mantraSpeakSec(MANTRA_LINES[i]), g = gapOf(sp);
+        lines.push(MANTRA_LINES[i]); gaps.push(g); speech += sp; hold += g;
+      }
+      return { lines: lines, gaps: gaps, speech: speech, hold: hold, est: speech + hold };
+    }
+    var tier = 1, R = fit(1), R2 = fit(2);
+    if (R2.est <= secs) { tier = 2; R = R2; var R3 = fit(3); if (R3.est <= secs) { tier = 3; R = R3; } }
+    var n = R.gaps.length, room = secs - R.speech;
+    if (n && room > R.hold) { // spread the leftover across the holds, then park the remainder on the last one
+      var per = Math.max(MANTRA_GAP_MIN, Math.min(MANTRA_GAP_MAX, room / n)), used = 0;
+      for (var j = 0; j < n; j++) { R.gaps[j] = Math.max(R.gaps[j], per); used += R.gaps[j]; }
+      var rem = room - used; if (rem > 0) { R.gaps[n - 1] += rem; used += rem; }
+      R.hold = used; R.est = R.speech + used;
+    }
+    return { lines: R.lines, gaps: R.gaps, tier: tier, est: R.est, full: tier >= 3 };
+  }
   // Mantra — David's own first-person affirmation as a calm teleprompter (the keystone willpower-free step of his stack). Read along or speak it.
   function mantraPlayer(onDone) {
-    var LINES = ["I have absolute trust in myself.", "My instincts are unerring, my thoughts are clear,", "and my feelings guide me wisely.", "I am the sole authority on what is best for me.", "I love myself unconditionally.", "I embrace my mistakes and imperfections fully,", "and continue to love who I am.", "I hold deep respect for myself", "and unwavering confidence in my abilities.", "I vow to keep evolving, never ceasing to improve.", "I push beyond my comfort zone every single day.", "I will do whatever it takes to become a greater man.", "I bring joy to others. My aura radiates positivity.", "I am athletic, intelligent, loving, and ambitious,", "yet I savor life and cherish this beautiful planet.", "I deserve the very best.", "My life is phenomenal, spontaneous and overflowing with love.", "I find joy within myself, and don't take things too seriously.", "Every mistake is a teacher. If something needs redoing, fantastic.", "I do not judge reality; I accept it.", "I am indifferent to others' opinions of me.", "I am the master of my life,", "fully aware of what's best for me.", "What would I do if I wasn't afraid?"];
+    var LINES = MANTRA_LINES; // solo always reads the whole text from the top, in order
     // now runs on the composed player (reliable voice + transport). David 2026-07-01: "fix all the audio."
     TTS.unlock(); TTS.warm(LINES);
     var segs = LINES.map(function (line) { return { text: line, label: line, sub: "" }; });
     timelinePlayer({ id: "mantra", title: "Rewire", logTitle: "Rewire", catK: "love", color: THC("#ff7ab8","bg"), spark: 7, vol: VPROF.mantra.volume, drone: true, cadenceSec: 5, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
   }
-  function stackMantra(onDone, secs) { // a SHORT, duration-capped mantra for stacks (mantraPlayer runs the full ~2min set; the day-one micro-stack needs a quick version). Curated from the same line pool = no new content risk.
-    var LINES = ["I have absolute trust in myself.", "I embrace my mistakes, and keep loving who I am.", "I push beyond my comfort zone every day.", "Every mistake is a teacher.", "I am the master of my life.", "What would I do if I wasn't afraid?"];
+  function stackMantra(onDone, secs) { // the SAME text as mantraPlayer, dosed by TIER (see mantraRead): core lines every time, more as the slot grows, the whole text when it fits. The curated 6-line pool that used to live here is DELETED (David device 2026-09-20: "2-3 random lines with none of the substance").
+    secs = Math.max(20, secs || 40);
+    var cad = 5, R = mantraRead(secs, function () { return cad; }, true), LINES = R.lines;
     TTS.unlock(); TTS.warm(LINES);
-    var cad = 5, segs = [], t = 0, ci = 0; secs = Math.max(20, secs || 40);
-    while (t < secs - 1) { var ln = LINES[ci % LINES.length]; segs.push({ text: ln, label: ln, sub: "" }); t += cad; ci++; }
+    var segs = LINES.map(function (line) { return { text: line, label: line, sub: "" }; });
     timelinePlayer({ id: "mantra", title: "Rewire", logTitle: "Rewire", catK: "love", color: THC("#ff7ab8","bg"), spark: 7, vol: VPROF.mantra.volume, drone: true, cadenceSec: cad, totalSec: secs, segments: segs, autostart: true, onFinish: function () { if (onDone) onDone(); } });
   }
   // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
@@ -19212,9 +19257,9 @@
     timelinePlayer({ id: "stretch", title: "Wake the body", logTitle: "Wake the body", catK: "energy", color: THC("#ff8a1e","bg"), spark: 4, vol: VPROF.relax.volume, drone: true, totalSec: secs, segments: segs, autostart: true,
       onFinish: function (skip) { if (onDone) onDone(); } }); // timelinePlayer.finish() handles the log + earn + tickTool via logTitle/catK/spark/id — do NOT re-log here (would double-count)
   }
-  // GRATEFUL FLOW, solo (David-approved v11 script, 2026-09-19). Runs on beatRunner: one line per beat, the ask beats
+  // GRATEFUL FLOW, solo (v12 script, 2026-09-20). Runs on beatRunner: one line per beat, the ask beats
   // carry an on-screen hint that is NOT spoken (b.subSilent), and every pause is either a timed `hold` or a tap, per
-  // S.tools.gratPace. onDone/secs kept for the stack registry — secs now sets the DOSE (gratDoseN), solo runs all five.
+  // S.tools.gratPace. onDone/secs kept for the stack registry — secs now sets the DOSE (gratDoseN), solo runs all four pairs.
   function gratitudeBeat(onDone, secs) {
     var L = GRAT_FLOW.seq, PR = GRAT_FLOW.pairs, idx = gratPairIdx(gratDoseN(secs)), fresh = gratFresh();
     var tap = !!(S.tools && S.tools.gratPace === "tap"); // "auto" (default) = timed holds · "tap" = nothing moves until you tap
@@ -19222,8 +19267,8 @@
     idx.forEach(function (pi, n) {
       var hi = GRAT_FLOW.hints[pi];
       beats.push({ lab: L[PR[pi][0]], sub: hi >= 0 ? GRAT_UI.hints[hi] : "", subSilent: 1, orb: "", hold: 8 }); // the ask — think
-      beats.push({ lab: L[PR[pi][1]], sub: "", orb: "in", hold: pi === 4 ? 20 : 12 });                          // the feel cue — the alive one gets the longest hold
-      if (n === 1 && pi === 1 && fresh) beats.push({ lab: L[GRAT_FLOW.tip], sub: "", orb: "", hold: 8 });
+      beats.push({ lab: L[PR[pi][1]], sub: "", orb: "in", hold: pi === GRAT_FLOW.pairs.length - 1 ? 20 : 12 });   // the feel cue — the alive one gets the longest hold
+      if (pi === 1 && fresh) beats.push({ lab: L[GRAT_FLOW.tip], sub: "", orb: "", hold: 8 }); // after PAIR B's feel cue
     });
     beats.push({ lab: L[GRAT_FLOW.turn[0]], sub: "", orb: "", hold: 6 });
     beats.push({ lab: L[GRAT_FLOW.turn[1]], sub: "", orb: "in", hold: 25 }); // hands on the heart = the turn's own long hold
@@ -19378,7 +19423,7 @@
     stretch: { intro: "First, loosen the body.", cues: [["Stand up, reach for the ceiling", "a big, slow stretch"], ["Fold forward", "hang heavy, let the neck go"], ["Roll up slowly", "one vertebra at a time"]] },
     relax: { intro: "Now, relax the muscles.", cues: [["Settle in", "let your eyes soften"], ["Soften your forehead", "and unclench your jaw"], ["Drop your shoulders", "let them fall"], ["Soften your chest", "and your belly"], ["Let your arms go heavy", "down to your fingertips"], ["Release your legs", "all the way to your feet"], ["Your whole body is heavy and calm", "nothing to do, nowhere to be"], ["One mindful moment", "just be here, now"]] }, // wording matched EXACTLY to relaxMoment's STEPS (David 2026-07-15: 3 of 8 cues were paraphrased and had no matching clip → their sub half went unspoken) — same recorded audio, no new clips needed
     breath: { intro: "Now, the breath.", breath: true },
-    mantra: { intro: "Now, a line to carry.", lines: ["I have absolute trust in myself.", "I embrace my mistakes, and keep loving who I am.", "I push beyond my comfort zone every day.", "Every mistake is a teacher.", "I am the master of my life.", "What would I do if I wasn't afraid?"] },
+    mantra: { intro: "Now, a line to carry.", lines: MANTRA_LINES }, // ONE source of truth (2026-09-20): the whole ordered mantra. The composer reads the dose-tiered subset in order via mantraRead; the 6-line curated pool is gone.
     medit: { intro: "Now, sit in stillness.", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently come back", "Notice a thought arise, and watch where it goes", "Notice the sounds, arising on their own", "Simply witness whatever arises and passes"] },
     breathe: { intro: "Now, the breath.", breath: true }, // alias for the daily stack's tool ids
     meditate: { intro: "Now, sit in stillness.", lines: ["Feel yourself sitting here", "Let gravity settle you into your seat", "Find the breath, at the nose or the belly", "No need to control it, just let it come and go", "When the mind wanders, gently come back", "Notice a thought arise, and watch where it goes", "Notice the sounds, arising on their own", "Simply witness whatever arises and passes"] },
@@ -19444,41 +19489,40 @@
     return Math.max(0, Math.min(1, base));
   }
   function _shuffled(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; } // Fisher-Yates; used so each extra pass through a line pool is a fresh order, never the identical loop
-  // GRATEFUL FLOW v11 (David-approved 2026-09-19, _design-sync/audio-content-2026-09-09/graph/merged-v11-lines.txt).
+  // GRATEFUL FLOW v12 (_design-sync/audio-content-2026-09-09/graph/merged-v12-lines.txt).
   // SPOKEN LINES ONLY LIVE IN HERE — _dev/gen-voice-11labs.py extracts every string inside `var GRAT_FLOW = { … \n  };`
   // plus every string of a flat `seq: [ … ]`, so the whole script is picked up verbatim. NEVER put an on-screen-only
   // string in this object (it would get a voice clip) — those live in GRAT_UI below. No template literals, no concat.
   // Shape: `seq` is the script in spoken order; every other field is an INDEX into it, so a line exists exactly once.
-  // RU IS OWED — no Russian pass was made this round (the dict rows for these lines do not exist yet).
+  // v12 is FOUR ask/feel pairs, not five: small recent · rarely-appreciated · a person · the breath (always last, the
+  // longest feel hold). RU IS OWED — no Russian pass was made this round.
   var GRAT_FLOW = {
     seq: [
       "Now we're going to remind your brain and body how to feel gratitude.",
-      "Okay, now think of one thing you're grateful for. It can be small, like a smile on a friend's face or the sun hitting your face.",
-      "Now close your eyes. Slow down for a second, and actually feel that gratitude in your body.",
-      "Okay, now a new one. Something you'd normally take for granted. Your eyesight. Hot water.",
-      "Close your eyes again. Breathe slowly into your chest, and let the breath move through that gratitude.",
-      "Come up with something completely new each time, instead of the ones that come automatically. That's what gets the logical side of your brain involved.",
-      "Now a problem you don't have. Those count too.",
-      "Close your eyes, and try actually acknowledging that one on an emotional level.",
-      "Now one from years back, something you're still glad about.",
-      "Close your eyes. See their face, hear their voice, and let the gratitude come with it.",
-      "Last one, and it's the biggest. You woke up this morning. You're alive.",
-      "Close your eyes and stay with that one. Give it longer than the others.",
+      "Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.",
+      "Now close your eyes. Go back into that moment like you're there again, and feel grateful for it now.",
+      "Now consider something you rarely pause to appreciate, like your eyesight or having access to hot water.",
+      "Close your eyes. Slow down for a second, and try to actually feel the gratitude towards that thing.",
+      "Every time you do this exercise, try to come up with something new, instead of repeating the same thing each time. That's what gets the logical side of your brain involved.",
+      "Now think of someone who you are grateful for.",
+      "Close your eyes. See their face, hear their voice, and try to actually feel that gratitude sensation in your chest as you breathe.",
+      "Now think of the one thing we all take for granted most of all. Our breath. You are breathing. You are alive.",
+      "Close your eyes. Feel the breath moving in you, and take a moment to appreciate that you are alive on this beautiful planet.",
       "We did that exercise to remind your body what gratitude feels like. Now try to feel that same gratitude but without a logical reason behind it.",
       "Put your hands on your heart if you like.",
       "If you don't feel anything, that's okay. You can't force it. This is a skill, and it builds every time you practice.",
       "Next time a dark thought starts, run this on the spot.",
       "Open your eyes when you're ready."
     ],
-    pairs: [[1, 2], [3, 4], [6, 7], [8, 9], [10, 11]], // [ask, feel] — pair 4 (alive) is the biggest and always runs last
-    hints: [0, 2, 3, 1, -1],                            // which GRAT_UI.hints line sits under each ask (-1 = none: the alive ask carries itself)
-    tip: 5,                                             // spoken once, after the SECOND feel cue, only while the tool is still new
-    turn: [12, 13, 14],                                 // the turn: name it, hands on heart (the long hold), then the permission
-    spot: 15,                                           // only when 3+ items ran — it refers back to a practice that actually happened
-    close: 16
+    pairs: [[1, 2], [3, 4], [6, 7], [8, 9]], // [ask, feel] — pair D (the breath/alive one) is the biggest and ALWAYS runs last
+    hints: [0, 2, 3, -1],                    // which GRAT_UI.hints line sits under each ask (-1 = none: the alive ask carries itself)
+    tip: 5,                                  // spoken once, after PAIR B's feel cue, only while the tool is still new
+    turn: [10, 11, 12],                      // the turn: name it, hands on heart (the long hold), then the permission
+    spot: 13,                                // only when 3+ pairs ran — it refers back to a practice that actually happened
+    close: 14
   };
   // ON-SCREEN ONLY (never spoken, never extracted): the hints that sit under an ask while you think, the tool card's
-  // own three lines, and the pacing setting's three lines. Same v11 file, lines 18-27.
+  // own three lines, and the pacing setting's three lines. Same v12 file, lines 16-25.
   var GRAT_UI = {
     hints: ["In your head.", "Slowly. Feel each one.", "A new one each time.", "Only the ones you really feel. Not the ones you think you should."],
     cardTitle: "Grateful Flow",
@@ -19489,11 +19533,12 @@
     paceNote: "In a stack the pauses are always timed, so the session stays in one flow."
   };
   // THE DOSE (David 2026-09-19): the SLOT decides how many things you name. Solo = the whole five.
-  function gratDoseN(secs) { return secs == null ? GRAT_FLOW.pairs.length : secs >= 90 ? 5 : secs >= 60 ? 3 : secs >= 45 ? 2 : 1; }
-  function gratPairIdx(n) { // the first N pairs — except the alive pair is ALWAYS the one you land on once there are two
-    if (n >= GRAT_FLOW.pairs.length) return [0, 1, 2, 3, 4];
-    if (n <= 1) return [0];
-    var a = []; for (var i = 0; i < n - 1; i++) a.push(i); a.push(4); return a;
+  function gratDoseN(secs) { return secs == null ? GRAT_FLOW.pairs.length : secs >= 90 ? 4 : secs >= 60 ? 3 : secs >= 45 ? 2 : 1; }
+  function gratPairIdx(n) { // the first N pairs — except the alive pair is ALWAYS the one you land on, even when it is the only one
+    var last = GRAT_FLOW.pairs.length - 1;
+    if (n >= GRAT_FLOW.pairs.length) { var all = []; for (var k = 0; k <= last; k++) all.push(k); return all; }
+    if (n <= 1) return [last];
+    var a = []; for (var i = 0; i < n - 1; i++) a.push(i); a.push(last); return a;
   }
   function gratFresh() { try { return !(S.tools && S.tools.use && S.tools.use.gratitude >= 2); } catch (e) { return true; } } // the familiarity signal the one-time tip reads; no signal = always say it
   // BREATH ROWS for a stack's breath act (David 2026-07-23): expand a breathing-variant pattern into flat phase rows [{label, kind, ms}] the composer feeds as voiceless orb-pacing segments. A single pattern (Box / 4-7-8 / Coherent / Extended exhale / Alternate nostril) is repeated to fill the act's time; a multi-stage flow (Wim Hof) plays its fixed round structure. Reuses the SAME BREATH_PATTERNS timings as the standalone breath tool — one pacing engine.
@@ -19549,7 +19594,7 @@
           }
         });
         acts[ai]._sections = secMeta; // the act carries its sections as DATA only — the player draws them as ticks under one bar, never as extra bars (2026-08-15; _isMed dropped with the zoom that read it)
-      } else if (t.id === "gratitude") { // GRATEFUL FLOW v11 in a stack (David 2026-09-19): the same authored script, dosed by the slot. PACING IS ALWAYS TIMED HERE regardless of S.tools.gratPace — timelinePlayer schedules every clip up front, so a tap-to-advance beat would desynchronise every act after it (GRAT_UI.paceNote says exactly this to the user).
+      } else if (t.id === "gratitude") { // GRATEFUL FLOW v12 in a stack: the same authored script, dosed by the slot. PACING IS ALWAYS TIMED HERE regardless of S.tools.gratPace — timelinePlayer schedules every clip up front, so a tap-to-advance beat would desynchronise every act after it (GRAT_UI.paceNote says exactly this to the user).
         // STACK AWARENESS: the intro still plays (it names the tool) and "Now close your eyes" is spoken AS WRITTEN whether or not an earlier act already closed them — David approved these exact words, so nothing is skipped and no variant is invented. sawBodyPrep is deliberately not read here.
         var gd = sessionDepth(t.secs || 60), gL = GRAT_FLOW.seq, gPr = GRAT_FLOW.pairs;
         var gIdx = gratPairIdx(gratDoseN(t.secs || 60)), gFresh = gratFresh();
@@ -19559,8 +19604,8 @@
         gIdx.forEach(function (pi, n) {
           var hi = GRAT_FLOW.hints[pi];
           GP(gPr[pi][0], hi >= 0 ? GRAT_UI.hints[hi] : "", gThink);
-          GP(gPr[pi][1], "", pi === 4 ? gLast : gFeel);
-          if (n === 1 && pi === 1 && gFresh) GP(GRAT_FLOW.tip, "", 5, "cue"); // one-time, and only when a real second item ran
+          GP(gPr[pi][1], "", pi === gPr.length - 1 ? gLast : gFeel);
+          if (pi === 1 && gFresh) GP(GRAT_FLOW.tip, "", 5, "cue"); // one-time, and only after PAIR B actually ran
         });
         GP(GRAT_FLOW.turn[0], "", 4, "cue");
         GP(GRAT_FLOW.turn[1], "", gTurn);
@@ -19588,8 +19633,11 @@
           P({ text: _ctx, label: q[0], sub: q[1] || "",
               gap: last ? cLast : (grp ? cRest : PK.somatic), _pk: last ? "release" : (grp ? "settle" : "somatic") });
         }); // SPEAK the whole cue (label + sub), not just the top line — matches the already-recorded relaxMoment clips by hash (David 2026-07-15: "voice only reads the top line")
+      } else if (t.id === "mantra") { // THE MANTRA IS A TEXT, NOT A POOL (David device 2026-09-20). It is never shuffled, never loop-filled and never rotated: the slot takes the tier set that fits and reads it in text order, so the morning stack is the same every morning. The player refits the elastic silences to the dose.
+        var mR = mantraRead(t.secs || 40, mantraAffirmGap, true);
+        mR.lines.forEach(function (ln, mi) { usedTxt[_normLine(ln)] = 1; P({ text: ln, label: ln, sub: "", gap: mR.gaps[mi], _pk: "affirm" }); }); // `affirm` = the player anchors the pause to the line's OWN clip length (pkGap), guidance does not scale it
       } else if (C.lines) {
-        var depthL = sessionDepth(t.secs || 60), order2 = _shuffled(C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; })); if (!order2.length) order2 = C.lines.slice(); // same no-loop fill for line-pool tools (mantra / gratitude / rewire), starting from lines not already said this session
+        var depthL = sessionDepth(t.secs || 60), order2 = _shuffled(C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; })); if (!order2.length) order2 = C.lines.slice(); // same no-loop fill for the remaining line-pool tools (rewire / pool-backed acts) — the MANTRA no longer reaches here, it has its own ordered branch above, so nothing shuffles David's text
         // WHAT THE LINE ASKS OF YOU decides the pause (David 2026-08-15), not the tool's slot: a MANTRA line is said back,
         // so it sits for about as long as it took to say (`affirm`, anchored to the clip, guidance does not scale it); a
         // REWIRE line asks you to build a scene, which the old 3.3s "cue" never gave you time to do (`visual`, 8→15s).
@@ -22428,6 +22476,12 @@
     var same = strip.length === card.length && strip.every(function (x, i) { return x.icon === card[i].icon && x.color === card[i].color; });
     var adj = []; for (var i = 1; i < strip.length; i++) if (strip[i].icon === strip[i - 1].icon && strip[i].color === strip[i - 1].color) adj.push(i - 1 + "+" + i + " " + strip[i].icon);
     return { match: same, adjacentIdentical: adj, strip: strip, doseCard: card };
+  };
+  window.DEV.mantraDose = function (secs) { // the mantra the slot will actually say: tier reached, line indices in text order, fitted holds. Two runs at the same length MUST be identical (David 2026-09-20).
+    var R = mantraRead(secs || 40, mantraAffirmGap, true);
+    return { slot: (secs || 40) + "s", tier: R.tier, lines: R.lines.length, est: +R.est.toFixed(1),
+      idx: R.lines.map(function (l) { return MANTRA_LINES.indexOf(l); }),
+      gaps: R.gaps.map(function (g) { return +g.toFixed(1); }), text: R.lines };
   };
   window.DEV.gratCheck = function (secs) { // every gratitude line the run will SPEAK + whether a clip exists for that exact string
     function row(tx) { return { clip: TTS.hasClip(tx), key: TTS.vkey(tx), text: tx }; }

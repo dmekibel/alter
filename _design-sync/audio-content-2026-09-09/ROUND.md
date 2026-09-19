@@ -204,3 +204,12 @@ Script = `graph/meditation-v2-FULL.txt` (36 lines, ~470 words; opener 9 / Blacks
 2. After the first meditation ends, the next act repeats muscle-relaxer lines then plays an OLD meditation (v_open: MED_EXTRA.arrival = relax chain + old block engine).
 3. Some gratitude lines are text-only, no voice.
 4. Stretch on-screen text is cut into arbitrary chunks (one word / a sentence / one word). LAW: the visual matches the audio; show whole phrases (one or two lines as fit), never a single word, and never leave a phrase's last word alone on the next card.
+
+## 2026-09-20 — GRATITUDE v12 FINAL (David): four asks, negative one dropped ("I guess we don't need a negative one")
+`graph/merged-v12-lines.txt` lines 1-15 spoken. Asks: small recent thing (step-in cue) / rarely pause to appreciate (feel towards that thing) + the new-each-time tip / someone you are grateful for (face, voice, chest as you breathe) / our breath (alive on this beautiful planet). Then the turn, hands on heart, can't force it, dark-thought cue, open eyes. Approved for wiring + audio pending David's yes on the full read.
+
+## 2026-09-20 — MANTRA (Rewire) verdicts (David)
+- Stack mantra was 2-3 shuffled fragments from a 6-line pool: WRONG. Law: the mantra is read IN ORDER, dose-tiered, consistent every morning (no day-cycling pointer): core lines always, more tiers as the slot grows, the full text when the stack is long enough. Tier proposal (Fable 09-20) accepted with edits: core = trust / love unconditionally / master of my life / not afraid; 75s adds instincts, embrace imperfections, comfort zone, don't judge reality, indifferent to opinions; 2min+ = all.
+- Universality edits: "become a greater man" → "a greater person"; the mistakes-as-teachers / redo passage cut (not for everybody). David also named "talking to whoever you want" as a cut, which is not in the source text; asked him which line he meant.
+- Owed: a "write your own mantra" path before launch (every user hears David's).
+- 2026-09-20 BUILT + RECORDED: gratitude v12 wired (4 pairs, alive last), mantra dose-tiered (core 5 lines at 30s, 12 at 75s, all 23 at 150s+, identical every morning), "greater person", mistakes/redo line cut. Dave clips for the 10 new gratitude lines + 1 mantra line.
