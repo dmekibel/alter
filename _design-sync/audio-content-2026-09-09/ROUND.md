@@ -195,3 +195,6 @@ Line-by-line kills recorded in COPY-ANCHORS (13 kills, 3 keeps). Structural verd
 
 ## 2026-09-19 — MEDITATION v2 APPROVED FOR AUDIO (David: "Yes record in David's voice and wire it in")
 Script = `graph/meditation-v2-FULL.txt` (36 lines, ~470 words; opener 9 / Blackstone feet-up scan 12 / breath 7 with begin-again reminders / open awareness 5 / close 2). Base = beginner, 12-15 min. Silence curve: opener 5-10s, scan ~12s per part, breath reminders 30-45s, open awareness 20-40s, "Rest there" ~110s, close 10s. Stack: skip the first three opener lines. Owed later: 10-min cut (drop two breath reminders), 20-min extras, intermediate (noting with setup), advanced (Blackstone space-merge + Mingyur expansion). Built same session on Opus; audio via gen-voice-11labs --approved, dave bank.
+
+## 2026-09-19 — SEATED STACK WARM-UP APPROVED (David: "Yes")
+`graph/stretch-seated-stack-v1-lines.txt` (18 rows: placebo opener + position/safety line, then 16 seated moves in PT order). Slot takes rows in order, mirrored pairs together: ~6 moves at 60s, 8 at 75s, 10 at 90s; rows past that solo only. Laws added: movement act opens with ONE what-and-why line; no time quantities in an opener; "feel the stretch" + where, never "feel it". Standing v4 stays the solo routine, unread.

@@ -19069,6 +19069,63 @@
     "easy, all the way around": "\u0441\u043f\u043e\u043a\u043e\u0439\u043d\u043e, \u0434\u043e \u043a\u043e\u043d\u0446\u0430",
     "Clasp your hands behind you and lift your chest": "\u0421\u0446\u0435\u043f\u0438 \u0440\u0443\u043a\u0438 \u0437\u0430 \u0441\u043f\u0438\u043d\u043e\u0439 \u0438 \u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u0433\u0440\u0443\u0434\u044c",
     "open the front of the shoulders": "\u0440\u0430\u0441\u043a\u0440\u043e\u0439 \u043f\u0435\u0440\u0435\u0434\u043d\u044e\u044e \u043f\u043e\u0432\u0435\u0440\u0445\u043d\u043e\u0441\u0442\u044c \u043f\u043b\u0435\u0447" });
+  // STRETCH_SEATED (David 2026-09-16 approved script): the SEATED warm-up every STACK stretch act plays. Row 0 = the opener
+  // (spoken once), row 1 = position + safety (spoken once), rows 2.. = the moves in authored order. Stored as ONE string per
+  // row (two sentences) because that is the voice CLIP: _dev/gen-voice-11labs.py reads a `seq:` array as whole strings, the
+  // way it reads a STRETCH_MOVES pair as "a, b". Verbatim from
+  // _design-sync/audio-content-2026-09-09/graph/stretch-seated-stack-v1-lines.txt — do not reword here, re-export there.
+  // MIRRORED PAIRS (rows 4+5, 6+7, 10+11, 13+14, 15+16, zero-based) MUST NEVER BE SPLIT: SEATED_PAIR2 marks the second of
+  // each pair and the fit walks forward off it, same law as STRETCH_MOVES' third-element flag.
+  // TODO: position setting (chair / standing / floor) is not built — every stack assumes sitting (David 2026-09-16).
+  // RU: no Russian lines and no RU clips for these 18 rows yet — owed, next RU voice pass.
+  var STRETCH_SEATED_ON = true;
+  var STRETCH_SEATED = { seq: [
+    "First, we'll wake up your body with a few easy stretches. A couple of simple movements is enough to change how the whole day feels.",
+    "Sit tall, near the edge of your seat, feet flat on the floor. Do everything very slowly, and avoid any movement if it causes pain.",
+    "Reach both arms up toward the ceiling. Hold them there and breathe out.",
+    "Roll your shoulders up, back and down. Go big and slow, a few times.",
+    "Tilt your right ear toward your right shoulder, face forward. Keep both shoulders down and let your head's weight do the work.",
+    "Now tilt your left ear toward your left shoulder. Let the same weight do the work.",
+    "Turn your head to look over your right shoulder, body facing forward. Keep your chin level, only as far as feels easy.",
+    "Now look over your left shoulder the same way. Keep your chin level.",
+    "Reach both arms out in front at chest height, palms facing forward. Push them forward and round your upper back.",
+    "Clasp your hands behind your back, arms straight. Lift your chest and open your shoulders.",
+    "Reach both arms up and lean to your right. Keep both feet planted and feel your left side stretch.",
+    "Now reach up and lean to your left. Keep both feet planted and feel your right side stretch.",
+    "Put your hands on your lower back, fingers pointing down. Arch back gently and look slightly up, only as far as feels easy.",
+    "Cross your arms over your chest and turn your upper body to the right. Keep your hips facing forward.",
+    "Now turn to the left the same way. Hips stay facing forward.",
+    "Cross your right ankle over your left knee. Sit tall and lean forward a little, until you feel the stretch on the outside of your right hip.",
+    "Now cross your left ankle over your right knee. Lean forward a little, until you feel the stretch on the outside of your left hip.",
+    "Keep your toes on the floor and raise both heels, so you're up on your toes. Lower them slowly, a few times."
+  ] };
+  var SEATED_PAIR2 = { 5: 1, 7: 1, 11: 1, 14: 1, 16: 1 }; // index of the SECOND move of a mirrored pair (zero-based into seq)
+  function seatedSpeech(s) { return Math.max(0.8, String(s).trim().split(/\s+/).length / 3.3); } // words/3.3 — MEASURED against Dave's real clips (36 meditation clips: 2.4 min actual vs 3.4 min at the old words/2.3). Same estimator medV2Speech uses.
+  function stretchSeatedSegs(secs, tag) { // the seated flow, fitted to `secs`. Same seg shape stretchMoveSegs returns, so the stack player needs no change.
+    secs = Math.max(30, secs || 60);
+    var Q = STRETCH_SEATED.seq, out = [];
+    function mk(txt, gap, pk) { var caps = capSplit(tr(txt)); var o = { text: txt, label: caps[0], sub: "", gap: gap, _pk: pk }; if (caps.length > 1) o.caps = caps; if (tag != null) o._act = tag; out.push(o); return o; }
+    var GAP0 = 2, GAP1 = 3, HOLD_BASE = 8, HOLD_MIN = 6, HOLD_MAX = 14;  // opener breathes 2s, the position/safety row 3s (David 2026-09-19); holds are budgeted at 8s and fitted inside 6-14s
+    var head = seatedSpeech(Q[0]) + GAP0 + seatedSpeech(Q[1]) + GAP1;
+    // WALK THE MOVES while the budget holds, never splitting a mirrored pair: if the next row OPENS a pair and only one of
+    // the two fits, stop BEFORE it rather than leaving one side of the body stretched.
+    var budget = secs - head, take = [], i = 2, cost;
+    while (i < Q.length) {
+      var pairs = (SEATED_PAIR2[i + 1] ? 2 : 1), j, sum = 0;
+      for (j = 0; j < pairs; j++) sum += seatedSpeech(Q[i + j]) + HOLD_BASE;
+      if (take.length && sum > budget) break;                      // always buy at least the first move, however tight the slot
+      for (j = 0; j < pairs; j++) take.push(i + j);
+      budget -= sum; i += pairs;
+    }
+    // EVEN OUT: the holds stretch (or shrink) together so the act lands on `secs` exactly; the rounding leftover lands on the
+    // last hold, which is the one place a long beat reads as "stay in it" rather than as a stall.
+    var spoken = 0; take.forEach(function (ix) { spoken += seatedSpeech(Q[ix]); });
+    var room = secs - head - spoken, m = take.length;
+    var hold = Math.max(HOLD_MIN, Math.min(HOLD_MAX, m ? room / m : HOLD_BASE));
+    mk(Q[0], GAP0, "seated"); mk(Q[1], GAP1, "seated");
+    take.forEach(function (ix, n) { mk(Q[ix], n === m - 1 ? room - hold * (m - 1) : hold, "seated"); });
+    return out;
+  }
   function stretchMoveSegs(secs, tag) { // fill `secs` by WALKING THE POOL ONCE: distinct moves first, then longer holds, and only a dose that even the cap cannot fill starts a second pass. Returns timelinePlayer segments.
     secs = Math.max(30, secs || 75);
     var N = STRETCH_MOVES.length, _per = PK.speechEst + PK.held;   // one move = the spoken cue + its short hold
@@ -19302,7 +19359,7 @@
                        // the decoded stack clips in the preview on 2026-08-15 (meditation 2.0-6.9s, mantra 1.9-2.8s). It is
                        // only an estimate — relayoutFrom does the exact fit against the real durations at open.
   };
-  var PK_ELASTIC = { absorb: 1, inquiry: 1, visual: 1, held: 1, settle: 1, release: 1, cue: 1 }; // the kinds the dose re-fit may squeeze. somatic / affirm / transition / breath are NEVER squeezed — that is the whole point of the grammar.
+  var PK_ELASTIC = { absorb: 1, inquiry: 1, visual: 1, held: 1, seated: 1, settle: 1, release: 1, cue: 1 }; // the kinds the dose re-fit may squeeze. somatic / affirm / transition / breath are NEVER squeezed — that is the whole point of the grammar.
   function pkGap(pk, g, dur) { // KIND -> SECONDS, resolved at layout time because two of these need the real spoken length
     switch (pk) {
       case "somatic": return PK.somatic;                                                              // hard floor AND hard ceiling: a somatic gap can never grow with the dose again
@@ -19415,7 +19472,7 @@
       // Each act now starts directly on its FIRST REAL cue (tracked immediately); the act name still shows via the
       // act page / story bars (acts[] metadata), so the boundary is announced visually without a floating voice line.
       if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")), _pk: s._pk || "cue" }); }); } // a tool that supplies its own cue segments (charge, love & embodiment) — it may name its own pause kind; otherwise the generic guidance cue
-      else if (t.id === "stretch") { stretchMoveSegs(t.secs || 60, ai).forEach(function (s) { segs.push(s); }); } // STRETCH (David 2026-07-13): real held moves that fill the tool's time, never looped — same pool as the solo tool, sane holds instead of 3 cues stretched over 2 min
+      else if (t.id === "stretch") { (STRETCH_SEATED_ON ? stretchSeatedSegs(t.secs || 60, ai) : stretchMoveSegs(t.secs || 60, ai)).forEach(function (s) { segs.push(s); }); } // STRETCH IN A STACK = THE SEATED FLOW (David 2026-09-16: every stack assumes you are sitting). The SOLO stretch tool is untouched and still walks STRETCH_MOVES.
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
         var medCustom = !!(t.med && t.med.length); // a user-authored section list (the editor's track) keeps the OLD block engine so custom sits still work exactly as built
         if (MED_V2_ON && !medCustom) { // THE V2 SIT INSIDE A STACK (David 2026-09-19): one authored script, one act, its own silence curve. skipOpener when an earlier act already sat the user down with the eyes closed (relax / stretch / breathe set sawBodyPrep) — no second "find a comfortable position".
@@ -19491,7 +19548,7 @@
           usedTxt[_normLine(ln)] = 1;
           P({ text: ln, label: ln, sub: "", gap: lcad, _pk: lKind }); t2 += lcad + PK.speechEst; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; var remL = C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order2 = _shuffled(remL.length ? remL : C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
       }
-      if (t.id === "relax" || t.id === "stretch" || t.id === "breathe" || t.id === "breath") sawBodyPrep = true; // a later meditation act drops its get-seated opener: relax/stretch/breath all leave the user already settled with the eyes closed (David 2026-09-19)
+      if (t.id === "relax" || t.id === "stretch" || t.id === "breathe" || t.id === "breath") sawBodyPrep = true; // a later meditation act drops its get-seated opener: relax/stretch/breath all leave the user already settled with the eyes closed (David 2026-09-19) A SEATED stretch still counts as body prep (it leaves you sitting, settled), and nothing in the app tracks whether the user is standing — there is no such flag to correct.
     });
     return { segs: segs, acts: acts, dose: dose }; // dose = the sum of the steps' chosen times. THE DOSE IS A PROMISE (2026-08-15): the player takes it as totalSec and re-fits the elastic silences to land on it.
   }
@@ -19533,7 +19590,7 @@
   // scale every gap by f (clamped 0.6-1.6), then put whatever is left on the long rest, never below 30s.
   // ctx = { inStack: bool, skipOpener: bool }. Returns { segs, acts, secMeta, idx } — `idx` = the source indices kept,
   // so a stack caller can stamp its own _act / usedTxt without re-deriving the drop rules.
-  function medV2Speech(s) { return Math.max(0.8, (String(s).trim().split(/\s+/).length) / 2.3); } // words/2.3 — these lines are long and even-paced, and PK.speechEst (a flat 4.2) under-budgets them by half
+  function medV2Speech(s) { return Math.max(0.8, (String(s).trim().split(/\s+/).length) / 3.3); } // words/3.3 — MEASURED against Dave's real clips (36 meditation clips ran 2.4 min against a 3.4 min estimate at the old words/2.3)
   function composeMeditationV2(totalSec, ctx) {
     ctx = ctx || {}; totalSec = Math.max(60, totalSec || 900);
     var seq = MED_V2.seq, keep = [], i;
