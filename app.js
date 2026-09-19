@@ -8514,12 +8514,51 @@
   // 2026-08-01 PRACTICE GRID: the seven grid stacks also carry `bands` (structural dose folding, see tbxTrackForDose) and `what`/`why` (the dose card's two gated lines). Both are OPTIONAL — a stack without them keeps the legacy single `track` + no lines.
   function tbxBand(min) { var t = [], a = arguments; for (var i = 1; i < a.length; i += 2) t.push({ k: a[i], d: a[i + 1] }); return { min: min, track: t }; } // terse band literal: tbxBand(<minutes>, k, secs, k, secs …). Hoisted declaration, so TBX_ITEMS' initializer below can call it.
   var TBX_ITEMS = {
-    firstLight:      { name: "Morning Stack",    dom: "move",    ti: "ti-sunrise",         peek: ["restore", TBX_BOLT], kicker: "START THE DAY",                        def: 5, track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 60 }, { k: "mantra", d: 120 }],
+    firstLight:      { name: "Morning Stack",    dom: "move",    ti: "ti-sunrise",         peek: ["restore", TBX_BOLT], kicker: "START THE DAY",                        def: 10, cat: "morning", track: [{ k: "stretch", d: 75 }, { k: "breathe", d: 60 }, { k: "mantra", d: 120 }],
                        what: "Wake the body, breathe, settle, sit, then aim the day.", why: "The order is the mechanism: a settled body lets the mind listen.",
-                       bands: [tbxBand(2,  "breathe", 60, "mantra", 60),
-                               tbxBand(5,  "stretch", 90, "breathe", 60, "relax", 45, "meditate", 90, "gratitude", 45),
-                               tbxBand(10, "stretch", 120, "breathe", 75, "relax", 60, "meditate", 240, "gratitude", 45, "reprogram", 75, "mantra", 30),
-                               tbxBand(15, "stretch", 150, "breathe", 90, "relax", 75, "meditate", 360, "gratitude", 60, "reprogram", 150, "mantra", 75)] },
+                       // WEIGHTED (David 2026-09-20): the four fixed bands are retired — the morning stack now runs at ANY minute from its floor to an hour, proportions per PLAN.md's anchor table.
+                       acts: [{ k: "stretch",    w: 1.0, min: 45,  max: 240,  optBelow: 300 },
+                              { k: "v_coherent", w: 1.6, min: 60,  max: 300 },
+                              { k: "relax",      w: 0.9, min: 60,  max: 420,  optBelow: 600 },
+                              { k: "meditate",   w: 3.6, min: 180, max: 1800, optBelow: 600 },
+                              { k: "gratitude",  w: 1.0, min: 45,  max: 240 },
+                              { k: "mantra",     w: 0.6, min: 30,  max: 150,  optBelow: 300 },
+                              { k: "s_intentam", w: 0.8, min: 60,  max: 450,  optBelow: 1200 }] },
+    // ===== THE STACK LIBRARY v2 (David 2026-09-20, _design-sync/stacks-2026-09-20/PLAN.md). Fifteen packs, one engine:
+    // the same six tools plus the authored SCRIPT_ACTS blocks, in evidence-shaped proportions. Every one is continuous
+    // (floor..ceiling), so "this one is 5-8, that one 30-45" is gone. `cat` files it under the six menu chips.
+    // TWO IDS WERE RENAMED to avoid colliding with shipped packs: PLAN's `heart` -> `heartcoh` (TBX_ITEMS.heart is the
+    // shipped Heart pack) and PLAN's `shutdown` -> `shutdownWork` (TBX_ITEMS.shutdown is the Night Stack).
+    reset2:       { name: "Two-Minute Reset", dom: "connect", ti: "ti-heart",           peek: ["connect"],           kicker: "Reset",   def: 3,  cat: "reset",
+                    acts: [{ k: "s_heart", w: 1, min: 60, max: 300 }, { k: "gratitude", m: "turn", w: 0.6, min: 30, max: 90 }] },
+    downshift:    { name: "Downshift",        dom: "restore", ti: "ti-wind",            peek: ["restore", "focus"],  kicker: "Reset",   def: 5,  cat: "reset",
+                    acts: [{ k: "s_sigh", w: 1.2, min: 60, max: 300 }, { k: "relax", w: 1, min: 60, max: 240, optBelow: 240 }, { k: "s_ground", w: 1, min: 60, max: 240 }] },
+    cooldown:     { name: "Cool Down",        dom: "move",    ti: "ti-flame",           peek: ["restore", "focus"],  kicker: "Reset",   def: 5,  cat: "reset",
+                    acts: [{ k: "s_anger", w: 0.4, min: 20, max: 40 }, { k: "s_sigh", w: 1.2, min: 60, max: 300 }, { k: "relax", w: 0.8, min: 45, max: 180, opt: 1 }, { k: "s_ground", w: 1, min: 60, max: 240, optBelow: 240 }] },
+    focus:        { name: "Focus Primer",     dom: "focus",   ti: "ti-target",          peek: ["focus"],             kicker: "Before",  def: 5,  cat: "before",
+                    acts: [{ k: "v_box", w: 1.2, min: 60, max: 300 }, { k: "meditate", m: "breath", w: 1.4, min: 90, max: 600, optBelow: 240 }, { k: "s_intent", w: 0.8, min: 45, max: 150 }] },
+    walkin:       { name: "Before You Walk In", dom: "create", ti: "ti-door-enter",     peek: ["focus", "create"],   kicker: "Before",  def: 5,  cat: "before",
+                    acts: [{ k: "v_box", w: 1, min: 60, max: 240 }, { k: "mantra", w: 0.8, min: 30, max: 150 }, { k: "s_rehearse", w: 1, min: 60, max: 240 }] },
+    repair:       { name: "After a Slip",     dom: "connect", ti: "ti-heart-handshake", peek: ["restore", "connect"], kicker: "After",  def: 5,  cat: "after",
+                    acts: [{ k: "v_exhale", w: 1, min: 60, max: 240 }, { k: "s_repair", w: 1.2, min: 75, max: 240 }, { k: "gratitude", m: "turn", w: 0.5, min: 30, max: 90, optBelow: 180 }] },
+    winddown:     { name: "Wind Down",        dom: "restore", ti: "ti-moon",            peek: ["restore", "connect"], kicker: "Night",  def: 15, cat: "night",
+                    acts: [{ k: "relax", w: 1, min: 90, max: 420 }, { k: "v_478", w: 1, min: 60, max: 300 }, { k: "s_rest", w: 2, min: 180, max: 1200 }, { k: "gratitude", m: "1", w: 0.5, min: 45, max: 120, optBelow: 480 }] },
+    deeprest:     { name: "Deep Rest",        dom: "restore", ti: "ti-bed",             peek: ["restore"],           kicker: "Night",   def: 20, cat: "night",
+                    acts: [{ k: "s_rest", w: 3, min: 240, max: 1500 }, { k: "v_coherent", w: 1, min: 60, max: 300, optBelow: 480 }] },
+    longsit:      { name: "The Long Sit",     dom: "focus",   ti: "ti-moon-stars",      peek: ["move", "restore"],   kicker: "Deeper",  def: 20, cat: "deeper",
+                    acts: [{ k: "stretch", w: 0.5, min: 45, max: 150, optBelow: 600 }, { k: "breathe", w: 0.8, min: 60, max: 300 }, { k: "meditate", w: 6, min: 480, max: 3600 }] },
+    elevated:     { name: "Elevated Morning", dom: "create",  ti: "ti-sparkles",        peek: ["restore", "connect"], kicker: "Deeper", def: 20, cat: "deeper",
+                    acts: [{ k: "relax", w: 0.8, min: 60, max: 300 }, { k: "breathe", w: 0.8, min: 60, max: 300 }, { k: "meditate", m: "scanbreath", w: 2, min: 180, max: 900 }, { k: "s_heart", w: 1, min: 90, max: 300 }, { k: "meditate", m: "open", w: 1, min: 60, max: 600, optBelow: 900 }, { k: "s_intentam", w: 1, min: 60, max: 450 }] },
+    wakeslow:     { name: "Waking Up Slow",   dom: "move",    ti: "ti-sun",             peek: ["move", "restore"],   kicker: "Morning", def: 5,  cat: "morning",
+                    acts: [{ k: "s_wake", w: 0.3, min: 15, max: 30 }, { k: "stretch", w: 1.2, min: 60, max: 240 }, { k: "v_coherent", w: 1, min: 60, max: 240 }, { k: "mantra", w: 0.6, min: 30, max: 150, optBelow: 240 }] },
+    clearhead:    { name: "Clear Head",       dom: "focus",   ti: "ti-arrow-loop-left", peek: ["focus"],             kicker: "Reset",   def: 8,  cat: "reset",
+                    acts: [{ k: "s_clear", w: 0.3, min: 15, max: 30 }, { k: "meditate", m: "breath", w: 1, min: 60, max: 300 }, { k: "s_note", w: 0.4, min: 20, max: 40 }, { k: "meditate", m: "open", w: 1.5, min: 90, max: 900 }] },
+    heartcoh:     { name: "Heart Coherence",  dom: "connect", ti: "ti-heartbeat",       peek: ["connect"],           kicker: "Deeper",  def: 8,  cat: "deeper",
+                    acts: [{ k: "s_heart", w: 3, min: 120, max: 900 }, { k: "gratitude", m: "1", w: 0.7, min: 45, max: 150, optBelow: 240 }] },
+    gratdeep:     { name: "Gratitude, the Long Way", dom: "connect", ti: "ti-heart-plus", peek: ["connect"],         kicker: "Deeper",  def: 8,  cat: "deeper",
+                    acts: [{ k: "gratitude", m: "full", w: 1, min: 120, max: 300 }, { k: "s_gratdeep", w: 1, min: 60, max: 600 }] },
+    shutdownWork: { name: "Shutdown",         dom: "upkeep",  ti: "ti-briefcase",       peek: ["restore", "connect"], kicker: "After",  def: 5,  cat: "after",
+                    acts: [{ k: "s_shutdown", w: 0.5, min: 30, max: 60 }, { k: "v_exhale", w: 1, min: 60, max: 240 }, { k: "relax", w: 1, min: 60, max: 300, optBelow: 300 }, { k: "gratitude", m: "1", w: 0.7, min: 45, max: 120 }] },
     breatheLadder:   { name: "Breathe",          dom: "restore", ti: "ti-lungs",           peek: ["move", "focus"],     kicker: "BREATHE",                              def: 5,
                        what: "Breathing patterns, easy to hard, one at a time.", why: "A longer exhale than inhale tells the body the danger is over.",
                        bands: [tbxBand(2,  "v_coherent", 120),
@@ -8600,6 +8639,21 @@
     { id: "night",   name: "Night",   dom: "upkeep",  ti: "ti-moon-stars",      items: ["cantSleep", "t_evening", "t_bodyScan", "t_patience"] },
     { id: "wins",    name: "Wins",    dom: "play",    ti: "ti-trophy",          items: ["lockTheWin", "t_journal", "t_meditate"] }
   ];
+  // THE SIX MENU CHIPS (David 2026-09-20, PLAN.md "Ease-of-use law: 6 categories, one row of chips, stacks inside").
+  // Every `acts` pack carries a `cat`; the row filters the stacks under it. It reuses the Session Editor's OWN chip
+  // component (.sed-catrail / .sed-catchip) rather than inventing a seventh chip language, and repaints by draining
+  // one container's children — no innerHTML wipe, no new scroll container beyond the chip rail the component is.
+  var STACK_CATS = [
+    { k: "morning", lab: "Morning", ti: "ti-sunrise",         d: "move" },
+    { k: "night",   lab: "Night",   ti: "ti-moon-stars",      d: "upkeep" },
+    { k: "reset",   lab: "Reset",   ti: "ti-wind",            d: "restore" },
+    { k: "before",  lab: "Before",  ti: "ti-flag",            d: "focus" },
+    { k: "after",   lab: "After",   ti: "ti-heart-handshake", d: "connect" },
+    { k: "deeper",  lab: "Deeper",  ti: "ti-stack-2",         d: "create" }
+  ];
+  var _tbxStackCat = null; // the open chip (null = pick by the clock on first paint)
+  function tbxStacksIn(cat) { var out = []; Object.keys(TBX_ITEMS).forEach(function (id) { if (TBX_ITEMS[id].cat === cat) out.push(id); }); return out; }
+  function tbxCatNow() { var h = new Date().getHours(); return h < 11 ? "morning" : h >= 20 ? "night" : "reset"; } // the chip that opens by default = the moment you are in, same rule the FOR YOU NOW row already uses
   var _tbxOpenStack = null, _tbxOpenCat = null; // single-open transient state (module-level, cleared on every full render)
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, var(--c-ffffff-bg)) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
@@ -8609,10 +8663,13 @@
     var use = (S.tools && S.tools.use) || {};
     return ids.map(function (id, i) { return { id: id, i: i, u: use[id] || 0 }; }).sort(function (a, b) { return (b.u - a.u) || (a.i - b.i); }).map(function (o) { return o.id; });
   }
-  function tbxDose(id) { try { var d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id]; if (typeof d === "number" && d >= 0.5 && d <= 180) return d; var it = tbxItem(id); return (it && it.def) || 5; } catch (e) { return 5; } } // guarded read; ANY minute the grid offers (was: only the 2/5 fast-path), same additive store, NO SCHEMA bump
+  function tbxDose(id) { try { var it = tbxItem(id), d = S.tools && S.tools.tbxDose && S.tools.tbxDose[id];
+    if (it && it.acts && it.acts.length) { var R = stackRange(it), lo = Math.ceil(R.floor / 60), hi = Math.floor(R.ceiling / 60); // A WEIGHTED PACK OWNS ITS RANGE: a stored dose from another surface (or an old band) is clamped into floor..ceiling rather than silently running a shape the pack cannot make
+      var m = (typeof d === "number" && d >= 0.5) ? d : (it.def || lo); return Math.max(lo, Math.min(hi, m)); }
+    if (typeof d === "number" && d >= 0.5 && d <= 180) return d; return (it && it.def) || 5; } catch (e) { return 5; } } // guarded read; ANY minute the grid offers (was: only the 2/5 fast-path), same additive store, NO SCHEMA bump
   function tbxSetDose(id, m) { try { S.tools = S.tools || {}; S.tools.tbxDose = S.tools.tbxDose || {}; S.tools.tbxDose[id] = m; save(); } catch (e) {} }
   function tbxCustoms() { try { return (S.tools && S.tools.tbxCustom) || []; } catch (e) { return []; } } // user-built stacks (additive list on S.tools; dedicated store so no existing consumer of S.tools.custom/stack breaks — David 2026-07-23 fallback clause)
-  function tbxTrackDoms(track) { var seen = []; (track || []).forEach(function (s) { var d = TBX_TOOLDOM[s.k] || (TBX_VARIANTS[s.k] && TBX_VARIANTS[s.k].dom); if (d && seen.indexOf(d) < 0) seen.push(d); }); return seen; } // domains present in a track (for custom tile hue + peek coins); variants carry their own dom (David 2026-07-23)
+  function tbxTrackDoms(track) { var seen = []; (track || []).forEach(function (s) { var d = TBX_TOOLDOM[s.k] || (TBX_VARIANTS[s.k] && TBX_VARIANTS[s.k].dom) || (SCRIPT_ACT_META[s.k] && SCRIPT_ACT_META[s.k].dom); if (d && seen.indexOf(d) < 0) seen.push(d); }); return seen; } // domains present in a track (for custom tile hue + peek coins); variants carry their own dom (David 2026-07-23)
   function tbxItem(id) { // RESOLVER: a registry stack OR a synthesized item-like object for a user-built custom stack (so every tbx fn treats customs as first-class). Returns null if unknown.
     if (TBX_ITEMS[id]) return TBX_ITEMS[id];
     var c = null; tbxCustoms().forEach(function (x) { if (x.id === id) c = x; }); if (!c) return null;
@@ -8620,13 +8677,63 @@
     return { name: c.name, dom: dom, ti: c.ti || "ti-stack-2", peek: doms.filter(function (d) { return d !== dom; }).slice(0, 2), kicker: "YOUR STACK", def: 5, track: c.track, custom: true };
   }
   function tbxHasEdit(id) { try { return !!(S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id] && S.tools.tbxEdit[id].length); } catch (e) { return false; } }
-  function tbxStep(s) { var o = { k: s.k, d: s.d, med: s.med }; if (s.t) o.t = s.t; if (s.i) o.i = s.i; if (s.dom) o.dom = s.dom; if (s.f) o.f = s.f; return o; } // ONE step-copy idiom: the runner's k/d/med + the Session Editor's ADDITIVE label carriage (t/i/dom/f) when a step has it. runStack ignores the extras.
+  function tbxStep(s) { var o = { k: s.k, d: s.d, med: s.med }; if (s.m) o.m = s.m; if (s.t) o.t = s.t; if (s.i) o.i = s.i; if (s.dom) o.dom = s.dom; if (s.f) o.f = s.f; return o; } // ONE step-copy idiom: the runner's k/d/med + the Session Editor's ADDITIVE label carriage (t/i/dom/f) when a step has it. runStack ignores the extras.
+  // ===== WEIGHTED STACK FIT (David 2026-09-20, PLAN.md "the engine"). A `bands` stack is a handful of fixed shapes; an
+  // `acts` stack is CONTINUOUS — it runs at ANY minute between its floor (the sum of its required minimums) and its
+  // ceiling (the sum of every maximum), because the dose is distributed by WEIGHT and then clamped act by act.
+  //   act = { k, m?, w, min, max, opt?, optBelow? }  — seconds, not minutes.
+  //   `opt:1`      = optional at every length (droppable, never counted in the floor)
+  //   `optBelow:N` = optional BELOW N seconds; at or above N it is required and it joins the floor's shape
+  // Priority for dropping is LIST ORDER: the later an optional act sits, the sooner it goes.
+  // PROPERTY: for any dose in [floor, ceiling] the returned durations sum to the dose exactly; outside it, to the clamp.
+  var STACK_DOSES = [2, 3, 5, 8, 10, 15, 20, 30, 45, 60]; // the presets a weighted pack may offer (minutes); the picker shows only the ones inside its range
+  function stackActReq(a) { return !a.opt && !a.optBelow; }
+  function stackRange(pack) { var lo = 0, hi = 0; ((pack && pack.acts) || []).forEach(function (a) { if (stackActReq(a)) lo += a.min; hi += a.max; }); return { floor: lo, ceiling: hi }; }
+  function stackFit(pack, dose) {
+    var acts = (pack && pack.acts) || []; if (!acts.length) return [];
+    var R = stackRange(pack);
+    dose = Math.max(R.floor, Math.min(R.ceiling, Math.round(dose || R.floor)));
+    var live = [], i;
+    for (i = 0; i < acts.length; i++) if (!acts[i].optBelow || dose >= acts[i].optBelow) live.push({ a: acts[i], i: i });
+    function sumMin(L) { var s = 0; L.forEach(function (x) { s += x.a.min; }); return s; }
+    function dropLast() { for (var j = live.length - 1; j >= 0; j--) if (!stackActReq(live[j].a)) { live.splice(j, 1); return true; } return false; }
+    while (live.length > 1 && sumMin(live) > dose) { if (!dropLast()) break; }           // the shape shrinks before the times do
+    var d = {}, fixed = {}, guard = 0;
+    while (guard++ < 60) {                                                                // clamp-and-rebalance: fix whatever hits its ceiling or its floor, then re-share what is left across the rest
+      var sumW = 0, left = dose, again = false;
+      live.forEach(function (x) { if (fixed[x.i]) left -= d[x.i]; else sumW += (x.a.w || 1); });
+      if (sumW <= 0) break;
+      for (var n = 0; n < live.length; n++) {
+        var x = live[n]; if (fixed[x.i]) continue;
+        var share = left * (x.a.w || 1) / sumW;
+        if (share > x.a.max) { d[x.i] = x.a.max; fixed[x.i] = 1; again = true; break; }
+        if (share < x.a.min) {
+          if (!stackActReq(x.a) && live.length > 1) { live.splice(n, 1); d = {}; fixed = {}; again = true; break; } // an optional act that cannot reach its own minimum is not shortened, it is dropped — and the whole share is recomputed without it
+          d[x.i] = x.a.min; fixed[x.i] = 1; again = true; break;
+        }
+        d[x.i] = share;
+      }
+      if (!again) break;
+    }
+    var out = [], tot = 0;
+    live.forEach(function (x) { var v = Math.max(x.a.min, Math.min(x.a.max, Math.round(d[x.i] != null ? d[x.i] : x.a.min))); out.push({ x: x, d: v }); tot += v; });
+    var diff = dose - tot, spin = 0;                                                      // rounding leftover lands on whoever has the most headroom, so the promise (the minute the user picked) is kept to the second
+    while (diff !== 0 && out.length && spin++ < 60) {
+      var best = -1, room = 0;
+      for (var p = 0; p < out.length; p++) { var r = diff > 0 ? (out[p].x.a.max - out[p].d) : (out[p].d - out[p].x.a.min); if (r > room) { room = r; best = p; } }
+      if (best < 0) break;
+      var step = diff > 0 ? Math.min(diff, room) : Math.max(diff, -room);
+      out[best].d += step; diff -= step;
+    }
+    return out.map(function (o) { var s = { k: o.x.a.k, d: o.d }; if (o.x.a.m) s.m = o.x.a.m; return s; });
+  }
   function tbxTrackForDose(id, mins) { // STRUCTURAL DOSE FOLDING (David 2026-08-01): a stack is not one shape stretched — at 2 minutes it is two steps, at 15 it is eight. `bands` give the SHAPE per dose; tbxScaleTrack then evens the seconds WITHIN the chosen band. Resolution order, in this order and no other:
     //   1. the user's own edit (tbxEdit) — a hand-built track is never re-folded, it only scales (the folds are the app's opinion; the edit is the user's)
     //   2. item.bands — the largest band whose `min` is ≤ the chosen dose (below the smallest band, the smallest band)
     //   3. item.track — the legacy single track (every stack that carries no bands)
     try { var e = S.tools && S.tools.tbxEdit && S.tools.tbxEdit[id]; if (e && e.length) return e.map(tbxStep); } catch (er) {}
     var it = tbxItem(id); if (!it) return [];
+    if (it.acts && it.acts.length) return stackFit(it, Math.round((mins || it.def || 5) * 60)); // 2. item.acts — the WEIGHTED fit: any minute in the pack's floor..ceiling, shape and seconds decided together (PLAN 2026-09-20). Checked before `bands`, which is the older fixed-shape mechanism; a pack carries one or the other, never both.
     if (it.bands && it.bands.length) {
       var mn = mins || it.def || 5, pick = it.bands[0];
       it.bands.forEach(function (b) { if (b.min <= mn && b.min >= pick.min) pick = b; });
@@ -8637,7 +8744,7 @@
   function tbxTrack(id) { return tbxTrackForDose(id, tbxDose(id)); } // the LIVE track for a stack AT ITS CURRENT DOSE: edit → band → legacy track. All consumers (dose card steps, Start, hero launches, the picker's stack picks, the Session Editor seed) read through here so an edit takes effect everywhere and a banded stack never resolves empty. Dose scaling still applies at launch.
   function tbxSetEdit(id, t) { try { S.tools = S.tools || {}; S.tools.tbxEdit = S.tools.tbxEdit || {}; S.tools.tbxEdit[id] = (t || []).map(tbxStep); save(); } catch (e) {} } // additive; NO SCHEMA bump
   function tbxResetEdit(id) { try { if (S.tools && S.tools.tbxEdit) { delete S.tools.tbxEdit[id]; save(); } } catch (e) {} }
-  function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(tbxStep); var f = target / base; return track.map(function (s) { var o = tbxStep(s); o.d = Math.max(20, Math.round((s.d || 0) * f)); return o; }); } // scale step durations proportionally to the chosen dose; floor 20s/step. Copies through tbxStep (2026-08-19) so `med` and the Session Editor's label carriage (t/i/dom/f) survive the scale — the old {k,d} literal silently dropped them, which is why the editor could only re-derive a scaled stack's words from the registry. runStack still reads k/d/med and ignores the rest.
+  function tbxScaleTrack(track, mins) { var target = (mins || 5) * 60, base = 0; (track || []).forEach(function (s) { base += s.d || 0; }); if (!base) return (track || []).map(tbxStep); if (Math.abs(base - target) < 2) return track.map(tbxStep); var f = target / base; return track.map(function (s) { var o = tbxStep(s); o.d = Math.max(20, Math.round((s.d || 0) * f)); return o; }); } // scale step durations proportionally to the chosen dose; floor 20s/step. Copies through tbxStep (2026-08-19) so `med` and the Session Editor's label carriage (t/i/dom/f) survive the scale — the old {k,d} literal silently dropped them, which is why the editor could only re-derive a scaled stack's words from the registry. runStack still reads k/d/med and ignores the rest.
   function tbxEditSeed(id) { // THE EDITOR OPENS AT THE LENGTH THE RAIL SHOWS (David 2026-08-19 device: "when you click Adjust steps and timing, it does not reflect the length that you chose earlier"). tbxTrack(id) hands back the BAND — the right STEPS at their AUTHORED seconds — while the dose card above prints tbxScaleTrack of that same band, so the editor was the one surface still showing unscaled time: a 30-minute pick opened as a 15.5-minute session. Scale first (the dose card's own number), then apportion onto the editor's half-minute grid (SED_DURS) by largest remainder, so the header total is the chosen dose EXACTLY instead of the ±0.5 the old per-row rounding left. Save/Start write the seconds straight back, and tbxLaunch's re-scale is then a no-op factor of 1.
     var m = tbxDose(id), t = tbxScaleTrack(tbxTrackForDose(id, m), m), n = t.length; if (!n) return t;
     var units = Math.max(n, Math.round(m * 2)), q = t.map(function (s) { return (s.d || 0) / 30; }); // units = half-minutes to hand out; every step keeps at least one (the editor cannot show less)
@@ -8653,7 +8760,7 @@
     var it = tbxItem(id); if (!it) return;
     var m = mins || tbxDose(id), track = tbxScaleTrack(tbxTrackForDose(id, m), m); // fold FIRST (which steps), scale second (how long each) — the dose picks the shape, not just the stretch
     landFromHome(); leaveHomeForPlayer();
-    try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }); } catch (e) {}
+    try { runStack(track, 0, function (n) { try { tickTool(id); } catch (e) {} stackComplete(n); }, id); } catch (e) {}
   }
   // tbxPlanDay() is GONE (David 2026-08-12 "on home I have no access to the planner"): this button used to open the What's-next
   // PICKER as a z98 overlay over home, which is a way to add blocks, not a way to reach the planner. The picker flow itself is
@@ -8782,7 +8889,12 @@
     var sc = add(card, "div", "tbx-dose-steps");
     steps.forEach(function (st, i) { var row = add(sc, "div", "tbx-step"); var cn = add(row, "div", "tbx-stepcoin"); cn.style.background = tbxVar(st.c); var si = add(cn, "i", "ti " + st.ic); if (st.ink) si.style.color = st.ink; add(row, "span", "tbx-step-tx", tr(st.t)); if (times && times[i]) add(row, "span", "tbx-step-tm", times[i]); });
     var foot = add(card, "div", "tbx-dose-foot"); var chips = add(foot, "div", "tbx-chips");
-    TBX_FACE_LADDER.forEach(function (m) { // ONE ROW, ALL THE DOSES, scrolled sideways (David 2026-08-20). No More button, no collapse, no second picker underneath — and tbxRepaintDose puts the row back where you left it, so the chip you tap stays under your thumb instead of jumping to the left edge.
+    var LADDER = TBX_FACE_LADDER;
+    if (it.acts && it.acts.length) { var _R = stackRange(it), _lo = _R.floor / 60, _hi = _R.ceiling / 60; // ONLY the presets this pack can actually run (PLAN 2026-09-20: "the dose picker shows only presets inside the stack's floor..ceiling"). A minute it cannot honour is never offered.
+      LADDER = STACK_DOSES.filter(function (m) { return m >= _lo - 0.001 && m <= _hi + 0.001; });
+      if (!LADDER.length) LADDER = [Math.max(1, Math.round(_lo))];
+      if (LADDER.indexOf(cur) < 0) LADDER = LADDER.concat([cur]).sort(function (a, b) { return a - b; }); }
+    LADDER.forEach(function (m) { // ONE ROW, ALL THE DOSES, scrolled sideways (David 2026-08-20). No More button, no collapse, no second picker underneath — and tbxRepaintDose puts the row back where you left it, so the chip you tap stays under your thumb instead of jumping to the left edge.
       var chip = add(chips, "button", "tbx-chip" + (m === cur ? " on" : ""), m + tr("m"));
       if (m === cur) {
         if (face) { chip.style.background = "repeating-linear-gradient(115deg, " + d + " 0 13px, color-mix(in srgb, " + d + " 74%, var(--c-ffffff-bg)) 13px 26px)"; chip.style.border = "2.5px solid var(--c-160510-ink)"; chip.style.color = THC("#160510","edge"); chip.style.boxShadow = "0 3px 0 " + tfhDeep(d); } // the 115°/13-26/74 dose-chip token — NOT the wall's 45° tbxCandy
@@ -8901,6 +9013,21 @@
         sel: _tbxOpenStack === id, data: ["data-tbxsugg", id],
         onTap: function () { try { tbxOpenDose(id, sugg); } catch (e) {} } });
     });
+    if (!_tbxStackCat) _tbxStackCat = tbxCatNow();
+    var rail = add(root, "div", "sed-catrail tbx-catrail"), stkGrid = null;
+    function paintStacks() { while (stkGrid.firstChild) stkGrid.removeChild(stkGrid.firstChild); // child-drain, never innerHTML
+      tbxStacksIn(_tbxStackCat).forEach(function (id) { var it = tbxItem(id); if (!it) return;
+        tbxCoin(stkGrid, { name: it.name, hue: tbxVar(it.dom), ti: it.ti, stack: true, sel: _tbxOpenStack === id, data: ["data-tbxstack", id],
+          onTap: function () { try { tbxOpenDose(id, stkGrid); } catch (e) {} } }); }); } // the ROUND 38 coin, same as the FOR YOU NOW row — one card language on this surface
+    STACK_CATS.forEach(function (c) {
+      var on = c.k === _tbxStackCat, b = add(rail, "button", "sed-catchip" + (on ? " on" : ""));
+      add(b, "i", "ti " + c.ti); add(b, "span", null, tr(c.lab));
+      if (on) b.style.background = tbxVar(c.d);
+      b.onclick = function () { _tbxStackCat = c.k; _tbxOpenStack = null;
+        [].slice.call(rail.children).forEach(function (n, i) { var sel = STACK_CATS[i].k === _tbxStackCat; n.classList.toggle("on", sel); n.style.background = sel ? tbxVar(STACK_CATS[i].d) : ""; }); // class + hue toggles only, so the rail keeps its scroll position and nothing is rebuilt
+        paintStacks(); };
+    });
+    stkGrid = add(root, "div", "r38-grid tbx-grid tbx-stacks"); paintStacks();
     var bento = add(root, "div", "r38-grid tbx-bento");
     TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
     try { tcResyncSoon(); } catch (e) {}
@@ -8910,6 +9037,7 @@
     "Plan my day": "План на день", "First Light": "Первый свет", "Before Deep Work": "Перед фокусом", "Caught Scrolling": "Залип в ленте", "Urge Wave": "Волна тяги", "Spun Up": "На взводе", "I Messed Up": "Я оступился", "Empty Tank": "Пустой бак", "Shutdown": "Отбой",
     "Can't Sleep": "Не спится", "Lock the Win": "Закрепи победу", "Feel Better": "Полегчает", "Body": "Тело", "Heart": "Сердце", "Mind": "Ум", "Vision": "Образ", "Full Stack": "Полный сброс",
     "Breathe": "Дыхание", "Shake off": "Стряхни", "Journal": "Дневник", "Climb": "Подъём", "Mantra": "Мантра", "Stretch": "Разминка", "Tapping": "Таппинг", "Body scan": "Скан тела", "Evening": "Вечер", "Relax": "Расслабься", "Meditate": "Медитация", "Patience": "Терпение",
+    "Morning": "Утро", "Before": "До", "After": "После", "Deeper": "Глубже", // THE SIX MENU CHIPS (2026-09-20); "Reset" and "Night" already carry their RU right here
     "Reset": "Сброс", "Catch": "Поймай", "Begin": "Начни", "Recover": "Восстановись", "Night": "Ночь", "Settle": "Осядь", "Wins": "Победы",
     "Morning Stack": "Утренний стек", "Night Stack": "Ночной стек", // the practice grid's two renamed stacks (ids unchanged: firstLight / shutdown). "Morning stack" (lower s) below stays for the old hero key; "Shutdown" / "First Light" / "Mind" are now orphaned entries, harmless.
     // WHY-LINES (spec §5, gated 2026-08-01): what it is, then why it works. RU in mom-plain register — short sentences, no jargon, no invented terms.
@@ -8972,11 +9100,11 @@
   function sedTrayTool(sk) { var out = null; SED_CATS.forEach(function (c) { c.tools.forEach(function (t) { if (!out && t.sk === sk) out = t; }); }); return out; } // reverse-lookup: a track step with no design label borrows the first tray tool that runs the same thing
   function sedRowsFromTrack(track) { // a saved track → editor rows. Design fields (t/i/dom/f/desc) ride through tbxSetEdit when present; otherwise fall back to the tray tool, then the registry tool.
     return (track || []).map(function (s) {
-      var m = stackTool(s.k) || {}, tt = sedTrayTool(s.k) || {}, dom = s.dom || TBX_TOOLDOM[s.k] || (TBX_VARIANTS[s.k] && TBX_VARIANTS[s.k].dom) || tt.d || "restore";
-      return { k: s.k, med: s.med, m: Math.max(0.5, Math.round(((s.d || m.dur || 60) / 60) * 2) / 2), t: s.t || m.name || tt.t || s.k, i: s.i || m.ti || tt.i || "ti-circle", d: dom, f: s.f || { voice: true }, desc: s.desc || tt.desc || m.desc || "" };
+      var m = stackTool(s.k) || {}, tt = sedTrayTool(s.k) || {}, dom = s.dom || TBX_TOOLDOM[s.k] || (TBX_VARIANTS[s.k] && TBX_VARIANTS[s.k].dom) || (SCRIPT_ACT_META[s.k] && SCRIPT_ACT_META[s.k].dom) || tt.d || "restore";
+      return { k: s.k, med: s.med, mode: s.m, m: Math.max(0.5, Math.round(((s.d || m.dur || 60) / 60) * 2) / 2), t: s.t || m.name || tt.t || s.k, i: s.i || m.ti || tt.i || "ti-circle", d: dom, f: s.f || { voice: true }, desc: s.desc || tt.desc || m.desc || "" };
     });
   }
-  function sedTrack() { return (_sed ? _sed.rows : []).map(function (r) { return { k: r.k, d: Math.max(20, Math.round(r.m * 60)), med: r.med, t: r.t, i: r.i, dom: r.d, f: r.f }; }); } // the runner reads k/d/med; t/i/dom/f are ADDITIVE label carriage (ignored by runStack)
+  function sedTrack() { return (_sed ? _sed.rows : []).map(function (r) { return { k: r.k, d: Math.max(20, Math.round(r.m * 60)), med: r.med, m: r.mode, t: r.t, i: r.i, dom: r.d, f: r.f }; }); } // the runner reads k/d/med; t/i/dom/f are ADDITIVE label carriage (ignored by runStack)
   function sedTotal() { var t = 0; (_sed ? _sed.rows : []).forEach(function (r) { t += r.m || 0; }); return Math.round(t * 10) / 10; }
   function sedClose() { if (_sed && _sed.ov && _sed.ov.parentNode) _sed.ov.parentNode.removeChild(_sed.ov); _sed = null; }
   function sedOpen(cfg) { // THE ENTRY. cfg = { id, title, rows, pinTray, onSave(track), onStart(track) }
@@ -15499,8 +15627,199 @@
     [28, 33, "Open", THC("#c9a6ff","bg"), "ti-eye"],
     [34, 35, "Close", THC("#a08fff","bg"), "ti-moon"]
   ];
+  var MED_V2_RANGE = { breath: [21, 27], open: [28, 33], scanbreath: [9, 27] }; // THE SIT, IN SECTIONS (PLAN 2026-09-20): a stack act may run just the breath anchor, just open awareness, or the scan straight into the breath. Same authored script, same recorded clips — a slice of MED_V2, never a rewrite of it.
   var MED_V2_SKIP = [0, 1, 2];   // the get-seated lines: dropped when an earlier stack act already sat the user down with eyes closed
   var MED_V2_TRIM = 27;          // the last breath re-anchor: the one line a sub-11-minute sit drops
+  // ===== SCRIPT ACTS (David 2026-09-20, _design-sync/stacks-2026-09-20/PLAN.md). The MED_V2 shape, generalised: any
+  // stack act can now be ONE authored script with its own per-line silence curve and dose tiers, instead of a pool the
+  // composer loops. The region below is GENERATED — run `python3 _dev/gen-script-acts.py` after editing BLOCKS.txt.
+  // This is not a third engine: composeScriptAct is composeMeditationV2's fitter with the source made a parameter.
+  // @GEN:SCRIPT_ACTS begin
+  // GENERATED by _dev/gen-script-acts.py from _design-sync/stacks-2026-09-20/BLOCKS.txt — DO NOT HAND-EDIT.
+  // One authored script block per stack act, exactly the MED_V2 shape: `seq` spoken in order, `gap` = the
+  // seconds of silence AFTER each line at the base curve, `tier` = 1 always said / 2 said when it fits /
+  // 3 the whole block. `refs` splice a SHARED range of another script in at `pos` (the seq index it sits in
+  // front of) — the body scan is MED_V2 9-20, borrowed not copied, so it keeps the sit's own recorded clips.
+  // composeScriptAct() is the fitter; _dev/gen-voice-11labs.py reads the flat `seq` arrays for the voice bank.
+  var SCRIPT_ACTS = {
+    HEART: { seq: [
+      "Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot.",
+      "Breathe a little slower and deeper than usual. About five seconds in, and five seconds out.",
+      "Now, while you keep breathing like this, think of someone you care about, a place you love, or something that went right today. Let the appreciation come up.",
+      "Stay with the breath and the feeling together. If the feeling fades, bring it back.",
+      "Let the feeling spread out from your chest through your whole body.",
+      "Keep breathing through the heart. Slow in, slow out.",
+      "This is a skill. Each time you practice it, your heart and your mind learn to settle together faster."
+    ],
+      gap: [6, 12, 15, 30, 30, 40, 45],
+      tier: [1, 1, 1, 1, 2, 2, 3] },
+    SIGH: { seq: [
+      "Now we'll do a short breathing pattern that calms the body down fast. Two breaths in through the nose, then one long breath out through the mouth.",
+      "Breathe in through your nose. At the top, take one more small sip of air in.",
+      "Now let it all out slowly through your mouth, as long as it goes.",
+      "Again, two breaths in through the nose, then one long breath out through the mouth.",
+      "If you feel light-headed, breathe normally for a moment, then continue.",
+      "Keep going at your own pace. Each long breath out tells your body the danger is over.",
+      "Three more, slower than the last ones."
+    ],
+      gap: [4, 4, 8, 20, 20, 30, 40],
+      tier: [1, 1, 1, 1, 1, 2, 3] },
+    GROUND: { seq: [
+      "Now we'll bring your attention out of your head and into the room, to slow a racing mind.",
+      "Open your eyes if they're closed. Find three things you can see, and name them silently, one at a time.",
+      "Now listen. Find two sounds, near or far, and let them come to you.",
+      "Now feel. Find one thing your body is touching, the chair, the floor, your own hands, and just notice it.",
+      "When you notice you've been pulled back into the story, come back to what you can see, hear and feel right now.",
+      "Take one slow breath out, longer than the breath in.",
+      "Notice that the room is the same as it was a minute ago. Only you have slowed down."
+    ],
+      gap: [5, 15, 15, 15, 20, 15, 20],
+      tier: [1, 1, 1, 1, 2, 2, 3] },
+    ANGER: { seq: [
+      "Now we'll cool the body down first, because the mind can't cool down before the body does.",
+      "Unclench your jaw. Drop your shoulders. Open your hands.",
+      "Now ask yourself silently what you need right now, not what they deserve."
+    ],
+      gap: [4, 10, 25],
+      tier: [1, 1, 2] },
+    INTENT: { seq: [
+      "Now we'll set one intention for the next block of work, so you start it on purpose. One thing, not a list.",
+      "Silently name the first action you'll take when this ends, something small enough to start within a minute.",
+      "See yourself doing it, where you're sitting and what's in front of you.",
+      "When the pull to check something else comes, and it will, that's your cue to come back to the one thing.",
+      "Take one slow breath, and let the rest of the day wait outside this block."
+    ],
+      gap: [5, 12, 15, 15, 20],
+      tier: [1, 1, 1, 1, 2] },
+    "INTENT-morning": { seq: [
+      "Now we'll set the day by choosing one thing that would make today count. One thing, not a list.",
+      "Silently name it. Then name the first small step toward it.",
+      "See yourself tonight, with that step done. Notice the feeling in your body.",
+      "Hold that feeling for a few breaths. This is what you're walking into the day with.",
+      "If the day goes sideways, and some days do, this one step is still yours."
+    ],
+      gap: [5, 15, 20, 25, 30],
+      tier: [1, 1, 1, 2, 3] },
+    REHEARSE: { seq: [
+      "Now we'll rehearse the start, the part nerves go after, so we practice it.",
+      "See the room or the screen as it will be. See the person, or the people, in front of you.",
+      "Now watch yourself begin, saying your first sentence in your own voice, calm and unhurried.",
+      "Feel how your body sits or stands when it's going well. Take that posture now.",
+      "Whatever happens after that start, you've already done the hard part.",
+      "Take one slow breath out, and let your shoulders come down."
+    ],
+      gap: [5, 12, 15, 15, 15, 15],
+      tier: [1, 1, 1, 1, 2, 3] },
+    REPAIR: { seq: [
+      "Now we'll repair, not punish. A slip is information, and shame is what causes the next one.",
+      "Put a hand on your chest. Say silently, this is hard, and I'm not the only one it's hard for.",
+      "Now find the moment just before it happened, not to judge it, just to see it. That moment is where you'll catch it next time.",
+      "Say silently, may I be kind to myself. May I try again.",
+      "Take a slow breath in, and a longer breath out. Nothing else has to happen right now.",
+      "You noticed. That's the skill this whole thing is built on, and you just used it."
+    ],
+      gap: [5, 12, 20, 15, 20, 15],
+      tier: [1, 1, 1, 1, 2, 3] },
+    REST: { seq: [
+      "Now we'll let the body rest. You don't have to fall asleep, and you don't have to stay awake.",
+      "Let your body get heavy. Feel the bed or the floor holding your weight.",
+      "Let your jaw go loose, and your hands open. Let your eyes rest.",
+      "Now just rest here, for as long as it lasts.",
+      "If thoughts come, let them pass. You don't have to follow them.",
+      "Let each breath out take you a little deeper.",
+      "When it's time, wiggle your fingers and toes, and let your eyes open slowly."
+    ],
+      gap: [6, 12, 12, 90, 60, 120, 0],
+      tier: [1, 1, 1, 1, 2, 2, 1], refs: [{ pos: 3, ref: "MED_V2", from: 9, to: 20, tier: 1 }] },
+    WAKE: { seq: [
+      "Now we'll wake the body up gently. You don't need energy to start, since starting is what makes it."
+    ],
+      gap: [4],
+      tier: [1] },
+    CLEAR: { seq: [
+      "Now we'll step out of the loop. You can't stop the thoughts, but you can stop feeding them."
+    ],
+      gap: [4],
+      tier: [1] },
+    NOTE: { seq: [
+      "Each time you notice you're back in the loop, silently say the word thinking, then come back to the breath. That one word is the whole technique."
+    ],
+      gap: [20],
+      tier: [1] },
+    GRATDEEP: { seq: [
+      "This is the longer version. You'll find more things this time.",
+      "Go slowly, so you can feel the gratitude for each one.",
+      "You can also include bad things that aren't happening.",
+      "When your mind goes back to a worry, that's your cue. Find one more thing."
+    ],
+      gap: [10, 25, 25, 40],
+      tier: [1, 1, 2, 3] },
+    SHUTDOWN: { seq: [
+      "Now we'll close the work day, so it stops running in the background tonight.",
+      "Silently name the first thing you'll do tomorrow, one step, then leave it there until morning.",
+      "Say silently, the work is done for today.",
+      "Let your shoulders come down. Let your hands go still."
+    ],
+      gap: [5, 15, 10, 15],
+      tier: [1, 1, 1, 2] }
+  };
+  // @GEN:SCRIPT_ACTS end
+  // id -> which block it speaks + the registry row the dose card / story strip / grove draw it with. A script act is
+  // NOT a new tool id: `dom` picks an existing toolbox hue so TBX_TOOLDOM-style resolution keeps working everywhere.
+  var SCRIPT_ACT_META = {
+    s_heart:    { act: "HEART",          name: "Heart coherence", ti: "ti-heart",            dom: "connect" },
+    s_sigh:     { act: "SIGH",           name: "Cyclic sighing",  ti: "ti-wind",             dom: "restore" },
+    s_ground:   { act: "GROUND",         name: "Ground",          ti: "ti-eye",              dom: "focus" },
+    s_anger:    { act: "ANGER",          name: "Cool the body",   ti: "ti-flame",            dom: "move" },
+    s_intent:   { act: "INTENT",         name: "One intention",   ti: "ti-target",           dom: "focus" },
+    s_intentam: { act: "INTENT-morning", name: "Aim the day",     ti: "ti-sunrise",          dom: "create" },
+    s_rehearse: { act: "REHEARSE",       name: "Rehearse it",     ti: "ti-player-play",      dom: "create" },
+    s_repair:   { act: "REPAIR",         name: "Repair",          ti: "ti-heart-handshake",  dom: "connect" },
+    s_rest:     { act: "REST",           name: "Deep rest",       ti: "ti-bed",              dom: "restore" },
+    s_wake:     { act: "WAKE",           name: "Wake up",         ti: "ti-sun",              dom: "move" },
+    s_clear:    { act: "CLEAR",          name: "Step out",        ti: "ti-arrow-loop-left",  dom: "focus" },
+    s_note:     { act: "NOTE",           name: "Name it",         ti: "ti-focus-2",          dom: "focus" },
+    s_gratdeep: { act: "GRATDEEP",       name: "The long way",    ti: "ti-heart-plus",       dom: "connect" },
+    s_shutdown: { act: "SHUTDOWN",       name: "Close the day",   ti: "ti-moon-stars",       dom: "upkeep" }
+  };
+  var SCRIPT_ACT_PREP = { s_rest: 1 }; // THE OPENER LEDGER: the only block whose first line ("let the body rest completely") is already true when an earlier act left the user settled with eyes closed. Every other opener NAMES its technique, so it is never dropped.
+  function scriptActItems(id) { // the block as a flat ordered item list, refs spliced in at their pos (shared clips, never copies)
+    var A = SCRIPT_ACTS[id]; if (!A) return [];
+    var items = [], refs = A.refs || [], i, r, k;
+    function refsAt(p) {
+      for (r = 0; r < refs.length; r++) {
+        if (refs[r].pos !== p) continue;
+        var R = refs[r], SRC = (R.ref === "MED_V2") ? MED_V2.seq : null, GAP = (R.ref === "MED_V2") ? MED_V2_GAP : null;
+        if (!SRC) continue;
+        for (k = R.from; k <= R.to; k++) items.push({ text: SRC[k], gap: GAP[k], tier: R.tier || 1, ref: 1 });
+      }
+    }
+    for (i = 0; i < A.seq.length; i++) { refsAt(i); items.push({ text: A.seq[i], gap: A.gap[i], tier: A.tier[i] || 1 }); }
+    refsAt(A.seq.length);
+    return items;
+  }
+  function composeScriptAct(id, secs, ctx) { // THE GENERALISED MED_V2 FITTER. tier 1 always; add a tier while its speech + its
+    // gaps at the tightest legal scale still fit; then scale every gap by f (clamped 0.6-1.6) and park the leftover on the
+    // block's longest hold — the one silence tagged `absorb` so the player's dose re-fit may squeeze it. ctx.skipOpener drops
+    // the first line when the ledger says the previous act already said it.
+    ctx = ctx || {}; secs = Math.max(10, secs || 60);
+    if (!SCRIPT_ACTS[id]) return { segs: [], tier: 0, est: 0 };
+    var all = scriptActItems(id); if (!all.length) return { segs: [], tier: 0, est: 0 };
+    if (ctx.skipOpener && all.length > 1 && !all[0].ref && (all[0].tier || 1) === 1) all = all.slice(1);
+    var maxT = 1, i; for (i = 0; i < all.length; i++) if ((all[i].tier || 1) > maxT) maxT = all[i].tier;
+    function fit(tier) { var keep = [], sp = 0, gp = 0, j;
+      for (j = 0; j < all.length; j++) if ((all[j].tier || 1) <= tier) { keep.push(all[j]); sp += medV2Speech(all[j].text); gp += all[j].gap; }
+      return { keep: keep, sp: sp, gp: gp, tight: sp + gp * 0.6 }; }
+    var use = fit(1), tier = 1;
+    for (i = 2; i <= maxT; i++) { var c = fit(i); if (c.tight <= secs) { use = c; tier = i; } else break; }
+    var gaps = use.keep.map(function (x) { return x.gap; });
+    var f = use.gp > 0 ? (secs - use.sp) / use.gp : 1; f = Math.max(0.6, Math.min(1.6, f));
+    var fitted = 0; for (i = 0; i < gaps.length; i++) { gaps[i] = gaps[i] * f; fitted += gaps[i]; }
+    var lg = 0; for (i = 1; i < gaps.length; i++) if (gaps[i] > gaps[lg]) lg = i;
+    var left = secs - (use.sp + fitted); if (gaps.length && left > 0) { gaps[lg] += left; fitted += left; }
+    var segs = use.keep.map(function (x, n) { var sg = medSeg(x.text, Math.round(gaps[n] * 10) / 10, ""); if (n === lg) sg._pk = "absorb"; return sg; }); // no pause kind anywhere else: like the V2 sit, the authored curve IS the design and PK_ELASTIC must never see it
+    return { segs: segs, tier: tier, est: use.sp + fitted, lines: use.keep.length };
+  }
   var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
   Object.assign(I18N.ru, { // THE SECTION NAMES the player prints as its sub-line (the six that had no RU: the sit was Russian, its section label was not). B4 law, in place. Nouns, matching the ones already in the dict (Settle/Awareness/Rest).
     "Stillness": "\u0422\u0438\u0448\u0438\u043d\u0430", "Count": "\u0421\u0447\u0451\u0442", "Note": "\u041e\u0442\u043c\u0435\u0447\u0430\u043d\u0438\u0435", "Sounds": "\u0417\u0432\u0443\u043a\u0438", "Feeling": "\u041e\u0449\u0443\u0449\u0435\u043d\u0438\u0435", "Look": "\u0412\u0437\u0433\u043b\u044f\u0434", "Open": "\u041e\u0442\u043a\u0440\u044b\u0442\u043e\u0441\u0442\u044c" });
@@ -18092,6 +18411,7 @@
       // EDGE-AWARE NAV (David 2026-07-10, increment 3): taps AND swipes share this so the boundaries behave identically — past the last tool completes -> post-gauge -> outro; before the first returns to the review (both opt-in via opts, so daily rituals just clamp). Gesture feel DEVICE-UNTESTED.
       function navBy(dir) { if (!ready || done) return; // one tap = one STEP, meditation included (2026-08-15: the zoom used to eat the first taps as section-steps, then fall out of zoom permanently at the section edge)
         var j = curAct + dir;
+        if (dir > 0 && opts.onSkipAct) { try { opts.onSkipAct(curAct); } catch (e) {} } // passive evidence: which act the user walked out of (David 2026-09-20 — no pop-ups, so the app has to learn by watching)
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
         if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); msOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
         gotoAct(j); }
@@ -18139,6 +18459,7 @@
       if (!skip) { lab.textContent = "Done ✓"; sub.textContent = opts.drift ? (driftCount === 0 ? "steady the whole way · beautiful" : "you noticed " + driftCount + " time" + (driftCount === 1 ? "" : "s") + " · that noticing IS the practice") : "carry the calm with you"; orb.style.animation = ""; orb.style.transition = "transform 1.3s ease, opacity 1.3s ease"; orb.style.transform = "scale(.7)"; orb.style.opacity = "1"; }
       setTimeout(function () { if (ov.parentNode) ov.remove(); }, skip ? 0 : (opts.drift && driftCount ? 2600 : 1500));
       if (!skip) { var d = new Date(); logs(todayK()).push({ id: uid(), time: pad(d.getHours()) + ":" + pad(d.getMinutes()), title: opts.logTitle || opts.title, mins: Math.max(1, Math.round(total / 60)), catK: opts.catK || "love", color: col }); earn(opts.spark || 6, { catK: opts.catK || "love" }); tickTool(opts.id); try { celebrateGated(col, curStreak() || 1); } catch (e) {} save(); renderAll(); }
+      if (opts.onQuit && skip) { try { opts.onQuit(curAct); } catch (e) {} }
       if (opts.onFinish) opts.onFinish(skip); else { try { landAfterFlow(); } catch (e) {} } // LANDING CONTRACT (Parcel A): a bare player (no stack wrapper) re-opens home on close if launched from home. A wrapped flow defers to its terminal surface (stackComplete) so home doesn't re-open behind the still-open overlay twice.
     }
     ov.querySelector(".bw-x").onclick = function () { if (done) return; ov.style.animation = "none"; ov.style.transition = "transform .3s cubic-bezier(.4,0,.2,1), opacity .28s ease"; ov.style.transformOrigin = "50% 44%"; ov.style.transform = "scale(.82)"; ov.style.opacity = "0"; setTimeout(function () { finish(true); }, 250); }; // ZOOM-OUT on close (David 2026-07-20 zoom law): the player shrinks back toward the circle's spot = "zooming out to home", the reverse of the open bloom. Full home-cockpit reveal on fold = Z-2 (deep unification).
@@ -18821,7 +19142,11 @@
     return { id: id, name: tr(v.name), ti: v.ti, col: TBX_VARIANT_COL[v.dom] || THC("#9a7cff","ink"), dur: (v.def || 5) * 60, adv: !!v.adv };
   }
   function _stackToolBase(id) { for (var i = 0; i < STACK_TOOLS.length; i++) if (STACK_TOOLS[i].id === id) return STACK_TOOLS[i]; return null; } // the original registry lookup (was `function stackTool`)
-  function stackTool(id) { return _stackToolBase(id) || variantTool(id); } // wrapper: base tool OR a variant id. MUST be a hoisted function declaration — the app runs in one strict-mode IIFE, so the v1218 `stackTool = function…` reassignment of a never-declared binding threw ReferenceError at boot (root cause of the v1218 crash, David 2026-07-23). Both consumers before AND after this line resolve variant ids too.
+  function scriptActTool(id) { // a SCRIPT ACT resolves exactly like a variant: a composer-lookup row, so the dose card, the story strip and the editor draw it with zero special-casing. The engine behind it is composeScriptAct (species law: every act runs a real engine).
+    var v = SCRIPT_ACT_META[id]; if (!v) return null;
+    return { id: id, name: tr(v.name), ti: v.ti, col: TBX_VARIANT_COL[v.dom] || THC("#9a7cff","ink"), dur: 90, script: v.act };
+  }
+  function stackTool(id) { return _stackToolBase(id) || variantTool(id) || scriptActTool(id); } // wrapper: base tool OR a variant id. MUST be a hoisted function declaration — the app runs in one strict-mode IIFE, so the v1218 `stackTool = function…` reassignment of a never-declared binding threw ReferenceError at boot (root cause of the v1218 crash, David 2026-07-23). Both consumers before AND after this line resolve variant ids too.
   function tbxExpandTrack(track) { // variant steps -> their base tool step (carrying pat/med), keeping duration. Run-time only; the SAVED track keeps variant ids so the palette label stays right.
     return (track || []).map(function (s) {
       var id = (s.k && s.k.id) || s.k, v = TBX_VARIANTS[id];
@@ -19052,30 +19377,44 @@
       }
     });
   }
-  function stackCarouselable(track) { return track && track.length && track.every(function (t) { var id = (t.k && t.k.id) || t.k; return !!STACK_CONTENT[id] || !!(t.rawSegs && t.rawSegs.length); }); } // every tool has guided cue content OR pre-built segments -> can run as the unified carousel
+  function stackCarouselable(track) { return track && track.length && track.every(function (t) { var id = (t.k && t.k.id) || t.k; return !!STACK_CONTENT[id] || !!SCRIPT_ACT_META[id] || !!(t.rawSegs && t.rawSegs.length); }); } // every tool has guided cue content OR pre-built segments -> can run as the unified carousel
   var _lastStackTrack = null; // remembers the just-run program so the session-complete screen can offer "Make it yours" (F4 remix-only entry law)
   function stackDisplayList(track) { // THE ONE PLACE a track step becomes a composer/act row — so the STORY STRIP and the DOSE CARD can never draw different icons for the same step (David on device 2026-09-19).
-    return (track || []).map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t._variant || t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || THC("#9a7cff","ink"), secs: t.d || m.dur || 60, med: t.med, pat: t.pat, rawSegs: t.rawSegs, intro: t.intro }; });
+    return (track || []).map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t._variant || t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || THC("#9a7cff","ink"), secs: t.d || m.dur || 60, med: t.med, m: t.m, pat: t.pat, rawSegs: t.rawSegs, intro: t.intro }; });
   }
-  function runStackCarousel(track, onAll) { // route ANY stack through the SAME carousel player as the day-one stack (David 2026-07-08: "should function the same way in the rest of the app")
+  // ===== THE RUN LEDGER (David 2026-09-20: "no pop-ups, so evidence is passive"). Every stack run writes one row —
+  // what, how long, did it finish, where it was quit, which acts were skipped. No UI, no gauge, no card. Purely
+  // ADDITIVE on S.tools (guarded reads everywhere), so NO SCHEMA bump per the @CONTRACT precedent. Capped at 200.
+  function stackRunStart(id, mins) {
+    try { S.tools = S.tools || {}; var R = S.tools.runs = S.tools.runs || [];
+      R.push({ stack: id || null, dose: mins || null, t: Date.now(), done: false });
+      while (R.length > 200) R.shift();
+      save(); return R[R.length - 1]; } catch (e) { return null; }
+  }
+  function stackRunMark(row, field, val) { try { if (!row) return; row[field] = val; save(); } catch (e) {} }
+  function stackRunSkip(row, ai) { try { if (!row) return; (row.skipped = row.skipped || []).push(ai); save(); } catch (e) {} }
+  function runStackCarousel(track, onAll, runId) { // route ANY stack through the SAME carousel player as the day-one stack (David 2026-07-08: "should function the same way in the rest of the app")
     track = tbxExpandTrack(track); // idempotent on base steps; makes a direct caller (not via runStack) variant-safe too (David 2026-07-23)
     try { _lastStackTrack = track.map(function (t) { var id = (t.k && t.k.id) || t.k; return (typeof id === "string" && stackTool(id)) ? { k: id, d: t.d } : null; }).filter(Boolean); } catch (e) { _lastStackTrack = null; } // only remix registry-backed programs (not inline run-fn steps)
     var list = stackDisplayList(track); // med = meditation editor sections (for section-ticks); pat = a breathing-variant pattern key (David 2026-07-23); rawSegs = a pre-built cue list (charge / love-embodiment become their own pages). ONE ICON SOURCE (David on device 2026-09-19: "two identical pink chips in a row"): tbxExpandTrack has already collapsed a VARIANT step onto its base tool by the time we get here, so `meditate` + `v_open` both resolved to the Meditate row and the story strip drew the same pink moon twice while the dose card — which reads the SAVED track through stackTool/variantTool — drew a windmill. `t._variant` is the id tbxExpandTrack preserves; resolving through it means the strip and the dose card read the same registry row, always
     var built = composeStackSegs(list);
     try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
+    var _run = stackRunStart(runId || null, Math.round(built.dose / 60 * 10) / 10);
     timelinePlayer({ id: "stack", title: tr("Your session"), logTitle: "Session", catK: "love", color: list[0].c || THC("#9a7cff","ink"), spark: 8, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, totalSec: built.dose, autostart: true, // totalSec (2026-08-15): the dose the user picked, handed to the player as the PROMISE it re-fits the elastic silences to — a "5 min" session ran ~6:04 without it
-      onFinish: function () { if (onAll) onAll(track.length); else stackComplete(track.length); } });
+      onSkipAct: function (ai) { stackRunSkip(_run, ai); },
+      onQuit: function (ai) { stackRunMark(_run, "quitAt", ai); },
+      onFinish: function (skip) { if (!skip) stackRunMark(_run, "done", true); if (onAll) onAll(track.length); else stackComplete(track.length); } });
   }
-  function runStack(track, i, onAll) { // onAll (R0, David 2026-07-02): optional completion override so a wrapper (the relief-door ritual) can add its own close — e.g. the post 0-10 gauge — without forking the runner
+  function runStack(track, i, onAll, runId) { // runId = the TBX stack this track came from, carried through purely so the run ledger can name it. onAll (R0, David 2026-07-02): optional completion override so a wrapper (the relief-door ritual) can add its own close — e.g. the post 0-10 gauge — without forking the runner
     if (i === 0) track = tbxExpandTrack(track); // variant ids -> base tool steps (pat/med) ONCE, before the carousel/chained split (David 2026-07-23)
-    if (i === 0 && stackCarouselable(track)) { runStackCarousel(track, onAll); return; } // NEW (v948): supported stacks run as the unified carousel; unsupported (inline charge/deep, custom run fns) fall back to the chained cards below
+    if (i === 0 && stackCarouselable(track)) { runStackCarousel(track, onAll, runId); return; } // NEW (v948): supported stacks run as the unified carousel; unsupported (inline charge/deep, custom run fns) fall back to the chained cards below
     if (i >= track.length) { if (onAll) { onAll(track.length); } else { stackComplete(track.length); } return; }
-    var t = track[i], m = (t.k && t.k.run) ? t.k : stackTool(t.k); if (!m) { runStack(track, i + 1, onAll); return; } // t.k may be an inline {name, ti, run} step (the Full Stack uses these) instead of a registry id
+    var t = track[i], m = (t.k && t.k.run) ? t.k : stackTool(t.k); if (!m) { runStack(track, i + 1, onAll, runId); return; } // t.k may be an inline {name, ti, run} step (the Full Stack uses these) instead of a registry id
     var ov = document.createElement("div"); ov.id = "breatheOv";
     ov.innerHTML = '<button class="bw-x">end</button>'; document.body.appendChild(ov);
     var box = add(ov, "div"); box.style.cssText = "text-align:center;color:var(--c-f0e6ef-ink);font-family:var(--bub);width:86%;max-width:400px;";
     box.innerHTML = '<div style="font-size:12px;letter-spacing:1.6px;text-transform:uppercase;color:var(--c-ff8fc4-ink);font-weight:800;">Step ' + (i + 1) + ' of ' + track.length + '</div><div style="font-size:28px;font-weight:800;margin:12px 0 4px;"><i class="ti ' + m.ti + '"></i> ' + m.name + '</div><div style="font-size:12.5px;color:var(--c-b39ab0-ink);">your session · take your time</div>';
-    var nxt = function () { runStack(track, i + 1, onAll); };
+    var nxt = function () { runStack(track, i + 1, onAll, runId); };
     var begin = add(box, "button", "done2", i === 0 ? "Begin ▶" : "Next ▶"); begin.style.cssText = "margin:20px auto 0;display:block;max-width:260px;";
     begin.onclick = function () { if (ov.parentNode) ov.remove(); // meditation uses the sections you set at planning time (t.med), else the quick default; every other tool runs itself
       try { if (m.id === "meditate" && t.med && t.med.length) { medEditor({ playNow: true, track: t.med, onFinish: nxt }); } else { m.run(nxt, t.d); } } catch (e) { nxt(); } };
@@ -19560,7 +19899,7 @@
     var segs = [], acts = [], usedTxt = {}, sawBodyPrep = false, medRI = 0, dose = 0; // usedTxt = session-wide no-repeat guard (David 2026-07-13: a line spoken in one act can't resurface in another, e.g. the "unclench the jaw" in both relax AND meditation); medRI cycles the sparse re-anchor cues across sections; dose = the time the user actually ASKED for (the promise the player re-fits to)
 
     list.forEach(function (t) {
-      var C = STACK_CONTENT[t.id]; if (!C && !(t.rawSegs && t.rawSegs.length)) return;
+      var C = STACK_CONTENT[t.id]; if (!C && !SCRIPT_ACT_META[t.id] && !(t.rawSegs && t.rawSegs.length)) return; // a SCRIPT ACT carries its own authored script (SCRIPT_ACTS), so it needs no STACK_CONTENT row
       acts.push({ name: tr(t.nm), color: t.c, icon: t.ic }); var ai = acts.length - 1;
       dose += (t.secs || 60);
       if (ai > 0 && segs.length) { var _pv = segs[segs.length - 1]; _pv._pkAdd = (_pv._pkAdd || 0) + PK.transition; } // TRANSITION BEAT (David 2026-08-15): the act boundary got exactly 0s when the spoken transition card was removed on 2026-07-22, so one act's last line ran straight into the next act's first. `_pkAdd` rides ON TOP of the resolved kind, so a somatic line still keeps its own 2.0s beat and simply gets the boundary added after it.
@@ -19570,12 +19909,18 @@
       // (the tool name) = voice≠text, and (c) a separate un-tracked gap that paused before the act's own time began.
       // Each act now starts directly on its FIRST REAL cue (tracked immediately); the act name still shows via the
       // act page / story bars (acts[] metadata), so the boundary is announced visually without a floating voice line.
+      if (SCRIPT_ACT_META[t.id]) { // THE SCRIPT ACT (2026-09-20): one authored block, its own silence curve, dose-tiered. Same fitter as the V2 sit.
+        var SA = composeScriptAct(SCRIPT_ACT_META[t.id].act, t.secs || 60, { skipOpener: !!(sawBodyPrep && SCRIPT_ACT_PREP[t.id]) });
+        SA.segs.forEach(function (sg) { usedTxt[_normLine(sg.text)] = 1; P(sg); }); // stamp the session-wide no-repeat guard: a borrowed body-scan line must not be re-said by a later meditation act
+        if (t.id === "s_rest" || t.id === "s_anger") sawBodyPrep = true;            // both leave the body settled, exactly as relax does
+        return;
+      }
       if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")), _pk: s._pk || "cue" }); }); } // a tool that supplies its own cue segments (charge, love & embodiment) — it may name its own pause kind; otherwise the generic guidance cue
       else if (t.id === "stretch") { (STRETCH_SEATED_ON ? stretchSeatedSegs(t.secs || 60, ai) : stretchMoveSegs(t.secs || 60, ai)).forEach(function (s) { segs.push(s); }); } // STRETCH IN A STACK = THE SEATED FLOW (David 2026-09-16: every stack assumes you are sitting). The SOLO stretch tool is untouched and still walks STRETCH_MOVES.
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
         var medCustom = !!(t.med && t.med.length); // a user-authored section list (the editor's track) keeps the OLD block engine so custom sits still work exactly as built
         if (MED_V2_ON && !medCustom) { // THE V2 SIT INSIDE A STACK (David 2026-09-19): one authored script, one act, its own silence curve. skipOpener when an earlier act already sat the user down with the eyes closed (relax / stretch / breathe set sawBodyPrep) — no second "find a comfortable position".
-          var v2 = composeMeditationV2(t.secs || 90, { inStack: true, skipOpener: !!sawBodyPrep });
+          var v2 = composeMeditationV2(t.secs || 90, { inStack: true, skipOpener: !!sawBodyPrep, range: MED_V2_RANGE[t.m] || null }); // t.m = a SECTION of the sit (breath / open / scanbreath), the stack library's way of using part of the same script
           v2.segs.forEach(function (sg) { usedTxt[_normLine(sg.text)] = 1; P(sg); }); // stamp the session-wide no-repeat guard so no later act can re-say a line of the sit
           acts[ai]._sections = v2.secMeta;
           return;
@@ -19602,10 +19947,12 @@
       } else if (t.id === "gratitude") { // GRATEFUL FLOW v12 in a stack: the same authored script, dosed by the slot. PACING IS ALWAYS TIMED HERE regardless of S.tools.gratPace — timelinePlayer schedules every clip up front, so a tap-to-advance beat would desynchronise every act after it (GRAT_UI.paceNote says exactly this to the user).
         // STACK AWARENESS: the intro still plays (it names the tool) and "Now close your eyes" is spoken AS WRITTEN whether or not an earlier act already closed them — David approved these exact words, so nothing is skipped and no variant is invented. sawBodyPrep is deliberately not read here.
         var gd = sessionDepth(t.secs || 60), gL = GRAT_FLOW.seq, gPr = GRAT_FLOW.pairs;
-        var gIdx = gratPairIdx(gratDoseN(t.secs || 60)), gFresh = gratFresh();
+        var gMode = t.m || null; // GRATITUDE MODES (PLAN 2026-09-20): "turn" = the turn + close alone (the two-minute reset's tail), "1" = the breath pair + the turn, "full" = all four pairs. No mode = the slot's own dose.
+        var gN = gMode === "turn" ? 0 : gMode === "1" ? 1 : gMode === "full" ? GRAT_FLOW.pairs.length : gratDoseN(t.secs || 60);
+        var gIdx = gN ? gratPairIdx(gN) : [], gFresh = gratFresh();
         var gThink = 8 + gd * 4, gFeel = 12 + gd * 8, gLast = 20 + gd * 10, gTurn = 25 + gd * 12; // think · feel · the alive hold · the turn hold, all scaled by the slot's depth the way the rest of the composer scales
         var GP = function (li, sb2, gap, pk) { var tx = gL[li]; usedTxt[_normLine(tx)] = 1; P({ text: tx, label: tx, sub: sb2 || "", gap: gap, _pk: pk || "absorb" }); };
-        GP(0, "", 4, "cue");
+        if (gN) GP(0, "", 4, "cue"); // the intro NAMES the practice; a turn-only act is not that practice, so it opens on the turn itself
         gIdx.forEach(function (pi, n) {
           var hi = GRAT_FLOW.hints[pi];
           GP(gPr[pi][0], hi >= 0 ? GRAT_UI.hints[hi] : "", gThink);
@@ -19701,20 +20048,21 @@
   // so a stack caller can stamp its own _act / usedTxt without re-deriving the drop rules.
   function medV2Speech(s) { return Math.max(0.8, (String(s).trim().split(/\s+/).length) / 3.3); } // words/3.3 — MEASURED against Dave's real clips (36 meditation clips ran 2.4 min against a 3.4 min estimate at the old words/2.3)
   function composeMeditationV2(totalSec, ctx) {
-    ctx = ctx || {}; totalSec = Math.max(60, totalSec || 900);
-    var seq = MED_V2.seq, keep = [], i;
-    for (i = 0; i < seq.length; i++) {
-      if (ctx.skipOpener && MED_V2_SKIP.indexOf(i) >= 0) continue;           // already seated, eyes already closed
+    ctx = ctx || {}; totalSec = Math.max(30, totalSec || 900);
+    var seq = MED_V2.seq, keep = [], i, R = ctx.range || null;               // ctx.range = [from, to]: ONE SECTION of the sit as its own act (the stack library's meditate:breath / :open / :scanbreath). Same script, same clips, same fitter — a slice, never a second engine.
+    for (i = R ? R[0] : 0; i <= (R ? R[1] : seq.length - 1); i++) {
+      if (!R && ctx.skipOpener && MED_V2_SKIP.indexOf(i) >= 0) continue;     // already seated, eyes already closed
       if (totalSec < 660 && i === MED_V2_TRIM) continue;                     // a short sit drops the last breath re-anchor, nothing else
       keep.push(i);
     }
+    if (!keep.length) return { segs: [], acts: [], secMeta: [], idx: [] };
     var sp = 0, gp = 0, gaps = [];
     for (i = 0; i < keep.length; i++) { sp += medV2Speech(seq[keep[i]]); gaps.push(MED_V2_GAP[keep[i]]); gp += MED_V2_GAP[keep[i]]; }
     var f = gp > 0 ? (totalSec - sp) / gp : 1; f = Math.max(0.6, Math.min(1.6, f));
     var fit = 0; for (i = 0; i < gaps.length; i++) { gaps[i] = gaps[i] * f; fit += gaps[i]; }
     var restAt = keep.indexOf(33); // "Rest there." — the slack absorber
-    if (restAt < 0) restAt = gaps.length - 2;
-    if (restAt >= 0) gaps[restAt] = Math.max(30, gaps[restAt] + (totalSec - (sp + fit)));
+    if (restAt < 0) { restAt = 0; for (i = 1; i < gaps.length; i++) if (gaps[i] > gaps[restAt]) restAt = i; } // a SLICE has no "Rest there.": its own longest hold absorbs the slack instead (was gaps.length-2, which on a 7-line section parked the leftover on an arbitrary line)
+    if (restAt >= 0) gaps[restAt] = Math.max(R ? gaps[restAt] : 30, gaps[restAt] + (totalSec - (sp + fit))); // the whole sit always keeps its 30s+ rest; a SLICE may not be long enough to owe one, so it only ever grows its own longest hold
     var segs = [], acts = [], secMeta = [], lastSec = -1;
     for (i = 0; i < keep.length; i++) {
       var ix = keep[i], sIdx = 0;
@@ -22475,6 +22823,36 @@
     });
     return { dose: L.mins + "m", total: r.dose, acts: r.acts.map(function (a) { return a.name; }), dupes: dup, n: r.segs.length, rows: rows };
   };
+  window.DEV.stackRange = function (id) { // the minutes a weighted pack can actually run, and the presets the picker will offer
+    var it = tbxItem(id); if (!it) return "no stack " + id;
+    if (!it.acts) return { id: id, weighted: false, def: it.def, note: "band/track pack — no floor..ceiling" };
+    var R = stackRange(it);
+    return { id: id, name: it.name, cat: it.cat || null, weighted: true, floorSec: R.floor, ceilSec: R.ceiling,
+      floorMin: +(R.floor / 60).toFixed(2), ceilMin: +(R.ceiling / 60).toFixed(2), def: it.def,
+      presets: STACK_DOSES.filter(function (m) { return m >= R.floor / 60 - 0.001 && m <= R.ceiling / 60 + 0.001; }),
+      acts: it.acts.map(function (a) { return a.k + (a.m ? ":" + a.m : "") + " w" + a.w + " " + a.min + "-" + a.max + (a.optBelow ? " opt<" + a.optBelow : a.opt ? " opt" : ""); }) };
+  };
+  window.DEV.stackFitDump = function (id, mins) { // the EXACT track a dose resolves to + the sum check (must equal the dose, or the clamp)
+    var it = tbxItem(id); if (!it) return "no stack " + id;
+    var m = mins || tbxDose(id), t = tbxTrackForDose(id, m), sum = 0;
+    t.forEach(function (x) { sum += x.d; });
+    var R = it.acts ? stackRange(it) : null, want = R ? Math.max(R.floor, Math.min(R.ceiling, Math.round(m * 60))) : Math.round(m * 60);
+    return { id: id, ask: m + "m", target: want, sum: sum, ok: Math.abs(sum - want) <= 1, n: t.length,
+      track: t.map(function (x) { return x.k + (x.m ? ":" + x.m : "") + " " + x.d + "s"; }) };
+  };
+  window.DEV.stackSpeak = function (id, mins) { // every spoken line of the run in order, act-tagged, with the clip-present flag
+    var L = _devStackList(id || "firstLight", mins), r = composeStackSegs(L.list), ai = -1, rows = [], seen = {}, dup = [];
+    r.segs.forEach(function (sg) {
+      if (sg._act !== ai) { ai = sg._act; rows.push("--- " + ai + " · " + ((r.acts[ai] || {}).name || "?") + " ---"); }
+      if (!sg.text) return;
+      var k = _normLine(sg.text); if (seen[k]) dup.push("[" + ai + "] " + sg.text); seen[k] = 1;
+      rows.push((TTS.hasClip(sg.text) ? "  ♪ " : "  · ") + "[" + ai + "] " + sg.text);
+    });
+    var spoken = r.segs.filter(function (sg) { return sg.text; });
+    return { id: id, dose: L.mins + "m", total: r.dose, acts: r.acts.map(function (a) { return a.name; }),
+      lines: spoken.length, missingClips: spoken.filter(function (sg) { return !TTS.hasClip(sg.text); }).length, dupes: dup, rows: rows };
+  };
+  window.DEV.stackRuns = function () { try { return (S.tools && S.tools.runs) || []; } catch (e) { return []; } }; // the passive run ledger
   window.DEV.stackChips = function (id, mins) { // the STORY STRIP (composed acts) against the DOSE CARD (derived steps) — same registry row or not
     var L = _devStackList(id || "firstLight", mins), r = composeStackSegs(L.list);
     var strip = r.acts.map(function (a) { return { name: a.name, icon: a.icon, color: a.color }; });
