@@ -69,6 +69,9 @@ for arr in re.findall(r"lines:\s*\[([^\]]*)\]", src):
 for m2 in re.findall(r"entry:\s*" + STR, src): add(un(m2))
 for arr in re.findall(r"pool:\s*\[([^\]]*)\]", src):
     for s in re.findall(STR, arr): add(un(s))
+m = re.search(r"var MANTRA_LINES\s*=\s*\[(.*?)\];", src, re.S)  # 2026-09-20: mantraPlayer's LINES were hoisted into MANTRA_LINES
+if m:
+    for s_ in re.findall(STR, m.group(1)): add(un(s_))
 m = re.search(r"var MED_RETURN\s*=\s*\[([^\]]*)\]", src)
 if m:
     for s in re.findall(STR, m.group(1)): add(un(s))
