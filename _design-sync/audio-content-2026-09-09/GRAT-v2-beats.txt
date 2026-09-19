@@ -1,0 +1,8 @@
+        { lab: "Let your eyes close.", sub: "Shoulders down, jaw loose. Nothing to name yet.", orb: "out", hold: 10 },
+        { lab: "Silently name one thing you are grateful for.", sub: "Something small and ordinary from today. Go slow enough to feel it.", orb: "", hold: 20 },
+        { lab: "Keep going, and never the same one twice.", sub: "If it takes a moment to find a new one, that is the tool working.", orb: "", hold: 24 },
+        { lab: "Now a bad thing that is not happening.", sub: "A problem you do not have today. Count that one too.", orb: "", hold: 20 },
+        { lab: "Now one you have never named before.", sub: "Look past the easy ones. Take a few seconds.", orb: "", hold: 20 },
+        { lab: "Now stop naming.", sub: "Drop your attention into the middle of your chest. Whatever is there, stay with it.", orb: "in", hold: 32 },
+        { lab: "Stay right there in your chest.", sub: "It builds on its own from here. There is nothing to add.", orb: "in", hold: 32 },
+        { lab: "Open your eyes when you are ready.", sub: "No hurry. Take one slow breath first.", orb: "", hold: 12 },

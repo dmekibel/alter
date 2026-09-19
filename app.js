@@ -15448,6 +15448,56 @@
     close: { name: "Close", ti: "ti-moon", c: THC("#a08fff","bg"), entry: "Now let go of any effort. For these last moments, let the mind rest, free to do as it pleases.",
       pool: ["Bring your attention back to the body. The weight, the contact, the sounds around you.", "And in your own time, gently open your eyes."] }
   };
+  // ===== MEDITATION V2 (David-approved base script, 2026-09-19). ONE authored sit, spoken verbatim, with a PER-LINE silence curve — not a pool the composer fills. Source of truth: _design-sync/audio-content-2026-09-09/graph/meditation-v2-FULL.txt (36 lines, byte-exact copies below so _dev/gen-voice-11labs.py can extract them from the `seq:` array). MED_BLOCKS / MED_SEC stay live for the session EDITOR and any user-authored track; only the DEFAULT solo sit and the DEFAULT `meditate` stack act route here. RU clips are OWED (English first, David 2026-09-19) — until they exist the TTS layer falls back to honest silence, which is the intended behaviour, not a bug. =====
+  var MED_V2_ON = true; // one switch: false = every caller falls back to the old MED_BLOCKS engine
+  var MED_V2 = { seq: [
+    "Find a comfortable position, sitting or lying down.",
+    "Take three deep breaths. Make the exhale slower than the inhale.",
+    "On the third breath out, let your eyes close.",
+    "Let your shoulders relax.",
+    "Try to sit still if you can.",
+    "Let everything be as it is.",
+    "Feel the weight of your body pressing down. Feel your feet against the floor.",
+    "Feel the weight of your hands, and then your arms, resting where they are.",
+    "Notice how your body feels right now. Maybe it feels tired, restless or calm.",
+    "Now we'll scan through your body, one part at a time, starting with your feet.",
+    "Come down into your feet and inhabit them. Make deep contact with your feet.",
+    "Feel the space inside your feet. Feel that you are that space.",
+    "Let your breath settle down there with you, so the inhale doesn't lift you back up.",
+    "Now move up into your legs and inhabit them. Feel the space inside your legs.",
+    "Now move into your pelvis. Feel like you are inside your pelvis.",
+    "Now move up into your belly and inhabit it. Feel like you are the internal space of your belly.",
+    "Now move up to your chest. Let yourself settle inside your chest, as if you're sitting in your heart.",
+    "Now inhabit your arms and your hands, all the way to the fingertips.",
+    "Now move into your neck. Feel that you are inside your neck.",
+    "Now move up into your head. Let your forehead and your eyes soften.",
+    "Now inhabit your whole body at once. Feel that this is your body.",
+    "Now bring your attention to your breath. Breathe normally.",
+    "Feel where the breath is most obvious. The nose, the chest, or the belly.",
+    "Follow one breath in, then one breath out.",
+    "When you notice that your mind has wandered, just return to the breath.",
+    "Feel the whole breath, from the first moment of the inhale, through the pause in between, to the last moment of the exhale.",
+    "However long you've been lost in thought, it doesn't matter. Begin again with the next breath.",
+    "If you're somewhere else right now, that's okay. Come back to the breath.",
+    "Now let the breath go. You don't need to follow it anymore. Let your mind rest as it is.",
+    "Sounds will reach you on their own. You don't have to listen for them. Let them come and go.",
+    "Thoughts will come the same way. You don't need to stop them.",
+    "When you notice you're caught in a thought, watch what happens to it. Where does it go? Then start again, no matter how long you were gone.",
+    "If there's a feeling in you right now, find where it lives in your face and body. Just look at it.",
+    "Rest there.",
+    "Now come back to your body. Feel yourself sitting here in the room.",
+    "When you're ready, slowly open your eyes."
+  ] };
+  var MED_V2_GAP = [5, 8, 6, 6, 6, 10, 8, 8, 10, 6, 10, 12, 12, 12, 12, 12, 12, 12, 12, 12, 15, 8, 15, 25, 30, 40, 45, 45, 20, 30, 40, 40, 40, 110, 10, 0]; // seconds of silence AFTER each line, the 15-min base curve. Index 33 ("Rest there.") carries the long rest and is the composer's slack absorber.
+  var MED_V2_SEC = [ // [firstIdx, lastIdx, name, color, icon] — the five movements; one player act/page each
+    [0, 8, "Arrival", THC("#63e6d6","bg"), "ti-armchair"],
+    [9, 20, "Body", THC("#ff9a3d","bg"), "ti-scan"],
+    [21, 27, "Breath", THC("#79ccff","bg"), "ti-lungs"],
+    [28, 33, "Open", THC("#c9a6ff","bg"), "ti-eye"],
+    [34, 35, "Close", THC("#a08fff","bg"), "ti-moon"]
+  ];
+  var MED_V2_SKIP = [0, 1, 2];   // the get-seated lines: dropped when an earlier stack act already sat the user down with eyes closed
+  var MED_V2_TRIM = 27;          // the last breath re-anchor: the one line a sub-11-minute sit drops
   var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
   Object.assign(I18N.ru, { // THE SECTION NAMES the player prints as its sub-line (the six that had no RU: the sit was Russian, its section label was not). B4 law, in place. Nouns, matching the ones already in the dict (Settle/Awareness/Rest).
     "Stillness": "\u0422\u0438\u0448\u0438\u043d\u0430", "Count": "\u0421\u0447\u0451\u0442", "Note": "\u041e\u0442\u043c\u0435\u0447\u0430\u043d\u0438\u0435", "Sounds": "\u0417\u0432\u0443\u043a\u0438", "Feeling": "\u041e\u0449\u0443\u0449\u0435\u043d\u0438\u0435", "Look": "\u0412\u0437\u0433\u043b\u044f\u0434", "Open": "\u041e\u0442\u043a\u0440\u044b\u0442\u043e\u0441\u0442\u044c" });
@@ -15534,7 +15584,12 @@
       // COMPOSE as the ACTS carousel (David 2026-07-13): one page per block, so a solo sit swipes + slides + re-tints + resets its timeline per section, exactly like the stack. "remind me" (often/some/spacious) sets the silence depth directly; fill is no-loop + dedup + depth-aware.
       var totalSec = cfg.mins * 60, depthOverride = { often: 0.12, some: 0.5, spacious: 0.9 }[cfg.freq];
       var SS = MED_SESSIONS[cfg.sess] || MED_SESSIONS.concentration, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
-      var built = composeMeditationSegs(blocks, totalSec, medBlockResolve, depthOverride);
+      // THE DEFAULT SIT IS THE V2 SCRIPT (David 2026-09-19): the pre-selected Concentration lane now speaks the one approved
+      // base meditation with its authored per-line silence curve. The four opted-into lanes (Mindfulness / Open awareness /
+      // Heart / Insight) are different PRACTICES, not the base sit, so they stay on the block engine and the picker keeps meaning
+      // what it says. "remind me" does not apply to V2 — its silences are authored, not depth-derived.
+      var built = (MED_V2_ON && cfg.sess === "concentration") ? composeMeditationV2(totalSec, {}) : composeMeditationSegs(blocks, totalSec, medBlockResolve, depthOverride);
+      try { TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
       if (ov.parentNode) ov.remove(); // drop the config overlay — the player builds its own
       timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation · " + SS.name, catK: "love", color: (built.acts[0] && built.acts[0].color) || THC("#9a5cf0","ink"), spark: Math.max(6, cfg.mins * 2), vol: VPROF.med.volume, drone: true, totalSec: totalSec, segments: built.segs, acts: built.acts, drift: true, autostart: true });
     }
@@ -15642,9 +15697,9 @@
   // a quick guided meditation for stacks (skips the config screen), default guide, length-adaptive (David 2026-07-01)
   function meditationQuick(onDone, durSec) {
     var totalSec = durSec || 300; // solo "Sit in stillness" now runs the Anchor session on the ACTS carousel (David 2026-07-13): swipe + per-section slide/color/timeline, no-loop depth fill
-    TTS.unlock(); TTS.warm(medSessionLines("concentration"));
     var SS = MED_SESSIONS.concentration, blocks = SS.blocks.map(function (b) { return { key: b[0], weight: b[1] }; });
-    var built = composeMeditationSegs(blocks, totalSec, medBlockResolve);
+    var built = MED_V2_ON ? composeMeditationV2(totalSec, {}) : composeMeditationSegs(blocks, totalSec, medBlockResolve); // the quick/stack shortcut is the DEFAULT sit, so it speaks the V2 script too (David 2026-09-19)
+    TTS.unlock(); try { TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {} // warm the lines we will ACTUALLY speak, not the old pool
     timelinePlayer({ id: "meditate", title: "Meditation", logTitle: "Meditation", catK: "love", color: (built.acts[0] && built.acts[0].color) || THC("#9a5cf0","ink"), spark: 10, vol: VPROF.med.volume, drone: true, totalSec: totalSec, segments: built.segs, acts: built.acts, autostart: true, drift: true, onFinish: function () { if (onDone) onDone(); } });
   }
   function renderQuick() {
@@ -16888,7 +16943,7 @@
     { id: "innerauth",layer: "Become who you're being", name: "Inner Authority",   ti: "ti-mountain",       emoji: "🦁", thinker: "Stutz · Tool 3", when: "before a hard conversation or performance, or when you freeze up", why: "Rehearsing your grounded self first primes the brain to actually run that version live.", fn: function () { innerAuthority(); } },
     { id: "reprogram",layer: "Become who you're being", name: "Visualisation",     ti: "ti-brain",          emoji: "🧠", thinker: "Silva · Dispenza · Maltz", when: "to install a new belief or self-image, the core reset", why: "A calm, focused state lets a new self-image slip past the critical mind and land. your brain rehearses it as real.", fn: function () { reprogramTool(); } },
     { id: "selfhyp",  layer: "Become who you're being", name: "Self-Hypnosis",     ti: "ti-spiral",         emoji: "🌀", thinker: "Blair · eyes-open induction", when: "to install a new self-image, or to wind down at night", why: "A light trance quiets the critical mind so a new self-image can land. the induction is what makes it stick.", fn: function () { selfHypnosis(); } },
-    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "Emmons · Seligman · Koo & Wilson", when: "a negative-thought loop with no live grievance, or an evening you want to feel what the day actually gave you", why: "One specific moment, traced to its cause and savored, then briefly imagined gone, shifts you out of the threat network into the care network. Specificity and mental subtraction move the needle where generic lists don't.", fn: function () { gratitudeBeat(); } },
+    { id: "grateful", layer: "Lift the lens",           name: "Grateful Flow",     ti: "ti-heart",          emoji: "🙏", thinker: "a tool from Phil Stutz", when: "List a few things you're grateful for and feel each one. Then the feeling on its own.", why: "One specific moment, savored, shifts you out of the threat network into the care network. Specificity moves the needle where generic lists don't.", fn: function () { gratitudeBeat(); } },
     { id: "reset",    layer: "Steady the body",         name: "Reset",             ti: "ti-sparkles",       emoji: "✨", thinker: "Carpe · care-not-duty", when: "a cluttered space that's quietly draining you, or when you can't start anything", why: "Ten minutes of caring for one small zone lightens the room AND the nervous system: outer order, inner calm.", fn: function () { resetSprint(); } },
     { id: "coherence",layer: "Steady the body",         name: "Coherence Beat",    ti: "ti-heartbeat",      emoji: "💓", thinker: "Doc Childre · HeartMath", when: "60 seconds before anything that matters: a focus block, a hard talk, sleep", why: "The heart's rhythm is upstream of the thinking brain. smooth it first and the part that thinks straight comes back online.", fn: function () { coherenceBeat(); } },
     { id: "resistance",layer: "Become who you're being", name: "Resistance Compass", ti: "ti-compass",        emoji: "🧭", thinker: "Steven Pressfield · The War of Art", when: "something you keep avoiding: the thing that scares you most", why: "Resistance is proportional to importance; the fear is the arrow. Name the force, do two minutes. that's Turning Pro.", fn: function () { resistanceCompass(); } },
@@ -17218,8 +17273,16 @@
     var voiceProf = opts.voiceProf || VPROF.relax, col = opts.color || DOM.restore.c;
     var ov = document.createElement("div"); ov.id = "breatheOv";
     ov.innerHTML = '<button class="bw-x">skip</button><div class="bw-orb"></div><div class="bw-cap"><div class="bw-label"></div><div class="bw-sub"></div><button class="done2 bw-next" style="max-width:260px;margin:30px auto 0;display:block;">Next ▶</button></div>'; // .bw-cap holds the text OUT of the centering flow so variable cue length can never shift the orb (David 2026-07-12)
+    if (opts.equalText) ov.classList.add("bw-eq"); // label and sub drawn at the SAME size/weight (David 2026-09-19, gratitude v11)
     document.body.appendChild(ov); addVoiceToggle(ov);
     var orb = ov.querySelector(".bw-orb"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), nextB = ov.querySelector(".bw-next");
+    var _bwScopeFn = null;
+    if (opts.scope) { // this tool has its own settings — hand the card a read-only dump of what the session is holding, exactly like timelinePlayer does, and give it a door
+      _bwScopeFn = opts.scope; _gpSettings = _bwScopeFn;
+      var bcog = document.createElement("button"); bcog.className = "gp-cog"; bcog.innerHTML = '<i class="ti ti-settings"></i>';
+      bcog.onclick = function (e) { e.stopPropagation(); _gpSettings = _bwScopeFn; openVolumePanel(); };
+      ov.appendChild(bcog);
+    }
     var AC = window.AudioContext || window.webkitAudioContext, actx = null, gain = null, oscs = [];
     if (opts.drone !== false) { try { if (AC) { actx = sharedAudioCtx(); gain = actx.createGain(); gain.gain.value = 0; gain.connect(bgBus() || actx.destination);
       [[110, "sine", 1], [164.81, "sine", 0.55], [220, "triangle", 0.22]].forEach(function (o) { var os = actx.createOscillator(), g2 = actx.createGain(); os.type = o[1]; os.frequency.value = o[0]; g2.gain.value = o[2]; os.connect(g2); g2.connect(gain); os.start(); oscs.push(os); }); // warm 3-voice pad (root + a fifth + a soft octave) — an auto "meditation-app" bed instead of a flat sine (David 2026-07-01)
@@ -17229,6 +17292,7 @@
     var i = 0, done = false, autoT = null;
     function finish(skip) {
       if (done) return; done = true; if (autoT) { clearTimeout(autoT); autoT = null; } TTS.stop();
+      if (_bwScopeFn && _gpSettings === _bwScopeFn) _gpSettings = null; // only if it is still OURS (a composed player opened over this one owns it now)
       if (actx) { try { gain.gain.linearRampToValueAtTime(0, actx.currentTime + 0.5); oscs.forEach(function (o) { try { o.stop(actx.currentTime + 0.6); } catch (e) {} }); } catch (e) {} }
       if (ov.parentNode) ov.parentNode.removeChild(ov);
       if (!skip) {
@@ -17247,7 +17311,7 @@
       var b = opts.beats[i];
       lab.textContent = b.lab; sub.textContent = b.sub || "";
       orb.style.transition = "transform 1.1s ease"; orb.style.transform = b.orb === "in" ? "scale(1.3)" : b.orb === "out" ? "scale(.6)" : "scale(1)";
-      say((b.lab + (b.sub ? ". " + b.sub : "")), voiceProf);
+      say((b.subSilent ? b.lab : (b.lab + (b.sub ? ". " + b.sub : ""))), voiceProf); // subSilent = the sub is an ON-SCREEN hint the guide must not read out (gratitude v11)
       nextB.textContent = (i === opts.beats.length - 1) ? (opts.lastLabel || "Finish ✓") : "Next ▶";
       if (b.hold) { autoT = setTimeout(function () { if (!done) { i++; paint(); } }, b.hold * 1000); } // OPTIONAL auto-advance (David 2026-07-08): a beat with `hold` seconds descends hands-free (the countdown leads you, no tapping); tapping Next still skips ahead. Beats without `hold` stay tap-paced.
     }
@@ -17269,7 +17333,8 @@
         var ol = add(host, "div"); ol.style.cssText = "display:flex;flex-direction:column;gap:7px;";
         (it.how || []).forEach(function (step, n) { var r = add(ol, "div"); r.style.cssText = "display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.45;color:var(--c-e2d2e0-ink);"; r.innerHTML = '<b style="flex:none;width:20px;height:20px;border-radius:50%;background:' + col + ';color:var(--c-ffffff-bg);font-size:12px;display:flex;align-items:center;justify-content:center;margin-top:1px;">' + (n + 1) + '</b><span>' + step + '</span>'; });
       }
-      if (!seen) { renderHow(howWrap); }
+      if (!(it.how && it.how.length)) { howWrap.remove(); }          // a tool whose approved card copy is title + subtitle only (gratitude v11) gets no empty "How to do it" header
+      else if (!seen) { renderHow(howWrap); }
       else { var tgl = add(howWrap, "button", null, "How does this work? ▾"); tgl.style.cssText = "background:none;border:none;color:var(--c-ff8fc4-bg);font-family:var(--bub);font-weight:700;font-size:13px;cursor:pointer;padding:4px 0;"; var body = add(howWrap, "div"); body.style.display = "none"; var open = false; tgl.onclick = function () { open = !open; if (open && !body.firstChild) renderHow(body); body.style.display = open ? "" : "none"; tgl.textContent = open ? "How does this work? ▴" : "How does this work? ▾"; }; }
       if (it.why) { var wy = add(card, "div"); wy.style.cssText = "margin-top:15px;padding:11px 13px;background:rgba(255,143,196,.08);border-radius:12px;font-size:12.5px;line-height:1.5;color:var(--c-d8b8d2-ink);"; wy.innerHTML = '<b style="color:var(--c-ff8fc4-ink);">Why it works · </b>' + it.why; }
       var begin = add(card, "button", "done2", seen ? "Begin ▶" : "I'm ready ▶"); begin.style.cssText = "margin:18px auto 4px;display:block;max-width:280px;";
@@ -17412,6 +17477,19 @@
       breathRow("tone", ["off"].concat(BREATH_TONE_KEYS), function (k) { return k === "off" ? BREATH_CUES.off.name : BREATH_TONES[k].name; }, breathToneKey, function (k) { S.breathTone = k; }, true);
       add(card, "div", "ps-kick", tr("visual"));
       breathRow("visual", BREATH_VIZ_KEYS, function (k) { return BREATH_VIZ[k].name; }, breathVizKey, function (k) { S.breathViz = k; });
+    }
+
+    // PACING — drawn only for the Grateful Flow (the session says so via its scope). One toggle, its description, and the
+    // honest stack note. Purely additive state: S.tools.gratPace, "auto" (default) | "tap". No SCHEMA bump, guarded reads.
+    if (G && G.grat) {
+      add(card, "div", "ps-kick", tr("pacing"));
+      var pcOn = function () { return !!(S.tools && S.tools.gratPace === "tap"); };
+      var pcRow = add(card, "button", "ps-tog"); add(pcRow, "span", null, tr(GRAT_UI.paceLab)); var pcI = add(pcRow, "i", "ti");
+      var pcPaint = function () { pcI.className = "ti " + (pcOn() ? "ti-toggle-right" : "ti-toggle-left"); pcI.style.cssText = "font-size:26px;line-height:1;color:" + (pcOn() ? E : THC("#6a4a6a","ink")) + ";"; };
+      pcPaint();
+      pcRow.onclick = function () { S.tools = S.tools || {}; S.tools.gratPace = pcOn() ? "auto" : "tap"; save(); pcPaint(); };
+      var pcD = add(card, "div", null, tr(GRAT_UI.paceDesc)); pcD.style.cssText = "font-size:12.5px;line-height:1.5;color:var(--c-d8b8d2-ink);margin:2px 2px 0;";
+      var pcN = add(card, "div", null, tr(GRAT_UI.paceNote)); pcN.style.cssText = "font-size:11.5px;line-height:1.45;color:var(--c-b39ab0-ink);margin:6px 2px 0;";
     }
 
     // APP — the two whole-app switches, off-session only. They are not session settings; a player's card never draws them.
@@ -18023,7 +18101,7 @@
     { id: "meditate", name: "Meditate", ti: "ti-moon", col: THC("#ff5fa0","bg"), sc: THC("#a08fff","ink"), dur: 240, desc: "Sit with the breath, and come back each time you drift.", run: function (cb, d) { meditationQuick(cb, d || 300); } },
     { id: "reprogram", name: "Visualisation", ti: "ti-rotate-2", col: THC("#ffd24a","bg"), sc: THC("#ffd24a","ink"), dur: 150, desc: "Imagine the change vividly, and the brain rehearses it as if it were real.", run: function (cb, d) { reprogramTool(cb); } },
     { id: "mantra", name: "Rewire", ti: "ti-quote", col: THC("#ff8a5c","bg"), sc: THC("#ff9a6e","ink"), dur: 120, desc: "One line, said slow, until it starts to feel true.", run: function (cb, d) { mantraPlayer(cb); } },
-    { id: "gratitude", name: "Grateful", ti: "ti-heart", col: THC("#ff5fa0","bg"), sc: THC("#ff85be","ink"), dur: 45, desc: "One good moment, held long enough to feel it.", run: function (cb, d) { gratitudeBeat(cb, d || 45); } }
+    { id: "gratitude", name: "Grateful", ti: "ti-heart", col: THC("#ff5fa0","bg"), sc: THC("#ff85be","ink"), dur: 45, desc: "List a few things you're grateful for and feel each one. Then the feeling on its own.", run: function (cb, d) { gratitudeBeat(cb, d || 45); } }
   ]; // sc = the builder's BRIGHT canon stripe color (te_stea/ssky/sind/spnk family, per builder-LOCKED.html); col stays the tool's existing domain color for the front door.
   // prebuilt packs — offered by how much time you have; the proven self-help order (body first → regulate → breathe → go inward → fill up). "Quick reset" IS the relief-door micro-stack (R0, David 2026-07-02).
   var STACK_PACKS = [
@@ -19028,30 +19106,35 @@
     timelinePlayer({ id: "stretch", title: "Wake the body", logTitle: "Wake the body", catK: "energy", color: THC("#ff8a1e","bg"), spark: 4, vol: VPROF.relax.volume, drone: true, totalSec: secs, segments: segs, autostart: true,
       onFinish: function (skip) { if (onDone) onDone(); } }); // timelinePlayer.finish() handles the log + earn + tickTool via logTitle/catK/spark/id — do NOT re-log here (would double-count)
   }
-  // Gratitude beat: three timed prompts, NO typing, no required taps (eyes-closed law — the typed Grateful Flow stays as the journal variant).
-  // GRATEFUL FLOW rebuilt (David 2026-07-08 depth mandate): not a rotating prompt list. A real evidence-based practice (Emmons on specificity, Seligman's cause step, Koo & Wilson's Mental Subtraction, Bryant on savoring) that MOVES you: one specific moment, held deeply, then the counterintuitive core — imagine it never happened, feel the gap, let it return. On beatRunner (intro card + hands-free holds + real neural clips). onDone/secs kept for the stack registry; beatRunner is beat-paced so secs is advisory.
+  // GRATEFUL FLOW, solo (David-approved v11 script, 2026-09-19). Runs on beatRunner: one line per beat, the ask beats
+  // carry an on-screen hint that is NOT spoken (b.subSilent), and every pause is either a timed `hold` or a tap, per
+  // S.tools.gratPace. onDone/secs kept for the stack registry — secs now sets the DOSE (gratDoseN), solo runs all five.
   function gratitudeBeat(onDone, secs) {
+    var L = GRAT_FLOW.seq, PR = GRAT_FLOW.pairs, idx = gratPairIdx(gratDoseN(secs)), fresh = gratFresh();
+    var tap = !!(S.tools && S.tools.gratPace === "tap"); // "auto" (default) = timed holds · "tap" = nothing moves until you tap
+    var beats = [{ lab: L[0], sub: "", orb: "out", hold: 6 }];
+    idx.forEach(function (pi, n) {
+      var hi = GRAT_FLOW.hints[pi];
+      beats.push({ lab: L[PR[pi][0]], sub: hi >= 0 ? GRAT_UI.hints[hi] : "", subSilent: 1, orb: "", hold: 8 }); // the ask — think
+      beats.push({ lab: L[PR[pi][1]], sub: "", orb: "in", hold: pi === 4 ? 20 : 12 });                          // the feel cue — the alive one gets the longest hold
+      if (n === 1 && pi === 1 && fresh) beats.push({ lab: L[GRAT_FLOW.tip], sub: "", orb: "", hold: 8 });
+    });
+    beats.push({ lab: L[GRAT_FLOW.turn[0]], sub: "", orb: "", hold: 6 });
+    beats.push({ lab: L[GRAT_FLOW.turn[1]], sub: "", orb: "in", hold: 25 }); // hands on the heart = the turn's own long hold
+    beats.push({ lab: L[GRAT_FLOW.turn[2]], sub: "", orb: "", hold: 7 });
+    if (idx.length >= 3) beats.push({ lab: L[GRAT_FLOW.spot], sub: "", orb: "", hold: 5 });
+    beats.push({ lab: L[GRAT_FLOW.close], sub: "", orb: "out", hold: 4 });
+    if (tap) beats.forEach(function (b) { delete b.hold; }); // beatRunner: a beat WITHOUT `hold` waits for the Next tap — that is the whole tap mode, no second player
     beatRunner({
-      id: "gratitude", title: "Grateful Flow", logTitle: "Gratitude", catK: "love", color: THC("#ff5fa0","bg"), spark: 6, voiceProf: VPROF.relax,
-      intro: { tag: "one thing, felt fully · 3 min · gratitude science",
-        what: "This isn't a gratitude list. It's one good thing from today, held long enough to actually feel it. You trace where it came from, sit with it in your body, then briefly imagine today without it. That last part sounds strange. It's the part that works.",
-        how: ["Pick one specific moment, not a category.", "Notice who or what made it possible, including you.", "Feel where it sits in your body, and stay there.", "Imagine it never happened, then let it back in."],
-        why: "Generic gratitude (my health, my family) barely moves the needle. Specific moments do. And picturing a good thing's absence, even for a few seconds, makes the mind register it as a gift again instead of a given." },
-      beats: [
-        { lab: "Let your shoulders drop", sub: "you're just going to remember. nothing to solve here", orb: "out", hold: 5 },
-        { lab: "One specific good thing from today", sub: "not a category. a moment: a look, a taste, five minutes that went right", orb: "", hold: 11 },
-        { lab: "See it clearly", sub: "where were you. who else was there. let the scene come back, not just the idea of it", orb: "" },
-        { lab: "How did this happen", sub: "someone's choice, a bit of luck, or something you did on purpose", orb: "", hold: 9 },
-        { lab: "Notice your own hand in it", sub: "you showed up, you asked, you stayed. that counts", orb: "", hold: 7 },
-        { lab: "Feel where it sits in your body", sub: "chest, jaw, hands. let it be warm there a moment longer", orb: "in", hold: 11 },
-        { lab: "Now imagine today without it", sub: "it just never happened. picture that version of today, missing this piece", orb: "out", hold: 9 },
-        { lab: "Notice the gap", sub: "flatter, quieter, something missing you can't quite name", orb: "", hold: 8 },
-        { lab: "Now bring it back", sub: "it happened. it's yours. feel the difference between the gap and this", orb: "in", hold: 8 },
-        { lab: "Most days are quietly full like this", sub: "you didn't need a big day. you needed to notice this one", orb: "" }
-      ], lastLabel: "Done ✓",
+      id: "gratitude", title: GRAT_UI.cardTitle, logTitle: "Gratitude", catK: "love", color: THC("#ff5fa0","bg"), spark: 6, voiceProf: VPROF.relax,
+      equalText: true, // David 2026-09-19: every line on the beat card is the SAME size and weight — no big-caps label over a small lowercase sub
+      scope: function () { return { hue: THC("#ff5fa0","ink"), breath: false, stack: false, grat: true }; }, // the settings card COMPUTES its rows from this: a gratitude session, no breathing, and the pacing block
+      intro: { tag: GRAT_UI.cardFrom, what: GRAT_UI.cardSub }, // approved card copy only — the old how/why described the mental-subtraction practice this script replaced
+      beats: beats, lastLabel: "Done \u2713",
       onFinish: function (skip) { if (onDone) onDone(skip); }
     });
   }
+
   // ===== R1 — THE RITUAL GRAMMAR × CHANNEL SCHEDULER (HANDOFF-stacks-and-meditation §10, David 2026-07-02) =====
   // ONE grammar for every guided ritual: ARRIVE → RELEASE (spoken) → themed ROUNDS over the point ladder → INSTALL/SCAN → BRIDGE → LAW → FORGET.
   // Length = rounds × dwell (the ladder is the metronome). Channels: HANDS = point-cue segments (9 reusable clips, voice names every point so eyes stay closed) · EARS = content lines · MOUTH = the spoken rounds. Rides timelinePlayer (per-segment gap = the gap-math; transport/drift-tap/logging free).
@@ -19255,13 +19338,58 @@
     return Math.max(0, Math.min(1, base));
   }
   function _shuffled(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; } // Fisher-Yates; used so each extra pass through a line pool is a fresh order, never the identical loop
-  // GRATEFUL FLOW (Stutz-faithful, David 2026-07-15): the stack gratitude section is a STRUCTURED timed arc, not a looping prompt pool — name a few specific things, feel each in a silent pause, then the final beat: stop naming and feel the gratefulness itself build. Technique from Phil Stutz's Grateful Flow, phrased in ALTER's own plain words (copyright pivot). Both gates + adversarial judge passed.
+  // GRATEFUL FLOW v11 (David-approved 2026-09-19, _design-sync/audio-content-2026-09-09/graph/merged-v11-lines.txt).
+  // SPOKEN LINES ONLY LIVE IN HERE — _dev/gen-voice-11labs.py extracts every string inside `var GRAT_FLOW = { … \n  };`
+  // plus every string of a flat `seq: [ … ]`, so the whole script is picked up verbatim. NEVER put an on-screen-only
+  // string in this object (it would get a voice clip) — those live in GRAT_UI below. No template literals, no concat.
+  // Shape: `seq` is the script in spoken order; every other field is an INDEX into it, so a line exists exactly once.
+  // RU IS OWED — no Russian pass was made this round (the dict rows for these lines do not exist yet).
   var GRAT_FLOW = {
-    prompts: ["Bring one good thing from today to mind. Something small and specific.", "Now a person. Someone who made this stretch of life a little easier.", "Now something your body did for you today, quietly, without being asked.", "And one thing so ordinary you never think to thank it."],
-    subs: ["Eyes closed. Sit in the feeling of it a moment, don't just think it.", "Stay with this one until it turns warm, then we'll go on."],
-    build: "Now stop searching for things. Let the naming go, and just feel the gratefulness itself, building on its own.",
-    close: "Let that fullness stay with you as we go on."
+    seq: [
+      "Now we're going to remind your brain and body how to feel gratitude.",
+      "Okay, now think of one thing you're grateful for. It can be small, like a smile on a friend's face or the sun hitting your face.",
+      "Now close your eyes. Slow down for a second, and actually feel that gratitude in your body.",
+      "Okay, now a new one. Something you'd normally take for granted. Your eyesight. Hot water.",
+      "Close your eyes again. Breathe slowly into your chest, and let the breath move through that gratitude.",
+      "Come up with something completely new each time, instead of the ones that come automatically. That's what gets the logical side of your brain involved.",
+      "Now a problem you don't have. Those count too.",
+      "Close your eyes, and try actually acknowledging that one on an emotional level.",
+      "Now one from years back, something you're still glad about.",
+      "Close your eyes. See their face, hear their voice, and let the gratitude come with it.",
+      "Last one, and it's the biggest. You woke up this morning. You're alive.",
+      "Close your eyes and stay with that one. Give it longer than the others.",
+      "We did that exercise to remind your body what gratitude feels like. Now try to feel that same gratitude but without a logical reason behind it.",
+      "Put your hands on your heart if you like.",
+      "If you don't feel anything, that's okay. You can't force it. This is a skill, and it builds every time you practice.",
+      "Next time a dark thought starts, run this on the spot.",
+      "Open your eyes when you're ready."
+    ],
+    pairs: [[1, 2], [3, 4], [6, 7], [8, 9], [10, 11]], // [ask, feel] — pair 4 (alive) is the biggest and always runs last
+    hints: [0, 2, 3, 1, -1],                            // which GRAT_UI.hints line sits under each ask (-1 = none: the alive ask carries itself)
+    tip: 5,                                             // spoken once, after the SECOND feel cue, only while the tool is still new
+    turn: [12, 13, 14],                                 // the turn: name it, hands on heart (the long hold), then the permission
+    spot: 15,                                           // only when 3+ items ran — it refers back to a practice that actually happened
+    close: 16
   };
+  // ON-SCREEN ONLY (never spoken, never extracted): the hints that sit under an ask while you think, the tool card's
+  // own three lines, and the pacing setting's three lines. Same v11 file, lines 18-27.
+  var GRAT_UI = {
+    hints: ["In your head.", "Slowly. Feel each one.", "A new one each time.", "Only the ones you really feel. Not the ones you think you should."],
+    cardTitle: "Grateful Flow",
+    cardSub: "List a few things you're grateful for and feel each one. Then the feeling on its own.",
+    cardFrom: "a tool from Phil Stutz",
+    paceLab: "Wait for my tap after each one",
+    paceDesc: "Off, the practice runs on a timer. On, nothing moves until you tap.",
+    paceNote: "In a stack the pauses are always timed, so the session stays in one flow."
+  };
+  // THE DOSE (David 2026-09-19): the SLOT decides how many things you name. Solo = the whole five.
+  function gratDoseN(secs) { return secs == null ? GRAT_FLOW.pairs.length : secs >= 90 ? 5 : secs >= 60 ? 3 : secs >= 45 ? 2 : 1; }
+  function gratPairIdx(n) { // the first N pairs — except the alive pair is ALWAYS the one you land on once there are two
+    if (n >= GRAT_FLOW.pairs.length) return [0, 1, 2, 3, 4];
+    if (n <= 1) return [0];
+    var a = []; for (var i = 0; i < n - 1; i++) a.push(i); a.push(4); return a;
+  }
+  function gratFresh() { try { return !(S.tools && S.tools.use && S.tools.use.gratitude >= 2); } catch (e) { return true; } } // the familiarity signal the one-time tip reads; no signal = always say it
   // BREATH ROWS for a stack's breath act (David 2026-07-23): expand a breathing-variant pattern into flat phase rows [{label, kind, ms}] the composer feeds as voiceless orb-pacing segments. A single pattern (Box / 4-7-8 / Coherent / Extended exhale / Alternate nostril) is repeated to fill the act's time; a multi-stage flow (Wim Hof) plays its fixed round structure. Reuses the SAME BREATH_PATTERNS timings as the standalone breath tool — one pacing engine.
   function breathFlowRows(patKey, secs) {
     var flow = BREATH_FLOWS[patKey], rows = [], push = function (P) { P.ph.forEach(function (ph) { rows.push({ label: ph[0], kind: ph[2], ms: ph[1] }); }); };
@@ -19289,6 +19417,13 @@
       if (t.rawSegs && t.rawSegs.length) { t.rawSegs.forEach(function (s) { P({ text: s.text || "", label: (s.label != null ? s.label : s.text) || "", sub: s.sub || "", gap: (s.gap != null ? s.gap : pauseFor("cue")), _pk: s._pk || "cue" }); }); } // a tool that supplies its own cue segments (charge, love & embodiment) — it may name its own pause kind; otherwise the generic guidance cue
       else if (t.id === "stretch") { stretchMoveSegs(t.secs || 60, ai).forEach(function (s) { segs.push(s); }); } // STRETCH (David 2026-07-13): real held moves that fill the tool's time, never looped — same pool as the solo tool, sane holds instead of 3 cues stretched over 2 min
       else if (t.id === "meditate" || t.id === "medit") { // MEDITATION is split into SECTIONS (David 2026-07-08): the editor's sections (t.med) if set, else a sensible auto arc. Each section's first cue is a boundary the timeline draws a tick at.
+        var medCustom = !!(t.med && t.med.length); // a user-authored section list (the editor's track) keeps the OLD block engine so custom sits still work exactly as built
+        if (MED_V2_ON && !medCustom) { // THE V2 SIT INSIDE A STACK (David 2026-09-19): one authored script, one act, its own silence curve. skipOpener when an earlier act already sat the user down with the eyes closed (relax / stretch / breathe set sawBodyPrep) — no second "find a comfortable position".
+          var v2 = composeMeditationV2(t.secs || 90, { inStack: true, skipOpener: !!sawBodyPrep });
+          v2.segs.forEach(function (sg) { usedTxt[_normLine(sg.text)] = 1; P(sg); }); // stamp the session-wide no-repeat guard so no later act can re-say a line of the sit
+          acts[ai]._sections = v2.secMeta;
+          return;
+        }
         var msecs = (t.med && t.med.length) ? t.med.slice() : (sawBodyPrep ? [{ k: "breath" }, { k: "aware" }, { k: "rest" }] : [{ k: "settle" }, { k: "aware" }, { k: "rest" }]); // if the stack already ran relax/stretch, DROP the redundant body-settle section (that was the doubled "soften / unclench" — David 2026-07-13)
         var depth = sessionDepth(t.secs || 90); // length/preset -> how spacious: long/advanced = long silence, few reminders; short/beginner = dense
         var secMeta = []; // per-section metadata (name/color/icon). It NO LONGER expands the act into section bars (David 2026-08-15 killed that zoom — one story bar per step); it stays because _secList pairs it with each section's real-time window and the section's first cue drives the transport ticks
@@ -19307,12 +19442,24 @@
           }
         });
         acts[ai]._sections = secMeta; // the act carries its sections as DATA only — the player draws them as ticks under one bar, never as extra bars (2026-08-15; _isMed dropped with the zoom that read it)
-      } else if (t.id === "gratitude") { // STUTZ GRATEFUL FLOW (David 2026-07-15): a structured arc, not a looping pool — N named items each held in a silent feel-pause, then the build beat + a short close. Item count + pause length scale to the slot; always lands on the build beat, never mid-loop.
-        var gd = sessionDepth(t.secs || 60), gPause = 15 + gd * 11, gBuild = 24 + gd * 16, gBud = t.secs || 60, gCost = PK.speechEst + gPause;
-        var gN = Math.max(2, Math.min(GRAT_FLOW.prompts.length, Math.round((gBud - (PK.speechEst + gBuild) - 6) / gCost)));
-        for (var gi = 0; gi < gN; gi++) { var gp = GRAT_FLOW.prompts[gi]; usedTxt[_normLine(gp)] = 1; P({ text: gp, label: gp, sub: GRAT_FLOW.subs[gi % GRAT_FLOW.subs.length], gap: gPause, _pk: "absorb" }); }
-        P({ text: GRAT_FLOW.build, label: GRAT_FLOW.build, sub: "", gap: gBuild, _pk: "absorb" });
-        P({ text: GRAT_FLOW.close, label: GRAT_FLOW.close, sub: "", gap: 4, _pk: "transition" }); // the close hands over to the next act — a beat, not a silence
+      } else if (t.id === "gratitude") { // GRATEFUL FLOW v11 in a stack (David 2026-09-19): the same authored script, dosed by the slot. PACING IS ALWAYS TIMED HERE regardless of S.tools.gratPace — timelinePlayer schedules every clip up front, so a tap-to-advance beat would desynchronise every act after it (GRAT_UI.paceNote says exactly this to the user).
+        // STACK AWARENESS: the intro still plays (it names the tool) and "Now close your eyes" is spoken AS WRITTEN whether or not an earlier act already closed them — David approved these exact words, so nothing is skipped and no variant is invented. sawBodyPrep is deliberately not read here.
+        var gd = sessionDepth(t.secs || 60), gL = GRAT_FLOW.seq, gPr = GRAT_FLOW.pairs;
+        var gIdx = gratPairIdx(gratDoseN(t.secs || 60)), gFresh = gratFresh();
+        var gThink = 8 + gd * 4, gFeel = 12 + gd * 8, gLast = 20 + gd * 10, gTurn = 25 + gd * 12; // think · feel · the alive hold · the turn hold, all scaled by the slot's depth the way the rest of the composer scales
+        var GP = function (li, sb2, gap, pk) { var tx = gL[li]; usedTxt[_normLine(tx)] = 1; P({ text: tx, label: tx, sub: sb2 || "", gap: gap, _pk: pk || "absorb" }); };
+        GP(0, "", 4, "cue");
+        gIdx.forEach(function (pi, n) {
+          var hi = GRAT_FLOW.hints[pi];
+          GP(gPr[pi][0], hi >= 0 ? GRAT_UI.hints[hi] : "", gThink);
+          GP(gPr[pi][1], "", pi === 4 ? gLast : gFeel);
+          if (n === 1 && pi === 1 && gFresh) GP(GRAT_FLOW.tip, "", 5, "cue"); // one-time, and only when a real second item ran
+        });
+        GP(GRAT_FLOW.turn[0], "", 4, "cue");
+        GP(GRAT_FLOW.turn[1], "", gTurn);
+        GP(GRAT_FLOW.turn[2], "", 4, "cue");
+        if (gIdx.length >= 3) GP(GRAT_FLOW.spot, "", 4, "cue");
+        GP(GRAT_FLOW.close, "", 4, "transition"); // the close hands over to the next act — a beat, not a silence
       } else if (C.breath) {
         // VOICELESS in a stack (David 2026-07-23: guided breath talks only if opted in, exactly like the standalone tool — this kills the "ok/um/breathe in" spoken-clip artifacts inside a session). The `breath` tag still paces the orb; the label shows the phase on screen. `t.pat` = a breathing-variant pattern (Box / 4-7-8 / Coherent / Extended exhale / Wim Hof / Alternate nostril); default = the calming resonance breath.
         breathFlowRows(t.pat, t.secs).forEach(function (r) { P({ text: "", label: r.label, sub: "", gap: r.ms / 1000, breath: r.kind }); });
@@ -19344,7 +19491,7 @@
           usedTxt[_normLine(ln)] = 1;
           P({ text: ln, label: ln, sub: "", gap: lcad, _pk: lKind }); t2 += lcad + PK.speechEst; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; var remL = C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order2 = _shuffled(remL.length ? remL : C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
       }
-      if (t.id === "relax" || t.id === "stretch") sawBodyPrep = true; // a later meditation act drops its redundant body-settle section
+      if (t.id === "relax" || t.id === "stretch" || t.id === "breathe" || t.id === "breath") sawBodyPrep = true; // a later meditation act drops its get-seated opener: relax/stretch/breath all leave the user already settled with the eyes closed (David 2026-09-19)
     });
     return { segs: segs, acts: acts, dose: dose }; // dose = the sum of the steps' chosen times. THE DOSE IS A PROMISE (2026-08-15): the player takes it as totalSec and re-fits the elastic silences to land on it.
   }
@@ -19377,6 +19524,44 @@
     var lastB = blocks[blocks.length - 1], lastDef = lastB && resolve(lastB.key); // always land on the true closing line ("gently open your eyes"), never mid-pool
     if (lastDef && lastDef.pool && lastDef.pool.length) { var fin = lastDef.pool[lastDef.pool.length - 1]; if (segs.length && _normLine(segs[segs.length - 1].text) !== _normLine(fin)) segs.push({ text: fin, label: fin, sub: "", _act: acts.length - 1 }); }
     return { segs: segs, acts: acts };
+  }
+  // ===== THE V2 SIT (David 2026-09-19). Unlike composeMeditationSegs (pools + depth-derived silences), this speaks ONE
+  // authored script in order and carries its OWN per-line silence curve — the gaps ARE the design, so they are NOT tagged
+  // with a pause kind: pkGap's default hands the composed value straight through, and PK_ELASTIC never sees it, so the
+  // player cannot squeeze the curve. The single exception is "Rest there.", tagged `absorb` so it is the one silence the
+  // dose re-fit may shorten when the real clips run longer than the estimate. Fitting is done HERE, at compose time:
+  // scale every gap by f (clamped 0.6-1.6), then put whatever is left on the long rest, never below 30s.
+  // ctx = { inStack: bool, skipOpener: bool }. Returns { segs, acts, secMeta, idx } — `idx` = the source indices kept,
+  // so a stack caller can stamp its own _act / usedTxt without re-deriving the drop rules.
+  function medV2Speech(s) { return Math.max(0.8, (String(s).trim().split(/\s+/).length) / 2.3); } // words/2.3 — these lines are long and even-paced, and PK.speechEst (a flat 4.2) under-budgets them by half
+  function composeMeditationV2(totalSec, ctx) {
+    ctx = ctx || {}; totalSec = Math.max(60, totalSec || 900);
+    var seq = MED_V2.seq, keep = [], i;
+    for (i = 0; i < seq.length; i++) {
+      if (ctx.skipOpener && MED_V2_SKIP.indexOf(i) >= 0) continue;           // already seated, eyes already closed
+      if (totalSec < 660 && i === MED_V2_TRIM) continue;                     // a short sit drops the last breath re-anchor, nothing else
+      keep.push(i);
+    }
+    var sp = 0, gp = 0, gaps = [];
+    for (i = 0; i < keep.length; i++) { sp += medV2Speech(seq[keep[i]]); gaps.push(MED_V2_GAP[keep[i]]); gp += MED_V2_GAP[keep[i]]; }
+    var f = gp > 0 ? (totalSec - sp) / gp : 1; f = Math.max(0.6, Math.min(1.6, f));
+    var fit = 0; for (i = 0; i < gaps.length; i++) { gaps[i] = gaps[i] * f; fit += gaps[i]; }
+    var restAt = keep.indexOf(33); // "Rest there." — the slack absorber
+    if (restAt < 0) restAt = gaps.length - 2;
+    if (restAt >= 0) gaps[restAt] = Math.max(30, gaps[restAt] + (totalSec - (sp + fit)));
+    var segs = [], acts = [], secMeta = [], lastSec = -1;
+    for (i = 0; i < keep.length; i++) {
+      var ix = keep[i], sIdx = 0;
+      for (var s = 0; s < MED_V2_SEC.length; s++) if (ix >= MED_V2_SEC[s][0] && ix <= MED_V2_SEC[s][1]) { sIdx = s; break; }
+      var SC = MED_V2_SEC[sIdx], first = sIdx !== lastSec;
+      if (first) { acts.push({ name: SC[2], color: SC[3], icon: SC[4] }); secMeta.push({ name: SC[2], color: SC[3], icon: SC[4] }); lastSec = sIdx; }
+      var sg = medSeg(seq[ix], Math.round(gaps[i] * 10) / 10, first ? SC[2] : "");
+      if (i === restAt) sg._pk = "absorb";                                    // the ONLY elastic silence in the sit
+      if (first) { sg._secIdx = secMeta.length - 1; if (secMeta.length > 1) { sg._sectionStart = true; if (segs.length) { var pv = segs[segs.length - 1]; pv._pkAdd = (pv._pkAdd || 0) + PK.transition; } } }
+      if (!ctx.inStack) sg._act = acts.length - 1;                            // solo: one page per movement. In a stack the caller owns _act (the whole sit is ONE act of the stack)
+      segs.push(sg);
+    }
+    return { segs: segs, acts: acts, secMeta: secMeta, idx: keep };
   }
   function medBlockResolve(k) { var b = MED_BLOCKS[k]; if (!b || !b.entry) return null; return { name: b.name, color: b.c, icon: b.ti, entry: b.entry, pool: b.pool || [], weave: /^(count|scan|listen|watch|feel)$/.test(k), deep: !!b.deep }; } // MED_SESSIONS blocks -> normalized (working blocks weave RETURN cues; deep = self-inquiry, engine gives each prompt a long investigate-silence)
   function medSecResolve(k) { var s = MED_SEC[k]; if (!s || !s.lines || !s.lines.length) return null; return { name: s.name, color: s.col, icon: s.ti, entry: s.lines[0], pool: s.lines.slice(1), weave: /^(body|aware)$/.test(k) }; } // editor MED_SEC sections -> normalized (lines[0] = entry, rest = pool)
@@ -22087,6 +22272,9 @@
       });
     }, Promise.resolve([])).then(function (rows) { S.breathCue = save0.c; S.breathTone = save0.t; return { pattern: patKey || "resonance", combos: rows }; });
   };
+  window.DEV.medV2 = function (secs, skipOpener) { var b = composeMeditationV2(secs || 900, { skipOpener: !!skipOpener }); var sp = 0, gp = 0; var rows = b.segs.map(function (s) { sp += medV2Speech(s.text); gp += s.gap; return s.text + "  |  " + (Math.round(s.gap * 10) / 10) + "s"; }); return { lines: b.segs.length, acts: b.acts.map(function (a) { return a.name; }), rows: rows, speech: Math.round(sp), gaps: Math.round(gp), total: Math.round(sp + gp) }; }; // DEV: the composed V2 sit as text|gap rows + the speech/silence/total budget, without sitting through it
+  window.DEV.gratBeats = function (secs) { var out = [], o = null, _br = beatRunner; beatRunner = function (op) { o = op; }; try { gratitudeBeat(null, secs); } finally { beatRunner = _br; } (o.beats || []).forEach(function (bt) { out.push((bt.hold != null ? (bt.hold + "s") : "TAP") + "  |  " + bt.lab + (bt.sub ? "   [hint] " + bt.sub : "")); }); return { pace: (S.tools && S.tools.gratPace) || "auto", n: out.length, rows: out }; }; // DEV: read the composed gratitude beats without opening the overlay
+  window.DEV.stackSegs = function (list) { var r = composeStackSegs(list || []); var ai = -1, out = []; r.segs.forEach(function (s) { if (s._act !== ai) { ai = s._act; out.push("--- ACT " + ai + ": " + (r.acts[ai] || {}).name + " ---"); } out.push((s.text || "(voiceless)") + "  |  " + (Math.round((s.gap != null ? s.gap : 0) * 10) / 10) + "s"); }); var seen = {}, dup = []; r.segs.forEach(function (s) { if (!s.text) return; var k = _normLine(s.text); if (seen[k]) dup.push(s.text); seen[k] = 1; }); return { dose: r.dose, n: r.segs.length, dupes: dup, rows: out }; }; // DEV: compose ANY stack and read it back as act-tagged text|gap rows + the session-wide repeat check, without playing it
   window.DEV.stack = function (id, secs, pat) { runStackCarousel([{ k: { id: id || "stretch", name: id || "stretch", ti: "ti-yoga", col: THC("#46e2a4","bg") }, d: secs || 120, pat: pat }]); return "running " + (id || "stretch") + " for " + (secs || 120) + "s — read DEV.segs() once it is ready"; }; // DEV: launch ANY tool as a real one-act stack through the SAME carousel a real tap uses, so a pause can be measured where it actually plays (after relayoutFrom's dose re-fit and the real decoded clip lengths) rather than where the composer merely declared it. DEV.breathStack is this with id "breathe" pre-filled.
   window.DEV.stretchSegs = function (secs) { // WHAT THE COMPOSER ACTUALLY LAID DOWN for a stretch dose, without opening a player: how many moves, the hold on each, whether the pool had to repeat, and what the whole thing adds up to against the dose it was asked for. The number that would have caught the 2026-08-16 `i % N` loop.
     var g = stretchMoveSegs(secs || 120), seen = {}, rep2 = 0, gaps = {};

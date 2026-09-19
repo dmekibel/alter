@@ -9,6 +9,8 @@
 
 Order of operations when writing: **Substance (this doc) picks what to say, Adaptation (this doc) shapes it for stage and blueprint, then Voice-Bible + Writing-System gate how it lands.**
 
+**STEP 0 — THE KB-SWEEP (David verdict 2026-09-01, CANON.md rule 3; before ANY drafting):** sweep the knowledge stores for the lines' actual subject via `/Users/Dmekibel/claudeCode/KB-ATLAS.md` — the relevant BOOKS-*-CANON, `_course/kb/deep/`, fieldguide synthesis-nodes + mechanism-library, and the RAW sources behind them (a brief is a pointer, never a replacement). Science claims carry the real researcher + number, verified against source. AND load the voice before writing: 5-10 verbatim exemplar lines from the chosen voice's DNA doc (VOICE-SAGE primary; style layers per `ALTER-VOICE-BENDING-KIT-2026-07-08.md`) — no examples loaded, no output. The round's spec records a `KB-SWEEP:` line naming what was consulted. Born from the 2026-09-01 finding that this doc referenced zero book canons and copy was being drafted from parametric vibes, then merely kill-gated.
+
 ---
 
 ## PART 1. THE SUBSTANCE — what every line is secretly advancing
@@ -169,3 +171,119 @@ The writing docs failed for one reason: the author graded his own work, and an a
 **Gate 2, adversarial judge (an independent agent) — SCORED AGAINST DAVID'S RATED ANCHORS, not just a rubric.** The regex cannot catch vague cheerleading with no mechanical tell, and an abstract rubric fails a subtler way: an LLM judge SHARES the writer's biases and rewards "sounds-good" writing David's ear rejects (it called the KILLED fridge-analogy line "the strongest line"). So the judge MUST first read `_specs/COPY-ANCHORS.md` — David's real KILLED lines (each with its named failure pattern: forced/decorative analogy, withholding tease, flourish-ending, essay/stiff cadence, meditation-madness, vague-pronoun, generic-category beat, shallow, cheesy) and his EPIC lines — and score every candidate BY COMPARISON: which KILLED pattern does it smell like, which EPIC anchor is it closest to. Rubric-clean is not enough; if it resembles a KILLED anchor, KILL it. It is prompted to refute, never approve; route to a cheap model. **Every line David rejects gets appended to COPY-ANCHORS.md as a KILLED anchor with the pattern; every line he loves becomes EPIC. The bank is how the judge learns his taste instead of the model's.**
 
 **The hard rule:** no line reaches David until it has passed Gate 1 clean and survived Gate 2. The author never self-approves. When a new failure slips through anyway, its pattern is added to `copy-audit.py` (Gate 1) or the kill-shot list (Gate 2) so the same slop can never pass twice.
+
+---
+
+## PART 7. THE ANTI-PADDING SOP (David 2026-09-16: "we need SOPs for writing copy that prevents this padding... maybe our copywriting system is still weak for our purposes")
+
+**The diagnosis, from the round that forced this.** Gate 1 judges a line's TELLS. Gate 2 judges its TASTE. The clarity skeptic judges whether it can be MISUNDERSTOOD. Nothing in the system judged whether a line SHOULD EXIST. So four Opus lanes, both gates and two skeptics produced a 445-word gratitude script for what the source teaches in about 120, complete with invented scenes and invented staging, and every gate passed it. David killed it on sight. Padding is not a taste failure; it is a provenance failure, and it needs a deterministic gate.
+
+### 7.1 The order of authority (for any tool that comes from a named source)
+1. **David's dictated words**, lightly edited.
+2. **The source's own instruction** (the book, the transcript), in our words, at the source's length.
+3. **The writer's bridge**, as little as possible, and only where 1 and 2 leave a real gap.
+A line that is none of these does not ship. Re-inventing a clear instruction into a prettier one that teaches less is a kill, not an improvement.
+
+### 7.2 Provenance tagging is mandatory
+Every candidate line is written into the lines file with a tag: `D|` David, `S|` source, `B|` bridge, `U|` screen or settings copy. Untagged is unexamined. The tag forces the writer to answer "whose line is this" before the judge ever asks "is it good".
+
+### 7.3 The word budget comes from the source, not from the slot list
+Count the words the source spends teaching the same thing, add the app's own framing, and that is the budget. Filling a slot table is what generates padding: a slot may legitimately be EMPTY, and a slot may legitimately hold the source's sentence unchanged. Never ask a lane for "one line per slot, no alternatives" without also handing it the budget.
+
+### 7.4 Gate 0, deterministic: `_dev/copy-density.py`
+Runs BEFORE the taste judge, because there is no point grading a line that should be deleted.
+```
+python3 _dev/copy-density.py --file lines.txt --budget 380
+python3 _dev/copy-density.py --strip lines.txt > clean.txt   # tags off, feed to copy-audit.py
+```
+It FAILS on: untagged lines · over budget · bridge words above 25 percent of the total · an INERT BRIDGE (an invented spoken line that asks the listener to do nothing). It WARNS on: lines over 32 words · echoes between lines (fine when the refrain is deliberate) · instruction density under 60 percent of spoken lines. Proof it works: the padded draft fails 5 checks, the source-faithful rewrite passes, same tool, same session.
+
+### 7.5 The deletion pass is its own job
+After the draft and before David, one fresh agent whose ONLY instruction is to cut: for every line, name what is lost if it is deleted. If nothing is lost, delete it. A writer improving their own draft adds; only a separate job subtracts.
+
+### 7.6 The gate order, updated
+Provenance tags → **Gate 0 density** → Gate 1 `copy-audit.py` → Gate 2 taste judge vs COPY-ANCHORS → clarity skeptic (how could this be misunderstood) → deletion pass → David.
+
+### 7.7 THE STANDING PIPELINE (the named roster and routing live in `_specs/voice-foundry/THE-PANEL.md`; read it before any round) — every surface, no exceptions (David 2026-09-16: "everything needs to be judged with graph engineering")
+No copy surface reaches David from a single agent's head again. The stretch routine is the cautionary case: it came back from one research lane, well sourced, and went straight into a chat message with no skeptic on it at all.
+
+For EVERY surface (a tool's script, a stack, onboarding, a lesson, a settings row):
+1. **PLAN** — name the surface, its source of authority, its word budget, and its slots. Write `graph/plan-<surface>.md`.
+2. **LANES** in parallel, each one writing provenance-tagged lines (`D|` David, `S|` source, `B|` bridge, `U|` screen). More than one lane only when the register is genuinely undecided; otherwise one lane plus the two judges below is the smallest graph that improves quality.
+3. **GATE 0** `_dev/copy-density.py` (padding, budget, bridge share, inert bridges) then **GATE 1** `_dev/copy-audit.py` (tells). Both exit 0 or the round does not proceed.
+4. **TASTE SKEPTIC** — fresh agent, reads COPY-ANCHORS in full, predicts what David kills and why, by comparison to his real kills.
+5. **CLARITY SKEPTIC** — fresh agent, one question per line: how could a person with their eyes closed misunderstand this, and what would they do wrong.
+6. **DELETION PASS** — fresh agent, may only cut: for every line, what is lost if it goes; nothing lost means delete.
+7. **MERGE** — one recommendation file, every kill adjudicated in writing, then David.
+State compounds in `_design-sync/<round>/graph/`. A surface that skipped a step is labelled UNJUDGED when it is shown to him.
+
+### 7.8 THE BUDGET NEVER CUTS AN EXECUTION WORD (learned 2026-09-16, the stretch round)
+Gate 0's word budget is an anti-padding tool and it can do real harm if it is pointed at the wrong words. On the stretch script the plain reader found that six of its seven MISLEADING verdicts were DELETIONS, not inventions: a word the physical-therapy source supplied so the move could be performed ("slightly", "down", "until you feel the back of that leg") had been trimmed to make budget. The founder's original complaint about the wrist cue survived in substance because the one word that fixed it was cut.
+THE RULE: a word that tells the listener WHERE A BODY PART GOES, WHICH WAY IT FACES, or WHEN TO STOP is not padding and is exempt from the budget. Cut bridges, commentary and restatement instead. If the budget cannot be met without cutting an execution word, the budget was set too low; raise it and say so.
+THE ORDER, when two gates disagree: the plain reader outranks the budget. Clear and slightly long beats terse and unperformable.
+
+### 7.9 SPOKEN GUIDED COPY IS EXEMPT FROM TERSENESS (learned 2026-09-16, the meditation round)
+The anti-padding SOP was built for SCREEN copy, where every word is read in a glance and filler is fatal. Pointed at guided audio it does real damage. Measured, against David's own four reference teachers:
+
+| source | mean words per spoken unit |
+|---|---|
+| Harris | 43 |
+| Headspace | 60 |
+| Blackstone | 85 |
+| Adyashanti | 113 |
+| our first meditation rewrite | **16** |
+
+A budget of about sixteen words a line produced copy David rejected as not as good as his references, and the compression caused three further defects: the lines COMMAND where the references INVITE ("see if you can"), they instruct without TEACHING inside the instruction ("observe how they arise spontaneously, you don't have to make any effort to hear them"), and they reached for teacherly jargon to save words (naming dullness at the listener), which no reference ever does.
+THE LAW: for spoken guided copy, the target is the REFERENCE LENGTH, 40 to 80 words per spoken unit, and the unhurried unfolding is the medium, not padding. Harris saying a breath is noticed "from the moment it arises, for its full duration, until the moment it subsides" is doing work that "from the first moment to the last" cannot do: the sentence itself gives the listener time to perform it.
+Gate 0 still runs on this copy, but its budget is set from the REFERENCE corpus, never from a wish to be terse, and its bridge-share and inert-bridge checks still apply. The cutter still runs, but it cuts whole lines that earn nothing, never words that carry the breath of a line.
+CONSEQUENCE FOR POOL SIZE: a longer line eats more of the block. At about 2.5 spoken words per second, a 60-word line is 24 seconds of speech, against 4.2 seconds for a 16-word line. Pools therefore get SMALLER and richer, not longer. Size every pool from the block's real time budget, and note that `PK.speechEst` (4.2) is calibrated to the old short lines and must be raised or made per-line when these ship.
+
+### 7.10 THE MEDITATION SOP, CORRECTED (David 2026-09-16: "fix ur meditation writing sop")
+7.9 said the defect was compression and set a word target. Half right. The word target is real, but the second draft hit it and David rejected that too, so I measured instead of theorising again:
+
+| source | words per sentence | clauses per sentence |
+|---|---|---|
+| Headspace | 11.3 | 1.8 |
+| Blackstone | 16.7 | 2.0 |
+| Adyashanti | 19.8 | 2.3 |
+| Harris | 20.6 | 2.3 |
+| the rejected v2 | 13.1 | 1.9 |
+
+v2 sits INSIDE the reference band on both numbers. So sentence length was never the defect, and "write shorter sentences" is the wrong lesson. What David actually objected to, in his own words, was hedging, ambiguity and wordiness with no instruction in it. The four real rules:
+
+**1. NO HEDGED ENUMERATION.** "Sitting upright is good, and so is lying down, and so is leaning back into whatever is behind you, so take the one your body will settle into today." Name one option. Offer at most one alternative, in its own short sentence. His fix: "Sitting upright is good. Lying down is fine too." A line that spends four clauses refusing to choose has taught nothing.
+
+**2. EVERY PHRASE MUST BE LITERALLY PERFORMABLE.** "Let the seat take your weight" was killed as weird and ambiguous; "let the room carry on without you" was cut outright. Figurative body language reads as poetry and leaves the listener guessing. Say the physical fact: "stop holding yourself up." THE TEST: could someone do this wrong because they read the image literally? Then it is not an instruction yet.
+
+**3. NAME THE TECHNIQUE.** David: "this sounds bad, mention scanning." The references always say what you are doing. Blackstone: "Now come down to your feet and inhabit your feet." Ten words, technique named, body part named, no hedge. A line that describes an experience without naming the move leaves the listener performing nothing.
+
+**4. LENGTH COMES FROM MORE INSTRUCTION, NEVER FROM MORE CLAUSES.** This is the rule 7.9 was missing. Blackstone reaches 85 words by STACKING SHORT PLAIN SENTENCES, each carrying its own step. A 60-word line built from one instruction wearing five subordinate clauses hits the same word count and says a fifth as much. If a line cannot be lengthened by adding a real step, it is finished; do not pad it to the band.
+
+**THE BANDS, for Gate 0 and the resemblance diff:** 11 to 20 words per sentence (below 11 reads clipped and drill-like, above 20 loses an eyes-closed listener), 1.8 to 2.3 clauses per sentence, and the per-line word target from 7.9. All three, or the draft is not at reference.
+
+**BLACKSTONE'S DISTINCTION IS NOW CANON** (David: "use Judith Blackstone stuff about being aware vs embodying, that could help make this meditation better"): observing a body part from outside it and inhabiting it from within are different acts, and the app never taught the difference. Say which one you are asking for. Her own framing, in our plain words: get inside that part, be in there, not next to it.
+
+### 7.11 THE HEADSPACE SPEC (David 2026-09-17) — this supersedes the length numbers in 7.9 and 7.10
+Two rewrites missed because I measured the wrong references. Blackstone and Adyashanti are SATSANG TALKS, an hour of continuous speech to a room. Headspace and Harris are the only references that are the same PRODUCT as ours: a short guided session on a phone. Measured, per spoken cue:
+
+| reference | words per cue | range | sentences per cue |
+|---|---|---|---|
+| Harris | 43 | 29 to 57 | 1 to 4 |
+| Headspace | 60 | 26 to 87 | 2 to 9 |
+| our v3 (rejected) | **71** | — | 5 to 6 |
+
+**RULE 1 — LENGTH: 40 to 60 words per cue, hard cap 60.** Harris explains genuinely difficult ideas, thoughts as objects that arise and pass, in 29 words, because he says the thing once and stops. Our excess was never depth; it was a second pass at the same idea inside the same cue. Sentences run 9 to 15 words (Headspace's band).
+
+**RULE 2 — DENSITY, which is the bigger defect.** Headspace's ENTIRE ten-minute session is TEN cues and 601 words: one cue a minute, 40 percent talking, 60 percent silence. Our engine at beginner would play seventeen cues and talk 82 percent of the time. David: "too wordy and would take people out of the meditation." A six-second gap after a thirty-second instruction is the actual bug. TARGET: about one cue per minute, a gap of roughly 30 seconds after each, never above 50 percent talking at any level. Pools are sized from THIS, not from how much good material exists.
+
+**RULE 3 — EVERY SENTENCE HAS A JOB (David 2026-09-17: "there's a purpose for everything that's said. Everything serves a specific purpose to try to direct somebody in a specific way, in a specific order, and prevent any kind of mistake along the way. That's what Headspace is doing.").** Every sentence does exactly ONE of four jobs:
+- **DIRECT** — put the attention on a named thing.
+- **LOCATE** — say precisely where or how, so there is nothing to guess.
+- **PERMIT** — make failure impossible at this rung.
+- **CATCH** — pre-empt the specific mistake a beginner makes HERE.
+A sentence doing none of the four is cut. That single test explains the bloat better than any word count: rephrasing an instruction a second way, reassuring twice, and adding atmosphere all fail it.
+Evidence, his breath cue decomposed: name the object / locate it in the body / CATCH: if you cannot feel anything, put your hand on your stomach / constrain: let the body breathe its own way / what to observe / narrow to the out-breath / CATCH: do not force it. Seven sentences, three of them mistake-work. His thoughts cue opens with three straight PERMIT sentences (thoughts will come, that's fine, that's perfectly normal) before a single instruction, because the mistake there is concluding you have failed.
+
+**RULE 4 — ORDER BY WHEN THE MISTAKE BECOMES POSSIBLE.** His sequence is not aesthetic. You cannot warn someone about forcing the breath before they have found it. Build each ladder by asking, at every rung, what can now go wrong that could not go wrong before, and put the catch there.
+
+**THE SKELETON** (his ten beats, the shape of a whole session): get comfortable, eyes open, soft focus, a few big breaths · pause, nothing to respond to · attention to the body, the weight, the contact · notice how the body feels today, change nothing · scan down, let go of what you pass · find the breath, where you feel the movement · count one on the rise, two on the fall · thoughts will come, that is normal, come back · let the mind be completely free for a moment · back to the body, the space, the sounds.

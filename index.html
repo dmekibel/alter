@@ -751,6 +751,12 @@
   #breatheOv.gp-ov{overflow:hidden;}
   #breatheOv .gp-title{position:fixed;top:calc(env(safe-area-inset-top,0px) + 22px);left:0;right:0;text-align:center;font-family:var(--bub);font-size:12.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:rgba(240,230,239,.5);z-index:4;pointer-events:none;}
   #breatheOv .gp-cog{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:18px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);color:var(--c-efeaff-ink);border-radius:14px;width:44px;height:40px;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;padding:0;}
+  /* EQUAL TEXT (David 2026-09-19, gratitude v11): "all lines equal size" — no 28px caps label over a 13px lowercase sub.
+     Scoped to .bw-eq so the other beat tools keep the headline treatment they were designed with. Matches the composed
+     player's own approved cue size (21px/800 Jost), which is what these long script lines were written for. */
+  #breatheOv.bw-eq .bw-label,#breatheOv.bw-eq .bw-sub{font-family:"Jost",sans-serif;font-size:21px;font-weight:800;line-height:1.3;color:var(--c-fff2f9-ink);max-width:82vw;text-align:center;}
+  #breatheOv.bw-eq .bw-cap .bw-label{margin-top:0;}
+  #breatheOv.bw-eq .bw-sub{margin-top:10px;}
   #breatheOv .bw-orb,#breatheOv .bw-label,#breatheOv .bw-sub,#breatheOv .bw-lrow{position:relative;z-index:2;}
   /* slow-drifting depth bands behind the orb — the Headspace "premium" motion, on berry palette (David 2026-07-01) */
   #breatheOv .gp-waves{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;}
@@ -4952,6 +4958,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1484"></script>
+  <script src="app.js?v=1490"></script>
 </body>
 </html>

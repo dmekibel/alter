@@ -126,9 +126,18 @@ SAMPLE = [
     "When the mind wanders, gently come back",
     "Rest here a moment longer",
 ]
+only = None
+if "--only" in sys.argv:  # 2026-09-19: synth ONLY the lines listed in a file (David approves copy per script, never the whole bank)
+    onlyf = sys.argv[sys.argv.index("--only") + 1]
+    only = set(norm(x.strip()) for x in open(onlyf, encoding="utf-8") if x.strip())
 if mode == "sample":
     targets = [l for l in SAMPLE]
     force = True  # sample always overwrites so you hear the voice
+elif only is not None:
+    targets = [l for l in uniq if norm(l) in only]
+    missing = only - set(norm(l) for l in uniq)
+    print(f"--only: {len(targets)} of {len(only)} listed lines found in app.js" + (f"; NOT in app.js: {len(missing)}" if missing else ""))
+    for mm in sorted(missing)[:10]: print("   missing:", mm[:60])
 else:
     targets = uniq
 
@@ -163,6 +172,9 @@ for l in targets:
 
 # only (re)write the per-voice manifest on a full run — a sample run must not drop keys
 if mode != "sample":
-    json.dump(sorted(set(manifest)), open(f"{OUTDIR}/manifest.json", "w"))
+    prev = set()
+    try: prev = set(json.load(open(f"{OUTDIR}/manifest.json")))
+    except Exception: pass
+    json.dump(sorted(set(manifest) | prev), open(f"{OUTDIR}/manifest.json", "w"))
     print("manifest keys:", len(set(manifest)))
 print(f"synthesized this run: {made} | voice: {VOICE_NAME}/{VOICE_ID} | files: {len([f for f in os.listdir(OUTDIR) if f.endswith('.mp3')])}")
