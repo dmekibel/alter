@@ -8515,8 +8515,8 @@
                        what: "Wake the body, breathe, settle, sit, then aim the day.", why: "The order is the mechanism: a settled body lets the mind listen.",
                        bands: [tbxBand(2,  "breathe", 60, "mantra", 60),
                                tbxBand(5,  "stretch", 90, "breathe", 60, "relax", 45, "meditate", 90, "gratitude", 45),
-                               tbxBand(10, "stretch", 120, "breathe", 75, "relax", 60, "meditate", 150, "v_open", 90, "gratitude", 45, "reprogram", 75, "mantra", 30),
-                               tbxBand(15, "stretch", 150, "breathe", 90, "relax", 75, "meditate", 210, "v_open", 150, "gratitude", 60, "reprogram", 150, "mantra", 75)] },
+                               tbxBand(10, "stretch", 120, "breathe", 75, "relax", 60, "meditate", 240, "gratitude", 45, "reprogram", 75, "mantra", 30),
+                               tbxBand(15, "stretch", 150, "breathe", 90, "relax", 75, "meditate", 360, "gratitude", 60, "reprogram", 150, "mantra", 75)] },
     breatheLadder:   { name: "Breathe",          dom: "restore", ti: "ti-lungs",           peek: ["move", "focus"],     kicker: "BREATHE",                              def: 5,
                        what: "Breathing patterns, easy to hard, one at a time.", why: "A longer exhale than inhale tells the body the danger is over.",
                        bands: [tbxBand(2,  "v_coherent", 120),
@@ -17820,7 +17820,33 @@
       if (acts) { onActEnter(0, 1); _prevAct = 0; } // tint the orb to the FIRST activity's color right away (the opening page)
       if (autoplay) { startFrom(0); } // clips were pre-warmed → we're still inside the Begin tap, so we can start right now
       else { playing = false; offset = 0; bPlay.innerHTML = '<i class="ti ti-player-play-filled"></i>'; sub.textContent = "tap play to begin"; dbg2("ready · tap play"); }
-      tick();
+      tick(); adoptLateClips();
+    }
+    // THE LATE-ARRIVAL ADOPTION (David on device 2026-09-19: "some gratitude lines play as text only, no voice"). Every
+    // one of the 17 v11 lines HAS a recording (DEV.gratCheck says 0 missing) — they are simply the app's LONGEST clips
+    // (up to 138KB) and, on the first run of a build, the coldest: a few of them lose the 5s bounded wait above, land in
+    // TTS's bufCache a second later, and the running session never looks again. So: no new fetch and no retry loop (the
+    // comment above is right about those) — just a cheap poll of the cache for lines that are STILL IN THE FUTURE, and
+    // the tail is re-laid and re-scheduled around whatever arrived, exactly the way a voice swap re-cuts its tail. A line
+    // that has already started is never touched.
+    function adoptLateClips() {
+      var tries = 0;
+      (function probe() {
+        if (done || !ready) return;
+        var at = curElapsed(), first = -1, i, b;
+        for (i = 0; i < segs.length; i++) {
+          var sg = segs[i]; if (!sg.text || sg.buf || sg.start <= at + 0.3) continue;
+          b = null; try { b = TTS.getBufferSync(sg.text); } catch (e) {}
+          if (b) { sg.buf = b; if (first < 0) first = i; }
+        }
+        if (first >= 0) {
+          relayoutFrom(first);
+          if (acts) { for (var r = 0; r < actResume.length; r++) if (acts[r] && acts[r]._start != null && acts[r]._start >= at) actResume[r] = null; } // those acts' windows just moved under the real clip lengths
+          if (playing) { stopSourcesFrom(first); startFrom(at, true, first); } // keepOld: the sounding line is left alone, only the unheard tail is re-scheduled
+          paintNow(at); dbg2("adopted late clip @" + first);
+        }
+        if (++tries < 16) setTimeout(probe, 1200); // ~20s of watching, then the session is what it is
+      })();
     }
     // ===== THE BOUNDED WAIT (David 2026-08-19, his friend's phone: "the circle appeared, but then the play button below
     // and the timeline never appeared, and then he had to restart for it to work… even if the internet is slow, it still
@@ -17914,7 +17940,7 @@
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; }
       if (seg) { // CAPTION CYCLING (David 2026-07-13): a long line's voice clip stays whole, but the on-screen text steps through its short chunks over the CLIP's duration (2 lines max), then holds the last chunk through the silence
-        if (seg.caps && seg.caps.length > 1 && seg.dur > 1.4) { var _span = Math.max(0.6, seg.dur), _into = Math.max(0, e - seg.start), _cx = Math.min(seg.caps.length - 1, Math.floor(_into / (_span / seg.caps.length))); lab.textContent = seg.caps[_cx]; }
+        if (seg.caps && seg.caps.length > 1 && seg.dur > 1.4) { var _span = Math.max(0.6, seg.dur), _into = Math.max(0, e - seg.start); lab.textContent = seg.caps[capIdxAt(seg, _into, _span)]; }
         else { lab.textContent = seg.label || ""; }
         sub.textContent = seg.sub || "";
       }
@@ -18979,10 +19005,13 @@
   }
   function stackCarouselable(track) { return track && track.length && track.every(function (t) { var id = (t.k && t.k.id) || t.k; return !!STACK_CONTENT[id] || !!(t.rawSegs && t.rawSegs.length); }); } // every tool has guided cue content OR pre-built segments -> can run as the unified carousel
   var _lastStackTrack = null; // remembers the just-run program so the session-complete screen can offer "Make it yours" (F4 remix-only entry law)
+  function stackDisplayList(track) { // THE ONE PLACE a track step becomes a composer/act row — so the STORY STRIP and the DOSE CARD can never draw different icons for the same step (David on device 2026-09-19).
+    return (track || []).map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t._variant || t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || THC("#9a7cff","ink"), secs: t.d || m.dur || 60, med: t.med, pat: t.pat, rawSegs: t.rawSegs, intro: t.intro }; });
+  }
   function runStackCarousel(track, onAll) { // route ANY stack through the SAME carousel player as the day-one stack (David 2026-07-08: "should function the same way in the rest of the app")
     track = tbxExpandTrack(track); // idempotent on base steps; makes a direct caller (not via runStack) variant-safe too (David 2026-07-23)
     try { _lastStackTrack = track.map(function (t) { var id = (t.k && t.k.id) || t.k; return (typeof id === "string" && stackTool(id)) ? { k: id, d: t.d } : null; }).filter(Boolean); } catch (e) { _lastStackTrack = null; } // only remix registry-backed programs (not inline run-fn steps)
-    var list = track.map(function (t) { var id = (t.k && t.k.id) || t.k, m = (t.k && (t.k.run || t.k.name)) ? t.k : (stackTool(t.k) || {}); return { id: id, nm: m.name || id, ic: m.ti || "ti-circle-filled", c: m.col || THC("#9a7cff","ink"), secs: t.d || m.dur || 60, med: t.med, pat: t.pat, rawSegs: t.rawSegs, intro: t.intro }; }); // med = meditation editor sections (for section-ticks); pat = a breathing-variant pattern key (David 2026-07-23); rawSegs = a pre-built cue list (charge / love-embodiment become their own pages)
+    var list = stackDisplayList(track); // med = meditation editor sections (for section-ticks); pat = a breathing-variant pattern key (David 2026-07-23); rawSegs = a pre-built cue list (charge / love-embodiment become their own pages). ONE ICON SOURCE (David on device 2026-09-19: "two identical pink chips in a row"): tbxExpandTrack has already collapsed a VARIANT step onto its base tool by the time we get here, so `meditate` + `v_open` both resolved to the Meditate row and the story strip drew the same pink moon twice while the dose card — which reads the SAVED track through stackTool/variantTool — drew a windmill. `t._variant` is the id tbxExpandTrack preserves; resolving through it means the strip and the dose card read the same registry row, always
     var built = composeStackSegs(list);
     try { TTS.unlock(); TTS.warm(built.segs.map(function (s) { return s.text; }).filter(Boolean)); } catch (e) {}
     timelinePlayer({ id: "stack", title: tr("Your session"), logTitle: "Session", catK: "love", color: list[0].c || THC("#9a7cff","ink"), spark: 8, vol: VPROF.relax.volume, drone: true, segments: built.segs, acts: built.acts, totalSec: built.dose, autostart: true, // totalSec (2026-08-15): the dose the user picked, handed to the player as the PROMISE it re-fits the elastic silences to — a "5 min" session ran ~6:04 without it
@@ -19013,15 +19042,35 @@
   }
   // ===== R0 — THE RELIEF DOOR + MICRO-STACK (HANDOFF-stacks-and-meditation §10, David 2026-07-02) =====
   function _normLine(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 60); } // dedup key: strip to letters/digits so near-identical lines (punctuation/casing) collapse — the session-wide no-repeat guard (David 2026-07-13)
-  function capSplit(text, max) { // split ONE guide line into short captions (<= ~2 lines) at sentence/clause boundaries. Display-only: the VOICE clip stays the whole line, the caption cycles through these over the clip's duration (David 2026-07-13: "2 lines max, split long statements into shorter faster captions")
+  // THE SENTENCE LAW (David on device 2026-09-19, the v1493 stretch act: "the text is cut into random chunks — one word,
+  // then a sentence, then one word — while the voice reads the whole line"). The old splitter cut at COMMAS too and then
+  // greedy-word-packed anything still over `max`, so "Sit tall, near the edge of your seat, feet flat on the floor." became
+  // three fragments and a two-word orphan. Now: split ONLY at sentence boundaries; a card carries one or two WHOLE
+  // sentences (two only when both fit inside `max`); a card is never shorter than 4 words — a short tail folds into its
+  // neighbour. A single long sentence stays whole and wraps, because half a sentence on screen while the voice reads the
+  // other half is the bug. Display-only: the VOICE clip is always the whole line.
+  function capSplit(text, max) {
     max = max || 48; text = String(text || "").trim(); if (!text || text.length <= max) return [text];
-    var units = text.match(/[^.!?,]+[.!?,]*\s*/g) || [text], packed = [], buf = "";
-    units.forEach(function (u) { if ((buf + u).trim().length > max && buf) { packed.push(buf.trim()); buf = u; } else buf += u; });
-    if (buf.trim()) packed.push(buf.trim());
-    var out = []; packed.forEach(function (c) { if (c.length <= max) { out.push(c); return; } var words = c.split(/\s+/), b = ""; words.forEach(function (w) { var p = b ? b + " " + w : w; if (p.length > max && b) { out.push(b); b = w; } else b = p; }); if (b) out.push(b); }); // any clause still too long: greedy word-pack
-    for (var k = out.length - 1; k > 0; k--) { if (out[k].split(/\s+/).length <= 1 && out[k].length <= 8) { out[k - 1] = out[k - 1] + " " + out[k]; out.splice(k, 1); } } // merge a lone tiny orphan ("love.") back into the previous caption
-    return out.length ? out : [text];
+    var units = (text.match(/[^.!?]+[.!?]*(?:\s+|$)/g) || [text]).map(function (u) { return u.trim(); }).filter(Boolean);
+    if (units.length < 2) return [text];                                     // one sentence = one card, however long
+    var packed = [], buf = "";
+    units.forEach(function (u) { if (buf && (buf + " " + u).length > max) { packed.push(buf); buf = u; } else buf = buf ? (buf + " " + u) : u; });
+    if (buf) packed.push(buf);
+    for (var k = packed.length - 1; k >= 0 && packed.length > 1; k--) {      // NEVER A CARD UNDER 4 WORDS ("Those count too." rides with the line before it)
+      if (packed[k].split(/\s+/).length >= 4) continue;
+      if (k > 0) { packed[k - 1] = packed[k - 1] + " " + packed[k]; packed.splice(k, 1); }
+      else { packed[1] = packed[0] + " " + packed[1]; packed.splice(0, 1); }
+    }
+    return packed.length ? packed : [text];
   }
+  function capIdxAt(seg, into, span) { // WHICH CARD IS UP, timed PROPORTIONAL TO ITS WORDS inside the clip (David 2026-09-19): an even split showed a 12-word sentence and a 5-word sentence for the same number of seconds, so the long one flicked past mid-read. Cumulative word fractions, cached on the seg (built once, dies with the session).
+    var c = seg._capCum, i;
+    if (!c) { var w = seg.caps.map(function (x) { return String(x).split(/\s+/).length; }), tot = 0; for (i = 0; i < w.length; i++) tot += w[i]; c = []; var acc = 0; for (i = 0; i < w.length; i++) { acc += w[i]; c.push(acc / (tot || 1)); } seg._capCum = c; }
+    var f = span > 0 ? (into / span) : 0;
+    for (i = 0; i < c.length; i++) if (f < c[i]) return i;
+    return c.length - 1;
+  }
+
   function medSeg(ln, gap, subName, act) { var caps = capSplit(tr(ln)); var s = { text: ln, label: caps[0], sub: subName || "", gap: gap }; if (caps.length > 1) s.caps = caps; if (act != null) s._act = act; return s; } // a meditation cue: full line = the voice clip; caps = the short display chunks the player cycles. TRANSLATE-THEN-SPLIT (David on device 2026-08-21, "sometimes the text is English when it should be in Russian"): the caption is cut from the LOCALIZED line, never from the English one. translateTree can only translate a DICT KEY, and a chunk is not a key — splitting first meant every fully-translated long line still printed English on screen while the voice spoke Russian. `text` stays the EN line: it is the voice clip's key (TTS localizes it itself via vline).
   // STRETCH_MOVES (David 2026-07-13): a real, ORDERED head-to-toe mobility flow, not 3 fixed poses. The composer walks this
   // list ONCE from the top (stretchMoveSegs) — a longer dose buys more of it, then longer holds, and only repeats when even
@@ -19481,7 +19530,8 @@
           acts[ai]._sections = v2.secMeta;
           return;
         }
-        var msecs = (t.med && t.med.length) ? t.med.slice() : (sawBodyPrep ? [{ k: "breath" }, { k: "aware" }, { k: "rest" }] : [{ k: "settle" }, { k: "aware" }, { k: "rest" }]); // if the stack already ran relax/stretch, DROP the redundant body-settle section (that was the doubled "soften / unclench" — David 2026-07-13)
+        var msecs = (t.med && t.med.length) ? t.med.slice() : (sawBodyPrep ? [{ k: "breath" }, { k: "aware" }, { k: "rest" }] : [{ k: "settle" }, { k: "aware" }, { k: "rest" }]);
+        while (sawBodyPrep && msecs.length > 1 && msecs[0] && msecs[0].k === "settle") msecs.shift(); // ONE SEAMLESS THING (David on device 2026-09-19, the v1493 Morning Stack): MED_SEC.settle IS MED_EXTRA.arrival, which is the relax act's cue chain word for word. An EXPLICIT med list (a variant like v_open, or a user-authored track) skipped the auto-arc's drop rule above, so the act after the relaxer re-spoke "soften your forehead / drop your shoulders" and then ran an old-style sit. The auto arc has always dropped it; an authored list drops it too, and only when an earlier act already settled the body. // if the stack already ran relax/stretch, DROP the redundant body-settle section (that was the doubled "soften / unclench" — David 2026-07-13)
         var depth = sessionDepth(t.secs || 90); // length/preset -> how spacious: long/advanced = long silence, few reminders; short/beginner = dense
         var secMeta = []; // per-section metadata (name/color/icon). It NO LONGER expands the act into section bars (David 2026-08-15 killed that zoom — one story bar per step); it stays because _secList pairs it with each section's real-time window and the section's first cue drives the transport ticks
         msecs.forEach(function (sc, si) {
@@ -19533,7 +19583,9 @@
         var cRest = Math.min(PK.somaticRest, cSpare / (cGrpN + 1)), cLast = Math.min(PK.somaticRelease, Math.max(PK.somatic, cSpare - cRest * cGrpN)); // a big dose does NOT buy longer beats between muscle cues; it buys a longer lie-there-and-feel-it at the end, exactly like PMR's release
         C.cues.forEach(function (q, qi) {
           var last = qi === cN - 1, grp = !last && qi > 0 && (qi + 1) % 3 === 0 && cRest > 1.5;
-          P({ text: q[1] ? (q[0] + ", " + q[1]) : q[0], label: q[0], sub: q[1] || "",
+          var _ctx = q[1] ? (q[0] + ", " + q[1]) : q[0];
+          usedTxt[_normLine(_ctx)] = 1; usedTxt[_normLine(q[0])] = 1; // THE MISSING STAMP (2026-09-19): every other branch registers what it said, this one never did — so the relax act's eight muscle cues stayed "unsaid" and any later pool (MED_EXTRA.arrival is the same eight lines) was free to re-deliver them. Both the composite and its top line are stamped, because a pool line may match either half.
+          P({ text: _ctx, label: q[0], sub: q[1] || "",
               gap: last ? cLast : (grp ? cRest : PK.somatic), _pk: last ? "release" : (grp ? "settle" : "somatic") });
         }); // SPEAK the whole cue (label + sub), not just the top line — matches the already-recorded relaxMoment clips by hash (David 2026-07-15: "voice only reads the top line")
       } else if (C.lines) {
@@ -19543,10 +19595,14 @@
         // REWIRE line asks you to build a scene, which the old 3.3s "cue" never gave you time to do (`visual`, 8→15s).
         var lKind = (t.id === "mantra") ? "affirm" : (t.id === "reprogram") ? "visual" : "cue";
         var lFix = Math.max(PK.affirmMin, Math.min(PK.affirmMax, PK.speechEst * PK.affirmMul));
+        // A SPENT INSTRUCTION POOL STOPS (2026-09-19): Visualisation's five steps are a SEQUENCE, so looping them re-said
+        // "a vivid rehearsal gets filed as real evidence" twice inside one act. A MANTRA is the opposite — saying the one
+        // line again until it lands IS the method — so `affirm` keeps looping and only the instruction pools stop, letting
+        // the act's last pause hold the remaining time.
         var t2 = 0, li = 0, passL = 0, prevL = null;
         while (t2 < t.secs - 1) { var lcad = (lKind === "affirm") ? lFix : (pauseFor(lKind, depthL) + passL * 2); var ln = order2[li]; if (ln === prevL && order2.length > 1) { li = (li + 1) % order2.length; ln = order2[li]; }
           usedTxt[_normLine(ln)] = 1;
-          P({ text: ln, label: ln, sub: "", gap: lcad, _pk: lKind }); t2 += lcad + PK.speechEst; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; var remL = C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); order2 = _shuffled(remL.length ? remL : C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
+          P({ text: ln, label: ln, sub: "", gap: lcad, _pk: lKind }); t2 += lcad + PK.speechEst; prevL = ln; li++; if (li >= order2.length) { li = 0; passL++; var remL = C.lines.filter(function (l) { return !usedTxt[_normLine(l)]; }); if (!remL.length && lKind !== "affirm") break; order2 = _shuffled(remL.length ? remL : C.lines); if (order2[0] === prevL && order2.length > 1) { var sw2 = order2[0]; order2[0] = order2[1]; order2[1] = sw2; } } }
       }
       if (t.id === "relax" || t.id === "stretch" || t.id === "breathe" || t.id === "breath") sawBodyPrep = true; // a later meditation act drops its get-seated opener: relax/stretch/breath all leave the user already settled with the eyes closed (David 2026-09-19) A SEATED stretch still counts as body prep (it leaves you sitting, settled), and nothing in the app tracks whether the user is standing — there is no such flag to correct.
     });
@@ -22340,6 +22396,52 @@
       fillSec: +(g.reduce(function (a, sg) { return a + sg.gap; }, 0) + g.length * PK.speechEst).toFixed(1), moves: g.map(function (sg) { return sg.label; }) };
   };
   window.DEV.segs = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player open"; var sg = p.segs || [], out = [], i; for (i = 0; i < sg.length; i++) { var nxt = sg[i + 1]; out.push({ t: (sg[i].t || "").slice(0, 26), start: sg[i].start, dur: sg[i].dur, gap: (nxt && sg[i].start != null && sg[i].dur != null) ? +(nxt.start - sg[i].start - sg[i].dur).toFixed(2) : null }); } return { n: out.length, elapsed: p.elapsed, total: p.total, segs: out }; }; // the REAL laid-out gap between consecutive segments = next.start - (this.start + this.dur). This is the number the ear hears; the composer's declared `gap` is only its input.
+  // ===== THE 2026-09-19 MORNING-STACK DUMPS (David on device, v1493). Three read-outs that answer the three questions a
+  // stack bug asks: what does the session actually SAY (in order, with the act it belongs to and the session-wide repeat
+  // check), do the story-strip chips match the dose card's step list, and does every spoken line have a real voice clip.
+  function _devStackList(id, mins) { // the EXACT track + list runStackCarousel builds for a dose — fold, scale, expand, resolve
+    var m = mins || tbxDose(id), track = tbxScaleTrack(tbxTrackForDose(id, m), m);
+    var ex = tbxExpandTrack(track);
+    return { mins: m, track: track, list: stackDisplayList(ex) };
+  }
+  window.DEV.chipsFor = function (track) { // the strip chips a HAND-WRITTEN track would draw (e.g. two adjacent meditation variants) vs the dose card's derived steps
+    var ex = tbxExpandTrack(track || []), r = composeStackSegs(stackDisplayList(ex));
+    var strip = r.acts.map(function (a) { return { name: a.name, icon: a.icon, color: a.color }; });
+    var card = tbxDerivedSteps(track || []).map(function (st) { return { name: st.t, icon: st.ic, color: st.c }; });
+    var adj = []; for (var i = 1; i < strip.length; i++) if (strip[i].icon === strip[i - 1].icon && strip[i].color === strip[i - 1].color) adj.push(i - 1 + "+" + i);
+    return { match: strip.length === card.length && strip.every(function (x, i) { return x.icon === card[i].icon && x.color === card[i].color; }), adjacentIdentical: adj, strip: strip, doseCard: card };
+  };
+  window.DEV.stackDump = function (id, mins) { // every spoken line in order + the duplicate check across the WHOLE stack
+    var L = _devStackList(id || "firstLight", mins), r = composeStackSegs(L.list), ai = -1, rows = [], seen = {}, dup = [];
+    r.segs.forEach(function (sg) {
+      if (sg._act !== ai) { ai = sg._act; rows.push("--- ACT " + ai + ": " + ((r.acts[ai] || {}).name || "?") + " ---"); }
+      if (!sg.text) return;
+      var k = _normLine(sg.text); if (seen[k]) dup.push("ACT " + ai + " · " + sg.text); seen[k] = 1;
+      rows.push("  [" + ai + "] " + sg.text);
+    });
+    return { dose: L.mins + "m", total: r.dose, acts: r.acts.map(function (a) { return a.name; }), dupes: dup, n: r.segs.length, rows: rows };
+  };
+  window.DEV.stackChips = function (id, mins) { // the STORY STRIP (composed acts) against the DOSE CARD (derived steps) — same registry row or not
+    var L = _devStackList(id || "firstLight", mins), r = composeStackSegs(L.list);
+    var strip = r.acts.map(function (a) { return { name: a.name, icon: a.icon, color: a.color }; });
+    var card = tbxDerivedSteps(L.track).map(function (st) { return { name: st.t, icon: st.ic, color: st.c }; });
+    var same = strip.length === card.length && strip.every(function (x, i) { return x.icon === card[i].icon && x.color === card[i].color; });
+    var adj = []; for (var i = 1; i < strip.length; i++) if (strip[i].icon === strip[i - 1].icon && strip[i].color === strip[i - 1].color) adj.push(i - 1 + "+" + i + " " + strip[i].icon);
+    return { match: same, adjacentIdentical: adj, strip: strip, doseCard: card };
+  };
+  window.DEV.gratCheck = function (secs) { // every gratitude line the run will SPEAK + whether a clip exists for that exact string
+    function row(tx) { return { clip: TTS.hasClip(tx), key: TTS.vkey(tx), text: tx }; }
+    var st = composeStackSegs([{ id: "gratitude", nm: "Grateful", ic: "ti-heart", c: THC("#ff5fa0","bg"), secs: secs || 60 }]);
+    var lit = {}; GRAT_FLOW.seq.forEach(function (l) { lit[l] = 1; });
+    var stack = st.segs.filter(function (sg) { return sg.text; }).map(function (sg) { return row(sg.text); });
+    var hints = st.segs.filter(function (sg) { return sg.sub; }).map(function (sg) { return sg.sub; });
+    var solo = GRAT_FLOW.seq.map(row);
+    var stray = stack.filter(function (x) { return !lit[x.text]; }).map(function (x) { return x.text; });
+    return { bank: TTS.bank(), slot: (secs || 60) + "s", stackMissing: stack.filter(function (x) { return !x.clip; }).length, soloMissing: solo.filter(function (x) { return !x.clip; }).length, notALiteral: stray, onScreenOnlyHints: hints, stack: stack, solo: solo };
+  };
+  window.DEV.cards = function (n) { // the on-screen text cards for the seated stretch lines (bug 4): whole sentences, nothing under 4 words
+    return STRETCH_SEATED.seq.slice(0, n || 3).map(function (l) { var c = capSplit(tr(l)); return { line: l, cards: c, words: c.map(function (x) { return x.split(/\s+/).length; }) }; });
+  };
   window.DEV.breathStack = function (pat, secs) { runStackCarousel([{ k: { id: "breathe", name: "Breathe", ti: "ti-lungs", col: THC("#63d3c9","bg") }, d: secs || 60, pat: pat || "resonance" }]); return "composed breath session (the toolbox front door's engine) · pat=" + (pat || "resonance"); }; // the same runStackCarousel → composeStackSegs → timelinePlayer path breatheLadder takes, without walking the toolbox
   window.DEV.breathPlayer = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov");
     function live(sel) { var ns = ov ? ov.querySelectorAll(".gp-track " + sel) : []; for (var i = 0; i < ns.length; i++) if (ns[i].offsetParent) return ns[i]; return null; } // the SHOWN one, across the carousel's pages — offsetParent is null on a display:none page or a hidden counter, so this can never report a stale page's text as live

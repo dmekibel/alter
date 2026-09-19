@@ -198,3 +198,9 @@ Script = `graph/meditation-v2-FULL.txt` (36 lines, ~470 words; opener 9 / Blacks
 
 ## 2026-09-19 — SEATED STACK WARM-UP APPROVED (David: "Yes")
 `graph/stretch-seated-stack-v1-lines.txt` (18 rows: placebo opener + position/safety line, then 16 seated moves in PT order). Slot takes rows in order, mirrored pairs together: ~6 moves at 60s, 8 at 75s, 10 at 90s; rows past that solo only. Laws added: movement act opens with ONE what-and-why line; no time quantities in an opener; "feel the stretch" + where, never "feel it". Standing v4 stays the solo routine, unread.
+
+## 2026-09-19 — David's device report on v1493 Morning Stack (4 bugs)
+1. Story strip above the player shows two identical pink heart chips in a row after meditation; inconsistent with the stack's list in the dose card.
+2. After the first meditation ends, the next act repeats muscle-relaxer lines then plays an OLD meditation (v_open: MED_EXTRA.arrival = relax chain + old block engine).
+3. Some gratitude lines are text-only, no voice.
+4. Stretch on-screen text is cut into arbitrary chunks (one word / a sentence / one word). LAW: the visual matches the audio; show whole phrases (one or two lines as fit), never a single word, and never leave a phrase's last word alone on the next card.
