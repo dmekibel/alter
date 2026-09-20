@@ -127,6 +127,58 @@
       if (!_bgBus) { _bgBus = _sharedACtx.createGain(); _bgBus.gain.value = _audioCfg().bg != null ? _audioCfg().bg : 1; _bgBus.connect(_sharedACtx.destination); }
       return _sharedACtx; } catch (e) { return null; }
   }
+  // ===== THE INTERRUPTION DOOR (David on device 2026-09-20: "pause the player, go to WhatsApp, record a voice message,
+  // come back — play/pause does nothing, it's stuck"). iOS hands another app's MIC SESSION the audio hardware and parks
+  // ours in state "interrupted" (or hands it back on a different route at a different sampleRate). WebKit never resumes
+  // it for us and `resume()` on a genuinely dead context resolves without ever reaching "running", so every later
+  // `src.start()` threw into the player's catch and the transport sat there silently doing nothing.
+  //   Three steps, in order: RESUME · VERIFY · REBUILD. A rebuild is the last resort because it costs every decoded
+  // buffer (an AudioBuffer belongs to the context that decoded it — feeding it to a new one throws), so the caches that
+  // hold them register here and are cleared by the same hook that rebuilds. THE ctx-cap LAW IS INTACT: the replacement
+  // context is created by sharedAudioCtx() below, inside @SEC:AUDIO, and the old one is CLOSED first — the count never grows.
+  var _acRate = 0, _acGen = 0, _acHooks = [];
+  function audioCtxGen() { return _acGen; }
+  function onAudioRebuild(fn) { if (typeof fn !== "function") return function () {}; _acHooks.push(fn); return function () { var i = _acHooks.indexOf(fn); if (i >= 0) _acHooks.splice(i, 1); }; } // returns its own off-switch; every registrant that can die (a player) MUST call it on teardown
+  function audioCanStart(c) { // THE HONEST TEST: a context can be "running" on paper and still refuse to start a node after an interruption. One silent oscillator, one frame long.
+    try { var o = c.createOscillator(), g = c.createGain(); g.gain.value = 0; o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime + 0.01); setTimeout(function () { try { o.disconnect(); g.disconnect(); } catch (e) {} }, 80); return true; } catch (e) { return false; }
+  }
+  function audioRebuild() {
+    try { if (_sharedACtx) _sharedACtx.close(); } catch (e) {}
+    _sharedACtx = null; _voiceBus = null; _bgBus = null;
+    var c = sharedAudioCtx(); if (!c) return null;
+    _acRate = c.sampleRate; _acGen++;
+    try { console.log("[audio] context REBUILT · gen " + _acGen + " · rate " + _acRate + " · state " + c.state); } catch (e) {}
+    _acHooks.slice().forEach(function (fn) { try { fn(c); } catch (e) {} });
+    return c;
+  }
+  function audioRecover(cb) { // resume, then verify, then rebuild if the platform left it dead. cb(ctx, wasRebuilt) — always called exactly once.
+    var pre = _sharedACtx ? _sharedACtx.state : "none";                          // snapshot FIRST: sharedAudioCtx() resumes a merely-suspended context on the way past, and that is itself a recovery worth one line
+    var c = sharedAudioCtx(); if (!c) { if (cb) cb(null, false); return; }
+    if (pre !== "running" && pre !== "none" && c.state === "running") { try { console.log("[audio] recovery: context was " + pre + ", now running"); } catch (e) {} }
+    if (!_acRate) _acRate = c.sampleRate;
+    function settle() {
+      var cur = _sharedACtx;
+      var dead = !cur || cur.state !== "running" || cur.sampleRate !== _acRate || !audioCanStart(cur);
+      if (dead) { try { console.log("[audio] recovery: context unusable (state " + (cur && cur.state) + ", rate " + (cur && cur.sampleRate) + " vs " + _acRate + ") — rebuilding"); } catch (e) {}
+        var n = audioRebuild(); if (n) { try { n.resume(); } catch (e) {} } if (cb) cb(n, true); return; }
+      if (cb) cb(cur, false);
+    }
+    if (c.state === "running") { settle(); return; }
+    try { console.log("[audio] recovery: resuming from state " + c.state); } catch (e) {}
+    var landed = false, t = setTimeout(function () { if (landed) return; landed = true; settle(); }, 900); // resume() on an interrupted context can hang forever — the bounded wait is what keeps the play button from being a no-op
+    try { var pr = c.resume();
+      if (pr && pr.then) pr.then(function () { if (landed) return; landed = true; clearTimeout(t); settle(); }, function () { if (landed) return; landed = true; clearTimeout(t); settle(); });
+      else { landed = true; clearTimeout(t); settle(); }
+    } catch (e) { landed = true; clearTimeout(t); settle(); }
+  }
+  // COMING BACK IS THE TRIGGER. visibilitychange(visible) covers the app switch, pageshow the bfcache restore, focus the
+  // cases WebKit reports as neither. All three are cheap when nothing is wrong: a running context at the same rate exits
+  // after one silent oscillator.
+  try {
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", function () { if (!document.hidden) audioRecover(null); });
+    window.addEventListener("pageshow", function () { audioRecover(null); });
+    window.addEventListener("focus", function () { audioRecover(null); });
+  } catch (e) {}
   // ===== THE AUDIO SESSION, CLAIMED ONLY WHEN WE ACTUALLY MAKE SOUND (David on device 2026-08-27: "the player at the very
   // top assumes you're playing audio even though nothing is playing" + "if somebody's listening to music and they open up
   // this app, music doesn't stop unless you turn on the player"). Both are ONE cause. `navigator.audioSession.type` is
@@ -234,6 +286,7 @@
     function start(key, level) { if (!BG_FILES[key] || live[key]) return; if (level != null) lvl = level; live[key] = { src: null, gain: null }; if (cache[key]) attach(key); else load(key); }
     function stop(key) { if (key == null) { Object.keys(live).forEach(function (k) { stop(k); }); return; } var e = live[key]; if (!e) return; delete live[key]; try { if (e.src) { e.src.onended = null; e.src.stop(0); } } catch (er) {} } // stop() with no key = stop every bed (the old single-source signature, unchanged for its callers)
     function running() { return Object.keys(live).filter(function (k) { return !!live[k].src; }); } // the honest receipt: which keys have a LIVE BufferSource, not which chips are lit
+    onAudioRebuild(function () { cache = {}; live = {}; inflight = {}; want = {}; }); // every decoded bed belongs to the dead context — drop them all; the player's own hook restarts the bed it wants
     return { load: load, start: start, stop: stop, running: running, buffer: buffer };
   })();
   var _activeBed = null; // the running timelinePlayer registers a (keys[])=>switch fn here so the settings card can live-swap its bed SET
@@ -527,6 +580,7 @@
     // unconditional stop: that one is the real exit, and audio outliving a torn-down page is a bug.
     if (typeof document !== "undefined") { document.addEventListener("visibilitychange", function () { if (document.hidden && !sessionAudioLive()) stop(); }); window.addEventListener("pagehide", stop); }
     initVoices();
+    onAudioRebuild(function () { bufCache = {}; curSrc = null; }); // the clips were decoded in the context that just died; the next getBuffer re-fetches (force-cache, so it is a disk read) and decodes into the new one
     return { supported: supported, unlock: unlock, speak: speak, stop: stop, getBuffer: getBuffer, getBufferSync: getBufferSync, warm: warm, warmAll: warmAll, scheduleClip: scheduleClip, scheduleClipAsync: scheduleClipAsync, ctx: sharedAudioCtx, vkey: function (t) { return vhash(t); }, hasClip: function (t) { return hasClipFor(t); }, setVoice: setVoice, setRuVoice: setRuVoice, applyVoice: applyVoice, voicePick: function () { return VOICE_PICK; }, voiceGen: voiceGen, bank: curBank };
   })();
   // per-module voice profiles (rate/pitch/volume) — calmer/slower than a screen reader, per the meditation-TTS UX research
@@ -18087,7 +18141,7 @@
     }
     var cog = add(ov, "button", "gp-cog"); cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.zIndex = "10"; cog.onclick = function () { if (playing) pause(); openVolumePanel(); }; // opening Sound pauses the player so you can preview beds freely (David 2026-07-10)
     // DISTRACTION-TAP FEEDBACK LOOP (David 2026-07-01): tap the orb whenever you notice your mind wandered → a gentle re-anchor chime (played IN the tap gesture, iOS-safe) + "good catch". The drift rate is LEARNED into S.tools.medFocus and adapts reminder density — a beginner can do a long session with lots of help; it eases off as you steady. Reward-never-shame: noticing IS the practice. This is the feedback loop Headspace lacks.
-    var driftCount = 0;
+    var driftCount = 0, _orbIntroDone = 0; // _orbIntroDone: the session's one-time orb-settle + caption fade-in has run (see ORB DRIVE in paintNow)
     function medChime() { var c = TTS.ctx && TTS.ctx(); if (!c) return; var t = c.currentTime, out = (typeof bgBus === "function" && bgBus()) || c.destination; [528, 792].forEach(function (f, i) { var o = c.createOscillator(), g = c.createGain(); o.type = "sine"; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * 0.04); g.gain.linearRampToValueAtTime(0.13 - i * 0.06, t + i * 0.04 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5); o.connect(g); g.connect(out); o.start(t); o.stop(t + 1.6); }); }
     // CATCH = THE UNIT (mock #20): a pip row + ripple every time you notice a drift; label spells «подмечено · N». Same driftCount/medChime/label semantics as before — just made visible.
     var catchWrap = add(ov, "div", "gp-catch");
@@ -18122,6 +18176,40 @@
     _activeBed = function (keys) { bedSel = (keys && keys.slice) ? keys.slice() : bedKeys(); bedPre(); bedStop(); if (playing) bedStart(); }; // settings-card live-swap of the running bed SET (David 2026-07-10, multi 2026-08-20)
     bedStart();
     _gpRevoice = function () { if (!done) revoice(TTS.voiceGen()); }; // the live door TTS.setVoice knocks on
+    // THE PLAYER'S OWN INTERRUPTION DOOR (David on device 2026-09-20, the WhatsApp voice-message report). When
+    // @SEC:AUDIO has to rebuild the context, THIS session's decoded clips die with the old one — so re-point `ctx`,
+    // drop the buffers, re-fetch them into the new context (bounded, the same bufWithin the open uses), re-lay the
+    // timeline out and re-arm the transport from exactly where we were. `_wantPlay` is the play-button's intent
+    // travelling through a rebuild it triggered: a tap that lands during a dead context still ends in sound.
+    var _wantPlay = false, _rearming = false;
+    var _acOff = onAudioRebuild(function (c2) {
+      if (done || !c2) return;
+      var at = curElapsed(), wasPlaying = playing || _wantPlay; _wantPlay = false; _rearming = true;
+      ctx = c2; try { stopSources(); } catch (e) {} breathAudioOff(); playing = false; ov.classList.remove("gp-playing");
+      bedStop(); segs.forEach(function (sg) { sg.buf = null; });
+      try { console.log("[audio] player re-arming after rebuild · at " + at.toFixed(2) + "s · playing " + wasPlaying); } catch (e) {}
+      function land(bufs) {
+        _rearming = false; if (done) return;
+        (bufs || []).forEach(function (b, i) { if (segs[i]) segs[i].buf = b || null; });
+        var want = wasPlaying || _wantPlay; _wantPlay = false;   // a play TAP that landed during the re-decode counts too \u2014 otherwise the transport sits there claiming to play with nothing scheduled, which is the very bug this door exists to kill
+        relayoutFrom(0); offset = Math.max(0, Math.min(at, total));
+        if (want) startFrom(offset); else { playing = false; paintNow(offset); }
+      }
+      Promise.all(segs.map(function (sg) { return bufWithin(sg, GP_ASSET_WAIT); })).then(land, function () { land(null); });
+    });
+    function segStartAt(sec) { var j = 0; for (var i = 0; i < segs.length; i++) { if (segs[i].start != null && segs[i].start <= sec) j = i; else break; } return segs[j] && segs[j].start != null ? segs[j].start : 0; }
+    function playTap() { // THE PLAY BUTTON IS NEVER A NO-OP (David 2026-09-20). Recover the engine first; if it cannot be running within a second, RESTART THE CURRENT SEGMENT from its own start — a line heard twice beats a dead disc.
+      if (!ready || done || playing) return;
+      _wantPlay = true;
+      if (_rearming) return;                                      // the rebuild's re-decode is in flight; it reads _wantPlay when it lands. Starting sources now would schedule nulls and leave a "playing" transport with no sound.
+      var armed = false;
+      var t = setTimeout(function () { if (armed || done || playing) return; armed = true; _wantPlay = false; offset = segStartAt(offset); try { console.log("[audio] play could not resume in 1s — restarting the segment at " + offset.toFixed(2) + "s"); } catch (e) {} startFrom(offset); }, 1000);
+      audioRecover(function (c2, rebuilt) {
+        if (armed || done) { clearTimeout(t); return; }
+        if (rebuilt) { armed = true; clearTimeout(t); return; } // the rebuild hook above owns the re-arm (it has to re-decode first)
+        armed = true; clearTimeout(t); _wantPlay = false; if (c2) ctx = c2; startFrom(offset);
+      });
+    }
     // ===== BREATH AUDIO ON THE FRONT DOOR (David 2026-08-15: "we kind of set that up somewhere in the app"). The toolbox
     // "Breathe" tile runs THIS player — breatheLadder → tbxExpandTrack → runStack → composeStackSegs' C.breath branch →
     // breathFlowRows → here — and until now the cue sounds and the guiding tone existed ONLY inside breathwork(), behind
@@ -18443,6 +18531,12 @@
         var _sc, _op;
         if (_bs) { _sc = 0.84 + 0.30 * _bs.level; _op = 0.60 + 0.40 * Math.min(1, _bs.level); }
         else { var _amb = 0.5 - 0.5 * Math.cos(e * ORB_AMB_W); _sc = 0.90 + 0.15 * _amb; _op = 0.76 + 0.22 * _amb; } // AMBIENT BREATH — DELIBERATELY DECOUPLED from the segment span (re-checked 2026-08-15 when somatic gaps dropped to 2s): it runs off the session's ABSOLUTE elapsed clock at a fixed ~11s period, so shortening a cue's pause can never make the orb pant.
+        if (!orb._gpSettled) { // THE LOADING ORB DOES NOT SNAP (David on device 2026-09-20: "a big orange circle says loading, then the text appears and the circle SNAPS to a smaller size"). The loading disc sits at the CSS resting size (.bw-orb transform:none = scale 1) and the running orb's ambient breath opens at scale .90 — a ~21px drop on the very first painted frame. Same two sizes, no new paint values: it now TRAVELS between them on the app's own settle easing, and the caption waits for the orb to land instead of arriving first and being contradicted.
+          orb._gpSettled = 1; orb.style.transition = "transform .3s var(--ease-settle), opacity .3s var(--ease-settle)";
+          var _o0 = orb, _l0 = lab, _s0 = sub, _fade = !_orbIntroDone; _orbIntroDone = 1;
+          if (_fade) { try { _l0.style.opacity = "0"; if (_s0) _s0.style.opacity = "0"; } catch (e) {} } // only the SESSION's first orb fades its caption in; an act change already has its own page slide and must not blank its line
+          setTimeout(function () { try { _o0.style.transition = ""; if (_fade) { _l0.style.transition = "opacity .26s var(--ease-settle)"; _l0.style.opacity = "1"; if (_s0) { _s0.style.transition = "opacity .26s var(--ease-settle)"; _s0.style.opacity = "1"; } } } catch (e) {} }, 320); // the transition is ONE-SHOT: the orb is driven per frame from here on, and a live transition would lag the breath behind the cue
+        }
         orb.style.transform = "scale(" + _sc.toFixed(3) + ")"; orb.style.opacity = _op.toFixed(3);
       }
       if (acts) { for (var _ai = 0; _ai < acts.length; _ai++) { var _a = acts[_ai]; var _f = (_a._end > _a._start) ? (e - _a._start) / (_a._end - _a._start) : (e >= _a._start ? 1 : 0); _f = _f < 0 ? 0 : _f > 1 ? 1 : _f; if (actFills[_ai]) actFills[_ai].style.width = (_f * 100) + "%"; }
@@ -18514,7 +18608,7 @@
       if (playing) paintNow(e);
       raf = requestAnimationFrame(tick);
     }
-    bPlay.onclick = function () { if (!ready || done) return; if (playing) pause(); else startFrom(offset); };
+    bPlay.onclick = function () { if (!ready || done) return; if (playing) { pause(); audioRecover(null); } else playTap(); }; // BOTH taps touch the engine: pausing is also a moment to notice the context came back interrupted, so the next play has a live one to start from
     function _clampAct(sec) { if (!acts) return sec; var a = acts[curAct] || acts[0], lo = a._start || 0, hi = (a._end != null ? a._end : total); return Math.max(lo, Math.min(hi - 0.15, sec)); } // ±15 + scrub stay INSIDE the current activity (2026-08-15: no section sub-clamp — the whole meditation is one step again)
     bBack.onclick = function () { if (ready) seek(_clampAct(curElapsed() - 15)); };
     bFwd.onclick = function () { if (ready) seek(_clampAct(curElapsed() + 15)); };
@@ -18533,7 +18627,7 @@
         var j = curAct + dir;
         if (dir > 0 && opts.onSkipAct) { try { opts.onSkipAct(curAct); } catch (e) {} } // passive evidence: which act the user walked out of (David 2026-09-20 — no pop-ups, so the app has to learn by watching)
         if (j >= acts.length) { if (opts.edgeNextFinish) finish(false); return; }
-        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); msOff(); try { TTS.stop(); } catch (er) {} _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
+        if (j < 0) { if (opts.onEdgePrev) { done = true; if (raf) cancelAnimationFrame(raf); stopSources(); breathAudioOff(); msOff(); try { TTS.stop(); } catch (er) {} if (_acOff) { _acOff(); _acOff = null; } _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (er) {} if (usedBGM) { try { BGM.stop(); } catch (er) {} } if (padCtl) { try { padCtl.stop(); } catch (er) {} } if (ov.parentNode) ov.remove(); opts.onEdgePrev(); } return; }
         gotoAct(j); }
       // SIDE-CLICK NAV (David 2026-07-10): left third = back, right third = forward. Zones start BELOW the story bars / ✕ / gear and stop ABOVE the transport.
       var _tzTop = "top:calc(env(safe-area-inset-top,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 200px);z-index:5;";
@@ -18548,7 +18642,7 @@
         function stopFF() { if (!fastFwd) return; fastFwd = false; if (ffRaf) cancelAnimationFrame(ffRaf); _bSup = true; if (ffWasP && !done) startFrom(offset); } // resume audio at the scanned position
         midZ.addEventListener("pointerdown", function (e) { if (!ready || done) return; mMoved = false; mDownX = e.clientX; mDownY = e.clientY; holdT = setTimeout(startFF, 260); });
         midZ.addEventListener("pointermove", function (e) { if (!mMoved && (Math.abs(e.clientX - mDownX) > 10 || Math.abs(e.clientY - mDownY) > 10)) { mMoved = true; clearTimeout(holdT); } }); // a real drag (swipe) cancels the hold
-        midZ.addEventListener("pointerup", function () { clearTimeout(holdT); if (fastFwd) { stopFF(); } else if (!mMoved) { if (playing) pause(); else if (ready && !done) startFrom(offset); } });
+        midZ.addEventListener("pointerup", function () { clearTimeout(holdT); if (fastFwd) { stopFF(); } else if (!mMoved) { if (playing) { pause(); audioRecover(null); } else playTap(); } });
         midZ.addEventListener("pointercancel", function () { clearTimeout(holdT); if (fastFwd) stopFF(); });
         midZ.addEventListener("pointerleave", function () { clearTimeout(holdT); if (fastFwd) stopFF(); });
       }
@@ -18570,7 +18664,7 @@
 
     function finish(skip) {
       if (done) return; done = true; if (raf) cancelAnimationFrame(raf); stopSources(); TTS.stop(); breathAudioOff(); msOff(); vizDrop(); // the carrier and the lock-screen card die on BOTH teardown paths (this one and the onEdgePrev bail) — a silent element left playing behind a closed session is a phantom now-playing card // the breath visual goes with the run — a session that ENDS on a breath phase must hand the closing "Done ✓" beat back to the orb it was hiding
-      _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
+      if (_acOff) { _acOff(); _acOff = null; } _activeBed = null; _gpRevoice = null; _gpProbe = null; _gpSettings = null; if (_breathLive === _bLiveHook) _breathLive = null; try { BGBED.stop(); } catch (e) {} // only clear the hook if it is still OURS — a standalone breathwork() opened over this player owns it now
       if (usedBGM) { try { BGM.stop(); } catch (e) {} }
       if (padCtl) { try { padCtl.stop(); } catch (e) {} }
       if (opts.drift && !skip) { // LEARN from this session: drift-per-minute as an EMA → adapts next session's reminder density
@@ -19640,48 +19734,72 @@
   var STRETCH_SEATED = { seq: [
     "First, we'll wake up your body with a few easy stretches. A couple of simple movements is enough to change how the whole day feels.",
     "Sit tall, near the edge of your seat, feet flat on the floor. Do everything very slowly, and avoid any movement if it causes pain.",
-    "Reach both arms up toward the ceiling. Hold them there and breathe out.",
-    "Roll your shoulders up, back and down. Go big and slow, a few times.",
+    "Reach both arms up toward the ceiling. Hold them there, breathe out, then let your breathing return to normal.",
+    "Bring your arms down, then roll your shoulders up, back and down. Go big and slow, a few times.",
     "Tilt your right ear toward your right shoulder, face forward. Keep both shoulders down and let your head's weight do the work.",
     "Now tilt your left ear toward your left shoulder. Let the same weight do the work.",
     "Turn your head to look over your right shoulder, body facing forward. Keep your chin level, only as far as feels easy.",
     "Now look over your left shoulder the same way. Keep your chin level.",
-    "Reach both arms out in front at chest height, palms facing forward. Push them forward and round your upper back.",
-    "Clasp your hands behind your back, arms straight. Lift your chest and open your shoulders.",
-    "Reach both arms up and lean to your right. Keep both feet planted and feel your left side stretch.",
-    "Now reach up and lean to your left. Keep both feet planted and feel your right side stretch.",
-    "Put your hands on your lower back, fingers pointing down. Arch back gently and look slightly up, only as far as feels easy.",
-    "Cross your arms over your chest and turn your upper body to the right. Keep your hips facing forward.",
-    "Now turn to the left the same way. Hips stay facing forward.",
+    "Reach both arms out in front at chest height, palms facing each other. Push them forward and round your upper back.",
+    "Lower your arms, then clasp your hands behind your back, arms straight. Lift your chest and open your shoulders.",
+    "Let go, and reach both arms up. Hold your right wrist with your left hand, lean to your left, and feel your right side stretch.",
+    "Now hold your left wrist with your right hand. Lean to your right, and feel your left side stretch.",
+    "Bring your arms down and put your hands on your lower back, fingers pointing down. Arch back gently and look slightly up, only as far as feels easy.",
+    "Come back upright. Put your left hand on the outside of your right knee, and use it to turn your upper body to the right, hips facing forward.",
+    "Now put your right hand on the outside of your left knee, and turn to the left. Hips stay facing forward.",
     "Cross your right ankle over your left knee. Sit tall and lean forward a little, until you feel the stretch on the outside of your right hip.",
     "Now cross your left ankle over your right knee. Lean forward a little, until you feel the stretch on the outside of your left hip.",
-    "Keep your toes on the floor and raise both heels, so you're up on your toes. Lower them slowly, a few times."
+    "Uncross your legs, feet flat on the floor. Keep your toes down and raise both heels, so you're up on your toes, then lower them slowly, a few times."
   ] };
   var SEATED_PAIR2 = { 5: 1, 7: 1, 11: 1, 14: 1, 16: 1 }; // index of the SECOND move of a mirrored pair (zero-based into seq)
+  var SEATED_NECK = { 4: 1, 5: 1, 6: 1, 7: 1 }; // THE NECK ROWS (ear tilts + look-over-the-shoulder, zero-based into seq). David on device 2026-09-20: "quite a long pause after tilting your head right, left, rotating... are you sure that's what the science says?" — he is right. The PT sweep (_design-sync/audio-content-2026-09-09/KB-SWEEP-stretch-PT.md) puts a morning mobility warm-up at 6-8s per position, and the cervical spine is the one place a long passive hang is actively unwise. So the neck holds carry their own, lower ceiling.
   function seatedSpeech(s) { return Math.max(0.8, String(s).trim().split(/\s+/).length / 3.3); } // words/3.3 — MEASURED against Dave's real clips (36 meditation clips: 2.4 min actual vs 3.4 min at the old words/2.3). Same estimator medV2Speech uses.
   function stretchSeatedSegs(secs, tag) { // the seated flow, fitted to `secs`. Same seg shape stretchMoveSegs returns, so the stack player needs no change.
     secs = Math.max(30, secs || 60);
     var Q = STRETCH_SEATED.seq, out = [];
-    function mk(txt, gap, pk) { var caps = capSplit(tr(txt)); var o = { text: txt, label: caps[0], sub: "", gap: gap, _pk: pk }; if (caps.length > 1) o.caps = caps; if (tag != null) o._act = tag; out.push(o); return o; }
-    var GAP0 = 2, GAP1 = 3, HOLD_BASE = 8, HOLD_MIN = 6, HOLD_MAX = 14;  // opener breathes 2s, the position/safety row 3s (David 2026-09-19); holds are budgeted at 8s and fitted inside 6-14s
+    function mk(txt, gap, pk, lab) { var caps = txt ? capSplit(tr(txt)) : [lab || ""]; var o = { text: txt, label: caps[0], sub: "", gap: gap, _pk: pk }; if (caps.length > 1) o.caps = caps; if (tag != null) o._act = tag; out.push(o); return o; }
+    // THE HOLD IS CAPPED BY THE BODY PART, AND LEFTOVER TIME BUYS A MOVE, NEVER A LONGER STARE (David on device 2026-09-20).
+    // The old rule budgeted 8s and then scaled every hold up to 14s to make the act land on its slot, so a 150s stretch
+    // parked you in a neck tilt for a quarter of a minute — which is not what the science says and not what the routine is.
+    // New law: 7s base · neck rows cap at 8s · every other row at 10s (the PT sweep's 6-8s warm-up window, with a little
+    // room for the bigger positions) · surplus first buys THE NEXT MOVE (mirrored pairs still never split) · and only when
+    // no further move fits does the remainder land on ONE silent settle at the very end of the act — never on a hold.
+    var GAP0 = 2, GAP1 = 3, HOLD_BASE = 7, HOLD_MIN = 4, NECK_CAP = 8, MOVE_CAP = 10; // opener breathes 2s, the position/safety row 3s (David 2026-09-19)
     var head = seatedSpeech(Q[0]) + GAP0 + seatedSpeech(Q[1]) + GAP1;
     // WALK THE MOVES while the budget holds, never splitting a mirrored pair: if the next row OPENS a pair and only one of
-    // the two fits, stop BEFORE it rather than leaving one side of the body stretched.
-    var budget = secs - head, take = [], i = 2, cost;
+    // the two fits, stop BEFORE it rather than leaving one side of the body stretched. Budgeted at the BASE hold, which is
+    // what makes surplus time buy moves: the cheaper the hold we price a move at, the more moves the same slot affords.
+    var budget = secs - head, take = [], i = 2, j, sum;
     while (i < Q.length) {
-      var pairs = (SEATED_PAIR2[i + 1] ? 2 : 1), j, sum = 0;
+      var pairs = (SEATED_PAIR2[i + 1] ? 2 : 1); sum = 0;
       for (j = 0; j < pairs; j++) sum += seatedSpeech(Q[i + j]) + HOLD_BASE;
       if (take.length && sum > budget) break;                      // always buy at least the first move, however tight the slot
       for (j = 0; j < pairs; j++) take.push(i + j);
       budget -= sum; i += pairs;
     }
-    // EVEN OUT: the holds stretch (or shrink) together so the act lands on `secs` exactly; the rounding leftover lands on the
-    // last hold, which is the one place a long beat reads as "stay in it" rather than as a stall.
     var spoken = 0; take.forEach(function (ix) { spoken += seatedSpeech(Q[ix]); });
-    var room = secs - head - spoken, m = take.length;
-    var hold = Math.max(HOLD_MIN, Math.min(HOLD_MAX, m ? room / m : HOLD_BASE));
+    var room = secs - head - spoken, m = take.length, holds = [], caps = [], rest = 0, k;
+    for (k = 0; k < m; k++) caps.push(SEATED_NECK[take[k]] ? NECK_CAP : MOVE_CAP);
+    // START EVERY ROW AT THE BASE (shrunk only if the slot is tighter than the base, floored at PK.held so a hold never
+    // becomes a blink), THEN POUR THE SURPLUS IN EVENLY, each row stopping at its own ceiling. What no row can accept is
+    // `rest`, and rest goes to the settle below.
+    var base = m ? Math.max(HOLD_MIN, Math.min(HOLD_BASE, room / m)) : HOLD_BASE;
+    for (k = 0; k < m; k++) holds.push(Math.min(caps[k], base));
+    var used = 0; for (k = 0; k < m; k++) used += holds[k];
+    var extra = room - used;
+    while (extra > 0.01) {
+      var open = []; for (k = 0; k < m; k++) if (holds[k] < caps[k] - 1e-6) open.push(k);
+      if (!open.length) break;
+      var share = extra / open.length, moved = 0;
+      for (k = 0; k < open.length; k++) { var add2 = Math.min(share, caps[open[k]] - holds[open[k]]); holds[open[k]] += add2; moved += add2; }
+      extra -= moved; if (moved < 0.01) break;                     // every open row took its ceiling this pass — nothing more to pour
+    }
+    rest = Math.max(0, extra);
     mk(Q[0], GAP0, "seated"); mk(Q[1], GAP1, "seated");
-    take.forEach(function (ix, n) { mk(Q[ix], n === m - 1 ? room - hold * (m - 1) : hold, "seated"); });
+    take.forEach(function (ix, n) { mk(Q[ix], Math.round(holds[n] * 10) / 10, "seated"); });
+    // THE FINAL SETTLE: a voiceless segment that carries the LAST caption forward, so the screen does not change and the act
+    // simply ends in quiet. A pause, not a stretch — which is the whole point of not letting this land on a hold.
+    if (rest >= 1.5 && out.length) { var last = out[out.length - 1], lc = last.caps ? last.caps[last.caps.length - 1] : last.label; mk("", Math.round(rest * 10) / 10, "seated", lc); }
     return out;
   }
   function stretchMoveSegs(secs, tag) { // fill `secs` by WALKING THE POOL ONCE: distinct moves first, then longer holds, and only a dose that even the cap cannot fill starts a second pass. Returns timelinePlayer segments.
@@ -22919,6 +23037,18 @@
     return { secs: secs || 120, pool: STRETCH_MOVES.length, segs: g.length, gaps: Object.keys(gaps).map(Number), repeats: rep2,
       fillSec: +(g.reduce(function (a, sg) { return a + sg.gap; }, 0) + g.length * PK.speechEst).toFixed(1), moves: g.map(function (sg) { return sg.label; }) };
   };
+  window.DEV.seatedSegs = function (secs) { // THE HOLD DUMP (David on device 2026-09-20: "quite a long pause after tilting your head right, left, rotating"). Per-row hold for a seated-stretch dose, with the neck rows flagged and the leftover's landing place named — so "no neck hold over 8, nothing over 10, the remainder is a settle and never a hold" is a number, not a claim.
+    var g = stretchSeatedSegs(secs || 120, 0), Q = STRETCH_SEATED.seq, rows = [], maxNeck = 0, maxAny = 0, settle = null;
+    g.forEach(function (sg, i) {
+      if (i < 2) return;                                            // the opener + the position/safety row are not holds
+      if (!sg.text) { settle = +sg.gap.toFixed(1); return; }
+      var ix = Q.indexOf(sg.text), neck = !!SEATED_NECK[ix], h = +sg.gap.toFixed(1);
+      if (neck) maxNeck = Math.max(maxNeck, h); maxAny = Math.max(maxAny, h);
+      rows.push({ row: ix, neck: neck, hold: h, line: String(sg.label).slice(0, 34) });
+    });
+    return { secs: secs || 120, moves: rows.length, maxNeckHold: maxNeck, maxHold: maxAny, settleSec: settle, remainderOn: settle != null ? "final silent settle" : "none (holds absorbed it)",
+      pass: maxNeck <= 8.001 && maxAny <= 10.001, holds: rows };
+  };
   window.DEV.segs = function () { var p = _gpProbe && _gpProbe(); if (!p) return "no player open"; var sg = p.segs || [], out = [], i; for (i = 0; i < sg.length; i++) { var nxt = sg[i + 1]; out.push({ t: (sg[i].t || "").slice(0, 26), start: sg[i].start, dur: sg[i].dur, gap: (nxt && sg[i].start != null && sg[i].dur != null) ? +(nxt.start - sg[i].start - sg[i].dur).toFixed(2) : null }); } return { n: out.length, elapsed: p.elapsed, total: p.total, segs: out }; }; // the REAL laid-out gap between consecutive segments = next.start - (this.start + this.dur). This is the number the ear hears; the composer's declared `gap` is only its input.
   // ===== THE 2026-09-19 MORNING-STACK DUMPS (David on device, v1493). Three read-outs that answer the three questions a
   // stack bug asks: what does the session actually SAY (in order, with the act it belongs to and the session-wide repeat
@@ -23044,6 +23174,8 @@
     function live(sel) { var ns = ov ? ov.querySelectorAll(".gp-track " + sel) : []; for (var i = 0; i < ns.length; i++) if (ns[i].offsetParent) return ns[i]; return null; } // the SHOWN one, across the carousel's pages — offsetParent is null on a display:none page or a hidden counter, so this can never report a stale page's text as live
     var n = live(".bw-phn"), b = live(".bw-phbar i"), o = live(".bw-orb"), l = live(".bw-label");
     return { player: !!p, elapsed: p && p.elapsed, breath: p && p.breath, phaseLeft: n ? n.textContent : null, phaseBar: b ? b.style.transform : null, orb: o ? o.style.transform : null, label: l ? l.textContent : null }; }; // read the running composed player's breath surface without a finger. The phase WORD is gone (David 2026-08-20 — it repeated the headline); `label` is that headline, `phaseLeft` the seconds now sitting beside it.
+  window.DEV.audioCtx = sharedAudioCtx; // DEV-only handle on the ONE shared context, so an interruption can be SIMULATED in the preview (suspend / close it, then fire visibilitychange) instead of only reasoned about. Read-only door — it creates nothing.
+  window.DEV.audioState = function () { var c = sharedAudioCtx(), p = _gpProbe && _gpProbe(); return { state: c ? c.state : null, sampleRate: c ? c.sampleRate : null, playing: !!(p && p.playing), offset: p ? p.elapsed : null, gen: audioCtxGen() }; }; // THE INTERRUPTION PROBE (2026-09-20): the four numbers that say whether the engine survived an app switch. `gen` counts rebuilds — a bump is the receipt that the recovery path actually ran.
   window.DEV.player = function () { var p = _gpProbe && _gpProbe(); var ov = document.querySelector(".gp-ov"); if (!ov) return "no player"; var bar = ov.querySelector(".gp-bar"), pl = ov.querySelector(".gp-play"); return { open: true, ready: !!(p && p.ready), transport: bar ? getComputedStyle(bar).visibility : null, playBtn: pl ? getComputedStyle(pl).visibility : null, label: p ? p.label : null, total: p ? p.total : null, decoded: p ? p.decoded : null, voiced: p ? p.voiced : null, laidOut: p ? p.segs.filter(function (s) { return s.start != null; }).length : null, segs: p ? p.segs.length : null }; }; // THE STUCK-PLAYER PROBE (2026-08-19): the exact four numbers David's friend's dead session showed — transport "hidden", label "preparing…", total 0, laidOut 0 — so the bounded wait can be PROVEN to clear it under the same throttling instead of argued about.
   // ===== AUDIT ROBUSTNESS (David 2026-08-20: "can we make the design audit tool more robust?") =====
   // Built from how it actually failed us this week, not from principle:
