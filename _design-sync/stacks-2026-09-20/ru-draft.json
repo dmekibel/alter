@@ -1,0 +1,728 @@
+[
+  {
+    "en": "Find a comfortable position, sitting or lying down.",
+    "ru": "Найди удобное положение, сидя или лёжа.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Take three deep breaths. Make the exhale slower than the inhale.",
+    "ru": "Сделай три глубоких вдоха. Пусть выдох будет медленнее вдоха.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "On the third breath out, let your eyes close.",
+    "ru": "На третьем выдохе дай глазам закрыться.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let your shoulders relax.",
+    "ru": "Дай плечам расслабиться.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Try to sit still if you can.",
+    "ru": "Постарайся сидеть неподвижно, если получается.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let everything be as it is.",
+    "ru": "Дай всему быть таким, какое оно есть.",
+    "ru_f": null,
+    "note": "matches the shipped dict wording"
+  },
+  {
+    "en": "Feel the weight of your body pressing down. Feel your feet against the floor.",
+    "ru": "Почувствуй, как вес тела давит вниз. Почувствуй стопы на полу.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Feel the weight of your hands, and then your arms, resting where they are.",
+    "ru": "Почувствуй вес кистей, а потом и всех рук, как они лежат там, где лежат.",
+    "ru_f": null,
+    "note": "hands=кисти, arms=руки; Russian needs both named"
+  },
+  {
+    "en": "Notice how your body feels right now. Maybe it feels tired, restless or calm.",
+    "ru": "Заметь, как тело ощущается прямо сейчас. Может быть, усталым, беспокойным или спокойным.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll scan through your body, one part at a time, starting with your feet.",
+    "ru": "Сейчас пройдёмся вниманием по телу, часть за частью, начиная со стоп.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Come down into your feet and inhabit them. Make deep contact with your feet.",
+    "ru": "Опустись в стопы и поселись в них. Почувствуй глубокий контакт со стопами.",
+    "ru_f": null,
+    "note": "Blackstone inhabit = поселись, what a Russian teacher says"
+  },
+  {
+    "en": "Feel the space inside your feet. Feel that you are that space.",
+    "ru": "Почувствуй пространство внутри стоп. Почувствуй, что ты и есть это пространство.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let your breath settle down there with you, so the inhale doesn't lift you back up.",
+    "ru": "Пусть дыхание осядет там, внизу, вместе с тобой, чтобы вдох не поднимал тебя обратно наверх.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now move up into your legs and inhabit them. Feel the space inside your legs.",
+    "ru": "Теперь поднимись в ноги и поселись в них. Почувствуй пространство внутри ног.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now move into your pelvis. Feel like you are inside your pelvis.",
+    "ru": "Теперь перейди в таз. Почувствуй, что ты внутри таза.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now move up into your belly and inhabit it. Feel like you are the internal space of your belly.",
+    "ru": "Теперь поднимись в живот и поселись в нём. Почувствуй, что ты и есть внутреннее пространство живота.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now move up to your chest. Let yourself settle inside your chest, as if you're sitting in your heart.",
+    "ru": "Теперь поднимись в грудь. Устройся внутри груди, будто сидишь в своём сердце.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now inhabit your arms and your hands, all the way to the fingertips.",
+    "ru": "Теперь поселись в руках и кистях, до самых кончиков пальцев.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now move into your neck. Feel that you are inside your neck.",
+    "ru": "Теперь перейди в шею. Почувствуй, что ты внутри шеи.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now move up into your head. Let your forehead and your eyes soften.",
+    "ru": "Теперь поднимись в голову. Дай лбу и глазам смягчиться.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now inhabit your whole body at once. Feel that this is your body.",
+    "ru": "Теперь поселись во всём теле сразу. Почувствуй: это твоё тело.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now bring your attention to your breath. Breathe normally.",
+    "ru": "Теперь направь внимание на дыхание. Дыши как обычно.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Feel where the breath is most obvious. The nose, the chest, or the belly.",
+    "ru": "Почувствуй, где дыхание заметнее всего. Нос, грудь или живот.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Follow one breath in, then one breath out.",
+    "ru": "Проследи один вдох, потом один выдох.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "When you notice that your mind has wandered, just return to the breath.",
+    "ru": "Когда заметишь, что мысли увели тебя, просто вернись к дыханию.",
+    "ru_f": null,
+    "note": "keeps the noticing moment, not the wandering moment"
+  },
+  {
+    "en": "Feel the whole breath, from the first moment of the inhale, through the pause in between, to the last moment of the exhale.",
+    "ru": "Почувствуй весь вдох и выдох целиком: от первого мгновения вдоха, через паузу между ними, до последнего мгновения выдоха.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "However long you've been lost in thought, it doesn't matter. Begin again with the next breath.",
+    "ru": "Неважно, как долго мысли тебя уносили. Начни снова со следующего вдоха.",
+    "ru_f": null,
+    "note": "neutral phrasing avoids a gendered past tense"
+  },
+  {
+    "en": "If you're somewhere else right now, that's okay. Come back to the breath.",
+    "ru": "Если ты сейчас где-то не здесь, ничего страшного. Вернись к дыханию.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now let the breath go. You don't need to follow it anymore. Let your mind rest as it is.",
+    "ru": "Теперь отпусти дыхание. Больше не нужно за ним следить. Дай уму отдохнуть таким, какой он есть.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Sounds will reach you on their own. You don't have to listen for them. Let them come and go.",
+    "ru": "Звуки будут долетать сами. Не нужно вслушиваться. Дай им приходить и уходить.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Thoughts will come the same way. You don't need to stop them.",
+    "ru": "Мысли будут приходить так же. Не нужно их останавливать.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "When you notice you're caught in a thought, watch what happens to it. Where does it go? Then start again, no matter how long you were gone.",
+    "ru": "Когда заметишь, что мысль тебя затянула, посмотри, что с ней происходит. Куда она уходит? Потом начни снова, неважно, как долго тебя не было.",
+    "ru_f": null,
+    "note": "impersonal затянула keeps it gender-free"
+  },
+  {
+    "en": "If there's a feeling in you right now, find where it lives in your face and body. Just look at it.",
+    "ru": "Если сейчас в тебе есть какое-то чувство, найди, где оно живёт в лице и в теле. Просто посмотри на него.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now come back to your body. Feel yourself sitting here in the room.",
+    "ru": "Теперь вернись в тело. Почувствуй, как ты сидишь здесь, в комнате.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "When you're ready, slowly open your eyes.",
+    "ru": "Когда будешь готов, медленно открой глаза.",
+    "ru_f": "Когда будешь готова, медленно открой глаза.",
+    "note": "готов/готова agrees with the listener"
+  },
+  {
+    "en": "First, we'll wake up your body with a few easy stretches. A couple of simple movements is enough to change how the whole day feels.",
+    "ru": "Сначала разбудим тело лёгкой растяжкой. Пары простых движений хватает, чтобы весь день ощущался иначе.",
+    "ru_f": null,
+    "note": "no time quantity, per the opener law"
+  },
+  {
+    "en": "Sit tall, near the edge of your seat, feet flat on the floor. Do everything very slowly, and avoid any movement if it causes pain.",
+    "ru": "Сядь прямо, ближе к краю стула, стопы ровно на полу. Делай всё очень медленно и пропускай любое движение, если оно вызывает боль.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Reach both arms up toward the ceiling. Hold them there, breathe out, then let your breathing return to normal.",
+    "ru": "Потянись обеими руками вверх, к потолку. Задержи их там, выдохни, и дай дыханию вернуться к обычному.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Bring your arms down, then roll your shoulders up, back and down. Go big and slow, a few times.",
+    "ru": "Опусти руки, а теперь веди плечи вверх, назад и вниз. Широко и медленно, несколько раз.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Tilt your right ear toward your right shoulder, face forward. Keep both shoulders down and let your head's weight do the work.",
+    "ru": "Наклони правое ухо к правому плечу, лицо смотрит вперёд. Держи оба плеча опущенными и дай весу головы делать работу.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now tilt your left ear toward your left shoulder. Let the same weight do the work.",
+    "ru": "Теперь наклони левое ухо к левому плечу. Пусть тот же вес делает работу.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Turn your head to look over your right shoulder, body facing forward. Keep your chin level, only as far as feels easy.",
+    "ru": "Поверни голову и посмотри через правое плечо, корпус смотрит вперёд. Подбородок держи ровно, поворачивайся только настолько, насколько это легко.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now look over your left shoulder the same way. Keep your chin level.",
+    "ru": "Теперь так же посмотри через левое плечо. Подбородок держи ровно.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Reach both arms out in front at chest height, palms facing each other. Push them forward and round your upper back.",
+    "ru": "Вытяни обе руки вперёд на высоте груди, ладони друг к другу. Тянись ими вперёд и округли верх спины.",
+    "ru_f": null,
+    "note": "palms facing each other = ладони друг к другу"
+  },
+  {
+    "en": "Lower your arms, then clasp your hands behind your back, arms straight. Lift your chest and open your shoulders.",
+    "ru": "Опусти руки, а теперь сцепи кисти за спиной, руки прямые. Приподними грудь и раскрой плечи.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let go, and reach both arms up. Hold your right wrist with your left hand, lean to your left, and feel your right side stretch.",
+    "ru": "Расцепи руки и потянись ими вверх. Возьмись левой рукой за правое запястье, наклонись влево и почувствуй, как тянется правый бок.",
+    "ru_f": null,
+    "note": "hold the wrist, then lean (the easier variant)"
+  },
+  {
+    "en": "Now hold your left wrist with your right hand. Lean to your right, and feel your left side stretch.",
+    "ru": "Теперь возьмись правой рукой за левое запястье. Наклонись вправо и почувствуй, как тянется левый бок.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Bring your arms down and put your hands on your lower back, fingers pointing down. Arch back gently and look slightly up, only as far as feels easy.",
+    "ru": "Опусти руки и положи ладони на поясницу, пальцы смотрят вниз. Мягко прогнись назад и посмотри немного вверх, только настолько, насколько это легко.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Come back upright. Put your left hand on the outside of your right knee, and use it to turn your upper body to the right, hips facing forward.",
+    "ru": "Вернись прямо. Положи левую ладонь на внешнюю сторону правого колена и с её помощью поверни корпус вправо, таз смотрит вперёд.",
+    "ru_f": null,
+    "note": "hand outside the opposite knee for leverage"
+  },
+  {
+    "en": "Now put your right hand on the outside of your left knee, and turn to the left. Hips stay facing forward.",
+    "ru": "Теперь положи правую ладонь на внешнюю сторону левого колена и поверни корпус влево. Таз остаётся смотреть вперёд.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Cross your right ankle over your left knee. Sit tall and lean forward a little, until you feel the stretch on the outside of your right hip.",
+    "ru": "Положи правую щиколотку на левое колено. Сядь прямо и немного наклонись вперёд, пока не почувствуешь растяжение по внешней стороне правого бедра.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now cross your left ankle over your right knee. Lean forward a little, until you feel the stretch on the outside of your left hip.",
+    "ru": "Теперь положи левую щиколотку на правое колено. Немного наклонись вперёд, пока не почувствуешь растяжение по внешней стороне левого бедра.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Uncross your legs, feet flat on the floor. Keep your toes down and raise both heels, so you're up on your toes, then lower them slowly, a few times.",
+    "ru": "Сними ногу с колена, обе стопы ровно на полу. Пальцы ног остаются на полу, подними обе пятки, чтобы встать на носки, потом медленно опусти. Несколько раз.",
+    "ru_f": null,
+    "note": "toes stay down, rise onto the toes"
+  },
+  {
+    "en": "I will do whatever it takes to become a greater person.",
+    "ru": "Я сделаю всё, что потребуется, чтобы вырасти как человек.",
+    "ru_f": null,
+    "note": "mantra; future tense needs no gender form"
+  },
+  {
+    "en": "Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot.",
+    "ru": "Теперь подышим через сердце, чтобы успокоить тело и ум вместе. Направь внимание в центр груди и представь, что дыхание входит и выходит через эту точку.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "While you breathe, we'll bring up gratitude. Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.",
+    "ru": "Пока дышишь, поднимем благодарность. Вспомни что-то небольшое, что случилось недавно и за что ты благодарен, например улыбку друга или солнце на коже.",
+    "ru_f": "Пока дышишь, поднимем благодарность. Вспомни что-то небольшое, что случилось недавно и за что ты благодарна, например улыбку друга или солнце на коже.",
+    "note": "благодарен/благодарна"
+  },
+  {
+    "en": "Feel the gratitude in your chest.",
+    "ru": "Почувствуй благодарность в груди.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now think of something you rarely appreciate.",
+    "ru": "Теперь подумай о том, что ты редко ценишь.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Feel that gratitude as you breathe.",
+    "ru": "Почувствуй эту благодарность, пока дышишь.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now think of someone you are grateful for.",
+    "ru": "Теперь подумай о том, кому ты благодарен.",
+    "ru_f": "Теперь подумай о том, кому ты благодарна.",
+    "note": "благодарен/благодарна"
+  },
+  {
+    "en": "Feel it in your chest, as you breathe.",
+    "ru": "Почувствуй это в груди, пока дышишь.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "If it fades, bring it back.",
+    "ru": "Если она угасает, верни её.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let it spread through your body.",
+    "ru": "Дай ей разойтись по телу.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "This is a skill. Each time you practice it, your heart and your mind learn to settle together faster.",
+    "ru": "Это навык. С каждым разом сердце и ум учатся успокаиваться вместе быстрее.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll do a short breathing pattern that calms the body down fast. Two breaths in through the nose, then one long breath out through the mouth.",
+    "ru": "Теперь сделаем короткий дыхательный приём, который быстро успокаивает тело. Два вдоха через нос, потом один долгий выдох через рот.",
+    "ru_f": null,
+    "note": "same 2-in-1-out count"
+  },
+  {
+    "en": "Breathe in through your nose, and at the top take one more small sip of air in. Then let it all out slowly through your mouth, as long as it goes.",
+    "ru": "Вдохни через нос, и на пике добери ещё немного воздуха. Потом медленно выпусти всё через рот, так долго, как получится.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "If you feel light-headed, breathe normally for a moment, then continue.",
+    "ru": "Если закружится голова, подыши немного как обычно, потом продолжи.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "One more sip at the top.",
+    "ru": "На пике добери ещё немного воздуха.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "As long as it goes.",
+    "ru": "Так долго, как получится.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Your own pace.",
+    "ru": "В своём темпе.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "The danger is over.",
+    "ru": "Опасность прошла.",
+    "ru_f": null,
+    "note": "matches the shipped dict line"
+  },
+  {
+    "en": "Now we'll bring your attention out of your head and into the room, to slow a racing mind.",
+    "ru": "Теперь выведем внимание из головы в комнату, чтобы притормозить разогнавшийся ум.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Open your eyes if they're closed. Find three things you can see, and name them silently, one at a time.",
+    "ru": "Открой глаза, если они закрыты. Найди три вещи, которые видишь, и назови их про себя, одну за другой.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now listen. Find two sounds, near or far, and let them come to you.",
+    "ru": "Теперь послушай. Найди два звука, рядом или вдали, и дай им дойти до тебя.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now feel. Find one thing your body is touching, the chair, the floor, your own hands, and just notice it.",
+    "ru": "Теперь почувствуй. Найди одно, чего касается тело: стул, пол, собственные руки, и просто заметь это.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "When you notice you've been pulled back into the story, come back to what you can see, hear and feel right now.",
+    "ru": "Когда заметишь, что тебя снова затянуло в историю, вернись к тому, что видишь, слышишь и чувствуешь прямо сейчас.",
+    "ru_f": null,
+    "note": "impersonal затянуло keeps it gender-free"
+  },
+  {
+    "en": "Take one slow breath out, longer than the breath in.",
+    "ru": "Сделай один медленный выдох, длиннее вдоха.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Notice that the room is the same as it was a minute ago. Only you have slowed down.",
+    "ru": "Заметь, что комната та же, что и минуту назад. Это ты замедлился.",
+    "ru_f": "Заметь, что комната та же, что и минуту назад. Это ты замедлилась.",
+    "note": "замедлился/замедлилась"
+  },
+  {
+    "en": "Now we'll cool the body down first, because the mind can't cool down before the body does.",
+    "ru": "Сначала остудим тело, потому что ум не остынет раньше тела.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Unclench your jaw. Drop your shoulders. Open your hands.",
+    "ru": "Разожми челюсть. Опусти плечи. Раскрой ладони.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now ask yourself silently what you need right now, not what they deserve.",
+    "ru": "Теперь молча спроси себя, что нужно тебе прямо сейчас, а не чего они заслуживают.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll set one intention for the next block of work, so you start it on purpose. One thing, not a list.",
+    "ru": "Теперь зададим одно намерение на следующий блок работы, чтобы войти в него осознанно. Одно дело, а не список.",
+    "ru_f": null,
+    "note": "neutral phrasing avoids a gendered past tense"
+  },
+  {
+    "en": "Silently name the first action you'll take when this ends, something small enough to start within a minute.",
+    "ru": "Молча назови первое действие, которое сделаешь, когда это закончится, такое маленькое, чтобы начать его за минуту.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "See yourself doing it, where you're sitting and what's in front of you.",
+    "ru": "Увидь, как ты это делаешь: где ты сидишь и что перед тобой.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "When the pull to check something else comes, and it will, that's your cue to come back to the one thing.",
+    "ru": "Когда потянет проверить что-то ещё, а потянет обязательно, это твой сигнал вернуться к одному делу.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Take one slow breath, and let the rest of the day wait outside this block.",
+    "ru": "Сделай один медленный вдох и дай остальному дню подождать снаружи этого блока.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll set the day by choosing one thing that would make today count. One thing, not a list.",
+    "ru": "Теперь зададим день: выбери одно дело, ради которого сегодняшний день будет не зря. Одно дело, а не список.",
+    "ru_f": null,
+    "note": "make today count = будет не зря"
+  },
+  {
+    "en": "Silently name it. Then name the first small step toward it.",
+    "ru": "Молча назови его. Потом назови первый маленький шаг к нему.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "See yourself tonight, with that step done. Notice the feeling in your body.",
+    "ru": "Увидь себя вечером, когда этот шаг уже сделан. Заметь, как это ощущается в теле.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Hold that feeling for a few breaths. This is what you're walking into the day with.",
+    "ru": "Удержи это чувство несколько вдохов. С этим ты и входишь в день.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "If the day goes sideways, and some days do, this one step is still yours.",
+    "ru": "Если день пойдёт наперекосяк, а так бывает, этот один шаг всё равно твой.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll rehearse the start, the part nerves go after, so we practice it.",
+    "ru": "Теперь отрепетируем начало, именно за него цепляется волнение, поэтому его и тренируем.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "See the room or the screen as it will be. See the person, or the people, in front of you.",
+    "ru": "Увидь комнату или экран такими, какими они будут. Увидь человека или людей перед собой.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now watch yourself begin, saying your first sentence in your own voice, calm and unhurried.",
+    "ru": "Теперь посмотри, как ты начинаешь: произносишь первую фразу своим голосом, спокойно и неспешно.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Feel how your body sits or stands when it's going well. Take that posture now.",
+    "ru": "Почувствуй, как тело сидит или стоит, когда всё идёт хорошо. Прими эту позу прямо сейчас.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Whatever happens after that start, you've already done the hard part.",
+    "ru": "Что бы ни случилось после начала, самое трудное ты уже сделал.",
+    "ru_f": "Что бы ни случилось после начала, самое трудное ты уже сделала.",
+    "note": "сделал/сделала"
+  },
+  {
+    "en": "Take one slow breath out, and let your shoulders come down.",
+    "ru": "Сделай один медленный выдох и дай плечам опуститься.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll repair, not punish. A slip is information, and shame is what causes the next one.",
+    "ru": "Теперь чиним, а не наказываем. Срыв — это информация, а стыд как раз и приводит к следующему.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Put a hand on your chest. Say silently, this is hard, and I'm not the only one it's hard for.",
+    "ru": "Положи ладонь на грудь. Скажи про себя: это тяжело, и не мне одному тяжело.",
+    "ru_f": "Положи ладонь на грудь. Скажи про себя: это тяжело, и не мне одной тяжело.",
+    "note": "одному/одной, the user speaks the line"
+  },
+  {
+    "en": "Now find the moment just before it happened, not to judge it, just to see it. That moment is where you'll catch it next time.",
+    "ru": "Теперь найди момент прямо перед тем, как это случилось, не чтобы судить, просто чтобы увидеть. Именно там ты поймаешь это в следующий раз.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Say silently, may I be kind to myself. May I try again.",
+    "ru": "Скажи про себя: пусть я буду добр к себе. Пусть я попробую снова.",
+    "ru_f": "Скажи про себя: пусть я буду добра к себе. Пусть я попробую снова.",
+    "note": "добр/добра, the user speaks the line"
+  },
+  {
+    "en": "Take a slow breath in, and a longer breath out. Nothing else has to happen right now.",
+    "ru": "Сделай медленный вдох и более долгий выдох. Больше ничего сейчас происходить не должно.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "You noticed. That's the skill this whole thing is built on, and you just used it.",
+    "ru": "Ты заметил. На этом навыке держится всё остальное, и ты им только что воспользовался.",
+    "ru_f": "Ты заметила. На этом навыке держится всё остальное, и ты им только что воспользовалась.",
+    "note": "two gendered past forms"
+  },
+  {
+    "en": "Now we'll let the body rest. You don't have to fall asleep, and you don't have to stay awake.",
+    "ru": "Теперь дадим телу отдохнуть. Засыпать не обязательно, и не спать тоже не обязательно.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let your body get heavy. Feel the bed or the floor holding your weight.",
+    "ru": "Дай телу отяжелеть. Почувствуй, как кровать или пол держат твой вес.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let your jaw go loose, and your hands open. Let your eyes rest.",
+    "ru": "Отпусти челюсть, раскрой ладони. Дай глазам отдохнуть.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now just rest here, for as long as it lasts.",
+    "ru": "Теперь просто отдыхай здесь, сколько это продлится.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "If thoughts come, let them pass. You don't have to follow them.",
+    "ru": "Если приходят мысли, дай им пройти. Не нужно за ними идти.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let each breath out take you a little deeper.",
+    "ru": "Пусть каждый выдох уводит тебя чуть глубже.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "When it's time, wiggle your fingers and toes, and let your eyes open slowly.",
+    "ru": "Когда придёт время, пошевели пальцами рук и ног и дай глазам медленно открыться.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll wake the body up gently. You don't need energy to start, since starting is what makes it.",
+    "ru": "Теперь мягко разбудим тело. Энергия не нужна, чтобы начать: она и появляется от начала.",
+    "ru_f": null,
+    "note": "neutral phrasing avoids a gendered past tense"
+  },
+  {
+    "en": "Now we'll step out of the loop. You can't stop the thoughts, but you can stop feeding them.",
+    "ru": "Теперь выйдем из петли. Мысли не остановить, но можно перестать их кормить.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Each time you notice you're back in the loop, silently say the word thinking, then come back to the breath. That one word is the whole technique.",
+    "ru": "Каждый раз, когда заметишь, что снова в петле, скажи про себя: думаю, и вернись к дыханию. Это одно слово и есть вся техника.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "This is the longer version. You'll find more things this time.",
+    "ru": "Это длинная версия. В этот раз ты найдёшь больше.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Go slowly, so you can feel the gratitude for each one.",
+    "ru": "Иди медленно, чтобы успеть почувствовать благодарность за каждое.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "You can also include bad things that aren't happening.",
+    "ru": "Можно вспомнить и плохое, которого с тобой не происходит.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "When your mind goes back to a worry, that's your cue. Find one more thing.",
+    "ru": "Когда мысли возвращаются к тревоге, это твой сигнал. Найди ещё одно.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Now we'll close the work day, so it stops running in the background tonight.",
+    "ru": "Теперь закроем рабочий день, чтобы вечером он не крутился фоном.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Silently name the first thing you'll do tomorrow, one step, then leave it there until morning.",
+    "ru": "Молча назови первое, что сделаешь завтра, один шаг, и оставь это там до утра.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Say silently, the work is done for today.",
+    "ru": "Скажи про себя: на сегодня работа закончена.",
+    "ru_f": null,
+    "note": ""
+  },
+  {
+    "en": "Let your shoulders come down. Let your hands go still.",
+    "ru": "Дай плечам опуститься. Дай рукам затихнуть.",
+    "ru_f": null,
+    "note": ""
+  }
+]
