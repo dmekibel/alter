@@ -1,7 +1,10 @@
-HEART|1|T|Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot, about five seconds in and five seconds out.
-HEART|1|C|Think of someone you care about.
-HEART|1|C|Let the appreciation come up.
-HEART|1|C|Stay with the feeling.
+HEART|1|T|Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot.
+HEART|1|T|While you breathe, we'll bring up gratitude. Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.
+HEART|1|C|Feel the gratitude for it, in your chest.
+HEART|1|C|Now something you rarely pause to appreciate.
+HEART|1|C|Feel that gratitude as you breathe.
+HEART|1|C|Now someone you are grateful for.
+HEART|1|C|Feel it in your chest, as you breathe.
 HEART|2|C|If it fades, bring it back.
 HEART|2|C|Let it spread through your body.
 HEART|3|E|This is a skill. Each time you practice it, your heart and your mind learn to settle together faster.

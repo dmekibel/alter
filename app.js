@@ -15829,16 +15829,19 @@
   // composeScriptAct() is the fitter; _dev/gen-voice-11labs.py reads the flat `seq` arrays for the voice bank.
   var SCRIPT_ACTS = {
     HEART: { seq: [
-      "Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot, about five seconds in and five seconds out.",
-      "Think of someone you care about.",
-      "Let the appreciation come up.",
-      "Stay with the feeling.",
+      "Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot.",
+      "While you breathe, we'll bring up gratitude. Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.",
+      "Feel the gratitude for it, in your chest.",
+      "Now something you rarely pause to appreciate.",
+      "Feel that gratitude as you breathe.",
+      "Now someone you are grateful for.",
+      "Feel it in your chest, as you breathe.",
       "If it fades, bring it back.",
       "Let it spread through your body.",
       "This is a skill. Each time you practice it, your heart and your mind learn to settle together faster."
     ],
-      gap: [0, 0, 0, 0, 0, 0, 0],
-      tier: [1, 1, 1, 1, 2, 2, 3], role: ["T", "C", "C", "C", "C", "C", "E"] },
+      gap: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      tier: [1, 1, 1, 1, 1, 1, 1, 2, 2, 3], role: ["T", "T", "C", "C", "C", "C", "C", "C", "C", "E"] },
     SIGH: { seq: [
       "Now we'll do a short breathing pattern that calms the body down fast. Two breaths in through the nose, then one long breath out through the mouth.",
       "Breathe in through your nose, and at the top take one more small sip of air in. Then let it all out slowly through your mouth, as long as it goes.",
