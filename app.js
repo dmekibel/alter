@@ -3926,6 +3926,16 @@
   var PUCK_V2 = true;      // R3b LIVING PUCK (David 2026-07-21 "the shape-shifter", DECISIONS.md): the guardPuck is a COMPACT bottom-left pill that WEARS THE COLOR OF WHAT MATTERS NOW — the running activity while tracking, the NEXT planned block when idle-with-something-coming, gold while paused, plain pink home disc only when nothing runs/upcoming. The colored DISC ACTS on the thing (start the upcoming block / pause the running one / resume from break); the TAIL is always "go home". FALSE = the v1183 static pink puck + the OLD full-width #liveDock bar, byte-for-byte. Gated on body.puckv2 (set at boot beside navv2). Re-renders on the same cadence as renderLiveDock (update-in-place, no wipe).
   var _returnHome = false; // set true ONLY when a flow is launched from the home tool grid; read + cleared by landAfterFlow() on every flow-close path
   function landFromHome() { if (LAND_V2) _returnHome = true; } // called AT the home-tool launch site, right before leaveHomeForPlayer(), so only home-launched flows arm the return (nav-to-pane leaves never do)
+  function landPrime() { // PAINT THE LANDING FIRST (David on device 2026-09-20: "when an activity finishes and closes, an old journey menu flashes for a moment before the home screen").
+    // Launching from home calls leaveHomeForPlayer(), which tears #trackerFull down and leaves #journeyPath.on painted underneath — invisible only while the
+    // player is opaque. The player's ✕ then ZOOMS OUT (scale .82 + opacity 0 over ~280ms) and re-opens home only AFTER that, so for the whole fade the thing
+    // behind the fading player is the journey pane. Measured: 391ms of bare journey. This re-shows the home cockpit UNDER the still-opaque player at the very
+    // START of the fade, so the zoom-out lands on home exactly as the zoom law says. It does NOT consume _returnHome — landAfterFlow still owns the contract
+    // and simply finds TF_OPEN already true and re-renders the face.
+    if (!LAND_V2 || !_returnHome || TF_OPEN || TF_ANIM) return false;
+    try { openHomeInstant(); } catch (e) { return false; }
+    return true;
+  }
   function landAfterFlow() { // call at the END of every flow-close path (after renderAll). If we launched from home, re-open the NEW home cockpit instead of leaving the panes exposed. Idempotent + guarded: a no-op unless _returnHome is armed.
     if (!LAND_V2 || !_returnHome) return false;
     _returnHome = false;
@@ -8633,7 +8643,7 @@
     { id: "heart",    name: "Heart",    dom: "connect", ti: "ti-heart",           items: ["heart", "t_journal", "t_tapping"] },
     { id: "vision",   name: "Vision",   dom: "create",  ti: "ti-eye",             items: ["vision", "mind", "t_mantra"] },
     { id: "catch",   name: "Catch",   dom: "nourish", ti: "ti-hand-stop",       items: ["caughtScrolling", "urgeWave", "t_tapping", "t_breathe"] },
-    { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["spunUp", "fullStack", "downshift", "cooldown", "clearhead", "t_shakeOff", "t_relax"] },
+    { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["reset2", "spunUp", "fullStack", "downshift", "cooldown", "clearhead", "t_shakeOff", "t_relax"] },
     { id: "recover", name: "Recover", dom: "connect", ti: "ti-heart-handshake", items: ["iMessedUp", "emptyTank", "feelBetter", "t_journal"] },
     { id: "begin",   name: "Begin",   dom: "focus",   ti: "ti-flag",            items: ["beforeDeepWork", "focus", "walkin", "t_mantra", "t_stretch", "t_climb"] },
     { id: "night",   name: "Night",   dom: "upkeep",  ti: "ti-moon-stars",      items: ["cantSleep", "winddown", "deeprest", "t_evening", "t_bodyScan", "t_patience"] },
@@ -8833,6 +8843,21 @@
       stack: !!cat.mine, sel: _tbxOpenCat === cat.id, data: ["data-tbxcat", cat.id],
       onTap: function () { try { tbxOpenCat(cat.id, host); } catch (e) {} } });
   }
+  // COLOUR-GROUPED FOLDER CONTENTS (David device 2026-09-20: "seeing all the stacks in the Stacks folder is overwhelming, organize them by colour/category
+  // within the folder"). Only a folder deeper than one full 3x3 screenful is regrouped — a short folder's authored order is already legible, and shuffling
+  // it would cost the moment-keyed folders their designed arc. No headers, no new UI: the tiles simply arrive in contiguous hue runs. Group order = order of
+  // FIRST APPEARANCE in the authored list, and the order inside a group is the authored one, so the list stays stable and Morning Stack still leads.
+  function tbxGroupByDom(ids) {
+    ids = ids || [];
+    if (ids.length <= 9) return ids.slice();
+    var order = [], bins = {};
+    ids.forEach(function (id) {
+      var it = tbxItem(id), d = (it && it.dom) || "restore";
+      if (!bins[d]) { bins[d] = []; order.push(d); }
+      bins[d].push(id);
+    });
+    var out = []; order.forEach(function (d) { out = out.concat(bins[d]); }); return out;
+  }
   function tbxBuildPanel(cat) { // the expanded category panel: category-hue wash card, header (tap to close) + full-tile 4-up item grid. Inserted as a grid child right after the tapped square (grid-column:1/-1).
     var d = tbxVar(cat.dom);
     var panel = document.createElement("div"); panel.className = "tbx-panel tbx-open";
@@ -8840,7 +8865,7 @@
     var head = add(panel, "button", "tbx-panel-head"); var hi = add(head, "i", "ti " + cat.ti); hi.style.color = d; var hn = add(head, "span", "tbx-panel-name", tr(cat.name)); hn.style.color = d;
     add(head, "span", "tbx-panel-count", cat.items.length + " " + tr("inside")); add(head, "i", "ti ti-chevron-up tbx-panel-chev");
     head.onclick = function () { var bento = head.closest ? head.closest(".tbx-bento") : panel.parentNode; try { tbxOpenCat(cat.id, bento); } catch (e) {} }; // tap header = close
-    var ig = add(panel, "div", "tbx-grid tbx-panel-grid"); cat.items.forEach(function (iid) { tbxTile(ig, iid); });
+    var ig = add(panel, "div", "tbx-grid tbx-panel-grid"); tbxGroupByDom(cat.items).forEach(function (iid) { tbxTile(ig, iid); });
     if (cat.mine) { // the Stacks folder also carries your customs and Build, as the frame draws it
       try { ((S.tools && S.tools.tbxCustom) || []).forEach(function (c) { if (c && c.id) tbxTile(ig, c.id); }); } catch (e) {}
       tbxBuilderTile(ig);
@@ -8853,10 +8878,28 @@
     var existing = bento.querySelector(".tbx-panel"); if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
     _tbxOpenCat = null;
     var root = bento.closest ? bento.closest(".tbx") : null; if (root && !root.querySelector(".tbx-dose")) _tbxOpenStack = null; // the open dose card may have lived inside the panel we just dropped
-    if (wasOpen) return;
+    if (wasOpen) { try { tbxSyncCatSel(bento, null); } catch (e) {} return; }
     var cat = null; TBX_CATS.forEach(function (c) { if (c.id === catId) cat = c; }); if (!cat) return;
     var sq = bento.querySelector('[data-tbxcat="' + catId + '"]'); if (!sq) return;
-    var panel = tbxBuildPanel(cat); sq.parentNode.insertBefore(panel, sq.nextSibling); _tbxOpenCat = catId;
+    // THE ROW STAYS PUT (David device 2026-09-20: "when you open a folder it removes all the other icons from that row and they jump down"). A panel is a
+    // grid-column:1/-1 child, so inserting it straight after the tapped square cuts its own row in half and reflows every later sibling. The iPhone-home-screen
+    // grammar the frame draws is: the row of three stays exactly where it is, and the panel expands BELOW the whole row. So insert at the row boundary.
+    var cells = []; for (var n = 0; n < bento.children.length; n++) { var ch = bento.children[n]; if (ch.classList && !ch.classList.contains("tbx-panel")) cells.push(ch); }
+    var cols = 3; try { var gtc = getComputedStyle(bento).gridTemplateColumns; if (gtc) { var parts = gtc.trim().split(/\s+/).length; if (parts >= 1 && parts <= 6) cols = parts; } } catch (e) {}
+    var idx = cells.indexOf(sq), after = (idx < 0) ? null : cells[(Math.floor(idx / cols) + 1) * cols];
+    var panel = tbxBuildPanel(cat); bento.insertBefore(panel, after || null); _tbxOpenCat = catId;
+    tbxSyncCatSel(bento, catId);
+  }
+  function tbxSyncCatSel(bento, catId) { // repaint ONLY the selection chrome on the folder coins — no rebuild, no wipe, so every sibling keeps its exact rect
+    var sqs = bento.querySelectorAll("[data-tbxcat]");
+    for (var i = 0; i < sqs.length; i++) {
+      var cell = sqs[i], id = cell.getAttribute("data-tbxcat"), cat = null;
+      TBX_CATS.forEach(function (c) { if (c.id === id) cat = c; }); if (!cat) continue;
+      var hue = tbxVar(cat.dom), on = (id === catId), face = cell.querySelector(".r38-face"), lb = cell.querySelector(".r38-lb");
+      cell.classList.toggle("on", on);
+      if (face) face.style.boxShadow = (on ? "0 0 0 3px var(--t-accent), " : "") + "0 5px 0 color-mix(in srgb, " + hue + " 45%, var(--t-lipbase))";
+      if (lb) lb.style.color = on ? "var(--t-accent)" : ("color-mix(in srgb, " + hue + " var(--t-lblmix), var(--t-lblink))");
+    }
   }
   var TBX_FACE_LADDER = [2, 5, 10, 15, 20, 30, 45]; // THE DOSE LADDER — ONE horizontally scrolling row, on BOTH dose surfaces (David 2026-08-20: "I don't even want a More button. I just want a single row of time options that you can scroll"). The 2c card's [2,5]-then-More swap and the shelf card's 21a minute grid behind "more" are both deleted; two grammars for one choice was the bug.
   function tbxBuildDose(id, face) { // frame 21e: face + hue kicker + name, plain-word steps WITH their scaled times, 2/5 dose chips + "more" minute grid (21a) + pink Start, Plus row. Opens in place, single-open. Duration chosen HERE, never on the shelf.
@@ -8865,7 +8908,7 @@
     var card = document.createElement("div"); card.className = "tbx-dose tbx-open" + (face ? " tbx-dose-2c" : ""); card.setAttribute("data-tbxdose", id);
     var head = add(card, "div", "tbx-dose-head"); var fc = add(head, "div", "tbx-dose-face"); fc.style.background = d; fc.style.boxShadow = face ? ("0 4px 0 " + tfhDeep(d)) : tbxLip(d); add(fc, "i", "ti " + it.ti);
     var htx = add(head, "div", "tbx-dose-htx"); var k = add(htx, "div", "tbx-dose-kicker", tr(it.kicker)); k.style.color = d; add(htx, "div", "tbx-dose-name", tr(it.name));
-    var chev = add(head, "button", "tbx-dose-chev"); add(chev, "i", "ti ti-chevron-up"); chev.setAttribute("aria-label", tr("Close")); chev.onclick = face ? function () { tfhOpenDose(id); } : function () { var cell = document.querySelector('.tbx [data-tbxcell="' + id + '"]'); if (cell) tbxOpenDose(id, cell); }; // 21e: the chevron folds the preview back into the tile
+    var chev = add(head, "button", "tbx-dose-chev"); add(chev, "i", "ti ti-chevron-up"); chev.setAttribute("aria-label", tr("Close")); chev.onclick = face ? function () { tfhOpenDose(id); } : function () { var cell = document.querySelector('.tbx [data-tbxcell="' + id + '"], .tbx [data-tbxsugg="' + id + '"]'); if (cell) tbxOpenDose(id, cell); }; // a FOR YOU NOW tile carries data-tbxsugg, not data-tbxcell — without it the chevron could not fold the card that tile opened // 21e: the chevron folds the preview back into the tile
     if (it.what) add(card, "div", "tbx-what", tr(it.what)); // WHY-LINES (David 2026-08-01): what it is, then why it works. Two lines under the kicker/name, before the steps — the card has to teach, not just list.
     if (it.why) add(card, "div", "tbx-why", tr(it.why));
     var cur = tbxDose(id), track = tbxTrackForDose(id, cur), scripted = (!tbxHasEdit(id) && it.steps); // the shown steps ARE the band the chosen dose resolves to, so the preview never promises a shape Start won't run
@@ -8929,7 +8972,7 @@
     var existing = root.querySelector(".tbx-dose"); if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
     _tbxOpenStack = null;
     if (wasOpen) return;
-    var grid = cell.closest ? cell.closest(".tbx-grid") : null; if (!grid) return;
+    var grid = cell.closest ? (cell.closest(".tbx-grid") || cell.closest(".r38-grid")) : null; if (!grid) return; // the folders' panel grid is .tbx-grid; the round-38 FOR YOU NOW row and bento are .r38-grid — both are legal hosts for the dose card that opens under them
     var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id; tbxDoseSee(card); // a first open has no saved scroll — land on the chosen dose instead of at 0
     try { var cr = cell.getBoundingClientRect(), pr = card.getBoundingClientRect(); card.style.transformOrigin = Math.round(cr.left + cr.width / 2 - pr.left) + "px 0"; } catch (e) {} // 21e: the panel springs open OUT OF the tapped tile's column
   }
@@ -8996,7 +9039,7 @@
       var it = tbxItem(id); if (!it) return;
       tbxCoin(sugg, { name: it.name, hue: tbxVar(it.dom), ti: it.ti, stack: true,
         sel: _tbxOpenStack === id, data: ["data-tbxsugg", id],
-        onTap: function () { try { tbxOpenDose(id, sugg); } catch (e) {} } });
+        onTap: function () { try { tbxOpenDose(id, this); } catch (e) {} } }); // `this` = the TAPPED TILE, not the row (David on device 2026-09-20: "tapping a tile in For you now does nothing"). tbxOpenDose walks up from what it is handed to find the grid it must insert the dose card after; handed the container it found nothing above it and bailed silently.
     });
     var bento = add(root, "div", "r38-grid tbx-bento");
     TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
@@ -14951,20 +14994,28 @@
   // THE PLAYER'S BREATH RUNS — every contiguous stretch of breath-tagged segments becomes ONE clock, built from the segments' REAL laid-out spans (so the dose re-fit and the act-boundary beat are already inside the numbers, not guessed from the pattern). Shared by timelinePlayer's relayoutFrom AND by DEV.breathAgree, so the probe measures the shipping code rather than a copy of it.
   function breathRunsFromSegs(segs) {
     var runs = [], i = 0;
+    function over(s) { return !!(s && s._bOver && !s.breath); } // a zero-span voice-over laid OVER the wave (a script breath act's spoken line): it neither breaks the run nor owns a phase
     while (i < segs.length) {
       if (!segs[i] || !segs[i].breath) { i++; continue; }
-      var a = i; while (i < segs.length && segs[i] && segs[i].breath) i++;
-      var rows = [], cy = 0;
+      var a = i; while (i < segs.length && segs[i] && (segs[i].breath || over(segs[i]))) i++;
+      while (i > a && over(segs[i - 1])) i--; // a run ends on a phase, never on a trailing over-line
+      var rows = [], cy = 0, pk = null;
       for (var q = a; q < i; q++) {
-        var k = segs[q].breath, pk = q > a ? segs[q - 1].breath : null;
-        if (q > a && (k === "in" || k === "in2") && pk !== "in" && pk !== "in2") cy++;
-        var nx = (q + 1 < i) ? segs[q + 1].start : (segs[q].start + (segs[q].dur || 0) + (segs[q]._g != null ? segs[q]._g : (segs[q].gap || 0)));
+        if (over(segs[q])) continue;
+        var k = segs[q].breath;
+        if (pk != null && (k === "in" || k === "in2") && pk !== "in" && pk !== "in2") cy++;
+        var nq = q + 1; while (nq < i && over(segs[nq])) nq++; // the next PHASE's start is the span — an over-line sits at the same second and would otherwise read as a 0ms phase
+        var nx = (nq < i) ? segs[nq].start : (segs[q].start + (segs[q].dur || 0) + (segs[q]._g != null ? segs[q]._g : (segs[q].gap || 0)));
         rows.push({ label: segs[q].label || "", ms: Math.max(1, (nx - segs[q].start) * 1000), kind: k, cycle: cy });
+        pk = k;
       }
       runs.push({ a: a, b: i - 1, t0: segs[a].start, clock: makeBreathClock(rows) });
     }
     return runs;
   }
+  // ONE frozen clock sample: the wave held still at resting level. Used for the TEACH and END lines of a script breath
+  // act, where the instruction is being spoken and the breath is deliberately NOT being asked for yet (or any more).
+  var BREATH_PARKED = { level: 0, phase: "rest", phaseIdx: -1, phaseDur: 1000, remain: 1000, progress: 0, word: "", cycle: 0, tInPhase: 0, lvl: function () { return 0; } };
   // ===== CUE SETS + THE GUIDING TONE (David 2026-08-15: "a toggleable cue sound with a DIFFERENT sound per phase, and selectable sets — a bell, a meditation gong, gentle woodblocks; and a toggleable guiding tone whose pitch rises on the inhale and falls on the exhale. Gentle, not ugly."). TWO INDEPENDENT LAYERS now — S.breathCue and S.breathTone — where the old single S.breathSound could physically only ever be one OR the other (every entry had a `hit` or a `sustain`, never both). Everything is SYNTHESIZED on the shared AudioContext: no new binary assets, and never `new AudioContext` (iOS silences timer-driven HTMLAudio; the whole app goes through decoded buffers and nodes on the one shared context). Routed through bgBus() so the Sound slider governs it, and kept quiet — these land inside a calming tool. =====
   function _bsPart(ctx, out, freq, t0, atk, dur, vol, type) { // ONE soft partial. ANCHORED BY LAW: an explicit value is planted at t0 before any ramp. A bare ramp interpolates from whatever event came before it, which is exactly the defect that cracked the old flute glide 120-260 cents at every phase turn. Attack is 35-90ms, never the old 20ms, so a cue arrives instead of clicking.
     try { var o = ctx.createOscillator(), g = ctx.createGain(); o.type = type || "sine"; o.frequency.setValueAtTime(freq, t0);
@@ -15609,30 +15660,32 @@
   // seconds of silence AFTER each line at the base curve, `tier` = 1 always said / 2 said when it fits /
   // 3 the whole block. `refs` splice a SHARED range of another script in at `pos` (the seq index it sits in
   // front of) — the body scan is MED_V2 9-20, borrowed not copied, so it keeps the sit's own recorded clips.
+  // `role` (breathing blocks only) = T teach / C cue over one exhale / E end line after the wave stops; those rows
+  // carry gap 0 because composeScriptBreathAct derives their timing from the breath pattern, not from the page.
   // composeScriptAct() is the fitter; _dev/gen-voice-11labs.py reads the flat `seq` arrays for the voice bank.
   var SCRIPT_ACTS = {
     HEART: { seq: [
-      "Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot.",
-      "Breathe a little slower and deeper than usual. About five seconds in, and five seconds out.",
-      "Now, while you keep breathing like this, think of someone you care about, a place you love, or something that went right today. Let the appreciation come up.",
-      "Stay with the breath and the feeling together. If the feeling fades, bring it back.",
-      "Let the feeling spread out from your chest through your whole body.",
-      "Keep breathing through the heart. Slow in, slow out.",
+      "Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot, about five seconds in and five seconds out.",
+      "Think of someone you care about.",
+      "Let the appreciation come up.",
+      "Stay with the feeling.",
+      "If it fades, bring it back.",
+      "Let it spread through your body.",
       "This is a skill. Each time you practice it, your heart and your mind learn to settle together faster."
     ],
-      gap: [6, 12, 15, 30, 30, 40, 45],
-      tier: [1, 1, 1, 1, 2, 2, 3] },
+      gap: [0, 0, 0, 0, 0, 0, 0],
+      tier: [1, 1, 1, 1, 2, 2, 3], role: ["T", "C", "C", "C", "C", "C", "E"] },
     SIGH: { seq: [
       "Now we'll do a short breathing pattern that calms the body down fast. Two breaths in through the nose, then one long breath out through the mouth.",
-      "Breathe in through your nose. At the top, take one more small sip of air in.",
-      "Now let it all out slowly through your mouth, as long as it goes.",
-      "Again, two breaths in through the nose, then one long breath out through the mouth.",
+      "Breathe in through your nose, and at the top take one more small sip of air in. Then let it all out slowly through your mouth, as long as it goes.",
       "If you feel light-headed, breathe normally for a moment, then continue.",
-      "Keep going at your own pace. Each long breath out tells your body the danger is over.",
-      "Three more, slower than the last ones."
+      "One more sip at the top.",
+      "As long as it goes.",
+      "Your own pace.",
+      "The danger is over."
     ],
-      gap: [4, 4, 8, 20, 20, 30, 40],
-      tier: [1, 1, 1, 1, 1, 2, 3] },
+      gap: [0, 0, 0, 0, 0, 0, 0],
+      tier: [1, 1, 1, 1, 1, 2, 2], role: ["T", "T", "T", "C", "C", "C", "C"] },
     GROUND: { seq: [
       "Now we'll bring your attention out of your head and into the room, to slow a racing mind.",
       "Open your eyes if they're closed. Find three things you can see, and name them silently, one at a time.",
@@ -15736,8 +15789,16 @@
   // id -> which block it speaks + the registry row the dose card / story strip / grove draw it with. A script act is
   // NOT a new tool id: `dom` picks an existing toolbox hue so TBX_TOOLDOM-style resolution keeps working everywhere.
   var SCRIPT_ACT_META = {
-    s_heart:    { act: "HEART",          name: "Heart coherence", ti: "ti-heart",            dom: "connect" },
-    s_sigh:     { act: "SIGH",           name: "Cyclic sighing",  ti: "ti-wind",             dom: "restore" },
+    // `breath` = THE ACT IS A BREATHING EXERCISE (David on device 2026-09-20: "any kind of breathing thing usually
+    // involves not the big circle but the wave thing. I don't mind a breathing exercise having voiceover and the wave,
+    // but we have to do that correctly"). These two ARE patterns, but they ran through the generic script-act player, so
+    // they drew the meditation orb with no wave, no phase counter and no cue. Seconds per phase, the BREATH_PATTERNS
+    // shape as a terse row: in / in2 (the sigh's second sip, hold-less) / hold / out / rest, plus an optional `lead` =
+    // how many SILENT cycles run before the first spoken cue (default 3, or 4 when the pattern has a second sip — the
+    // sigh is the harder rhythm to find). The old `opener` flag is retired: which lines teach, cue and close is now the
+    // copy's own ROLE column in BLOCKS.txt (T / C / E), per David's spoken-breathing law above composeScriptBreathAct.
+    s_heart:    { act: "HEART",          name: "Heart coherence", ti: "ti-heart",            dom: "connect", breath: { in: 5, out: 5 } },
+    s_sigh:     { act: "SIGH",           name: "Cyclic sighing",  ti: "ti-wind",             dom: "restore", breath: { in: 2, in2: 1, out: 6, lead: 4 } },
     s_ground:   { act: "GROUND",         name: "Ground",          ti: "ti-eye",              dom: "focus" },
     s_anger:    { act: "ANGER",          name: "Cool the body",   ti: "ti-flame",            dom: "move" },
     s_intent:   { act: "INTENT",         name: "One intention",   ti: "ti-target",           dom: "focus" },
@@ -15763,7 +15824,7 @@
         for (k = R.from; k <= R.to; k++) items.push({ text: SRC[k], gap: GAP[k], tier: R.tier || 1, ref: 1 });
       }
     }
-    for (i = 0; i < A.seq.length; i++) { refsAt(i); items.push({ text: A.seq[i], gap: A.gap[i], tier: A.tier[i] || 1 }); }
+    for (i = 0; i < A.seq.length; i++) { refsAt(i); items.push({ text: A.seq[i], gap: A.gap[i], tier: A.tier[i] || 1, role: (A.role && A.role[i]) || "" }); } // `role` rides along for the breath composer (T/C/E); every non-breath block leaves it "" and the plain fitter never looks at it
     refsAt(A.seq.length);
     return items;
   }
@@ -15788,6 +15849,94 @@
     var left = secs - (use.sp + fitted); if (gaps.length && left > 0) { gaps[lg] += left; fitted += left; }
     var segs = use.keep.map(function (x, n) { var sg = medSeg(x.text, Math.round(gaps[n] * 10) / 10, ""); if (n === lg) sg._pk = "absorb"; return sg; }); // no pause kind anywhere else: like the V2 sit, the authored curve IS the design and PK_ELASTIC must never see it
     return { segs: segs, tier: tier, est: use.sp + fitted, lines: use.keep.length };
+  }
+  // ===== THE SCRIPT ACT THAT BREATHES (David 2026-09-20). A block with a `breath` row in SCRIPT_ACT_META composes as
+  // the app's OWN breath surface instead of the meditation orb: the same per-phase rows the v_* tools emit, so the same
+  // makeBreathClock drives the same wave, the same phase counter, the same cue strike and the same guiding tone at the
+  // user's own levels.
+  //
+  // THE SPOKEN-BREATHING LAW (David on device 2026-09-20): "give the instructions, then a couple of breaths so they're
+  // in the rhythm, then short cues over it; long messages don't fit an exhale; right now text during an exhale, then a
+  // pause, then more text is confusing; too much text on screen." So the act is THREE phases, and the copy says which
+  // line belongs to which (the ROLE column in BLOCKS.txt — T / C / E, see _dev/gen-script-acts.py):
+  //   1. TEACH  — every `T` line, spoken with the wave PARKED (no phase tone, no counter, `_bPark` holds the wave still
+  //               instead of dropping it back to the orb). Normal caption, ~3s after each, ~2s after the last.
+  //   2. RHYTHM — the wave starts with the tone and the phase words ALONE: three whole silent cycles (four for the sigh,
+  //               whose pattern is the harder one to find) before any voice.
+  //   3. CUES   — each `C` line rides a zero-span voice-over (_pk "vover" -> pkGap returns -dur) planted EXACTLY on an
+  //               exhale boundary, with at least three silent cycles between cues. A cue must fit inside one exhale
+  //               (<= 8 words AND an estimated read under the out-phase), and on screen it REPLACES that exhale's phase
+  //               word for that exhale only — never a second line under it, never text spilling past the breath.
+  //   4. END    — the `E` lines after the wave has stopped (tone off, wave parked again), then the act ends.
+  // Leftover dose goes into MORE SILENT CYCLES, never into longer captions; the sub-cycle remainder parks on the closing
+  // silence so the act still lands exactly on its slot. Phase segments keep their exact physiological ms throughout.
+  var SBR_TEACH_GAP = 3, SBR_TEACH_LAST = 2, SBR_END_GAP = 2, SBR_SPACE = 3, SBR_CUE_WORDS = 8; // the law's numbers, in one place
+  function scriptBreathPhases(B) { // ONE cycle, in the BREATH_PATTERNS [label, ms, kind] row shape. Every label is already a dict key (@SEC:I18N-DICT), so RU needs no new string.
+    var ph = [];
+    if (B["in"]) ph.push(["Breathe in", B["in"] * 1000, "in"]);
+    if (B.in2) ph.push(["and a little more", B.in2 * 1000, "in2"]); // the sigh's second sip: a hold-less second rise, drawn by breathLevelTo's existing in2 level (1.14) as a small step above the first
+    if (B.hold) ph.push(["Hold", B.hold * 1000, "hold"]);
+    if (B.out) ph.push([B.in2 ? "Long exhale" : "Breathe out", B.out * 1000, "out"]);
+    if (B.rest) ph.push(["Rest", B.rest * 1000, "rest"]);
+    return ph;
+  }
+  function composeScriptBreathAct(id, secs, ctx) {
+    ctx = ctx || {};
+    var M = SCRIPT_ACT_META[id], B = M && M.breath; if (!B) return null;
+    var all = scriptActItems(M.act); if (!all.length) return null;
+    if (ctx.skipOpener && all.length > 1 && !all[0].ref && (all[0].tier || 1) === 1) all = all.slice(1); // the ledger says an earlier act already said this opener
+    var ph = scriptBreathPhases(B), cycSec = 0, outIdx = -1, outSec = 0, i;
+    for (i = 0; i < ph.length; i++) { cycSec += ph[i][1] / 1000; if (outIdx < 0 && ph[i][2] === "out") { outIdx = i; outSec = ph[i][1] / 1000; } }
+    if (!(cycSec > 0) || outIdx < 0) return null;
+    secs = Math.max(10, secs || 60);
+    var lead = B.lead || (B.in2 ? 4 : 3);                                    // the silent cycles before the first cue: four for the two-sip sigh, three otherwise
+    var maxT = 1; for (i = 0; i < all.length; i++) if ((all[i].tier || 1) > maxT) maxT = all[i].tier;
+    function roleOf(it, ix) { return it.role || (ix === 0 ? "T" : "C"); }    // a block written before the role column still teaches on its opener and cues on the rest
+    // THE RHYTHM IS NOT NEGOTIABLE, THE CUE COUNT IS. A cue costs its own exhale PLUS SBR_SPACE silent cycles, so a
+    // short slot simply cannot hold every authored cue at the legal spacing. Tightening the spacing would be exactly
+    // the "text, pause, more text" David rejected, and letting the act run to fit them all would blow the stack's dose
+    // (a 75s Heart act composing 135s). So the dose buys CUES, in authored order — tier 1's first, always the ones
+    // kept — and what it cannot afford is simply not said. The teach and end lines are never dropped for time.
+    function pick(tier) { // the block at this dose tier, split into the three phases, capped to what the slot can hold
+      var T = [], C = [], E = [];
+      all.forEach(function (it, ix) { if ((it.tier || 1) > tier) return; var r = roleOf(it, ix); (r === "T" ? T : r === "E" ? E : C).push(it); });
+      var teach = 0; T.forEach(function (it, ix) { teach += medV2Speech(it.text) + (ix === T.length - 1 ? SBR_TEACH_LAST : SBR_TEACH_GAP); });
+      var end = 0; E.forEach(function (it, ix) { end += medV2Speech(it.text) + (ix === E.length - 1 ? 1 : SBR_END_GAP); });
+      var room = Math.floor(Math.max(0, secs - teach - end) / cycSec);       // whole cycles the slot can pay for
+      var fits = room > lead ? Math.floor((room - lead - 1) / (SBR_SPACE + 1)) + 1 : 0;
+      if (fits < C.length) C = C.slice(0, Math.max(0, fits));
+      var need = lead + (C.length ? (C.length - 1) * (SBR_SPACE + 1) + 1 : 1); // every cue owns one exhale, with SBR_SPACE silent cycles between them
+      return { T: T, C: C, E: E, teach: teach, end: end, need: need, min: teach + end + need * cycSec, cut: fits };
+    }
+    var use = pick(1), tier = 1;                                             // tier 1 is the block, always; a richer tier only if the dose can still hold its teach + end + one breathing stretch
+    for (i = 2; i <= maxT; i++) { var cand = pick(i); if (cand.min <= secs) { use = cand; tier = i; } else break; }
+    var body = Math.max(0, secs - use.teach - use.end);
+    var nCyc = Math.max(use.need, Math.floor(body / cycSec));                // FLOOR: a breath phase is never elastic, so the act must land under its slot and be padded back up, not run over
+    var n = use.C.length, step = n > 1 ? Math.floor((nCyc - lead) / n) : 0;
+    if (step < SBR_SPACE + 1) step = SBR_SPACE + 1;                          // spaced evenly through the cycles the dose bought, but never tighter than the law
+    var at = {}, k, cy;
+    for (k = 0; k < n; k++) { cy = lead + k * step; if (cy > nCyc - 1) cy = nCyc - 1 - (n - 1 - k) * (SBR_SPACE + 1); if (cy >= 0) at[cy] = use.C[k]; }
+    var out = [], t = 0;
+    function say(it, gap) { var sg = medSeg(it.text, gap, ""); sg._bPark = 1; out.push(sg); t += medV2Speech(it.text) + gap; } // _bPark = the wave holds still under this line instead of vizDrop() flipping back to the orb
+    use.T.forEach(function (it, ix) { say(it, ix === use.T.length - 1 ? SBR_TEACH_LAST : SBR_TEACH_GAP); });
+    for (var c = 0; c < nCyc; c++) {
+      for (i = 0; i < ph.length; i++) {
+        var secP = ph[i][1] / 1000, lab = ph[i][0], cue = (i === outIdx) ? at[c] : null, show = lab;
+        if (cue) {
+          var words = String(cue.text).trim().split(/\s+/).length, sp = medV2Speech(cue.text);
+          if (words > SBR_CUE_WORDS || sp > outSec) try { console.warn("[ALTER] breath cue overruns one exhale (" + id + "): " + words + "w / ~" + sp.toFixed(1) + "s in a " + outSec + "s exhale — " + cue.text); } catch (e) {}
+          out.push({ text: cue.text, label: "", sub: "", gap: 0, _pk: "vover", _bOver: 1 }); // zero span, planted exactly on the exhale boundary
+          show = tr(cue.text);                                               // THE CUE REPLACES THE PHASE WORD for this exhale only; the word is back on the next one
+        }
+        out.push({ text: "", label: show, sub: "", gap: secP, breath: ph[i][2] }); // sub always "": never two lines of text at once under the wave
+        t += secP;
+      }
+    }
+    use.E.forEach(function (it, ix) { say(it, ix === use.E.length - 1 ? 1 : SBR_END_GAP); });
+    var left = secs - t;                                                     // the sub-cycle remainder (always < one cycle): the closing silence, so the act's duration IS its slot
+    if (left > 0) { if (out.length && out[out.length - 1]._bPark) { out[out.length - 1].gap += left; } else out.push({ text: "", label: "", sub: "", gap: left, _bPark: 1 }); t += left; }
+    return { segs: out, tier: tier, est: t, lines: use.T.length + n + use.E.length,
+      breath: 1, cycSec: cycSec, cycles: nCyc, teach: use.T.length, cues: n, ends: use.E.length, lead: lead, cueAt: Object.keys(at).map(Number).sort(function (x, y) { return x - y; }) };
   }
   var MED_RETURN = ["Sooner or later, the mind will wander off. That's normal. The moment you notice, gently come back to the breath.", "It doesn't matter how far away the thought carried you. Noticing is what counts. Begin again.", "You don't need to push the thought away. Let it pass, and return to the breath.", "Each time you notice and come back, that's the practice working."];
   Object.assign(I18N.ru, { // THE SECTION NAMES the player prints as its sub-line (the six that had no RU: the sit was Russian, its section label was not). B4 law, in place. Nouns, matching the ones already in the dict (Settle/Awareness/Rest).
@@ -17599,7 +17748,7 @@
     try { groveCredit(groveToolPractice(id)); } catch (e) {} // THE GROVE rides the app's real session-complete choke point — one practice-day = one growth credit, floor sessions included, no parallel tracker
     try { goPracticeTick(groveToolPractice(id)); } catch (e) {} // ...and any goal that LINKED that practice ticks off the SAME session (engine §5b: one behaviour, two meanings)
     save();
-    try { if (Math.random() < 0.3) { var _q = reflectDue(); if (_q) setTimeout(function () { reflectCard(_q); }, 900); } } catch (e) {} // sometimes, after a tool lands: one worksheet question while the state is warm
+    if (!NO_POPUPS) try { if (Math.random() < 0.3) { var _q = reflectDue(); if (_q) setTimeout(function () { reflectCard(_q); }, 900); } } catch (e) {} // THE POP-UP CULL, the one it missed (found 2026-09-20 by watching the body for 1s across a player close): tickTool runs on EVERY tool/stack finish, so this dealt an unasked reflection card over the landing one time in three — 900ms after the close, which is exactly the window David saw something flashing. Gated like the other twelve; flip NO_POPUPS false and it returns byte-identical. The card itself is intact and still reachable from its own journey node (@SEC:JOURNEY reflect node).
   }
   function toolRung(id) { var u = (S.tools && S.tools.use && S.tools.use[id]) || 0; return u >= 12 ? 3 : u >= 3 ? 2 : u >= 1 ? 1 : 0; } // Willingness(1) → Habit(2) → Grace(3) — Stutz's practice ladder (3-pip)
   function toolRungLabel(r) { return ({ 1: "Willingness", 2: "Habit", 3: "Grace" })[r] || ""; }
@@ -18063,18 +18212,19 @@
     // the drift-tap target, the ambient breather on every non-breath segment, and the per-act color tint that slides with
     // the page. Giving "orb" a second .bw-orb would fork the tap target and double the sphere. So "orb" = the shipped
     // path, untouched; any OTHER key mounts its own node beside the orb, and the orb steps aside only for the breath run.
-    var _vzK = null, _vzN = null, _vzEl = null, _vzOrb = null;
-    function vizDrop() { if (_vzEl && _vzEl.parentNode) _vzEl.parentNode.removeChild(_vzEl); if (_vzOrb) _vzOrb.style.display = ""; _vzEl = null; _vzN = null; _vzK = null; _vzOrb = null; } // restores the orb WE hid, not whichever page is current — an act slide mid-run must not leave a blank page behind it
+    var _vzK = null, _vzN = null, _vzEl = null, _vzOrb = null, _vzCyc = 0;
+    function vizDrop() { if (_vzEl && _vzEl.parentNode) _vzEl.parentNode.removeChild(_vzEl); if (_vzOrb) _vzOrb.style.display = ""; _vzEl = null; _vzN = null; _vzK = null; _vzOrb = null; _vzCyc = 0; } // restores the orb WE hid, not whichever page is current — an act slide mid-run must not leave a blank page behind it
     function vizPaint(s) { // s = a makeBreathClock sample on a breath segment, else null. Returns true when the registry visual owns the frame (the orb then sits it out).
       var k = breathVizKey();
       if (!s || k === "orb" || !BREATH_VIZ[k] || !orb || !orb.parentNode) { if (_vzEl) vizDrop(); return false; }
-      if (_vzK !== k || !_vzEl || _vzEl.parentNode !== orb.parentNode) { // remount on a live settings change AND on an act slide (the pages each own their own centre column)
+      var _wantCyc = (_bRun && _bRun.clock && _bRun.clock.cycles) ? Math.round(_bRun.clock.total / _bRun.clock.cycles) : 0;
+      if (_vzK !== k || !_vzEl || _vzEl.parentNode !== orb.parentNode || (_wantCyc && _wantCyc !== _vzCyc)) { // remount on a live settings change, on an act slide (the pages each own their own centre column), AND when the run's real cycle length finally arrives — a wave mounted while PARKED (a teach line, before any run) has no clock to size its window from, and would otherwise keep the 16s fallback for the whole act
         vizDrop();
         var host = document.createElement("div"); host.className = "bw-viz"; host.style.cssText = "position:relative;z-index:2;display:flex;align-items:center;justify-content:center;";
         host.innerHTML = BREATH_VIZ[k].html; // the registry's own markup, verbatim — .bw-wave's px/stroke/glow all live in the #breatheOv CSS the standalone tool already uses, and this overlay carries that same id
         orb.parentNode.insertBefore(host, orb);
         var run = _bRun && _bRun.clock, cyc = (run && run.cycles) ? run.total / run.cycles : 16000; // the wave sizes its window to ONE WHOLE CYCLE; the run clock knows both numbers
-        _vzEl = host; _vzK = k; _vzOrb = orb; _vzN = BREATH_VIZ[k].mount(host, cyc); orb.style.display = "none";
+        _vzEl = host; _vzK = k; _vzCyc = _wantCyc; _vzOrb = orb; _vzN = BREATH_VIZ[k].mount(host, cyc); orb.style.display = "none";
       }
       // THE WAVE NEEDS A LEVEL FUNCTION, NOT A LEVEL (David on device 2026-08-20: "wave visualization is still broken,
       // it's just a flat line"). It draws history to the left of centre and the ghost to the right, so it evaluates the
@@ -18283,11 +18433,12 @@
       }
       if (minimized && miniLab) miniLab.textContent = lab.textContent; // keep the minimized dock's label live while audio keeps playing
       // ORB DRIVE (David 2026-07-09): ONE clock. Since 2026-08-15 that clock is literally makeBreathClock — the same object breathwork() reads — instead of a second implementation that re-derived the phase from the segment span with its own easing. That second implementation also had no branch for `in2`, so the physiological sigh's "and a little more" fell through to the free-running ambient cosine and the orb could SHRINK at the moment you were told to inhale further. Non-breath segments keep the gentle ~11s ambient breath.
-      var _bs = null;
+      var _bs = null, _bParked = null;
       if (seg && seg.breath) { _bRun = null; for (var _r = 0; _r < _bRuns.length; _r++) if (_si >= _bRuns[_r].a && _si <= _bRuns[_r].b) { _bRun = _bRuns[_r]; break; } if (_bRun) _bs = _bRun.clock.at((e - _bRun.t0) * 1000); }
+      else if (seg && seg._bPark) _bParked = BREATH_PARKED; // THE PARKED WAVE (David 2026-09-20, the spoken-breathing law): a script breath act's TEACH and END lines are spoken with no wave running — but vizPaint(null) would vizDrop() the wave and flash the orb back in mid-act. A frozen sample keeps the wave on screen, still, at rest level: no tone, no counter, no motion.
       if (_bs && playing) breathAudio(_bs); else if (!_bs && _bTone) breathAudioOff(); // the tone lives exactly as long as the breath run does, so a meditation act that follows is never left with a drone under it
-      paintPhaseEl(_bs);
-      var _vzOn = vizPaint(_bs); // S.breathViz drives the BREATH segments; "orb" (the default) returns false and the shared sphere below keeps every frame, exactly as it always has
+      paintPhaseEl(_bs); // the counter bar belongs to a RUNNING wave only — a parked one shows none
+      var _vzOn = vizPaint(_bs || _bParked); // S.breathViz drives the BREATH segments; "orb" (the default) returns false and the shared sphere below keeps every frame, exactly as it always has
       if (orb && !_vzOn) {
         var _sc, _op;
         if (_bs) { _sc = 0.84 + 0.30 * _bs.level; _op = 0.60 + 0.40 * Math.min(1, _bs.level); }
@@ -18431,7 +18582,7 @@
       if (opts.onQuit && skip) { try { opts.onQuit(curAct); } catch (e) {} }
       if (opts.onFinish) opts.onFinish(skip); else { try { landAfterFlow(); } catch (e) {} } // LANDING CONTRACT (Parcel A): a bare player (no stack wrapper) re-opens home on close if launched from home. A wrapped flow defers to its terminal surface (stackComplete) so home doesn't re-open behind the still-open overlay twice.
     }
-    ov.querySelector(".bw-x").onclick = function () { if (done) return; ov.style.animation = "none"; ov.style.transition = "transform .3s cubic-bezier(.4,0,.2,1), opacity .28s ease"; ov.style.transformOrigin = "50% 44%"; ov.style.transform = "scale(.82)"; ov.style.opacity = "0"; setTimeout(function () { finish(true); }, 250); }; // ZOOM-OUT on close (David 2026-07-20 zoom law): the player shrinks back toward the circle's spot = "zooming out to home", the reverse of the open bloom. Full home-cockpit reveal on fold = Z-2 (deep unification).
+    ov.querySelector(".bw-x").onclick = function () { if (done) return; try { landPrime(); } catch (e) {} ov.style.animation = "none"; ov.style.transition = "transform .3s cubic-bezier(.4,0,.2,1), opacity .28s ease"; ov.style.transformOrigin = "50% 44%"; ov.style.transform = "scale(.82)"; ov.style.opacity = "0"; setTimeout(function () { finish(true); }, 250); }; // ZOOM-OUT on close (David 2026-07-20 zoom law): the player shrinks back toward the circle's spot = "zooming out to home", the reverse of the open bloom. Full home-cockpit reveal on fold = Z-2 (deep unification).
   }
   // REVERSAL OF DESIRE — Stutz Tool 1 (master-guide L172-190), david-framework L4 / Force of Forward Motion. When-to-use (verbatim): right before something you've been avoiding (the Comfort Zone). The flagship trigger→tool tool: avoidance is the most common daily Part X mode. (TB-REVERSAL)
   function reversalOfDesire(avoidedBlock) {
@@ -19774,6 +19925,7 @@
       case "release": return Math.max(PK.somatic, Math.min(PK.somaticRelease, g));
       case "held": return Math.max(PK.held, Math.min(PK.heldMax, g));                                     // David 2026-09-09: HONOUR the composer's per-move hold, up to the cap. Was min(PK.held, g), which flattened every hold back to 4s the moment the real clip length was known — so the only way left to fill a long dose was to loop the routine, which is exactly what he heard. Never shorter than the beat, never longer than the cap; the dose re-fit may still squeeze it (held stays in PK_ELASTIC).
       case "affirm": return Math.max(PK.affirmMin, Math.min(PK.affirmMax, (dur || 3) * PK.affirmMul)); // a line you say back sits for about as long as it took to say
+      case "vover": return -(dur || 0);                                                               // A LINE LAID OVER THE WAVE (2026-09-20): the slot is EXACTLY zero, so the clip starts on the exhale boundary and the breath phases underneath keep their own physiological ms. Never in PK_ELASTIC — the dose re-fit must not touch a span that is zero by construction.
       default: return g;                                                                              // absorb / inquiry / visual / cue keep the composed, guidance-scaled value
     }
   }
@@ -19879,8 +20031,9 @@
       // Each act now starts directly on its FIRST REAL cue (tracked immediately); the act name still shows via the
       // act page / story bars (acts[] metadata), so the boundary is announced visually without a floating voice line.
       if (SCRIPT_ACT_META[t.id]) { // THE SCRIPT ACT (2026-09-20): one authored block, its own silence curve, dose-tiered. Same fitter as the V2 sit.
-        var SA = composeScriptAct(SCRIPT_ACT_META[t.id].act, t.secs || 60, { skipOpener: !!(sawBodyPrep && SCRIPT_ACT_PREP[t.id]) });
-        SA.segs.forEach(function (sg) { usedTxt[_normLine(sg.text)] = 1; P(sg); }); // stamp the session-wide no-repeat guard: a borrowed body-scan line must not be re-said by a later meditation act
+        var _sctx = { skipOpener: !!(sawBodyPrep && SCRIPT_ACT_PREP[t.id]) };
+        var SA = (SCRIPT_ACT_META[t.id].breath ? composeScriptBreathAct(t.id, t.secs || 60, _sctx) : null) || composeScriptAct(SCRIPT_ACT_META[t.id].act, t.secs || 60, _sctx); // a block with a `breath` row composes as the WAVE surface (s_heart / s_sigh), the lines laid over it; everything else is the plain authored block
+        SA.segs.forEach(function (sg) { if (sg.text) usedTxt[_normLine(sg.text)] = 1; P(sg); }); // stamp the session-wide no-repeat guard: a borrowed body-scan line must not be re-said by a later meditation act (a voiceless breath phase has nothing to stamp)
         if (t.id === "s_rest" || t.id === "s_anger") sawBodyPrep = true;            // both leave the body settled, exactly as relax does
         return;
       }
@@ -20038,7 +20191,7 @@
       for (var s = 0; s < MED_V2_SEC.length; s++) if (ix >= MED_V2_SEC[s][0] && ix <= MED_V2_SEC[s][1]) { sIdx = s; break; }
       var SC = MED_V2_SEC[sIdx], first = sIdx !== lastSec;
       if (first) { acts.push({ name: SC[2], color: SC[3], icon: SC[4] }); secMeta.push({ name: SC[2], color: SC[3], icon: SC[4] }); lastSec = sIdx; }
-      var sg = medSeg(seq[ix], Math.round(gaps[i] * 10) / 10, first ? SC[2] : "");
+      var sg = medSeg(seq[ix], Math.round(gaps[i] * 10) / 10, ""); // NO SUB-LABEL (David on device 2026-09-20: "Find a comfortable position" carried a little "arrival" under it — "I don't even understand why it's there"). MED_V2_SEC[2] is the MOVEMENT's name; it belongs to the act page and the story bar (acts/secMeta below still carry it), never printed under the line the voice is saying.
       if (i === restAt) sg._pk = "absorb";                                    // the ONLY elastic silence in the sit
       if (first) { sg._secIdx = secMeta.length - 1; if (secMeta.length > 1) { sg._sectionStart = true; if (segs.length) { var pv = segs[segs.length - 1]; pv._pkAdd = (pv._pkAdd || 0) + PK.transition; } } }
       if (!ctx.inStack) sg._act = acts.length - 1;                            // solo: one page per movement. In a stack the caller owns _act (the whole sit is ONE act of the stack)
@@ -22791,6 +22944,43 @@
       rows.push("  [" + ai + "] " + sg.text);
     });
     return { dose: L.mins + "m", total: r.dose, acts: r.acts.map(function (a) { return a.name; }), dupes: dup, n: r.segs.length, rows: rows };
+  };
+  window.DEV.breathActDump = function (id, mins) { // A SCRIPT BREATH ACT ON TRIAL (2026-09-20): compose the stack, lay it out the way relayoutFrom lays it out, and ask the run's OWN clock where each spoken line lands. `tIn` must be 0 and `word` must be "Exhale" on every row, or a line is speaking over an inhale.
+    var L = (id && id.length && typeof id !== "string") ? { mins: "hand", list: stackDisplayList(tbxExpandTrack(id)) } : _devStackList(id || "reset2", mins); // an ARRAY = a hand-written track ([{k:"v_coherent",d:60},{k:"s_heart",d:90}]), so the cross-act wave persistence can be proved without inventing a registry pack
+    var r = composeStackSegs(L.list), segs = r.segs, t = 0, i;
+    for (i = 0; i < segs.length; i++) { var sg = segs[i];
+      var d = 0; if (sg.text) { try { var b = TTS.getBufferSync(sg.text); d = b ? b.duration : medV2Speech(sg.text); } catch (e) { d = medV2Speech(sg.text); } }
+      sg.dur = d; sg.start = t; sg._g = (sg._pk === "vover") ? -d : (sg.gap != null ? sg.gap : 0); t += d + sg._g; }
+    var runs = breathRunsFromSegs(segs), rows = [], bad = 0;
+    segs.forEach(function (sg, ix) {
+      if (!(sg._bOver && sg.text)) return;
+      var R = null, q; for (q = 0; q < runs.length; q++) if (ix >= runs[q].a && ix <= runs[q].b) R = runs[q];
+      if (!R) { bad++; rows.push({ line: sg.text.slice(0, 34), start: +sg.start.toFixed(2), run: null, word: "NO RUN" }); return; }
+      var into = Math.round((sg.start - R.t0) * 1000), k = R.clock.at(into), cyc = R.clock.cycles ? R.clock.total / R.clock.cycles : 0; // ROUNDED TO THE MILLISECOND: a zero-span voice-over's start is `t + dur - dur`, which in floating point can land 1e-12 s under the exhale boundary and make an exact hit read as "5.000s into the inhale"
+      if (!k || k.phase !== "out" || k.tInPhase > 1) bad++;
+      rows.push({ line: sg.text.slice(0, 34), start: +sg.start.toFixed(2), intoRun: +(into / 1000).toFixed(3), cycle: k ? k.cycle : null,
+        cycleBoundary: +((R.t0 + (k ? k.cycle : 0) * cyc / 1000)).toFixed(3), word: k ? k.word : "?", tIn: k ? +(k.tInPhase / 1000).toFixed(3) : null });
+    });
+    var teach = [], ends = [], cues = [], sawWave = false, cycSpan = 0;     // THE SPOKEN-BREATHING LAW, as numbers: which lines taught before the wave, which cues landed on which cycle, which lines closed after it stopped
+    var _bAct = runs.length ? segs[runs[0].a]._act : null;                   // ONLY the breathing act's own lines — the acts after it in the stack are not this act's "end lines"
+    segs.forEach(function (sg, ix) {
+      if (_bAct != null && sg._act !== _bAct) return;
+      if (sg.breath) { sawWave = true; return; }
+      if (sg._bOver && sg.text) { var R2 = null, q2; for (q2 = 0; q2 < runs.length; q2++) if (ix >= runs[q2].a && ix <= runs[q2].b) R2 = runs[q2];
+        var k2 = R2 ? R2.clock.at(Math.round((sg.start - R2.t0) * 1000)) : null;
+        cues.push({ line: sg.text, words: sg.text.trim().split(/\s+/).length, cycle: k2 ? k2.cycle : null, at: +sg.start.toFixed(1), dur: +(sg.dur || 0).toFixed(1) }); return; }
+      if (!sg.text) return;
+      (sawWave ? ends : teach).push({ line: sg.text.slice(0, 46), at: +sg.start.toFixed(1), gap: sg._g });
+    });
+    if (runs.length) cycSpan = runs[0].clock.cycles ? runs[0].clock.total / runs[0].clock.cycles / 1000 : 0;
+    var spacing = cues.slice(1).map(function (c2, q3) { return c2.cycle - cues[q3].cycle; });
+    var law = { firstCueCycle: cues.length ? cues[0].cycle : null, minSpacing: spacing.length ? Math.min.apply(null, spacing) : null,
+      maxCueWords: cues.length ? Math.max.apply(null, cues.map(function (c2) { return c2.words; })) : 0,
+      cueFitsExhale: cues.every(function (c2) { return c2.dur <= 0 || c2.dur <= cycSpan; }), endsAfterWave: ends.length, teachBeforeWave: teach.length };
+    return { id: id || "reset2", dose: L.mins + "m", acts: r.acts.map(function (a) { return a.name; }), total: +t.toFixed(1), askSec: r.dose,
+      teach: teach, cues: cues, ends: ends, law: law, cycleSec: +cycSpan.toFixed(2),
+      runs: runs.map(function (R) { return { a: R.a, b: R.b, t0: +R.t0.toFixed(2), phases: R.clock.count, cycles: R.clock.cycles, cycleSec: R.clock.cycles ? +(R.clock.total / R.clock.cycles / 1000).toFixed(2) : 0, runSec: +(R.clock.total / 1000).toFixed(1) }; }),
+      offBoundary: bad, lines: rows };
   };
   window.DEV.stackRange = function (id) { // the minutes a weighted pack can actually run, and the presets the picker will offer
     var it = tbxItem(id); if (!it) return "no stack " + id;

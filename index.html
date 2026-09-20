@@ -4765,7 +4765,12 @@
      rows at 296/412/529/645, labels 75px under each tile. Borders: none, on every element. ===== */
   #trackerFull .r38-sec{ font-size:9.5px; font-weight:800; letter-spacing:1.8px; color:var(--c-ff8fc0-ink); padding-left:28px; margin:10px 0 12px; }
   #trackerFull .r38-grid, #trackerFull.tf-2c .r38-grid{ display:grid; grid-template-columns:repeat(3,1fr); align-content:start; gap:24px 8px; padding:0 24px 12px; }
-  #trackerFull .r38-grid.tbx-bento, #trackerFull.tf-2c .r38-grid.tbx-bento{ padding-top:24px; }
+  /* ORGANIC RHYTHM (David device 2026-09-20: "there's a space between the For You Now row and everything below it... I don't think that's the way I designed it").
+     The Round H frame's pitch from the suggestion row to grid row 1 is 130px vs the grid's own 116px row pitch — and the whole 14px difference is the
+     SECOND LABEL LINE the suggestion cards carry ("label ... wraps to 2 lines", PORT-SPEC-tool-library.md). So the designed gap between the two blocks IS
+     the grid's own 24px row gap. The build stacked padding-bottom 12 + the .tbx flex gap 12 + padding-top 24 = 48, i.e. 24px of invented air. */
+  #trackerFull .r38-grid.tbx-sugg, #trackerFull.tf-2c .r38-grid.tbx-sugg{ padding-bottom:0; }
+  #trackerFull .r38-grid.tbx-bento, #trackerFull.tf-2c .r38-grid.tbx-bento{ padding-top:12px; } /* 12 + the .tbx flex gap 12 = the grid's own 24px row gap */
   #trackerFull .r38-tile{ display:flex; flex-direction:column; align-items:center; gap:8px; background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   #trackerFull .r38-wrap{ position:relative; width:70px; height:70px; flex:none; }
   #trackerFull .r38-face, #trackerFull .r38-sh1, #trackerFull .r38-sh2{ position:absolute; inset:0; border-radius:23px; }
@@ -4958,6 +4963,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1504"></script>
+  <script src="app.js?v=1509"></script>
 </body>
 </html>

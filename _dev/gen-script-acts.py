@@ -13,6 +13,10 @@
 #   * `REST|1|SCAN|` (empty text, gap == SCAN) = "the approved body scan goes here" — it becomes a
 #     REF entry {ref:"MED_V2", from:9, to:20}, NOT copied strings, so the scan keeps sharing MED_V2's
 #     recorded clips and any future edit to the sit reaches every stack that borrows it.
+#   * A NON-NUMERIC gap that is not a REF placeholder is a ROLE (David on device 2026-09-20, the spoken-breathing law):
+#     `T` = teach line, `C` = short cue said over one exhale, `E` = end line after the wave stops. A role row emits gap 0
+#     and its letter into a parallel `role:` array; composeScriptBreathAct reads the roles and computes the real timing
+#     from the breath pattern itself, so a breathing block never carries hand-typed silences. Numeric gaps keep role "".
 #   * refs live in their own `refs:` field with a `pos` (the seq index they sit in front of) because
 #     _dev/gen-voice-11labs.py extracts every string of a flat `seq:[…]` — a nested object inside seq
 #     would break that match and the block's lines would silently lose their voice clips.
@@ -27,6 +31,8 @@ END = "  // @GEN:SCRIPT_ACTS end"
 
 # the shared clips a SCAN placeholder resolves to: MED_V2 seq 9..20 with their MED_V2_GAP values
 REFS = {"SCAN": ("MED_V2", 9, 20)}
+ROLES = {"T", "C", "E"}          # teach / cue / end — the breath blocks' gap column
+NUM = re.compile(r"^\d+(\.\d+)?$")
 
 
 def esc(s):
@@ -45,7 +51,7 @@ def parse(path):
                 sys.exit("BLOCKS.txt line %d is not BLOCK|tier|gap|text: %s" % (n, line))
             bid, tier, gap, text = parts[0].strip(), parts[1].strip(), parts[2].strip(), parts[3].strip()
             if bid not in blocks:
-                blocks[bid] = {"seq": [], "gap": [], "tier": [], "refs": []}
+                blocks[bid] = {"seq": [], "gap": [], "tier": [], "role": [], "refs": []}
                 order.append(bid)
             B = blocks[bid]
             if gap in REFS:
@@ -56,9 +62,16 @@ def parse(path):
                 continue
             if not text:
                 sys.exit("BLOCKS.txt line %d has no text" % n)
+            role = ""
+            if not NUM.match(gap):
+                if gap not in ROLES:
+                    sys.exit("BLOCKS.txt line %d: gap must be seconds, a role (%s) or a ref placeholder — got %r"
+                             % (n, "/".join(sorted(ROLES)), gap))
+                role, gap = gap, "0"
             B["seq"].append(text)
             B["gap"].append(float(gap) if "." in gap else int(gap))
             B["tier"].append(int(tier))
+            B["role"].append(role)
     return order, blocks
 
 
@@ -69,6 +82,8 @@ def render(order, blocks):
            "  // seconds of silence AFTER each line at the base curve, `tier` = 1 always said / 2 said when it fits /",
            "  // 3 the whole block. `refs` splice a SHARED range of another script in at `pos` (the seq index it sits in",
            "  // front of) — the body scan is MED_V2 9-20, borrowed not copied, so it keeps the sit's own recorded clips.",
+           "  // `role` (breathing blocks only) = T teach / C cue over one exhale / E end line after the wave stops; those rows",
+           "  // carry gap 0 because composeScriptBreathAct derives their timing from the breath pattern, not from the page.",
            "  // composeScriptAct() is the fitter; _dev/gen-voice-11labs.py reads the flat `seq` arrays for the voice bank.",
            "  var SCRIPT_ACTS = {"]
     for bid in order:
@@ -81,6 +96,8 @@ def render(order, blocks):
         out.append("    ],")
         out.append("      gap: [%s]," % ", ".join(str(g) for g in B["gap"]))
         line = "      tier: [%s]" % ", ".join(str(t) for t in B["tier"])
+        if any(B["role"]):
+            line += ", role: [%s]" % ", ".join('"%s"' % r for r in B["role"])
         if B["refs"]:
             line += ", refs: [%s]" % ", ".join(
                 '{ pos: %d, ref: "%s", from: %d, to: %d, tier: %d }' % (r["pos"], r["ref"], r["from"], r["to"], r["tier"])
@@ -108,7 +125,8 @@ def main():
         fh.write(head + region + tail)
     lines = sum(len(blocks[b]["seq"]) for b in order)
     refs = sum(len(blocks[b]["refs"]) for b in order)
-    print("SCRIPT_ACTS: %d blocks, %d spoken lines, %d refs -> app.js" % (len(order), lines, refs))
+    roles = sum(1 for b in order for r in blocks[b]["role"] if r)
+    print("SCRIPT_ACTS: %d blocks, %d spoken lines, %d refs, %d role rows -> app.js" % (len(order), lines, refs, roles))
 
 
 main()
