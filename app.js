@@ -59,14 +59,35 @@
   }
   function themeSet(t) {
     if (THEME_IDS.indexOf(t) < 0 || t === _thTheme) return;
-    try { localStorage.setItem("alter_theme", t); } catch (e) {}
-    document.documentElement.setAttribute("data-theme", t);
     // A clean boot, deliberately: ~150 surfaces cache color into inline styles when they draw, so a
     // live swap would leave a half-themed screen. Switching worlds is rare; a correct screen is not.
     // The flag makes showStartScreen() stand down for exactly this one reload, so you come back to
     // the app in the new world instead of to the cold-open ceremony.
-    try { sessionStorage.setItem("alter_theme_swap", "1"); } catch (e) {}
-    location.reload();
+    // THE CROSS-FADE (David device 2026-09-20: "changing the Look is awkward and laggy: you press Look, things
+    // change, then it snaps and everything disappears and appears again. It could just be loading and then
+    // transition to the next look naturally"). The reboot STAYS — it is why the new world is correct — but it
+    // now happens under a cover: the INCOMING world's ground is painted over the live screen in 150ms, the
+    // reload runs beneath it (the browser holds that last frame, which is by then a flat sheet of the new
+    // ground, so the swap has no blank), and the fresh boot lifts the same cover off in 250ms once home has
+    // drawn (index.html `html.th-swap-in::before`, released at the end of init). Nothing disappears: the old
+    // screen fades into the new world's colour and the new screen fades up out of it.
+    // NOT a designed number — the prototype that owns the settings cascade has no Look row and no Look
+    // transition, so 150/250ms on --ease-settle are app-side defaults, flagged as such to David.
+    var root = document.documentElement, prev = root.getAttribute("data-theme"), ground = "";
+    // read the incoming world's ground and put the attribute straight back in the SAME frame — no repaint
+    // happens in between, so the live screen does not flicker into the new palette before the cover is up.
+    try { root.setAttribute("data-theme", t); ground = getComputedStyle(root).getPropertyValue("--t-bg").trim(); root.setAttribute("data-theme", prev || "night"); } catch (e) {}
+    function go() {
+      try { localStorage.setItem("alter_theme", t); } catch (e) {}
+      root.setAttribute("data-theme", t);
+      try { sessionStorage.setItem("alter_theme_swap", "1"); sessionStorage.setItem("alter_theme_fade", "1"); } catch (e) {}
+      location.reload();
+    }
+    if (!ground || prefersReducedMotion()) { go(); return; }
+    var cv = document.createElement("div"); cv.id = "thSwapOut";
+    cv.style.cssText = "position:fixed;inset:0;z-index:99999;pointer-events:none;background:" + ground + ";opacity:0;transition:opacity .15s var(--ease-settle);";
+    document.body.appendChild(cv);
+    void cv.offsetWidth; cv.style.opacity = "1"; setTimeout(go, 170); // forced reflow, not rAF: rAF is throttled/frozen in a hidden tab and the reload must never be able to hang on a frame that never comes
   }
 
   // THE STATE BOUNDARY. Domain colors (habit, goal, journey-node and block hues) live in the SAVE, not in
@@ -3604,6 +3625,23 @@
     add(ov, "div", "ym-fade");
     var hp = add(ov, "button", "ym-home"); add(hp, "i", "ti ti-home"); hp.setAttribute("aria-label", tr("Home"));
     hp.onclick = function () { close(); try { if (!TF_OPEN) openHomeInstant(); } catch (e) {} };
+    // THE CASCADE (David device 2026-09-20: "I created an epic animation for the settings menu. When you click
+    // settings, they're supposed to appear in this cool cascading way, but that doesn't happen"). Ported 1:1 from
+    // the RUNNING prototype — `_design-sync/home-2026-08-14/design_handoff_home_screen/Home Screen.dc.html`
+    // frame 2c, served, opened, driven to youOpen and read off COMPUTED style (never the markup). Numbers in
+    // `_design-sync/home-2026-08-14/EXTRACT-settings-cascade-2026-09-20.md`: youRowIn, .64s,
+    // cubic-bezier(.3,1.28,.5,1), fill both, delay = 20 + i*55 ms in DOM ORDER, the home puck as the last beat
+    // (it is beat 9 of the sequence in the design, not an afterthought). The 2026-08-20 port was declared "THE
+    // LIST ONLY" and took the paint and the geometry while leaving the motion behind; the keyframe itself has
+    // been in index.html all along (the tools shelf borrows it), so nothing new is authored here.
+    // CLEARED when it lands: a `both`-filled animation outranks `.ym-row:active`'s press transform.
+    (function () {
+      if (prefersReducedMotion()) return;
+      var seq = [].slice.call(col.children).filter(function (n) { return !/ym-advbox|ym-tail/.test(n.className || ""); });
+      seq.push(hp);
+      seq.forEach(function (n, i) { n.style.animation = "youRowIn .64s cubic-bezier(.3,1.28,.5,1) " + (20 + i * 55) + "ms both"; });
+      setTimeout(function () { seq.forEach(function (n) { n.style.animation = ""; }); }, 20 + seq.length * 55 + 700);
+    })();
     if (curLang() !== "en") { try { translateTree(col); } catch (e) {} }
     return ov;
   }
@@ -25382,7 +25420,13 @@
     setTimeout(function () { try { openJourney(); } catch (e) {} }, 150); // JOURNEY IS HOME for EVERYONE (David 2026-07-02): always open the journey on boot. The start screen (below) sits ON TOP of it until you tap Continue.
     // §10f.7 HOME LANDING (David ✓ 2026-07-13): the home cockpit is opened by ssEnter() when the user taps Continue — AFTER the daily gauge/welcome-back, so it lands reliably on top of the panes (the boot-time instant-open was getting lost under that flow). New users (onboarding) and mid-activity/claim/night states are untouched.
     showStartScreen(); // v652: the animated launch screen gates the cold open; its primary button enters the app (or starts onboarding)
-    try { if (sessionStorage.getItem("alter_theme_reopen_you")) { sessionStorage.removeItem("alter_theme_reopen_you"); setTimeout(function () { try { youMenu(); } catch (e) {} }, 420); } } catch (e) {} // @SEC:THEME — come back to the Look row you just used
+    // THE INCOMING HALF OF THE LOOK CROSS-FADE (@SEC:THEME). index.html's boot script put `th-swap-in` on <html>
+    // (a full-bleed sheet of the new world's ground) before the first paint; home lands at 250ms, so the cover
+    // lifts at 260 over 250ms and the app fades UP into the new look. 2026-09-20.
+    try { if (document.documentElement.classList.contains("th-swap-in")) setTimeout(function () { var r = document.documentElement; r.classList.add("th-swap-go"); setTimeout(function () { r.classList.remove("th-swap-in"); r.classList.remove("th-swap-go"); }, 300); }, 260); } catch (e) {}
+    // come back to the Look row you just used — at 600ms, AFTER the cover is gone (510), so the You cascade
+    // plays on a clear screen instead of under a fading sheet.
+    try { if (sessionStorage.getItem("alter_theme_reopen_you")) { sessionStorage.removeItem("alter_theme_reopen_you"); setTimeout(function () { try { youMenu(); } catch (e) {} }, 600); } } catch (e) {}
     if (!_ssShown) { if (!(S.profile && S.profile.set)) setTimeout(onboard, 350); else if (!activeTimers().length) setTimeout(function () { try { openHomeInstant(); } catch (e) {} }, 250); } // fallbacks ONLY if the start screen didn't show: new → onboard; returning-idle → land on home
     try { i18nObserve(); if (curLang() !== "en") { translateTree(document.body); setTimeout(function () { translateTree(document.body); }, 400); } } catch (e) {} // v656: live translation (display-only; safe — app never reads rendered text)
   }
