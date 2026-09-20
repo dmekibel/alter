@@ -2451,6 +2451,7 @@
   .tbx-panel-chev{ font-size:13px; color:var(--c-9a6a86-ink); }
   .tbx-panel-grid{ margin-top:12px; }
   .tbx-panel-grid .tbx-label{ font-size:calc(9.5px * var(--tun-tbx-tile, 1)); }
+  .tbx-grid > .tbx-dose{ grid-column:1/-1; } /* the dose card opened INSIDE a folder's item grid (v1521): a full-width grid child at the row boundary, exactly like .tbx-panel in the main grid — the row of three above it never moves */
   .tbx-dose{ background:var(--c-241019-bg); border-radius:18px; padding:13px 14px; box-shadow:0 4px 0 rgba(0,0,0,.3); }
   .tbx-dose-head{ display:flex; align-items:center; gap:11px; margin-bottom:11px; }
   .tbx-dose-face{ width:44px; height:44px; border-radius:16px; display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
@@ -4972,6 +4973,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1520"></script>
+  <script src="app.js?v=1522"></script>
 </body>
 </html>

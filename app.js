@@ -9086,8 +9086,31 @@
     _tbxOpenStack = null;
     if (wasOpen) return;
     var grid = cell.closest ? (cell.closest(".tbx-grid") || cell.closest(".r38-grid")) : null; if (!grid) return; // the folders' panel grid is .tbx-grid; the round-38 FOR YOU NOW row and bento are .r38-grid — both are legal hosts for the dose card that opens under them
-    var card = tbxBuildDose(id); grid.parentNode.insertBefore(card, grid.nextSibling); _tbxOpenStack = id; tbxDoseSee(card); // a first open has no saved scroll — land on the chosen dose instead of at 0
+    var card = tbxBuildDose(id), host = grid.parentNode, before = grid.nextSibling;
+    // UNDER ITS OWN ROW (David device 2026-09-20: inside the Stacks folder — 17 tiles, six rows — the dose card opened BELOW ALL THE ROWS, off the
+    // bottom of the screen). Same grammar v1508 gave the folder panels in the main grid: a grid-column:1/-1 child inserted at the ROW BOUNDARY after the
+    // tapped tile, so the row of three stays exactly where it is and the card expands directly beneath it. Only the folder's own item grid is re-hosted
+    // (the one-row FOR YOU NOW strip and the top grid keep their shipped after-the-grid placement).
+    if (grid.classList && grid.classList.contains("tbx-panel-grid")) {
+      var cells = []; for (var n = 0; n < grid.children.length; n++) { var ch = grid.children[n]; if (!ch.classList || !ch.classList.contains("tbx-dose")) cells.push(ch); }
+      var cols = 3; try { var gtc = getComputedStyle(grid).gridTemplateColumns; if (gtc) { var parts = gtc.trim().split(/\s+/).length; if (parts >= 1 && parts <= 6) cols = parts; } } catch (e) {}
+      var idx = cells.indexOf(cell);
+      if (idx >= 0) { host = grid; before = cells[(Math.floor(idx / cols) + 1) * cols] || null; } // last row → append inside the grid, still the row boundary
+    }
+    host.insertBefore(card, before); _tbxOpenStack = id; tbxDoseSee(card); // a first open has no saved scroll — land on the chosen dose instead of at 0
     try { var cr = cell.getBoundingClientRect(), pr = card.getBoundingClientRect(); card.style.transformOrigin = Math.round(cr.left + cr.width / 2 - pr.left) + "px 0"; } catch (e) {} // 21e: the panel springs open OUT OF the tapped tile's column
+    tbxDoseReveal(card, cell);
+  }
+  function tbxDoseReveal(card, cell) { // THE MINIMUM SCROLL (never a jump to the panel's bottom): if the freshly opened card already sits whole on screen the
+    // column does not move at all; otherwise it travels only far enough to bring the card's bottom into view, clamped so the card's own top can never leave the
+    // top edge. Measured as a LAYOUT DELTA off the tapped tile (same offsetParent) rather than off the card's own rect: the card opens under a scaleY spring and
+    // the world's zones carry their own translate, so a raw rect read would measure the animation and the parallax instead of the flow.
+    var w = el("tfWorld"); if (!w || !card || !cell || card.offsetParent !== cell.offsetParent) return;
+    var cr, wr; try { cr = cell.getBoundingClientRect(); wr = w.getBoundingClientRect(); } catch (e) { return; }
+    var pad = 28, top = cr.top + (card.offsetTop - cell.offsetTop), over = top + card.offsetHeight + pad - wr.bottom; // 28 = the card's own bottom air plus the few px the panel re-flows by as it grows, so the Start row never lands hard on the screen edge
+    if (over <= 0) return; // already whole on screen — the column never moves
+    var to = w.scrollTop + Math.min(over, Math.max(0, top - wr.top - pad)); // never past the card's own top
+    try { if (WM) wScrollTo(to); else tfhScrollTo(to); } catch (e2) {}
   }
   function tbxBuilderTile(host) { // the PINNED 8th tile: the same STACK CARD face in create-purple with ti-plus + label "Build", no shards (it holds no steps yet). Tap → build-a-custom-stack flow.
     var cell = add(host, "button", "tbx-cell tbx-cell-build"); cell.setAttribute("aria-label", tr("Build"));
