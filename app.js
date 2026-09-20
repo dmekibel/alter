@@ -15831,10 +15831,10 @@
     HEART: { seq: [
       "Now we'll breathe through the heart, to steady the body and the mind together. Put your attention on the centre of your chest, and imagine the breath moving in and out through that spot.",
       "While you breathe, we'll bring up gratitude. Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.",
-      "Feel the gratitude for it, in your chest.",
-      "Now something you rarely pause to appreciate.",
+      "Feel the gratitude in your chest.",
+      "Now think of something you rarely appreciate.",
       "Feel that gratitude as you breathe.",
-      "Now someone you are grateful for.",
+      "Now think of someone you are grateful for.",
       "Feel it in your chest, as you breathe.",
       "If it fades, bring it back.",
       "Let it spread through your body.",
