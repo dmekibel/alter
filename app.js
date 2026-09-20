@@ -8626,34 +8626,19 @@
   // grouping stacks and tools the app ALREADY ships — nothing invented, nothing new authored.
   // Stacks is first and holds your own: the two named stacks, your customs, and Build.
   var TBX_CATS = [
-    { id: "stacks",   name: "Stacks",   dom: "connect", ti: "ti-stack-2",         items: ["firstLight", "shutdown"], mine: true },
+    { id: "stacks",   name: "Stacks",   dom: "connect", ti: "ti-stack-2",         items: ["firstLight", "shutdown", "wakeslow", "elevated", "reset2", "downshift", "cooldown", "clearhead", "focus", "walkin", "repair", "shutdownWork", "winddown", "deeprest", "longsit", "heartcoh", "gratdeep"], mine: true },
     { id: "breathe",  name: "Breathe",  dom: "restore", ti: "ti-lungs",           items: ["breatheLadder", "t_breathe", "t_relax"] },
     { id: "meditate", name: "Meditate", dom: "focus",   ti: "ti-moon",            items: ["t_meditate", "t_bodyScan", "t_patience"] },
     { id: "body",     name: "Body",     dom: "upkeep",  ti: "ti-body-scan",       items: ["body", "t_stretch", "t_shakeOff", "t_climb"] },
     { id: "heart",    name: "Heart",    dom: "connect", ti: "ti-heart",           items: ["heart", "t_journal", "t_tapping"] },
     { id: "vision",   name: "Vision",   dom: "create",  ti: "ti-eye",             items: ["vision", "mind", "t_mantra"] },
     { id: "catch",   name: "Catch",   dom: "nourish", ti: "ti-hand-stop",       items: ["caughtScrolling", "urgeWave", "t_tapping", "t_breathe"] },
-    { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["spunUp", "fullStack", "t_shakeOff", "t_relax"] },
+    { id: "reset",   name: "Reset",   dom: "restore", ti: "ti-wind",            items: ["spunUp", "fullStack", "downshift", "cooldown", "clearhead", "t_shakeOff", "t_relax"] },
     { id: "recover", name: "Recover", dom: "connect", ti: "ti-heart-handshake", items: ["iMessedUp", "emptyTank", "feelBetter", "t_journal"] },
-    { id: "begin",   name: "Begin",   dom: "focus",   ti: "ti-flag",            items: ["beforeDeepWork", "t_mantra", "t_stretch", "t_climb"] },
-    { id: "night",   name: "Night",   dom: "upkeep",  ti: "ti-moon-stars",      items: ["cantSleep", "t_evening", "t_bodyScan", "t_patience"] },
+    { id: "begin",   name: "Begin",   dom: "focus",   ti: "ti-flag",            items: ["beforeDeepWork", "focus", "walkin", "t_mantra", "t_stretch", "t_climb"] },
+    { id: "night",   name: "Night",   dom: "upkeep",  ti: "ti-moon-stars",      items: ["cantSleep", "winddown", "deeprest", "t_evening", "t_bodyScan", "t_patience"] },
     { id: "wins",    name: "Wins",    dom: "play",    ti: "ti-trophy",          items: ["lockTheWin", "t_journal", "t_meditate"] }
   ];
-  // THE SIX MENU CHIPS (David 2026-09-20, PLAN.md "Ease-of-use law: 6 categories, one row of chips, stacks inside").
-  // Every `acts` pack carries a `cat`; the row filters the stacks under it. It reuses the Session Editor's OWN chip
-  // component (.sed-catrail / .sed-catchip) rather than inventing a seventh chip language, and repaints by draining
-  // one container's children — no innerHTML wipe, no new scroll container beyond the chip rail the component is.
-  var STACK_CATS = [
-    { k: "morning", lab: "Morning", ti: "ti-sunrise",         d: "move" },
-    { k: "night",   lab: "Night",   ti: "ti-moon-stars",      d: "upkeep" },
-    { k: "reset",   lab: "Reset",   ti: "ti-wind",            d: "restore" },
-    { k: "before",  lab: "Before",  ti: "ti-flag",            d: "focus" },
-    { k: "after",   lab: "After",   ti: "ti-heart-handshake", d: "connect" },
-    { k: "deeper",  lab: "Deeper",  ti: "ti-stack-2",         d: "create" }
-  ];
-  var _tbxStackCat = null; // the open chip (null = pick by the clock on first paint)
-  function tbxStacksIn(cat) { var out = []; Object.keys(TBX_ITEMS).forEach(function (id) { if (TBX_ITEMS[id].cat === cat) out.push(id); }); return out; }
-  function tbxCatNow() { var h = new Date().getHours(); return h < 11 ? "morning" : h >= 20 ? "night" : "reset"; } // the chip that opens by default = the moment you are in, same rule the FOR YOU NOW row already uses
   var _tbxOpenStack = null, _tbxOpenCat = null; // single-open transient state (module-level, cleared on every full render)
   // NO FAN-OUT (David 2026-07-27 handoff notes, "Discarded"): the turn-22 "tile empties into the list" animation is dead. Tiles keep their peek shards permanently (deck-with-shards); the preview just pops in place. Don't re-add it.
   function tbxCandy(col) { return "repeating-linear-gradient(45deg, color-mix(in srgb, " + col + " 82%, var(--c-ffffff-bg)) 0 9px, " + col + " 9px 18px)"; } // DS choice-row v3 selection law: a chosen option ignites into its OWN hue's 45°/9px candy stripes + ink text. NEVER gold (gold = totals/earned only).
@@ -9013,21 +8998,6 @@
         sel: _tbxOpenStack === id, data: ["data-tbxsugg", id],
         onTap: function () { try { tbxOpenDose(id, sugg); } catch (e) {} } });
     });
-    if (!_tbxStackCat) _tbxStackCat = tbxCatNow();
-    var rail = add(root, "div", "sed-catrail tbx-catrail"), stkGrid = null;
-    function paintStacks() { while (stkGrid.firstChild) stkGrid.removeChild(stkGrid.firstChild); // child-drain, never innerHTML
-      tbxStacksIn(_tbxStackCat).forEach(function (id) { var it = tbxItem(id); if (!it) return;
-        tbxCoin(stkGrid, { name: it.name, hue: tbxVar(it.dom), ti: it.ti, stack: true, sel: _tbxOpenStack === id, data: ["data-tbxstack", id],
-          onTap: function () { try { tbxOpenDose(id, stkGrid); } catch (e) {} } }); }); } // the ROUND 38 coin, same as the FOR YOU NOW row — one card language on this surface
-    STACK_CATS.forEach(function (c) {
-      var on = c.k === _tbxStackCat, b = add(rail, "button", "sed-catchip" + (on ? " on" : ""));
-      add(b, "i", "ti " + c.ti); add(b, "span", null, tr(c.lab));
-      if (on) b.style.background = tbxVar(c.d);
-      b.onclick = function () { _tbxStackCat = c.k; _tbxOpenStack = null;
-        [].slice.call(rail.children).forEach(function (n, i) { var sel = STACK_CATS[i].k === _tbxStackCat; n.classList.toggle("on", sel); n.style.background = sel ? tbxVar(STACK_CATS[i].d) : ""; }); // class + hue toggles only, so the rail keeps its scroll position and nothing is rebuilt
-        paintStacks(); };
-    });
-    stkGrid = add(root, "div", "r38-grid tbx-grid tbx-stacks"); paintStacks();
     var bento = add(root, "div", "r38-grid tbx-bento");
     TBX_CATS.forEach(function (cat) { tbxSquare(bento, cat); });
     try { tcResyncSoon(); } catch (e) {}
@@ -9037,7 +9007,6 @@
     "Plan my day": "План на день", "First Light": "Первый свет", "Before Deep Work": "Перед фокусом", "Caught Scrolling": "Залип в ленте", "Urge Wave": "Волна тяги", "Spun Up": "На взводе", "I Messed Up": "Я оступился", "Empty Tank": "Пустой бак", "Shutdown": "Отбой",
     "Can't Sleep": "Не спится", "Lock the Win": "Закрепи победу", "Feel Better": "Полегчает", "Body": "Тело", "Heart": "Сердце", "Mind": "Ум", "Vision": "Образ", "Full Stack": "Полный сброс",
     "Breathe": "Дыхание", "Shake off": "Стряхни", "Journal": "Дневник", "Climb": "Подъём", "Mantra": "Мантра", "Stretch": "Разминка", "Tapping": "Таппинг", "Body scan": "Скан тела", "Evening": "Вечер", "Relax": "Расслабься", "Meditate": "Медитация", "Patience": "Терпение",
-    "Morning": "Утро", "Before": "До", "After": "После", "Deeper": "Глубже", // THE SIX MENU CHIPS (2026-09-20); "Reset" and "Night" already carry their RU right here
     "Reset": "Сброс", "Catch": "Поймай", "Begin": "Начни", "Recover": "Восстановись", "Night": "Ночь", "Settle": "Осядь", "Wins": "Победы",
     "Morning Stack": "Утренний стек", "Night Stack": "Ночной стек", // the practice grid's two renamed stacks (ids unchanged: firstLight / shutdown). "Morning stack" (lower s) below stays for the old hero key; "Shutdown" / "First Light" / "Mind" are now orphaned entries, harmless.
     // WHY-LINES (spec §5, gated 2026-08-01): what it is, then why it works. RU in mom-plain register — short sentences, no jargon, no invented terms.
