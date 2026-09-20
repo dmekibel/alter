@@ -17977,10 +17977,23 @@
       if (i >= opts.beats.length) { lab.textContent = "Done ✓"; sub.textContent = "carry it forward"; nextB.style.display = "none"; orb.style.transition = "transform 1.2s ease"; orb.style.transform = "scale(.7)"; setTimeout(function () { finish(false); }, 1400); return; }
       var b = opts.beats[i];
       lab.textContent = b.lab; sub.textContent = b.sub || "";
+      fitBeat();
       orb.style.transition = "transform 1.1s ease"; orb.style.transform = b.orb === "in" ? "scale(1.3)" : b.orb === "out" ? "scale(.6)" : "scale(1)";
       say((b.subSilent ? b.lab : (b.lab + (b.sub ? ". " + b.sub : ""))), voiceProf); // subSilent = the sub is an ON-SCREEN hint the guide must not read out (gratitude v11)
       nextB.textContent = (i === opts.beats.length - 1) ? (opts.lastLabel || "Finish ✓") : "Next ▶";
       if (b.hold) { autoT = setTimeout(function () { if (!done) { i++; paint(); } }, b.hold * 1000); } // OPTIONAL auto-advance (David 2026-07-08): a beat with `hold` seconds descends hands-free (the countdown leads you, no tapping); tapping Next still skips ahead. Beats without `hold` stay tap-paced.
+    }
+    // THE CARD THAT MUST NOT RUN OFF THE BOTTOM (David 2026-09-20: "if the words are longer they must fit appropriately").
+    // .bw-cap hangs from a fixed line under the orb and grows DOWNWARD, so a longer localisation can only fail one way:
+    // past the overlay's floor, taking the Next button with it. Measured after every beat is written; when the block would
+    // cross the floor the card takes ONE step down the app's existing Jost ladder (21 → 18). The class goes on the OVERLAY,
+    // never on the label alone, because label and sub are one formatting here by law (David 2026-09-19) and must move together.
+    function fitBeat() {
+      try {
+        var cap = ov.querySelector(".bw-cap"); if (!cap) return;
+        ov.classList.remove("bw-long");
+        if (cap.offsetTop + cap.offsetHeight > ov.offsetHeight - 12) ov.classList.add("bw-long");
+      } catch (e) {}
     }
     nextB.onclick = function () { if (done) return; if (autoT) { clearTimeout(autoT); autoT = null; } i++; paint(); };
     // INTRO CARD (David 2026-07-01): the tools jumped straight into the beats with no context — "the black cloud just jumps in." Now each guided tool opens with full instructions (what it is · how to do it · the science). FIRST time = the whole thing; after that = a one-line reminder with a "how does this work?" expander. Never oversimplified.
@@ -18453,6 +18466,18 @@
       nodes.forEach(function (n) { stack.appendChild(n); });
       _vzSlot = slot;
     }
+    // THE CARD THAT WILL NOT SHRINK ITS SENTENCE (David 2026-09-20, the Russian pass). capSplit already opens a
+    // multi-sentence card at its seam when the measured height runs past CAP_LINES; what is left is the single Russian
+    // sentence that is simply longer than its English original and must not be cut. That card drops ONE rung down the
+    // app's existing Jost ladder, for itself only, and the next card comes back up. Measured here rather than at compose
+    // time because `lab` is the real node inside the real page, with the real max-width the act it belongs to gives it.
+    // The height read costs a forced layout, so it is gated on the text ACTUALLY changing — the rAF loop writes the same
+    // caption dozens of times a second, and comparing textContent also self-heals after the drift-catch line overwrites it.
+    function setCap(t) {
+      t = t || ""; if (!lab) return; if (lab._capKey === t && lab.textContent === t) return;            // both, so a direct textContent write anywhere else (the act slide, the drift-catch line) can never leave a stale size class behind
+      lab._capKey = t; lab.textContent = t; lab.classList.remove("bw-long");
+      try { var lh = parseFloat(getComputedStyle(lab).lineHeight) || 27.3; if (lab.offsetHeight > CAP_LINES * lh + 1) lab.classList.add("bw-long"); } catch (e) {}
+    }
     function vizUnwrapCaption() {
       if (!_vzSlot) return;
       if (_vzSlotRet) for (var i = _vzSlotRet.length - 1; i >= 0; i--) { var r = _vzSlotRet[i]; try { r.p.insertBefore(r.n, r.next && r.next.parentNode === r.p ? r.next : null); } catch (e) { try { r.p.appendChild(r.n); } catch (e2) {} } } // restored back-to-front so each node's original next sibling is already home
@@ -18674,8 +18699,8 @@
       fill.style.width = pct + "%"; knob.style.left = pct + "%"; tCur.textContent = curTxt; tTot.textContent = totTxt;
       var seg = null, _si = -1; for (var i = 0; i < segs.length; i++) { if (segs[i].start <= e) { seg = segs[i]; _si = i; } else break; }
       if (seg) { // CAPTION CYCLING (David 2026-07-13): a long line's voice clip stays whole, but the on-screen text steps through its short chunks over the CLIP's duration (2 lines max), then holds the last chunk through the silence
-        if (seg.caps && seg.caps.length > 1 && seg.dur > 1.4) { var _span = Math.max(0.6, seg.dur), _into = Math.max(0, e - seg.start); lab.textContent = seg.caps[capIdxAt(seg, _into, _span)]; }
-        else { lab.textContent = seg.label || ""; }
+        if (seg.caps && seg.caps.length > 1 && seg.dur > 1.4) { var _span = Math.max(0.6, seg.dur), _into = Math.max(0, e - seg.start); setCap(seg.caps[capIdxAt(seg, _into, _span)]); }
+        else { setCap(seg.label || ""); }
         sub.textContent = seg.sub || "";
       }
       if (minimized && miniLab) miniLab.textContent = lab.textContent; // keep the minimized dock's label live while audio keeps playing
@@ -19811,6 +19836,7 @@
   // sentences (two only when both fit inside `max`); a card is never shorter than 4 words — a short tail folds into its
   // neighbour. A single long sentence stays whole and wraps, because half a sentence on screen while the voice reads the
   // other half is the bug. Display-only: the VOICE clip is always the whole line.
+  var CAP_LINES = 3;                                                          // THE CARD BUDGET (David 2026-09-20, the Russian pass): how many lines of the player's 21px caption a single card may occupy before it is either split at its sentence seam or dropped one step down the Jost ladder. Three lines is what the EN corpus already sits inside; RU is the language that pushed past it.
   function capSplit(text, max) {
     max = max || 48; text = String(text || "").trim(); if (!text || text.length <= max) return [text];
     var units = (text.match(/[^.!?]+[.!?]*(?:\s+|$)/g) || [text]).map(function (u) { return u.trim(); }).filter(Boolean);
@@ -19823,7 +19849,31 @@
       if (k > 0) { packed[k - 1] = packed[k - 1] + " " + packed[k]; packed.splice(k, 1); }
       else { packed[1] = packed[0] + " " + packed[1]; packed.splice(0, 1); }
     }
+    // THE MEASURED PASS (David 2026-09-20: "if the words are longer they must fit appropriately into the player").
+    // `max` is a CHARACTER budget, and characters are a bad proxy for a Russian card: the same 48 characters are ~25%
+    // more sentence and wrap to more lines. So the packing above is now checked against the REAL rendered height, in a
+    // node carrying the caption's own declaration block, and a two-sentence card that runs past CAP_LINES is opened back
+    // up at its sentence seam — the fallback this function already had, now triggered by the thing that actually goes
+    // wrong instead of by a guess. A card that is ONE sentence stays whole however long it is (half a sentence on screen
+    // while the voice reads the other half is the older bug); the player steps that card's size down instead.
+    for (var m = 0; m < packed.length; m++) {
+      if (capLines(packed[m]) <= CAP_LINES) continue;
+      var us = (packed[m].match(/[^.!?]+[.!?]*(?:\s+|$)/g) || []).map(function (u) { return u.trim(); }).filter(Boolean);
+      if (us.length < 2) continue;                                          // one sentence — not ours to cut
+      var orphan = false; us.forEach(function (u) { if (u.split(/\s+/).length < 4) orphan = true; });
+      if (orphan) continue;                                                 // the 4-word floor outranks the line budget
+      packed.splice.apply(packed, [m, 1].concat(us)); m += us.length - 1;
+    }
     return packed.length ? packed : [text];
+  }
+  var _capProbe = null;
+  function capLines(t) { // how many lines this card will occupy in the player, measured — never estimated from characters
+    try {
+      if (!_capProbe || !_capProbe.parentNode) { _capProbe = document.createElement("div"); _capProbe.className = "bw-capprobe"; document.body.appendChild(_capProbe); }
+      _capProbe.className = "bw-capprobe"; _capProbe.textContent = String(t || "");
+      var lh = parseFloat(getComputedStyle(_capProbe).lineHeight) || 27.3;
+      return Math.max(1, Math.round(_capProbe.offsetHeight / lh));
+    } catch (e) { return 1; }
   }
   function capIdxAt(seg, into, span) { // WHICH CARD IS UP, timed PROPORTIONAL TO ITS WORDS inside the clip (David 2026-09-19): an even split showed a 12-word sentence and a 5-word sentence for the same number of seconds, so the long one flicked past mid-read. Cumulative word fractions, cached on the seg (built once, dies with the session).
     var c = seg._capCum, i;
@@ -23337,6 +23387,100 @@
     var solo = GRAT_FLOW.seq.map(row);
     var stray = stack.filter(function (x) { return !lit[x.text]; }).map(function (x) { return x.text; });
     return { bank: TTS.bank(), slot: (secs || 60) + "s", stackMissing: stack.filter(function (x) { return !x.clip; }).length, soloMissing: solo.filter(function (x) { return !x.clip; }).length, notALiteral: stray, onScreenOnlyHints: hints, stack: stack, solo: solo };
+  };
+  // ===== THE CAPTION-FIT AUDIT (David 2026-09-20: "if the words are longer they must fit appropriately into the
+  // player"). Russian runs ~25% longer than English and its single words are longer, so a caption card that sat on two
+  // comfortable lines in EN can run to five in RU. This walks EVERY spoken line in the app, localises it, cuts it the way
+  // the player cuts it, and MEASURES each card in the player's own label node — same class, same font, same max-width —
+  // rather than estimating characters. `over` = cards past the line budget; `clip` = cards whose column would actually
+  // leave the band between the story strip and the transport bar. Open a player first (DEV.stack("meditate",300)).
+  function _capCorpus() {
+    var out = [];
+    function push(src, arr) { (arr || []).forEach(function (l, i) { if (typeof l === "string" && l.trim()) out.push({ src: src, i: i, en: l }); }); }
+    push("MED_V2", MED_V2.seq); push("STRETCH_SEATED", STRETCH_SEATED.seq); push("GRAT_FLOW", GRAT_FLOW.seq);
+    push("GRAT_UI.hints", GRAT_UI.hints); push("MANTRA_LINES", MANTRA_LINES);
+    Object.keys(SCRIPT_ACTS).forEach(function (k) { push("SCRIPT_ACTS." + k, SCRIPT_ACTS[k].seq); });
+    return out;
+  }
+  window.DEV.capFit = function () {
+    var ov = document.querySelector(".gp-ov"); if (!ov) return "open a player first — DEV.stack('meditate',300)";
+    var pg = ov.querySelector(".gp-track > div") || ov;
+    var lab = pg.querySelector(".bw-label"), orb = pg.querySelector(".bw-orb"), ph = pg.querySelector(".bw-phase");
+    var bar = ov.querySelector(".gp-bar"), story = ov.querySelector(".gp-story");
+    if (!lab || !orb) return "player has no caption surface yet";
+    function off(n) { var t = 0, e = n; while (e && e !== ov) { t += e.offsetTop; e = e.offsetParent; } return t; }
+    var lh = parseFloat(getComputedStyle(lab).lineHeight) || 27.3;
+    var topLim = story ? off(story) + story.offsetHeight : 0, botLim = bar ? off(bar) : ov.offsetHeight;
+    var keep = lab.textContent, keepC = lab.className, rows = [];
+    _capCorpus().forEach(function (L) {
+      var ru = tr(L.en), caps = capSplit(ru);
+      caps.forEach(function (c, ci) {
+        lab.className = keepC; lab.textContent = c; void lab.offsetHeight;
+        var lines = Math.max(1, Math.round(lab.offsetHeight / lh));
+        var top = off(orb), bot = ph ? off(ph) + ph.offsetHeight : off(lab) + lab.offsetHeight;
+        var small = null;
+        if (lines > CAP_LINES) { lab.className = keepC + " bw-long"; void lab.offsetHeight; small = Math.max(1, Math.round(lab.offsetHeight / (parseFloat(getComputedStyle(lab).lineHeight) || lh))); }
+        rows.push({ src: L.src, i: L.i, card: ci + "/" + caps.length, chars: c.length, lines: lines, atSmall: small,
+          clipTop: Math.max(0, topLim - top), clipBot: Math.max(0, bot - botLim), text: c });
+      });
+    });
+    lab.className = keepC; lab.textContent = keep;
+    var over = rows.filter(function (r) { return r.lines > CAP_LINES; });
+    var clip = rows.filter(function (r) { return r.clipTop > 0 || r.clipBot > 0; });
+    var still = over.filter(function (r) { return r.atSmall != null && r.atSmall > CAP_LINES; });
+    return { lang: curLang(), budget: CAP_LINES, cards: rows.length, over: over.length, clipped: clip.length,
+      stillOverAtSmallSize: still.length, band: [topLim, botLim], lineH: lh, overRows: over,
+      worst: rows.slice().sort(function (a, b) { return b.lines - a.lines; }).slice(0, 6).map(function (r) { return r.lines + "L" + (r.atSmall ? "→" + r.atSmall + "L" : "") + " · " + r.src + "#" + r.i + " " + r.card + " · " + r.text; }) };
+  };
+  window.DEV.slotFit = function () { // THE FIXED SLOT ABOVE THE WAVE (.bw-cslot, 56px = two lines). Every phase word a
+    // pattern can print and every HEART/SIGH cue card, written into the LIVE slot at this device width, with the wave's
+    // own rect read before and after each one — the slot's whole reason to exist is that the wave must not move, so the
+    // proof is the wave rect, not the caption's. Run a breath session first: DEV.breathStack("resonance", 90).
+    var ov = document.querySelector(".gp-ov"), slot = ov && ov.querySelector(".bw-cslot");
+    if (!slot) return "no wave slot — run DEV.breathStack('resonance',90) and let it reach the breath run";
+    var lab = slot.querySelector(".bw-label"), stack = slot.querySelector(".bw-cstack"), wave = ov.querySelector(".bw-wave");
+    function wr() { var r = wave.getBoundingClientRect(); return [Math.round(r.top * 100) / 100, Math.round(r.left * 100) / 100, Math.round(r.height * 100) / 100]; }
+    var lh = parseFloat(getComputedStyle(lab).lineHeight) || 27.3, base = wr(), keep = lab.textContent, keepC = lab.className, rows = [], moved = 0;
+    var words = {}; Object.keys(BREATH_PATTERNS).forEach(function (k) { (BREATH_PATTERNS[k].ph || []).forEach(function (r) { words[r[0]] = "phase word · " + k; }); });
+    Object.keys(BREATH_PHASE_WORD).forEach(function (k) { words[BREATH_PHASE_WORD[k]] = "phase word · canonical"; });
+    ["HEART", "SIGH"].forEach(function (k) { (SCRIPT_ACTS[k] ? SCRIPT_ACTS[k].seq : []).forEach(function (l, i) { capSplit(tr(l)).forEach(function (c, ci) { words[c] = k + "#" + i + " card " + ci; }); }); });
+    Object.keys(words).forEach(function (t) {
+      var ru = words[t].indexOf("phase word") === 0 ? tr(t) : t;
+      lab.className = keepC; lab.textContent = ru; void lab.offsetHeight;
+      if (lab.offsetHeight > CAP_LINES * lh + 1) lab.classList.add("bw-long");
+      var lines = Math.max(1, Math.round(lab.offsetHeight / (parseFloat(getComputedStyle(lab).lineHeight) || lh)));
+      var now = wr(); if (now.join() !== base.join()) moved++;
+      rows.push({ what: words[t], lines: lines, stackH: stack.offsetHeight, grewAbove: Math.max(0, stack.offsetHeight - slot.offsetHeight), text: ru });
+    });
+    lab.className = keepC; lab.textContent = keep;
+    var over2 = rows.filter(function (r) { return r.lines > 2; });
+    return { slotH: slot.offsetHeight, lineH: lh, tested: rows.length, waveRect: base, waveMoved: moved,
+      overTwoLines: over2.length, grewAboveSlot: rows.filter(function (r) { return r.grewAbove > 0; }).length,
+      worst: rows.slice().sort(function (a2, b2) { return b2.stackH - a2.stackH; }).slice(0, 6).map(function (r) { return r.lines + "L · stack " + r.stackH + "px · " + r.what + " · " + r.text; }) };
+  };
+  window.DEV.beatFit = function () { // THE GRATITUDE BEAT CARD (.bw-eq: label and sub at the SAME 21px/800). Its .bw-cap
+    // hangs from a fixed line under the orb and grows DOWNWARD, so the Russian ask — longer than its English original —
+    // can only fail by running off the bottom past the Next button. Every v12 ask, every feel cue and every on-screen hint
+    // written into the live card and measured against the overlay's own floor. Open the tool first: DEV.tool("gratitude").
+    var ov = document.querySelector("#breatheOv.bw-eq"); if (!ov) return "open the gratitude beat card first — DEV.tool('gratitude') with gratPace 'tap'";
+    var cap = ov.querySelector(".bw-cap"), lab = ov.querySelector(".bw-label"), sub = ov.querySelector(".bw-sub"), nx = ov.querySelector(".bw-next");
+    function off(n) { var t = 0, e = n; while (e && e !== ov) { t += e.offsetTop; e = e.offsetParent; } return t; }
+    var floor = ov.offsetHeight, keepL = lab.textContent, keepS = sub.textContent, rows = [];
+    var hints = GRAT_UI.hints.map(function (h) { return tr(h); });
+    GRAT_FLOW.seq.forEach(function (l, i) {
+      hints.concat([""]).forEach(function (h, hi) {
+        lab.textContent = tr(l); sub.textContent = h; ov.classList.remove("bw-long"); void cap.offsetHeight;
+        var raw = off(cap) + cap.offsetHeight, stepped = false;
+        if (raw > floor - 12) { ov.classList.add("bw-long"); stepped = true; void cap.offsetHeight; }
+        var top = off(cap), bot = top + cap.offsetHeight;
+        rows.push({ line: i, hint: hi, top: top, bottom: bot, raw: raw, stepped: stepped, over: Math.max(0, bot - floor), h: cap.offsetHeight, text: tr(l) });
+      });
+    });
+    lab.textContent = keepL; sub.textContent = keepS; ov.classList.remove("bw-long");
+    var bad = rows.filter(function (r) { return r.over > 0; });
+    return { floor: floor, nextBtn: nx ? { top: off(nx), h: nx.offsetHeight } : null, tested: rows.length, clipped: bad.length,
+      stepped: rows.filter(function (r) { return r.stepped; }).length, headroom: floor - Math.max.apply(null, rows.map(function (r) { return r.bottom; })),
+      tallest: rows.slice().sort(function (a2, b2) { return b2.h - a2.h; }).slice(0, 4).map(function (r) { return r.h + "px · bottom " + Math.round(r.bottom) + "/" + floor + " · line " + r.line + " hint " + r.hint + " · " + r.text; }) };
   };
   window.DEV.cards = function (n) { // the on-screen text cards for the seated stretch lines (bug 4): whole sentences, nothing under 4 words
     return STRETCH_SEATED.seq.slice(0, n || 3).map(function (l) { var c = capSplit(tr(l)); return { line: l, cards: c, words: c.map(function (x) { return x.split(/\s+/).length; }) }; });
