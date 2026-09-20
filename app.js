@@ -18417,7 +18417,35 @@
     // the page. Giving "orb" a second .bw-orb would fork the tap target and double the sphere. So "orb" = the shipped
     // path, untouched; any OTHER key mounts its own node beside the orb, and the orb steps aside only for the breath run.
     var _vzK = null, _vzN = null, _vzEl = null, _vzOrb = null, _vzCyc = 0;
-    function vizDrop() { if (_vzEl && _vzEl.parentNode) _vzEl.parentNode.removeChild(_vzEl); if (_vzOrb) _vzOrb.style.display = ""; _vzEl = null; _vzN = null; _vzK = null; _vzOrb = null; _vzCyc = 0; } // restores the orb WE hid, not whichever page is current — an act slide mid-run must not leave a blank page behind it
+    var _vzSlot = null, _vzSlotRet = null;
+    // THE CAPTION HANGS ABOVE THE WAVE (David on device 2026-09-20: "To not move the wave, the text should be above it,
+    // because there's empty space there."). The page is a centred flex column and the caption sat UNDER the wave, so the
+    // wave was the part that moved: a phase word, a two-line script cue and an empty line are three different heights and
+    // each one re-centred the column. The two caption nodes (.bw-lrow with the word + counter, and .bw-sub) move, as they
+    // are, into one fixed-height .bw-cslot ABOVE the wave; the slot holds that height when it is empty, so the wave's rect
+    // is the same on every caption. Nothing about the text changes — same nodes, same classes, same refs the painter writes
+    // to — only their container. Unwrapped again in vizDrop, so an orb segment gets back exactly the layout it was designed with.
+    function vizWrapCaption(host) {
+      if (_vzSlot || !host || !host.parentNode) return;
+      var p = host.parentNode, nodes = [];
+      var row = (lab && lab.parentNode && lab.parentNode.className === "bw-lrow") ? lab.parentNode : lab;
+      if (row && row.parentNode === p) nodes.push(row);
+      if (sub && sub.parentNode === p) nodes.push(sub);
+      if (!nodes.length) return;
+      _vzSlotRet = nodes.map(function (n) { return { n: n, next: n.nextSibling, p: p }; });
+      var slot = document.createElement("div"); slot.className = "bw-cslot";
+      var stack = document.createElement("div"); stack.className = "bw-cstack"; slot.appendChild(stack);
+      p.insertBefore(slot, host);
+      nodes.forEach(function (n) { stack.appendChild(n); });
+      _vzSlot = slot;
+    }
+    function vizUnwrapCaption() {
+      if (!_vzSlot) return;
+      if (_vzSlotRet) for (var i = _vzSlotRet.length - 1; i >= 0; i--) { var r = _vzSlotRet[i]; try { r.p.insertBefore(r.n, r.next && r.next.parentNode === r.p ? r.next : null); } catch (e) { try { r.p.appendChild(r.n); } catch (e2) {} } } // restored back-to-front so each node's original next sibling is already home
+      if (_vzSlot.parentNode) _vzSlot.parentNode.removeChild(_vzSlot);
+      _vzSlot = null; _vzSlotRet = null;
+    }
+    function vizDrop() { vizUnwrapCaption(); if (_vzEl && _vzEl.parentNode) _vzEl.parentNode.removeChild(_vzEl); if (_vzOrb) _vzOrb.style.display = ""; _vzEl = null; _vzN = null; _vzK = null; _vzOrb = null; _vzCyc = 0; } // restores the orb WE hid, not whichever page is current — an act slide mid-run must not leave a blank page behind it
     function vizPaint(s) { // s = a makeBreathClock sample on a breath segment, else null. Returns true when the registry visual owns the frame (the orb then sits it out).
       var k = breathVizKey();
       if (!s || k === "orb" || !BREATH_VIZ[k] || !orb || !orb.parentNode) { if (_vzEl) vizDrop(); return false; }
@@ -18429,6 +18457,7 @@
         orb.parentNode.insertBefore(host, orb);
         var run = _bRun && _bRun.clock, cyc = (run && run.cycles) ? run.total / run.cycles : 16000; // the wave sizes its window to ONE WHOLE CYCLE; the run clock knows both numbers
         _vzEl = host; _vzK = k; _vzCyc = _wantCyc; _vzOrb = orb; _vzN = BREATH_VIZ[k].mount(host, cyc); orb.style.display = "none";
+        vizWrapCaption(host); // the cue text goes ABOVE the wave, into a slot whose height never changes
       }
       // THE WAVE NEEDS A LEVEL FUNCTION, NOT A LEVEL (David on device 2026-08-20: "wave visualization is still broken,
       // it's just a flat line"). It draws history to the left of centre and the ghost to the right, so it evaluates the

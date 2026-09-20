@@ -798,6 +798,17 @@
   #breatheOv.gp-ov .bw-label{margin-top:40px;}
   #breatheOv.gp-ov .bw-sub{margin-top:8px;}
   #breatheOv.gp-ov .bw-cap{top:calc(50% + 126px);} /* the composed player's orb is bigger — hang the cue line lower so it clears the resting orb (still never moves it) */
+  /* THE WAVE IS ANCHORED, THE TEXT HANGS ABOVE IT (David on device 2026-09-20: "To not move the wave, the text should
+     be above it, because there's empty space there."). The page is a CENTRED flex column, so a cue line sitting under the
+     wave made the WAVE the moving part: a phase word, a two-line script cue and an empty line are three different heights,
+     and every change re-centred the column and slid the curve. The caption nodes move into this fixed-height slot ABOVE the
+     wave — the empty space he means — and the slot keeps that height whatever is in it, so the wave's rect is identical on
+     a cue, on a phase word and on nothing. The text itself is bottom-anchored and absolutely positioned inside the slot, so
+     a line taller than two lines grows UPWARD into the air above instead of clipping or pushing anything down. Same classes,
+     same type, same colours: only the container moved. */
+  #breatheOv .bw-cslot{position:relative;width:100%;height:56px;flex:0 0 56px;z-index:2;}
+  #breatheOv .bw-cstack{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 18px;}
+  #breatheOv .bw-cslot .bw-label{margin-top:0;}
   #breatheOv.gp-ov .gp-knob{background:var(--c-ff5fa8-bg);box-shadow:0 0 8px rgba(255,95,168,.8);}
   #breatheOv.gp-ov .gp-times{align-items:center;}
   #breatheOv.gp-ov .gp-silence{width:auto;max-width:none;margin:0;flex:1;justify-content:center;}
@@ -4973,6 +4984,6 @@
     </div>
     <div class="ss-ver" id="ssVer"></div>
   </div>
-  <script src="app.js?v=1524"></script>
+  <script src="app.js?v=1525"></script>
 </body>
 </html>
