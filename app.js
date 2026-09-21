@@ -1234,39 +1234,87 @@
   }
   // @SEC:LESSONS — lesson engine + day-1 content + liturgy shell.
   // ===== THE LESSON ENGINE (Day-1 v2, David 2026-07-04: "draw the nuance from the 300-day course — clever, deep, functional, educational, epic"): ONE Duolingo-grade grammar that converts any course session into a mini lesson. HOOK (epic line on a spinning-ray card, per-lesson palette) → TEACH (2 dense course-faithful cards) → CHECK (a real forced-choice test, warm retry — the moment it FEELS like a lesson) → REP (launch the organ; doing is the skill) → the organ's completion lights the stone + deals the card. Tap-only forever. This engine is the conversion pipeline for the whole 300-day course (25 sessions → chapters of lessons). =====
+  // ===== THE ANIMATED PROSE, SHARED (v1535). animLines + its hue/size maps were born inside firstDayStack and were
+  // the reason the onboarding reads as beautiful while the lesson engine read as old. They are module-scope now, so
+  // runLesson paints with the SAME renderer instead of a second, flatter copy of it. A lesson word that needs a hue
+  // goes into these maps, in place — never into a parallel table. =====
+  var HUES_ALL = { tension: THC("#ff5fa8","ink"), tuned: THC("#ffd24a","ink"), personality: THC("#ffd24a","ink"), edge: THC("#ff5fa8","ink"), wound: THC("#ffd24a","ink"),
+    thought: THC("#ffd24a","ink"), noticing: THC("#ff5fa8","ink"), choose: THC("#ffd24a","ink"), choosing: THC("#ffd24a","ink"),
+    sentences: THC("#ffd24a","ink"), repeat: THC("#ff5fa8","ink"), "default": THC("#ffd24a","ink"), chose: THC("#ff5fa8","ink"),
+    attention: THC("#ff5fa8","ink"), hunting: THC("#ffd24a","ink"), threats: THC("#ff5fa8","ink"),
+    exhale: THC("#5fb0ff","ink"), safe: THC("#46e2a4","ink"),
+    changed: THC("#ff5fa8","ink"), skill: THC("#ffd24a","ink"), yours: THC("#ffd24a","ink"), tomorrow: THC("#5fb0ff","ink"),
+    thinking: THC("#ffd24a","ink"), gears: THC("#5fb0ff","ink"), "catch": THC("#ff5fa8","ink"), catching: THC("#ff5fa8","ink"), notices: THC("#5fb0ff","ink"), voice: THC("#ff5fa8","ink"), parents: THC("#ffd24a","ink"), rewires: THC("#ff5fa8","ink"), believe: THC("#ffd24a","ink"), body: THC("#5fb0ff","ink"),
+    worry: THC("#ff5fa8","ink"), win: THC("#ffd24a","ink"), kinder: THC("#ffd24a","ink"), wander: THC("#5fb0ff","ink"), wandered: THC("#5fb0ff","ink"), quiet: THC("#5fb0ff","ink"),
+    history: THC("#5fb0ff","ink"), screen: THC("#ff5fa8","ink"), meditation: THC("#ffd24a","ink"), mantra: THC("#ffd24a","ink"), words: THC("#5fb0ff","ink"), learned: THC("#ff5fa8","ink"), mind: THC("#5fb0ff","ink"), doubts: THC("#ff5fa8","ink"), picking: THC("#ffd24a","ink"),
+    monologue: THC("#ffd24a","ink"), trance: THC("#ff5fa8","ink"), psychosis: THC("#ff5fa8","ink"), senses: THC("#5fb0ff","ink"), wandering: THC("#5fb0ff","ink"), unhappiness: THC("#ff5fa8","ink"), movie: THC("#ffd24a","ink"), theater: THC("#ffd24a","ink"),
+    belief: THC("#ffd24a","ink"), beliefs: THC("#ffd24a","ink"), repeated: THC("#ff5fa8","ink"), repetition: THC("#ff5fa8","ink"), subconscious: THC("#5fb0ff","ink"), autopilot: THC("#ff5fa8","ink"), obey: THC("#ff5fa8","ink"), invisible: THC("#5fb0ff","ink"), wants: THC("#ffd24a","ink"),
+    alarm: THC("#ff5fa8","ink"), lion: THC("#ffd24a","ink"), loop: THC("#ff5fa8","ink"), churning: THC("#ff5fa8","ink"), npc: THC("#ff5fa8","ink"), human: THC("#ffd24a","ink"), awake: THC("#ffd24a","ink"), waking: THC("#ffd24a","ink"),
+    breath: THC("#5fb0ff","ink"), breathing: THC("#5fb0ff","ink"), release: THC("#c77dff","ink"), stress: THC("#ff5fa8","ink"), sit: THC("#46e2a4","ink"), churn: THC("#ff5fa8","ink"), "true": THC("#ffd24a","ink"), line: THC("#5fb0ff","ink"), muscle: THC("#c77dff","ink") };
+  var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15, trance: 1.18, theater: 1.15, belief: 1.18, beliefs: 1.18, subconscious: 1.15, autopilot: 1.15, alarm: 1.15, awake: 1.15, npc: 1.18 };
+  Object.assign(HUES_ALL, { // RU KEY WORDS (David 2026-07-11): animLines matches emphasis by lowercase word, so the Russian forms need their own colors to get the same beautiful treatment. Same scheme: pink = tension/alarm/loop, yellow = concept, blue = body/breath/time, purple = release.
+    "напряжение": THC("#ff5fa8","ink"), "взводе": THC("#ff5fa8","ink"), "транс": THC("#ff5fa8","ink"), "несчастья": THC("#ff5fa8","ink"), "тревога": THC("#ff5fa8","ink"), "тревогу": THC("#ff5fa8","ink"), "петля": THC("#ff5fa8","ink"), "петлю": THC("#ff5fa8","ink"), "автопилоте": THC("#ff5fa8","ink"), "внимание": THC("#ff5fa8","ink"), "болванчика": THC("#ff5fa8","ink"), "сомнения": THC("#ff5fa8","ink"), "повтора": THC("#ff5fa8","ink"), "изменил": THC("#ff5fa8","ink"), "стресс": THC("#ff5fa8","ink"),
+    "характер": THC("#ffd24a","ink"), "монолог": THC("#ffd24a","ink"), "мысль": THC("#ffd24a","ink"), "мыслях": THC("#ffd24a","ink"), "мысли": THC("#ffd24a","ink"), "убеждение": THC("#ffd24a","ink"), "убеждения": THC("#ffd24a","ink"), "желаний": THC("#ffd24a","ink"), "льва": THC("#ffd24a","ink"), "мантра": THC("#ffd24a","ink"), "мантру": THC("#ffd24a","ink"), "навык": THC("#ffd24a","ink"), "человека": THC("#ffd24a","ink"), "твой": THC("#ffd24a","ink"),
+    "тело": THC("#5fb0ff","ink"), "теле": THC("#5fb0ff","ink"), "телом": THC("#5fb0ff","ink"), "дыхание": THC("#5fb0ff","ink"), "выдох": THC("#5fb0ff","ink"), "подсознание": THC("#5fb0ff","ink"), "блуждании": THC("#5fb0ff","ink"), "завтра": THC("#5fb0ff","ink"),
+    "расслабление": THC("#c77dff","ink"), "мышц": THC("#c77dff","ink")
+  });
+  Object.assign(BIG_ALL, { "напряжение": 1.24, "характер": 1.18, "транс": 1.18, "монолог": 1.15, "убеждение": 1.18, "мантра": 1.18, "тревога": 1.18, "внимание": 1.2, "человека": 1.15, "болванчика": 1.18, "петля": 1.15, "навык": 1.15, "изменил": 1.2 });
+  function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
+    lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
+      tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
+        if (BIG_ALL[bare]) sp.style.fontSize = BIG_ALL[bare] + "em";
+        if (HUES_ALL[bare]) sp.innerHTML = '<b style="color:' + HUES_ALL[bare] + '">' + esc(w) + '</b>'; else sp.textContent = w;
+        d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += pw; });
+      t0 = ld + 0.35; });
+    return t0; // total reveal time
+  }
   function runLesson(L) { // ===== THE RITUAL LESSON (v904, David device notes 2026-07-04): "a guided journal / guided magic ritual — no quizzes; questions that learn about the USER; big text, one beat at a time, visuals in between." A full-screen ceremony in the lesson's color. Beats: line (BIG text arriving word-by-word, tap to continue) · mirror (a self-question with NO right answer — the pick personalizes the guardian's next line AND teaches the app who you are; Duolingo's real trick) · feel (a breath with the orb) · burn (a limiting belief, burned to embers) · seal (the present-tense line, thumb-held — the install) · door (into the real rep). Voice whispers every line. Tap-only forever. =====
-    var ov = add(document.body, "div"), done = false;
-    ov.style.cssText = "position:fixed;inset:0;z-index:130;background:linear-gradient(180deg,var(--c-0c0510-bg),var(--c-160a1c-bg));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;box-sizing:border-box;overflow:hidden;animation:roomIn 1.8s ease;";
+    // THE RE-SKIN (v1535, David 2026-09-21 on the chapter-one deep dive: "the visual for it is horrible: spinning lines in
+    // all directions, white text old design everything bad. Should look like the beautiful design of the app's opening and
+    // survey. With the colored Instagram lines on top letting you know how much is left."). runLesson draws EVERY lesson in
+    // the app, so its look is the whole teaching layer's look. It now wears the onboarding's own room (.ob-ov starlit
+    // twilight + .ob-card / .ob-body.center / .ob-foot), paints its prose with the intro's animLines, offers its choices as
+    // the survey's .obv-row pills, and carries one story bar per beat across the top. Retired with the old era: the
+    // spinning ray card (.gspin), the hearth flicker, the mirror sheen and the decorative orbs. L.room survives as data on
+    // the lessons that carry it and paints nothing; the orb stays ONLY where it is the instrument (the feel beat's guide).
+    var ov = add(document.body, "div", "ob-ov"), done = false;
+    ov.style.zIndex = "130"; ov.style.animation = "roomIn 1.2s ease";
     try { entrySignature(); } catch (e) {} // §7: the same 3 notes open every ceremony — the conditioning asset
-    // ROOMS v1 (§6, P4): when a lesson owns a room, the room's treatment replaces the rays (rays retire to seals). hearth = warm flicker; mirror = dim reflective sheen.
-    if (L.room === "hearth") { ov.style.background = "linear-gradient(180deg,var(--c-160806-bg),var(--c-2a1109-bg) 58%,var(--c-3a180c-bg))"; add(ov, "div", "hearth-glow"); }
-    else if (L.room === "mirror") { ov.style.background = "linear-gradient(180deg,var(--c-100a1a-bg),var(--c-1a1226-bg) 55%,var(--c-221a30-bg))"; add(ov, "div", "mirror-sheen"); }
-    else { var rays = add(ov, "div", "gspin"); rays.style.background = "repeating-conic-gradient(from 0deg at 50% 50%," + L.c + "16 0deg 10deg, transparent 10deg 20deg)"; }
-    var stage = add(ov, "div"); stage.style.cssText = "position:relative;z-index:1;width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;";
-    var hint = add(ov, "div"); hint.style.cssText = "position:absolute;bottom:30px;left:0;right:0;text-align:center;font-family:var(--bub);font-size:13px;font-weight:700;color:var(--c-8a7898-ink);z-index:1;";
-    var xb = add(ov, "button"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.style.cssText = "position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);left:16px;z-index:2;background:none;border:none;color:var(--c-6a5a78-bg);font-size:20px;padding:8px;cursor:pointer;";
+    var aur = add(ov, "div"); aur.style.cssText = "position:absolute;left:-10%;right:-10%;top:-40px;height:34%;pointer-events:none;background:radial-gradient(78% 90% at 50% 0%," + hexA(L.c, 0.26) + ", transparent 68%);"; // the lesson's hue arrives as an AURORA, never as a room repaint (the onboarding law behind .ob-ov[data-sec]::before)
+    var card = add(ov, "div", "ob-card");
+    var barFills = [], barWrap = add(card, "div"); // THE STORY BARS: one segment PER BEAT, in the lesson's hue, on the composed player's own geometry (STORY_* beside storyUpcoming)
+    barWrap.style.cssText = "position:absolute;top:" + STORY_TOP + ";left:" + STORY_SIDE + "px;right:" + STORY_SIDE + "px;display:flex;gap:" + STORY_GAP + "px;z-index:3;pointer-events:none;";
+    (L.beats || []).forEach(function () { var tk = add(barWrap, "div"); tk.style.cssText = "flex:1;min-width:0;height:" + STORY_BAR_H + "px;border-radius:" + STORY_BAR_R + "px;background:" + storyUpcoming(L.c) + ";overflow:hidden;"; var fl = add(tk, "div"); fl.style.cssText = "height:100%;width:0%;border-radius:" + STORY_BAR_R + "px;background:" + L.c + ";transition:width .45s cubic-bezier(.4,0,.2,1);"; barFills.push(fl); });
+    function paintBars() { for (var n = 0; n < barFills.length; n++) barFills[n].style.width = (n <= i ? 100 : 0) + "%"; }
+    var stage = add(card, "div", "ob-body center"); stage.style.paddingTop = "52px"; // clears the bars and the ✕
+    var foot = add(card, "div", "ob-foot");
+    var hint = add(foot, "div", "ob-sb"); hint.style.cssText = "flex:1;text-align:center;font-weight:700;margin-top:0;";
+    var xb = add(ov, "button"); xb.innerHTML = '<i class="ti ti-x"></i>'; xb.style.cssText = "position:absolute;top:" + CHROME_TOP + ";left:12px;z-index:4;background:none;border:none;color:var(--c-a06e88-ink);font-size:20px;padding:8px;cursor:pointer;";
     xb.onclick = function (e) { e.stopPropagation(); done = true; try { TTS.stop(); } catch (er) {} ov.remove(); };
     var i = -1, ctx = { answers: {} };
+    function drain(el) { while (el.firstChild) el.removeChild(el.firstChild); } // child-drain, never an innerHTML wipe (CLAUDE.md landmine #1)
     function speak(t) { try { say(tr(t), VPROF.mantra); } catch (e) {} }
-    function lineIn(host, t, big) { var d = add(host, "div"); d.style.cssText = "font-family:var(--bub);font-weight:800;line-height:1.45;color:var(--c-ffe9f4-ink);font-size:" + (big ? "25px" : "20.5px") + ";";
-      var words = tr(t).split(" ");
-      words.forEach(function (w, wi) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", (wi * 0.13) + "s"); sp.textContent = w; d.appendChild(sp); d.appendChild(document.createTextNode(" ")); }); /* the space rides OUTSIDE the inline-block span (else it collapses and the words fuse) */
-      return words.length * 130 + 400; }
+    function footHint() { drain(foot); foot.appendChild(hint); hint.textContent = ""; hint.style.pointerEvents = ""; hint.onclick = null; return hint; }
+    function footBtn(label, cls) { drain(foot); return add(foot, "button", "ob-btn " + (cls || ""), label); } // the survey's own button: lip border, hard shadow, depresses on active
+    function lineIn(host, t, big) { var iw = add(host, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;"; // ONE renderer for every guardian line now: the intro's animLines — words cascade in, key words coloured and sized up out of HUES_ALL / BIG_ALL
+      var t0 = animLines(iw, [t], 0.2, 0.05);
+      if (big) { var ln = iw.querySelector(".obi-line"); if (ln) ln.classList.add("big"); }
+      return Math.round(t0 * 1000) + 400; }
     function orbEl(sz) { var o = add(stage, "div"); o.style.cssText = "flex:none;width:" + sz + "px;height:" + sz + "px;border-radius:50%;background:radial-gradient(circle at 40% 35%," + mixHex(L.c, THC("#ffffff","bg"), 0.3) + "," + L.c + " 60%," + mixHex(L.c, THC("#160510","bg"), 0.3) + ");box-shadow:0 0 30px " + L.c + "55;animation:breathe 9s ease-in-out infinite;"; return o; }
-    function armTap(after) { hint.textContent = tr("tap to continue"); ov.onclick = function () { ov.onclick = null; hint.textContent = ""; (after || next)(); }; }
+    function armTap(after) { footHint().textContent = tr("tap to continue"); ov.onclick = function () { ov.onclick = null; hint.textContent = ""; (after || next)(); }; }
     function next() { if (done) return; i++; if (i >= L.beats.length) { finish(); return; } renderLessonBeat(L.beats[i]); }
     function finish() { done = true; try { TTS.stop(); } catch (e) {} ov.remove(); if (L.onDone) { try { L.onDone(ctx); } catch (e) {} } try { drawJourney(true); } catch (e) {}
     }
     function renderLessonBeat(b) {
-      stage.innerHTML = ""; hint.textContent = ""; ov.onclick = null;
+      drain(stage); footHint(); ov.onclick = null; paintBars();
       var iCur = i;
-      if (b.k === "line") { if (b.orb) orbEl(46); var ms = lineIn(stage, b.t, b.big); speak(b.t);
+      if (b.k === "line") { var ms = lineIn(stage, b.t, b.big); speak(b.t); // b.orb is honoured no longer — a decorative orb on a reading beat was the old era
         setTimeout(function () { if (done || iCur !== i) return; armTap(); }, ms); return; }
       if (b.k === "mirror") { var msq = lineIn(stage, b.q, false); speak(b.q);
-        var w = add(stage, "div"); w.style.cssText = "display:flex;flex-direction:column;gap:9px;width:100%;margin-top:6px;";
-        b.opts.forEach(function (o) { var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", L.c); r.style.setProperty("--ost", tfStripeDoor(L.c)); r.style.minHeight = "52px"; r.innerHTML = '<span class="ol" style="font-size:15.5px">' + esc(tr(o.t)) + '</span>';
+        var w = add(stage, "div", "obv-rows"); w.style.maxWidth = "400px"; // the onboarding survey's own option pills, verbatim
+        b.opts.forEach(function (o) { var r = add(w, "button", "obv-row"); r.style.setProperty("--oc", L.c); r.style.setProperty("--ost", tfStripeDoor(L.c)); r.style.minHeight = "52px"; r.innerHTML = '<span class="ol">' + esc(tr(o.t)) + '</span>';
           r.onclick = function (e) { e.stopPropagation(); ctx.answers[b.save || "m" + iCur] = o.tag || o.t; if (b.onPick) { try { b.onPick(o, ctx); } catch (er) {} }
-            stage.innerHTML = ""; orbEl(40); var rep = (typeof b.reply === "function") ? b.reply(o, ctx) : (o.reply || b.reply); var ms2 = lineIn(stage, rep, false); speak(rep);
+            drain(stage); var rep = (typeof b.reply === "function") ? b.reply(o, ctx) : (o.reply || b.reply); var ms2 = lineIn(stage, rep, false); speak(rep);
             setTimeout(function () { if (done) return; armTap(); }, ms2); }; });
         return; }
       if (b.k === "feel") { orbEl(66); var tt = (typeof b.t === "function") ? b.t(ctx) : b.t; var ms3 = lineIn(stage, tt, false); speak(tt);
@@ -1343,24 +1391,24 @@
         braf = requestAnimationFrame(bloop); return; }
       if (b.k === "burn") { lineIn(stage, "One belief to leave here:", false);
         var bl = add(stage, "div"); bl.textContent = "\u201c" + tr(b.t) + "\u201d"; bl.style.cssText = "font-family:var(--bub);font-size:19px;font-weight:800;color:var(--c-c9a6b8-ink);border:2px dashed var(--c-6a4a5c-ink);border-radius:14px;padding:14px 18px;margin-top:4px;";
-        var btn = add(stage, "button", "ob-btn go", tr("Burn it")); btn.style.marginTop = "10px";
+        var btn = footBtn(tr("Burn it"), "go");
         btn.onclick = function (e) { e.stopPropagation(); btn.style.display = "none"; bl.classList.add("burnaway");
           try { var r7 = bl.getBoundingClientRect(); for (var e2 = 0; e2 < 5; e2++) { var sp7 = add(ov, "b", "ob-rise obp-star"); sp7.style.cssText = "position:fixed;left:" + Math.round(r7.left + 20 + e2 * Math.max(40, r7.width - 40) / 4) + "px;top:" + Math.round(r7.top) + "px;width:7px;height:7px;background:var(--c-ff8a3a-bg);box-shadow:0 0 8px rgba(255,138,58,.6);z-index:3;"; (function (sp) { setTimeout(function () { sp.remove(); }, 1200); })(sp7); } } catch (er) {}
-          setTimeout(function () { if (done) return; stage.innerHTML = ""; var ms4 = lineIn(stage, b.reply, false); speak(b.reply);
+          setTimeout(function () { if (done) return; drain(stage); footHint(); var ms4 = lineIn(stage, b.reply, false); speak(b.reply);
             setTimeout(function () { if (done) return; armTap(); }, ms4); }, 1100); };
         return; }
-      if (b.k === "seal") { orbEl(46); lineIn(stage, "\u201c" + tr(b.line) + "\u201d", true); speak(b.line);
-        add(stage, "div", null, tr("one slow breath · say it as if it's already true. Hold to keep it.")).style.cssText = "font-family:var(--bub);text-align:center;font-size:14px;font-weight:700;color:var(--c-c8a6d8-ink);";
+      if (b.k === "seal") { lineIn(stage, "\u201c" + tr(b.line) + "\u201d", true); speak(b.line); // no decorative orb: the thumb ring IS the instrument on this beat
+        add(stage, "div", "ob-sb", tr("one slow breath · say it as if it's already true. Hold to keep it.")).style.cssText = "text-align:center;max-width:352px;font-weight:700;margin-top:10px;";
         var pw = add(stage, "div", "ob-pwrap"); pw.style.touchAction = "none";
         pw.innerHTML = '<svg class="pring" viewBox="0 0 150 150"><circle cx="75" cy="75" r="64" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="8"/><circle class="parc" cx="75" cy="75" r="64" fill="none" stroke="' + L.c + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="402" stroke-dashoffset="402"/></svg><span class="pfp"><i class="ti ti-fingerprint"></i></span>';
         var arc = pw.querySelector(".parc");
         var _hMs = 1600; try { _hMs = (typeof b.holdMs === "function") ? b.holdMs(ctx) : (b.holdMs || 1600); } catch (e) {} // SCALING SEAL (§3): hold length = promise weight (2d=1.0s … 14d=3.0s)
         chargeHold(pw, arc, _hMs, function () { try { earn(2, { label: "lesson-seal", srcEl: pw }); } catch (e) {} try { litState().seal = b.line; } catch (e) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (e) {} } next(); }); // BUILD 1 dopamine hold. seal capture → S.lit.seal for the Close's install replay
-        hint.textContent = tr("or tap here to carry it without the hold"); hint.style.pointerEvents = "auto";
+        footHint().textContent = tr("or tap here to carry it without the hold"); hint.style.pointerEvents = "auto";
         hint.onclick = function (e) { e.stopPropagation(); hint.onclick = null; try { litState().seal = b.line; } catch (er) {} if (b.onSeal) { try { b.onSeal(ctx); } catch (er) {} } next(); };
         return; }
       if (b.k === "door") { lineIn(stage, b.t, false); speak(b.t);
-        var db = add(stage, "button", "ob-btn go", tr(b.btn || "Do it \u25b8")); db.style.marginTop = "12px";
+        var db = footBtn(tr(b.btn || "Do it \u25b8"), "go");
         db.onclick = function (e) { e.stopPropagation(); done = true; try { TTS.stop(); } catch (er) {} ov.remove(); try { b.rep(); } catch (er) {} };
         return; }
       next();
@@ -15229,6 +15277,10 @@
     return [{ P: P0, cyc: cycles || P0.cyc || 4 }];
   }
   function breathGlyph(st) { return (st && st.P && st.P.ti) || "ti-wind"; } // v1353 added the story-bar call without this helper — every picker-launched breathwork() threw before its first frame
+  // THE STORY-BAR GEOMETRY, ONE DEFINITION (v1535). Lifted out of breathwork() so the composed player, the breath
+  // ladder and the lesson engine all draw the same object. Values taken verbatim from the composed player's gp-story
+  // bars and the .gp-bars chrome offsets in index.html.
+  var STORY_TOP = "calc(env(safe-area-inset-top,0px) + 12px)", STORY_SIDE = 14, STORY_GAP = 9, STORY_COLGAP = 9, STORY_BAR_H = 9, STORY_BAR_R = 5, STORY_ICON = 22, CHROME_TOP = "calc(env(safe-area-inset-top,0px) + 58px)";
   function storyUpcoming(c) { return mixHex(c, THC("#160510","bg"), 0.62); } // the UNSPENT part of a story bar: the same dark-tinted track the composed player draws (gp-story). v1353 called this and never wrote it — same crash as breathGlyph above
   // THE PLAYER'S BREATH RUNS — every contiguous stretch of breath-tagged segments becomes ONE clock, built from the segments' REAL laid-out spans (so the dose re-fit and the act-boundary beat are already inside the numbers, not guessed from the pattern). Shared by timelinePlayer's relayoutFrom AND by DEV.breathAgree, so the probe measures the shipping code rather than a copy of it.
   function breathRunsFromSegs(segs) {
@@ -15746,22 +15798,27 @@
     var barCol = BREATH_HUE; // Round 25: a breathing session wears the frame's teal (DOM.restore.c), not the old generic violet
     var bars = []; for (var bi = 0; bi < phases.length; bi++) { var bk = LADDER ? phases[bi].si : phases[bi].c; var _lb = bars[bars.length - 1]; if (!_lb || _lb.k !== bk) bars.push({ k: bk, s: cum[bi], e: cum[bi] + phases[bi].ms, ti: breathGlyph(stages[phases[bi].si || 0]) }); else _lb.e = cum[bi] + phases[bi].ms; }
     var barFills = [], barTracks = [], barIcons = [];
+    // NO PREVIEW ON A SINGLE PRACTICE (David 2026-09-21: "for doing a single practice not a stack, no need for a preview on
+    // the top of how much is left, cuz it's already shown below"). The cycle counter under the viz already says where you
+    // are in a one-pattern session, and a row of identical cycle segments above it says the same thing twice. The bars stay
+    // for the multi-stage flows (the guided ladder, Wim Hof), where each segment is a DIFFERENT stage and carries its glyph.
+    var BARS = LADDER;
     // THE BAR GEOMETRY — taken verbatim from the app's own working sibling, the composed player's `gp-story` bars (and the `.gp-bars` chrome offsets in index.html), so the two players' story bars are the same object. v1353 wrote these names and never defined them, which threw a ReferenceError on every breathwork() call; there is no design frame for this surface, so the sibling IS the registry.
-    var STORY_TOP = "calc(env(safe-area-inset-top,0px) + 12px)", STORY_SIDE = 14, STORY_GAP = 9, STORY_COLGAP = 9, STORY_BAR_H = 9, STORY_BAR_R = 5, STORY_ICON = 22, CHROME_TOP = "calc(env(safe-area-inset-top,0px) + 58px)";
+    // STORY_* + CHROME_TOP are module-scope now (beside storyUpcoming) — the lesson engine draws the same bars, and one definition means the two surfaces can never drift apart.
     var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:" + STORY_TOP + ";left:" + STORY_SIDE + "px;right:" + STORY_SIDE + "px;display:flex;gap:" + STORY_GAP + "px;z-index:6;pointer-events:none;";
-    bars.forEach(function (b) { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:" + STORY_COLGAP + "px;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:" + STORY_BAR_H + "px;border-radius:" + STORY_BAR_R + "px;background:" + storyUpcoming(barCol) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:" + STORY_BAR_R + "px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); var ic = document.createElement("i"); ic.className = "ti " + b.ti; ic.style.cssText = "font-size:" + STORY_ICON + "px;line-height:1;color:" + barCol + ";opacity:.34;"; colx.appendChild(ic); barWrap.appendChild(colx); barFills.push(fl); barTracks.push(bar); barIcons.push(ic); });
-    ov.appendChild(barWrap);
-    // drop the ✕ / voice-toggle below the new bars, and add the settings cog beside the voice toggle
-    var _topOff = CHROME_TOP;
-    var _xb = ov.querySelector(".bw-x"); if (_xb) _xb.style.top = _topOff;
-    var _vb = ov.querySelector(".bw-voice"); if (_vb) _vb.style.top = _topOff;
+    if (BARS) bars.forEach(function (b) { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:" + STORY_COLGAP + "px;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:" + STORY_BAR_H + "px;border-radius:" + STORY_BAR_R + "px;background:" + storyUpcoming(barCol) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:" + STORY_BAR_R + "px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); var ic = document.createElement("i"); ic.className = "ti " + b.ti; ic.style.cssText = "font-size:" + STORY_ICON + "px;line-height:1;color:" + barCol + ";opacity:.34;"; colx.appendChild(ic); barWrap.appendChild(colx); barFills.push(fl); barTracks.push(bar); barIcons.push(ic); });
+    if (BARS) ov.appendChild(barWrap);
+    // drop the ✕ / voice-toggle below the bars WHEN THERE ARE BARS; with none, the chrome keeps its own CSS top
+    var _topOff = BARS ? CHROME_TOP : "calc(env(safe-area-inset-top,0px) + 14px)";
+    if (BARS) { var _xb = ov.querySelector(".bw-x"); if (_xb) _xb.style.top = _topOff;
+      var _vb = ov.querySelector(".bw-voice"); if (_vb) _vb.style.top = _topOff; }
     // THE THIRD DOOR, CLOSED (David 2026-08-20, "no separate settings screen"). This cog used to open its OWN popover —
     // a bespoke card wrapping breathControls + breathVolRows, the last surface that could disagree with the settings card.
     // It now registers what this session IS (a single breathing session, its own hue) and opens the ONE card, which computes
     // the Breathing scope from it: guide · backdrop · cue · tone · visual. _breathLive still applies every pick on the next frame.
     var _bwScope = function () { return { hue: barCol, breath: true, stack: false }; };
     var cog = document.createElement("button"); cog.className = "gp-cog"; cog.innerHTML = '<i class="ti ti-settings"></i>'; cog.style.top = _topOff; cog.style.left = "70px"; cog.onclick = function (e) { e.stopPropagation(); _gpSettings = _bwScope; openVolumePanel(); }; ov.appendChild(cog);
-    function paintBars(elMs) { for (var bi2 = 0; bi2 < bars.length; bi2++) { var b = bars[bi2], f = b.e > b.s ? (elMs - b.s) / (b.e - b.s) : (elMs >= b.s ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (barFills[bi2]) barFills[bi2].style.width = (f * 100) + "%"; } }
+    function paintBars(elMs) { if (!BARS) return; for (var bi2 = 0; bi2 < bars.length; bi2++) { var b = bars[bi2], f = b.e > b.s ? (elMs - b.s) / (b.e - b.s) : (elMs >= b.s ? 1 : 0); f = f < 0 ? 0 : f > 1 ? 1 : f; if (barFills[bi2]) barFills[bi2].style.width = (f * 100) + "%"; } }
     var curIdx = -1, _ln = "";
     function paintPhase(s) { // THE INDICATOR — write only what changed (the bar is a transform, so it never reflows)
       if (!phEl) return;
@@ -20658,36 +20715,7 @@
       "A tight body keeps your mind on edge too, and that is part of why you can feel wound up with no idea why."
     ];
     // ANIMATED PROSE (David 2026-07-09: "the text should always be animated and colored and multi-sized"). ONE reusable renderer for every guardian line: words cascade in FAST (0.045s each) so a line reads as landing at once, not a slow typewriter; key words are colored (pink/yellow) + sized up. Matched by bare lowercase word.
-    var HUES_ALL = { tension: THC("#ff5fa8","ink"), tuned: THC("#ffd24a","ink"), personality: THC("#ffd24a","ink"), edge: THC("#ff5fa8","ink"), wound: THC("#ffd24a","ink"),
-      thought: THC("#ffd24a","ink"), noticing: THC("#ff5fa8","ink"), choose: THC("#ffd24a","ink"), choosing: THC("#ffd24a","ink"),
-      sentences: THC("#ffd24a","ink"), repeat: THC("#ff5fa8","ink"), "default": THC("#ffd24a","ink"), chose: THC("#ff5fa8","ink"),
-      attention: THC("#ff5fa8","ink"), hunting: THC("#ffd24a","ink"), threats: THC("#ff5fa8","ink"),
-      exhale: THC("#5fb0ff","ink"), safe: THC("#46e2a4","ink"),
-      changed: THC("#ff5fa8","ink"), skill: THC("#ffd24a","ink"), yours: THC("#ffd24a","ink"), tomorrow: THC("#5fb0ff","ink"),
-      thinking: THC("#ffd24a","ink"), gears: THC("#5fb0ff","ink"), "catch": THC("#ff5fa8","ink"), catching: THC("#ff5fa8","ink"), notices: THC("#5fb0ff","ink"), voice: THC("#ff5fa8","ink"), parents: THC("#ffd24a","ink"), rewires: THC("#ff5fa8","ink"), believe: THC("#ffd24a","ink"), body: THC("#5fb0ff","ink"),
-      worry: THC("#ff5fa8","ink"), win: THC("#ffd24a","ink"), kinder: THC("#ffd24a","ink"), wander: THC("#5fb0ff","ink"), wandered: THC("#5fb0ff","ink"), quiet: THC("#5fb0ff","ink"),
-      history: THC("#5fb0ff","ink"), screen: THC("#ff5fa8","ink"), meditation: THC("#ffd24a","ink"), mantra: THC("#ffd24a","ink"), words: THC("#5fb0ff","ink"), learned: THC("#ff5fa8","ink"), mind: THC("#5fb0ff","ink"), doubts: THC("#ff5fa8","ink"), picking: THC("#ffd24a","ink"),
-      monologue: THC("#ffd24a","ink"), trance: THC("#ff5fa8","ink"), psychosis: THC("#ff5fa8","ink"), senses: THC("#5fb0ff","ink"), wandering: THC("#5fb0ff","ink"), unhappiness: THC("#ff5fa8","ink"), movie: THC("#ffd24a","ink"), theater: THC("#ffd24a","ink"),
-      belief: THC("#ffd24a","ink"), beliefs: THC("#ffd24a","ink"), repeated: THC("#ff5fa8","ink"), repetition: THC("#ff5fa8","ink"), subconscious: THC("#5fb0ff","ink"), autopilot: THC("#ff5fa8","ink"), obey: THC("#ff5fa8","ink"), invisible: THC("#5fb0ff","ink"), wants: THC("#ffd24a","ink"),
-      alarm: THC("#ff5fa8","ink"), lion: THC("#ffd24a","ink"), loop: THC("#ff5fa8","ink"), churning: THC("#ff5fa8","ink"), npc: THC("#ff5fa8","ink"), human: THC("#ffd24a","ink"), awake: THC("#ffd24a","ink"), waking: THC("#ffd24a","ink"),
-      breath: THC("#5fb0ff","ink"), breathing: THC("#5fb0ff","ink"), release: THC("#c77dff","ink"), stress: THC("#ff5fa8","ink"), sit: THC("#46e2a4","ink"), churn: THC("#ff5fa8","ink"), "true": THC("#ffd24a","ink"), line: THC("#5fb0ff","ink"), muscle: THC("#c77dff","ink") };
-    var BIG_ALL = { tension: 1.28, personality: 1.2, edge: 1.18, wound: 1.16, thought: 1.18, choose: 1.2, choosing: 1.2, "default": 1.18, safe: 1.18, exhale: 1.16, changed: 1.24, skill: 1.2, yours: 1.22, gears: 1.16, voice: 1.2, rewires: 1.2, believe: 1.18, "catch": 1.16, thinking: 1.16, win: 1.15, kinder: 1.15, meditation: 1.15, mantra: 1.15, trance: 1.18, theater: 1.15, belief: 1.18, beliefs: 1.18, subconscious: 1.15, autopilot: 1.15, alarm: 1.15, awake: 1.15, npc: 1.18 };
-    Object.assign(HUES_ALL, { // RU KEY WORDS (David 2026-07-11): animLines matches emphasis by lowercase word, so the Russian forms need their own colors to get the same beautiful treatment. Same scheme: pink = tension/alarm/loop, yellow = concept, blue = body/breath/time, purple = release.
-      "напряжение": THC("#ff5fa8","ink"), "взводе": THC("#ff5fa8","ink"), "транс": THC("#ff5fa8","ink"), "несчастья": THC("#ff5fa8","ink"), "тревога": THC("#ff5fa8","ink"), "тревогу": THC("#ff5fa8","ink"), "петля": THC("#ff5fa8","ink"), "петлю": THC("#ff5fa8","ink"), "автопилоте": THC("#ff5fa8","ink"), "внимание": THC("#ff5fa8","ink"), "болванчика": THC("#ff5fa8","ink"), "сомнения": THC("#ff5fa8","ink"), "повтора": THC("#ff5fa8","ink"), "изменил": THC("#ff5fa8","ink"), "стресс": THC("#ff5fa8","ink"),
-      "характер": THC("#ffd24a","ink"), "монолог": THC("#ffd24a","ink"), "мысль": THC("#ffd24a","ink"), "мыслях": THC("#ffd24a","ink"), "мысли": THC("#ffd24a","ink"), "убеждение": THC("#ffd24a","ink"), "убеждения": THC("#ffd24a","ink"), "желаний": THC("#ffd24a","ink"), "льва": THC("#ffd24a","ink"), "мантра": THC("#ffd24a","ink"), "мантру": THC("#ffd24a","ink"), "навык": THC("#ffd24a","ink"), "человека": THC("#ffd24a","ink"), "твой": THC("#ffd24a","ink"),
-      "тело": THC("#5fb0ff","ink"), "теле": THC("#5fb0ff","ink"), "телом": THC("#5fb0ff","ink"), "дыхание": THC("#5fb0ff","ink"), "выдох": THC("#5fb0ff","ink"), "подсознание": THC("#5fb0ff","ink"), "блуждании": THC("#5fb0ff","ink"), "завтра": THC("#5fb0ff","ink"),
-      "расслабление": THC("#c77dff","ink"), "мышц": THC("#c77dff","ink")
-    });
-    Object.assign(BIG_ALL, { "напряжение": 1.24, "характер": 1.18, "транс": 1.18, "монолог": 1.15, "убеждение": 1.18, "мантра": 1.18, "тревога": 1.18, "внимание": 1.2, "человека": 1.15, "болванчика": 1.18, "петля": 1.15, "навык": 1.15, "изменил": 1.2 });
-    function animLines(container, lines, start, per) { var t0 = start || 0.2, pw = per || 0.05; // pw = per-word cascade delay (David 2026-07-09: the hook stays snappy, the longer explainers read slower)
-      lines.forEach(function (txt) { var d = add(container, "div", "obi-line"); var ld = t0;
-        tr(txt).split(" ").forEach(function (w) { var sp = document.createElement("span"); sp.className = "obi-w"; sp.style.setProperty("--d", ld.toFixed(2) + "s"); var bare = w.replace(/[^\wа-яё]/gi, "").toLowerCase();
-          if (BIG_ALL[bare]) sp.style.fontSize = BIG_ALL[bare] + "em";
-          if (HUES_ALL[bare]) sp.innerHTML = '<b style="color:' + HUES_ALL[bare] + '">' + esc(w) + '</b>'; else sp.textContent = w;
-          d.appendChild(sp); d.appendChild(document.createTextNode(" ")); ld += pw; });
-        t0 = ld + 0.35; });
-      return t0; // total reveal time
-    }
+    // animLines + HUES_ALL + BIG_ALL now live at module scope beside runLesson (@SEC:LESSONS) — one renderer for the intro AND every lesson.
     function narrate(lines, btnLabel, onNext, opts) { clearBoth(); opts = opts || {}; var goingBack = _goingBack; _goingBack = false; if (opts.back) addBack(opts.back);
       if (opts.kick) add(body, "div", "ob-kick", tr(opts.kick));
       var iw = add(body, "div"); iw.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;margin-top:8px;gap:8px;";
