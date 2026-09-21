@@ -1490,7 +1490,29 @@
         { t: "I just… fall asleep", tag: "sleep", reply: "Then we'll catch the day before it slips out unnoticed." }] },
       { k: "line", t: "Win or learn, every day still closes. A hard day you close on purpose counts the same as a good one." },
       { k: "seal", line: "I close my days kindly. Win or learn." },
-      { k: "door", t: "Close day one the way it deserves.", btn: "Close it \u25b8", rep: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }] }
+      { k: "door", t: "Close day one the way it deserves.", btn: "Close it \u25b8", rep: function () { enterStage("pm", { trackTitle: "Reflection", byTap: true }); } }] },
+    // ===== CHAPTER 1 · DEEP DIVE 1 — "Why one minute" (copy LOCKED by David 2026-09-21 after seven drafts; source of truth
+    // `_design-sync/journey-stones-2026-08-28/COPY-CH1-SPARK.md`, section "DEEP DIVE 1 · Why one minute — LOCKED 2026-09-21").
+    // Every LINE and the SEAL are VERBATIM — Gate 1 + Gate 2 were run on that sheet and a reworded word voids both.
+    // ONE DEVIATION, flagged rather than invented: the sheet's beats 7 and 8 are a line and a chip row with NO question of
+    // its own, and the mirror beat is the engine's only chips surface — so beat 7's sentences ARE beat 8's question, which
+    // is exactly how they read. Nothing is dropped, nothing is reworded, and no second player is built for one row.
+    // The chip REPLIES (both mirrors) are the only new strings in here; they are plain acknowledgements on purpose.
+    dive1: { c: THC("#ffc83d","bg"), beats: [
+      { k: "line", t: "Think of the last habit you quit. The gym, the meditation streak, the language app.", big: true, orb: true },
+      { k: "line", t: "You planned it on a good day, riding a peak of motivation. But predicting your own future motivation is a trap everyone falls into." },
+      { k: "line", t: "Here is rule one of habit design, and almost nobody follows it: you don't build a habit for your most motivated day. You build it for your least motivated one." },
+      { k: "mirror", q: "Think of a habit you are trying to keep right now. Picture the day you are most likely to skip it. What stops you?", save: "skipReason", onPick: function (o) { S.profile = S.profile || {}; S.profile.skipReason = o.tag; save(); }, opts: [
+        { t: "No time", tag: "time", reply: "No time. Then the size has to be tiny." },
+        { t: "Too tired", tag: "tired", reply: "Too tired. Then it has to work when you are flat." },
+        { t: "I forget", tag: "forget", reply: "It slips your mind. Then it has to be easy to come back to." },
+        { t: "It feels like too much", tag: "toobig", reply: "It feels like too much. Then we make it smaller." }] },
+      { k: "line", t: "Make it so small it takes no motivation at all. If it is not laughably easy, it is probably too hard." },
+      { k: "line", t: "This method is called tiny habits. You keep the same ambition, and you lower the bar for what counts as done, until missing a day takes real effort." },
+      { k: "mirror", q: "So every habit here gets a floor: the smallest version that still counts. Your breath habit is one minute. Its floor could be a single breath.", save: "breathFloor", onPick: function (o) { S.profile = S.profile || {}; S.profile.breathFloor = o.tag; save(); }, opts: [
+        { t: "Set one breath as the floor", tag: "one", reply: "One breath it is. On the worst day, that still counts." },
+        { t: "Keep the full minute", tag: "minute", reply: "The full minute stays. You can lower it any time." }] },
+      { k: "seal", line: "A habit is built by the number of days you showed up. How big each day was barely matters.", onSeal: function () { S.profile = S.profile || {}; S.profile.dives = S.profile.dives || {}; S.profile.dives.ch1why = 1; try { earn(6, { label: "dive-why-one-minute" }); } catch (e) {} save(); } }] }
   };
   function fdOneThing() { // LESSON · ONE REAL THING (Day-1 rebuild): no bento-first (punch-list #21 — the box intimidated) — three solid chips grown from YOUR onboarding answers; the full picker only if you ask. Tap → the clock starts → the rep is live.
     var P = S.profile || {}, opts = [];
@@ -6871,6 +6893,20 @@
   }
   function jccDivesRaw(ci) {
     var out = [], les = JP_LESSON[ci], ws = wsFor(ci);
+    // DEEP DIVE 1, chapter one only (2026-09-21). The refusal above still stands for every other chapter and every other
+    // dive: this row exists because REAL David-verdicted content now sits behind it (DAY1_LESSONS.dive1, nine beats,
+    // copy locked). Dives 2-4 of the design sheet are UNVERDICTED and are deliberately NOT here.
+    if (ci === 0) {
+      var d1 = !!(((S.profile || {}).dives || {}).ch1why), fl = (S.profile || {}).breathFloor;
+      var d1lines = [tr("Here is rule one of habit design, and almost nobody follows it: you don't build a habit for your most motivated day. You build it for your least motivated one.")];
+      if (fl) d1lines.push(tr("Your floor") + ": " + (fl === "one" ? tr("one breath") : tr("the full minute"))); // the setting beat 8 wrote, shown where it was made
+      out.push({
+        ic: JS_TYPE.lesson.ic, gs: 12, hue: jsHue(JS_TYPE.lesson, JS_CH_NOW),   // the stone canon's LESSON type — one table, so a dive coin and a lesson stone can never disagree about the gold
+        t: tr("Why one minute"), s: tr("the size that survives a bad day"), lines: d1lines,
+        done: d1, verb: d1 ? tr("Again") : tr("Open"), vi: d1 ? "rotate-clockwise" : "arrow-right",
+        act: function () { try { runLesson(DAY1_LESSONS.dive1); } catch (e) {} }
+      });
+    }
     // THE ROW IS COIN-HEIGHT (32) AND THE SUBLINE IS A PHRASE, never a sentence — every subline in the prototype is four
     // to six words. JP_LESSON's headline is a full sentence, so it goes INSIDE the fold as the hook it is, above the idea;
     // the row keeps its title alone and its designed rhythm. Nothing is dropped and nothing is reworded.
@@ -6983,6 +7019,35 @@
   // dictionary and are deliberately NOT repeated — re-declaring a key re-translates that word on every other surface too.
   // RU flagged for David's pass.
   Object.assign(I18N.ru, { "DEEP DIVES": "\u041f\u041e\u0413\u0420\u0423\u0416\u0415\u041d\u0418\u042f", "The idea": "\u0418\u0434\u0435\u044f" });
+  // DEEP DIVE 1 strings (B4 law: EN source + RU dict in the same edit). RU flagged for David's RU pass.
+  Object.assign(I18N.ru, {
+    "Why one minute": "\u041f\u043e\u0447\u0435\u043c\u0443 \u043e\u0434\u043d\u0430 \u043c\u0438\u043d\u0443\u0442\u0430",
+    "the size that survives a bad day": "\u0440\u0430\u0437\u043c\u0435\u0440, \u043a\u043e\u0442\u043e\u0440\u044b\u0439 \u043f\u0435\u0440\u0435\u0436\u0438\u0432\u0451\u0442 \u043f\u043b\u043e\u0445\u043e\u0439 \u0434\u0435\u043d\u044c",
+    "Your floor": "\u0422\u0432\u043e\u0439 \u043c\u0438\u043d\u0438\u043c\u0443\u043c",
+    "one breath": "\u043e\u0434\u0438\u043d \u0432\u0434\u043e\u0445",
+    "the full minute": "\u043f\u043e\u043b\u043d\u0430\u044f \u043c\u0438\u043d\u0443\u0442\u0430",
+    "the smallest version that still counts": "\u0441\u0430\u043c\u0430\u044f \u043c\u0430\u043b\u0435\u043d\u044c\u043a\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f, \u043a\u043e\u0442\u043e\u0440\u0430\u044f \u0432\u0441\u0451 \u0435\u0449\u0451 \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044f",
+    "Think of the last habit you quit. The gym, the meditation streak, the language app.": "\u0412\u0441\u043f\u043e\u043c\u043d\u0438 \u043f\u043e\u0441\u043b\u0435\u0434\u043d\u044e\u044e \u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0443, \u043a\u043e\u0442\u043e\u0440\u0443\u044e \u0442\u044b \u0431\u0440\u043e\u0441\u0438\u043b. \u0417\u0430\u043b, \u043c\u0435\u0434\u0438\u0442\u0430\u0446\u0438\u044f, \u043f\u0440\u0438\u043b\u043e\u0436\u0435\u043d\u0438\u0435 \u0441 \u044f\u0437\u044b\u043a\u043e\u043c.",
+    "You planned it on a good day, riding a peak of motivation. But predicting your own future motivation is a trap everyone falls into.": "\u0422\u044b \u0437\u0430\u0434\u0443\u043c\u0430\u043b \u044d\u0442\u043e \u0432 \u0445\u043e\u0440\u043e\u0448\u0438\u0439 \u0434\u0435\u043d\u044c, \u043d\u0430 \u043f\u0438\u043a\u0435 \u043c\u043e\u0442\u0438\u0432\u0430\u0446\u0438\u0438. \u041d\u043e \u043f\u0440\u0435\u0434\u0441\u043a\u0430\u0437\u044b\u0432\u0430\u0442\u044c \u0441\u0432\u043e\u044e \u0431\u0443\u0434\u0443\u0449\u0443\u044e \u043c\u043e\u0442\u0438\u0432\u0430\u0446\u0438\u044e \u2014 \u043b\u043e\u0432\u0443\u0448\u043a\u0430, \u0432 \u043a\u043e\u0442\u043e\u0440\u0443\u044e \u043f\u043e\u043f\u0430\u0434\u0430\u044e\u0442 \u0432\u0441\u0435.",
+    "Here is rule one of habit design, and almost nobody follows it: you don't build a habit for your most motivated day. You build it for your least motivated one.": "\u041f\u0435\u0440\u0432\u043e\u0435 \u043f\u0440\u0430\u0432\u0438\u043b\u043e \u043f\u0440\u0438\u0432\u044b\u0447\u0435\u043a, \u0438 \u043f\u043e\u0447\u0442\u0438 \u043d\u0438\u043a\u0442\u043e \u0435\u0433\u043e \u043d\u0435 \u0441\u043e\u0431\u043b\u044e\u0434\u0430\u0435\u0442: \u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0430 \u0441\u0442\u0440\u043e\u0438\u0442\u0441\u044f \u043d\u0435 \u043f\u043e\u0434 \u0441\u0430\u043c\u044b\u0439 \u043c\u043e\u0442\u0438\u0432\u0438\u0440\u043e\u0432\u0430\u043d\u043d\u044b\u0439 \u0434\u0435\u043d\u044c. \u041e\u043d\u0430 \u0441\u0442\u0440\u043e\u0438\u0442\u0441\u044f \u043f\u043e\u0434 \u0441\u0430\u043c\u044b\u0439 \u0431\u0435\u0437\u0440\u0430\u0434\u043e\u0441\u0442\u043d\u044b\u0439.",
+    "Think of a habit you are trying to keep right now. Picture the day you are most likely to skip it. What stops you?": "\u041f\u043e\u0434\u0443\u043c\u0430\u0439 \u043e \u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0435, \u043a\u043e\u0442\u043e\u0440\u0443\u044e \u0434\u0435\u0440\u0436\u0438\u0448\u044c \u0441\u0435\u0439\u0447\u0430\u0441. \u041f\u0440\u0435\u0434\u0441\u0442\u0430\u0432\u044c \u0434\u0435\u043d\u044c, \u043a\u043e\u0433\u0434\u0430 \u0442\u044b \u0441\u043a\u043e\u0440\u0435\u0435 \u0432\u0441\u0435\u0433\u043e \u0435\u0451 \u043f\u0440\u043e\u043f\u0443\u0441\u0442\u0438\u0448\u044c. \u0427\u0442\u043e \u0442\u0435\u0431\u0435 \u043c\u0435\u0448\u0430\u0435\u0442?",
+    "No time": "\u041d\u0435\u0442 \u0432\u0440\u0435\u043c\u0435\u043d\u0438",
+    "Too tired": "\u0421\u043b\u0438\u0448\u043a\u043e\u043c \u0443\u0441\u0442\u0430\u043b",
+    "I forget": "\u0417\u0430\u0431\u044b\u0432\u0430\u044e",
+    "It feels like too much": "\u041e\u0449\u0443\u0449\u0430\u0435\u0442\u0441\u044f \u043a\u0430\u043a \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u043c\u043d\u043e\u0433\u043e",
+    "No time. Then the size has to be tiny.": "\u041d\u0435\u0442 \u0432\u0440\u0435\u043c\u0435\u043d\u0438. \u0417\u043d\u0430\u0447\u0438\u0442, \u0440\u0430\u0437\u043c\u0435\u0440 \u0434\u043e\u043b\u0436\u0435\u043d \u0431\u044b\u0442\u044c \u043a\u0440\u043e\u0448\u0435\u0447\u043d\u044b\u043c.",
+    "Too tired. Then it has to work when you are flat.": "\u0421\u043b\u0438\u0448\u043a\u043e\u043c \u0443\u0441\u0442\u0430\u043b. \u0417\u043d\u0430\u0447\u0438\u0442, \u043e\u043d\u043e \u0434\u043e\u043b\u0436\u043d\u043e \u0440\u0430\u0431\u043e\u0442\u0430\u0442\u044c, \u043a\u043e\u0433\u0434\u0430 \u0441\u0438\u043b \u043d\u0435\u0442.",
+    "It slips your mind. Then it has to be easy to come back to.": "\u0412\u044b\u043b\u0435\u0442\u0430\u0435\u0442 \u0438\u0437 \u0433\u043e\u043b\u043e\u0432\u044b. \u0417\u043d\u0430\u0447\u0438\u0442, \u043a \u043d\u0435\u043c\u0443 \u0434\u043e\u043b\u0436\u043d\u043e \u0431\u044b\u0442\u044c \u043b\u0435\u0433\u043a\u043e \u0432\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f.",
+    "It feels like too much. Then we make it smaller.": "\u041e\u0449\u0443\u0449\u0430\u0435\u0442\u0441\u044f \u043a\u0430\u043a \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u043c\u043d\u043e\u0433\u043e. \u0417\u043d\u0430\u0447\u0438\u0442, \u0441\u0434\u0435\u043b\u0430\u0435\u043c \u043c\u0435\u043d\u044c\u0448\u0435.",
+    "Make it so small it takes no motivation at all. If it is not laughably easy, it is probably too hard.": "\u0421\u0434\u0435\u043b\u0430\u0439 \u0442\u0430\u043a \u043c\u0430\u043b\u043e, \u0447\u0442\u043e\u0431\u044b \u043c\u043e\u0442\u0438\u0432\u0430\u0446\u0438\u044f \u0432\u043e\u043e\u0431\u0449\u0435 \u043d\u0435 \u0442\u0440\u0435\u0431\u043e\u0432\u0430\u043b\u0430\u0441\u044c. \u0415\u0441\u043b\u0438 \u043d\u0435 \u0441\u043c\u0435\u0448\u043d\u043e \u043b\u0435\u0433\u043a\u043e, \u0441\u043a\u043e\u0440\u0435\u0435 \u0432\u0441\u0435\u0433\u043e \u0441\u043b\u0438\u0448\u043a\u043e\u043c \u0442\u044f\u0436\u0435\u043b\u043e.",
+    "This method is called tiny habits. You keep the same ambition, and you lower the bar for what counts as done, until missing a day takes real effort.": "\u042d\u0442\u043e\u0442 \u043c\u0435\u0442\u043e\u0434 \u043d\u0430\u0437\u044b\u0432\u0430\u0435\u0442\u0441\u044f \u043c\u0438\u043a\u0440\u043e\u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0438. \u0410\u043c\u0431\u0438\u0446\u0438\u044f \u043e\u0441\u0442\u0430\u0451\u0442\u0441\u044f \u0442\u043e\u0439 \u0436\u0435, \u0430 \u043f\u043b\u0430\u043d\u043a\u0430 \u0442\u043e\u0433\u043e, \u0447\u0442\u043e \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044f \u0441\u0434\u0435\u043b\u0430\u043d\u043d\u044b\u043c, \u043e\u043f\u0443\u0441\u043a\u0430\u0435\u0442\u0441\u044f \u0442\u0430\u043a \u043d\u0438\u0437\u043a\u043e, \u0447\u0442\u043e \u043f\u0440\u043e\u043f\u0443\u0441\u0442\u0438\u0442\u044c \u0434\u0435\u043d\u044c \u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0441\u044f \u0442\u0440\u0443\u0434\u043d\u0435\u0435.",
+    "So every habit here gets a floor: the smallest version that still counts. Your breath habit is one minute. Its floor could be a single breath.": "\u041f\u043e\u044d\u0442\u043e\u043c\u0443 \u0443 \u043a\u0430\u0436\u0434\u043e\u0439 \u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0438 \u0437\u0434\u0435\u0441\u044c \u0435\u0441\u0442\u044c \u043c\u0438\u043d\u0438\u043c\u0443\u043c: \u0441\u0430\u043c\u0430\u044f \u043c\u0430\u043b\u0435\u043d\u044c\u043a\u0430\u044f \u0432\u0435\u0440\u0441\u0438\u044f, \u043a\u043e\u0442\u043e\u0440\u0430\u044f \u0432\u0441\u0451 \u0435\u0449\u0451 \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044f. \u0422\u0432\u043e\u044f \u0434\u044b\u0445\u0430\u0442\u0435\u043b\u044c\u043d\u0430\u044f \u043f\u0440\u0438\u0432\u044b\u0447\u043a\u0430 \u2014 \u043e\u0434\u043d\u0430 \u043c\u0438\u043d\u0443\u0442\u0430. \u0415\u0451 \u043c\u0438\u043d\u0438\u043c\u0443\u043c\u043e\u043c \u043c\u043e\u0436\u0435\u0442 \u0431\u044b\u0442\u044c \u043e\u0434\u0438\u043d \u0432\u0434\u043e\u0445.",
+    "Set one breath as the floor": "\u0421\u0434\u0435\u043b\u0430\u0442\u044c \u043c\u0438\u043d\u0438\u043c\u0443\u043c\u043e\u043c \u043e\u0434\u0438\u043d \u0432\u0434\u043e\u0445",
+    "Keep the full minute": "\u041e\u0441\u0442\u0430\u0432\u0438\u0442\u044c \u043f\u043e\u043b\u043d\u0443\u044e \u043c\u0438\u043d\u0443\u0442\u0443",
+    "One breath it is. On the worst day, that still counts.": "\u0417\u043d\u0430\u0447\u0438\u0442, \u043e\u0434\u0438\u043d \u0432\u0434\u043e\u0445. \u0412 \u0441\u0430\u043c\u044b\u0439 \u0445\u0443\u0434\u043e\u0439 \u0434\u0435\u043d\u044c \u044d\u0442\u043e \u0432\u0441\u0451 \u0440\u0430\u0432\u043d\u043e \u0441\u0447\u0438\u0442\u0430\u0435\u0442\u0441\u044f.",
+    "The full minute stays. You can lower it any time.": "\u041f\u043e\u043b\u043d\u0430\u044f \u043c\u0438\u043d\u0443\u0442\u0430 \u043e\u0441\u0442\u0430\u0451\u0442\u0441\u044f. \u041e\u043f\u0443\u0441\u0442\u0438\u0442\u044c \u043c\u043e\u0436\u043d\u043e \u0432 \u043b\u044e\u0431\u043e\u0439 \u043c\u043e\u043c\u0435\u043d\u0442.",
+    "A habit is built by the number of days you showed up. How big each day was barely matters.": "\u041f\u0440\u0438\u0432\u044b\u0447\u043a\u0430 \u0441\u0442\u0440\u043e\u0438\u0442\u0441\u044f \u0447\u0438\u0441\u043b\u043e\u043c \u0434\u043d\u0435\u0439, \u043a\u043e\u0433\u0434\u0430 \u0442\u044b \u043f\u0440\u0438\u0448\u0451\u043b. \u041d\u0430\u0441\u043a\u043e\u043b\u044c\u043a\u043e \u0431\u043e\u043b\u044c\u0448\u0438\u043c \u0431\u044b\u043b \u043a\u0430\u0436\u0434\u044b\u0439 \u0434\u0435\u043d\u044c \u2014 \u043f\u043e\u0447\u0442\u0438 \u043d\u0435 \u0432\u0430\u0436\u043d\u043e."
+  });
   // ---- OFF-SCREEN ROWS GO QUIET (David 2026-08-26). ONE observer for the whole line, stored like _jcEls so a rebuild can
   // never leak a second one. Root is #tfWorld with the frame's own 120px margin (recipes/j1-script.js wireAnim), and it
   // toggles ONLY the row-level .jl-anim-off class — the CSS behind it pauses .jl-fx descendants and cannot reach the
@@ -15164,6 +15229,7 @@
     return [{ P: P0, cyc: cycles || P0.cyc || 4 }];
   }
   function breathGlyph(st) { return (st && st.P && st.P.ti) || "ti-wind"; } // v1353 added the story-bar call without this helper — every picker-launched breathwork() threw before its first frame
+  function storyUpcoming(c) { return mixHex(c, THC("#160510","bg"), 0.62); } // the UNSPENT part of a story bar: the same dark-tinted track the composed player draws (gp-story). v1353 called this and never wrote it — same crash as breathGlyph above
   // THE PLAYER'S BREATH RUNS — every contiguous stretch of breath-tagged segments becomes ONE clock, built from the segments' REAL laid-out spans (so the dose re-fit and the act-boundary beat are already inside the numbers, not guessed from the pattern). Shared by timelinePlayer's relayoutFrom AND by DEV.breathAgree, so the probe measures the shipping code rather than a copy of it.
   function breathRunsFromSegs(segs) {
     var runs = [], i = 0;
@@ -15582,6 +15648,16 @@
     var sb = document.createElement("div"); sb.style.cssText = "text-align:center;font-size:13px;font-weight:600;color:var(--c-b79ee0-ink);margin-bottom:12px;max-width:320px;"; sb.textContent = tr("each is a real protocol, matched to what you need right now");
     ov.appendChild(h); ov.appendChild(sb);
     var bcCtl = null; function stopPreview() { if (bcCtl) { try { bcCtl.stop(); } catch (e) {} } } // kill any sound preview when a session starts or the picker closes
+    // THE FLOOR chip (2026-09-21, Deep Dive 1 "Why one minute"): it exists ONLY once the user has set one breath as the
+    // floor in that dive's beat 8 — the setting is not a stored preference nobody can reach, it is a real entry in the
+    // breath tool's own list, and it runs one cycle of the calming breath through the same breathwork() every other chip
+    // takes. No floor set (or the full minute kept) → no chip, because there is nothing to offer.
+    if (((S.profile || {}).breathFloor) === "one") { var fb = document.createElement("button");
+      fb.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid var(--c-0e0618-ink);border-radius:16px;background:linear-gradient(180deg,var(--c-3a2a5e-bg),var(--c-2a1c46-bg));box-shadow:0 4px 0 var(--c-0e0618-bg);padding:13px 16px;color:var(--c-f2ecff-bg);cursor:pointer;";
+      fb.innerHTML = '<div style="display:flex;align-items:baseline;gap:8px;"><span style="font-size:16px;font-weight:800;">' + esc(tr("one breath")) + '</span><span style="font-size:11px;font-weight:700;color:var(--c-c9b6f0-ink);">' + esc(tr("Your floor")) + '</span></div><div style="font-size:12px;font-weight:500;color:var(--c-c7b6e6-ink);line-height:1.4;margin-top:5px;">' + esc(tr("the smallest version that still counts")) + '</div>';
+      fb.onclick = function () { stopPreview(); if (ov.parentNode) ov.parentNode.removeChild(ov); breathwork(1, onDone, "resonance"); };
+      ov.appendChild(fb);
+    }
     // THE LADDER chip (BUILD 2026-07-19): the beginner on-ramp, first + gold-accented so a first-timer starts here — runs the easy→hard guided ladder as one continuous session.
     (function () { var b = document.createElement("button");
       b.style.cssText = "width:100%;max-width:360px;text-align:left;border:2px solid var(--c-0e0618-ink);border-radius:16px;background:linear-gradient(180deg,var(--c-4a3a1e-bg),var(--c-3a2c16-bg));box-shadow:0 4px 0 var(--c-0e0618-bg);padding:13px 16px;color:var(--c-fff6e6-bg);cursor:pointer;";
@@ -15670,11 +15746,13 @@
     var barCol = BREATH_HUE; // Round 25: a breathing session wears the frame's teal (DOM.restore.c), not the old generic violet
     var bars = []; for (var bi = 0; bi < phases.length; bi++) { var bk = LADDER ? phases[bi].si : phases[bi].c; var _lb = bars[bars.length - 1]; if (!_lb || _lb.k !== bk) bars.push({ k: bk, s: cum[bi], e: cum[bi] + phases[bi].ms, ti: breathGlyph(stages[phases[bi].si || 0]) }); else _lb.e = cum[bi] + phases[bi].ms; }
     var barFills = [], barTracks = [], barIcons = [];
-    var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:" + STORY_TOP + "px;left:" + STORY_SIDE + "px;right:" + STORY_SIDE + "px;display:flex;gap:" + STORY_GAP + "px;z-index:6;pointer-events:none;"; // ARTBOARD px, no safe-area added on top: the 402x874 frame draws its own status-bar space (DESIGN-PORT-CHECKLIST law 1)
+    // THE BAR GEOMETRY — taken verbatim from the app's own working sibling, the composed player's `gp-story` bars (and the `.gp-bars` chrome offsets in index.html), so the two players' story bars are the same object. v1353 wrote these names and never defined them, which threw a ReferenceError on every breathwork() call; there is no design frame for this surface, so the sibling IS the registry.
+    var STORY_TOP = "calc(env(safe-area-inset-top,0px) + 12px)", STORY_SIDE = 14, STORY_GAP = 9, STORY_COLGAP = 9, STORY_BAR_H = 9, STORY_BAR_R = 5, STORY_ICON = 22, CHROME_TOP = "calc(env(safe-area-inset-top,0px) + 58px)";
+    var barWrap = document.createElement("div"); barWrap.style.cssText = "position:fixed;top:" + STORY_TOP + ";left:" + STORY_SIDE + "px;right:" + STORY_SIDE + "px;display:flex;gap:" + STORY_GAP + "px;z-index:6;pointer-events:none;";
     bars.forEach(function (b) { var colx = document.createElement("div"); colx.style.cssText = "flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:" + STORY_COLGAP + "px;"; var bar = document.createElement("div"); bar.style.cssText = "width:100%;height:" + STORY_BAR_H + "px;border-radius:" + STORY_BAR_R + "px;background:" + storyUpcoming(barCol) + ";overflow:hidden;"; var fl = document.createElement("div"); fl.style.cssText = "height:100%;width:0%;border-radius:" + STORY_BAR_R + "px;background:" + barCol + ";transition:width .18s linear;"; bar.appendChild(fl); colx.appendChild(bar); var ic = document.createElement("i"); ic.className = "ti " + b.ti; ic.style.cssText = "font-size:" + STORY_ICON + "px;line-height:1;color:" + barCol + ";opacity:.34;"; colx.appendChild(ic); barWrap.appendChild(colx); barFills.push(fl); barTracks.push(bar); barIcons.push(ic); });
     ov.appendChild(barWrap);
     // drop the ✕ / voice-toggle below the new bars, and add the settings cog beside the voice toggle
-    var _topOff = CHROME_TOP + "px";
+    var _topOff = CHROME_TOP;
     var _xb = ov.querySelector(".bw-x"); if (_xb) _xb.style.top = _topOff;
     var _vb = ov.querySelector(".bw-voice"); if (_vb) _vb.style.top = _topOff;
     // THE THIRD DOOR, CLOSED (David 2026-08-20, "no separate settings screen"). This cog used to open its OWN popover —
