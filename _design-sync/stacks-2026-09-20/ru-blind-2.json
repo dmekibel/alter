@@ -1,0 +1,18 @@
+[
+{"i": 0, "back_en": "Stay there for a bit.", "flags": []},
+{"i": 1, "back_en": "Now we'll remind the brain and body what gratitude feels like.", "flags": [{"flag": "REGISTER", "reason": "switches to \"we\" mid-ты address, lecture-like"}]},
+{"i": 2, "back_en": "Recall something small that happened recently that you're grateful for, like a friend's smile or sun on your skin.", "flags": []},
+{"i": 3, "back_en": "Now close your eyes. Go back to that moment as if you're there again, and feel gratitude right now.", "flags": []},
+{"i": 4, "back_en": "Now think of something you almost never notice, like your eyesight, or hot water coming from the tap.", "flags": []},
+{"i": 5, "back_en": "Close your eyes. Slow down for a second and try to really feel gratitude for this.", "flags": [{"flag": "CALQUE", "reason": "\"попробуй правда почувствовать\" reads as translated \"try to really feel\""}]},
+{"i": 6, "back_en": "Each time you do this exercise, try to find something new rather than repeat the same thing. That's what turns on the logical part of the brain.", "flags": []},
+{"i": 7, "back_en": "Now think of who you're grateful to.", "flags": []},
+{"i": 8, "back_en": "Close your eyes. Picture that person's face, hear their voice, and try to really feel gratitude in your chest as you breathe.", "flags": [{"flag": "CALQUE", "reason": "same \"попробуй правда почувствовать\" pattern repeats"}]},
+{"i": 9, "back_en": "Now think about what we all take most for granted. Breathing. You're breathing. You're alive.", "flags": []},
+{"i": 10, "back_en": "Close your eyes. Feel the breath moving inside, and be glad you're alive on this beautiful planet.", "flags": []},
+{"i": 11, "back_en": "This exercise was to remind the body what gratitude feels like. Now try to feel that same gratitude, but without a logical reason.", "flags": []},
+{"i": 12, "back_en": "If you want, put your hands on your heart.", "flags": []},
+{"i": 13, "back_en": "If you don't feel anything, that's fine. You can't force it. It's a skill, and it grows every time.", "flags": []},
+{"i": 14, "back_en": "Next time a dark thought creeps in, do this right on the spot.", "flags": []},
+{"i": 15, "back_en": "Open your eyes when you're ready.", "flags": []}
+]

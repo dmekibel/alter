@@ -20304,7 +20304,7 @@
       "Put your hands on your heart if you like.",
       "If you don't feel anything, that's okay. You can't force it. This is a skill, and it builds every time you practice.",
       "Next time a dark thought starts, run this on the spot.",
-      "Open your eyes when you're ready."
+      "Now gently open your eyes."
     ],
     pairs: [[1, 2], [3, 4], [6, 7], [8, 9]], // [ask, feel] — pair D (the breath/alive one) is the biggest and ALWAYS runs last
     hints: [0, 2, 3, -1],                    // which GRAT_UI.hints line sits under each ask (-1 = none: the alive ask carries itself)
@@ -25665,6 +25665,50 @@
     "Put a hand on your chest. Say silently, this is hard, and I'm not the only one it's hard for.": "Положи ладонь на грудь. Скажи про себя: это тяжело, и не мне одной тяжело.",
     "Say silently, may I be kind to myself. May I try again.": "Скажи про себя: пусть я буду добра к себе. Пусть я попробую снова.",
     "You noticed. That's the skill this whole thing is built on, and you just used it.": "Ты заметила. На этом навыке держится всё остальное, и ты им только что воспользовалась.",
+  });
+  Object.assign(I18N.ru, { // THE GRATITUDE v12 + David's 2026-09-21 RU verdicts. LAST assign wins.
+    "Rest there.": "Побудь там.",
+    "Now we're going to remind your brain and body how to feel gratitude.": "Сейчас мы напомним твоему мозгу и телу, как чувствуется благодарность.",
+    "Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.": "Вспомни какое-то маленькое событие из последних дней, за которое ты благодарен. Например улыбку друга или солнце на коже.",
+    "Now close your eyes. Go back into that moment like you're there again, and feel grateful for it now.": "Теперь закрой глаза. Вернись в тот момент, будто ты снова там, и почувствуй благодарность прямо сейчас.",
+    "Now consider something you rarely pause to appreciate, like your eyesight or having access to hot water.": "Теперь подумай о чём-то, что ты принимаешь как должное. Например о зрении или о горячей воде из крана.",
+    "Close your eyes. Slow down for a second, and try to actually feel the gratitude towards that thing.": "Закрой глаза. Притормози на секунду и постарайся по-настоящему почувствовать благодарность за это.",
+    "Every time you do this exercise, try to come up with something new, instead of repeating the same thing each time. That's what gets the logical side of your brain involved.": "Каждый раз, когда делаешь это упражнение, старайся находить что-то новое, а не повторять одно и то же. Именно это включает логическую часть мозга.",
+    "Now think of someone who you are grateful for.": "Теперь подумай о человеке, которому ты благодарен.",
+    "Close your eyes. See their face, hear their voice, and try to actually feel that gratitude sensation in your chest as you breathe.": "Закрой глаза. Представь лицо этого человека, услышь его голос. И с каждым вдохом почувствуй благодарность в сердце.",
+    "Now think of the one thing we all take for granted most of all. Our breath. You are breathing. You are alive.": "Теперь подумай о самом главном, что мы замечаем реже всего. О дыхании. Ты сейчас дышишь. Ты жив.",
+    "Close your eyes. Feel the breath moving in you, and take a moment to appreciate that you are alive on this beautiful planet.": "Закрой глаза. Почувствуй, как дыхание движется внутри, и порадуйся тому, что ты жив на этой прекрасной планете.",
+    "We did that exercise to remind your body what gratitude feels like. Now try to feel that same gratitude but without a logical reason behind it.": "Это упражнение было нужно, чтобы напомнить телу, как чувствуется благодарность. Теперь попробуй почувствовать ту же благодарность, но без логической причины.",
+    "Put your hands on your heart if you like.": "Если хочешь, положи ладони на сердце.",
+    "If you don't feel anything, that's okay. You can't force it. This is a skill, and it builds every time you practice.": "Если ничего не чувствуешь, ничего страшного. Заставить себя нельзя. Это навык, и он растёт с каждым разом.",
+    "Next time a dark thought starts, run this on the spot.": "В следующий раз, когда полезет негатив, сделай эту практику прямо на месте.",
+    "Now gently open your eyes.": "Теперь медленно открой глаза.",
+    "Try to sit still if you can.": "Постарайся не двигаться, если получится.",
+    "Let everything be as it is.": "Пусть всё будет как есть.",
+    "Feel the weight of your hands, and then your arms, resting where they are.": "Почувствуй вес кистей, а потом и всех рук, как они лежат сейчас.",
+    "Come down into your feet and inhabit them. Make deep contact with your feet.": "Опустись в стопы и побудь в них. Почувствуй глубокий контакт со стопами.",
+    "Now move up into your legs and inhabit them. Feel the space inside your legs.": "Теперь поднимись в ноги и побудь в них. Почувствуй пространство внутри ног.",
+    "Now move up into your belly and inhabit it. Feel like you are the internal space of your belly.": "Теперь поднимись в живот и побудь в нём. Почувствуй, что ты и есть внутреннее пространство живота.",
+    "Now inhabit your arms and your hands, all the way to the fingertips.": "Теперь побудь в руках и кистях, до самых кончиков пальцев.",
+    "Now inhabit your whole body at once. Feel that this is your body.": "Теперь побудь во всём теле сразу. Почувствуй: это твоё тело.",
+    "Feel the whole breath, from the first moment of the inhale, through the pause in between, to the last moment of the exhale.": "Почувствуй вдох и выдох целиком. От первого мгновения вдоха, через паузу, до последнего мгновения выдоха.",
+    "Now come back to your body. Feel yourself sitting here in the room.": "Теперь вернись в тело. Почувствуй себя здесь, в комнате.",
+    "I will do whatever it takes to become a greater person.": "Я сделаю всё, что потребуется, чтобы стать лучшей версией себя.",
+    "While you breathe, we'll bring up gratitude. Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.": "Пока дышишь, вызовем чувство благодарности. Вспомни какое-то маленькое событие из последних дней, за которое ты благодарен. Например улыбку друга или солнце на коже.",
+    "Now think of someone you are grateful for.": "Теперь подумай о человеке, которому ты благодарен.",
+    "The danger is over.": "Каждый долгий выдох говорит телу: опасность позади.",
+    "Now feel. Find one thing your body is touching, the chair, the floor, your own hands, and just notice it.": "Теперь почувствуй. Найди одну вещь, которой касается тело: стул, пол, собственные руки, и просто заметь её.",
+    "Now we'll let the body rest. You don't have to fall asleep, and you don't have to stay awake.": "Теперь дадим телу отдохнуть. Засыпать не обязательно, бодрствовать тоже.",
+    "This is the longer version. You'll find more things this time.": "Это длинная версия. В этот раз поводов для благодарности найдётся больше.",
+    "You can also include bad things that aren't happening.": "Можно вспомнить и то плохое, чего с тобой не случилось.",
+  });
+  I18N.ru_f = Object.assign(I18N.ru_f || {}, { // female forms for the 2026-09-21 set
+    "Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.": "Вспомни какое-то маленькое событие из последних дней, за которое ты благодарна. Например улыбку друга или солнце на коже.",
+    "Now think of someone who you are grateful for.": "Теперь подумай о человеке, которому ты благодарна.",
+    "Now think of the one thing we all take for granted most of all. Our breath. You are breathing. You are alive.": "Теперь подумай о самом главном, что мы замечаем реже всего. О дыхании. Ты сейчас дышишь. Ты жива.",
+    "Close your eyes. Feel the breath moving in you, and take a moment to appreciate that you are alive on this beautiful planet.": "Закрой глаза. Почувствуй, как дыхание движется внутри, и порадуйся тому, что ты жива на этой прекрасной планете.",
+    "While you breathe, we'll bring up gratitude. Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.": "Пока дышишь, вызовем чувство благодарности. Вспомни какое-то маленькое событие из последних дней, за которое ты благодарна. Например улыбку друга или солнце на коже.",
+    "Now think of someone you are grateful for.": "Теперь подумай о человеке, которому ты благодарна.",
   });
   // @SEC:BOOT — init(): boot ORDER is a contract (load → world → master tick → nav wiring → renderAll → openJourney → start screen → i18n observe). Appending is safe; reordering is not.
   function init() {

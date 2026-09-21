@@ -1,0 +1,98 @@
+[
+ {
+  "en": "Rest there.",
+  "ru": "Побудь там.",
+  "ru_f": null,
+  "note": "'побудь' = the verdicted inhabit verb; keeps the body-scan cluster consistent (отдохни would sound like a break)"
+ },
+ {
+  "en": "Now we're going to remind your brain and body how to feel gratitude.",
+  "ru": "Сейчас напомним мозгу и телу, как чувствуется благодарность.",
+  "ru_f": null,
+  "note": "brain AND body kept; 'как чувствуется' avoids the em-dash construction"
+ },
+ {
+  "en": "Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.",
+  "ru": "Вспомни что-то небольшое, что случилось недавно и за что ты благодарен, например улыбку друга или солнце на коже.",
+  "ru_f": "Вспомни что-то небольшое, что случилось недавно и за что ты благодарна, например улыбку друга или солнце на коже.",
+  "note": "verbatim from the verdicted Heart Coherence line in ru-final.json"
+ },
+ {
+  "en": "Now close your eyes. Go back into that moment like you're there again, and feel grateful for it now.",
+  "ru": "Теперь закрой глаза. Вернись в тот момент, будто ты снова там, и почувствуй благодарность прямо сейчас.",
+  "ru_f": null,
+  "note": "Robbins step-in: 'вернись в тот момент, будто ты снова там'"
+ },
+ {
+  "en": "Now consider something you rarely pause to appreciate, like your eyesight or having access to hot water.",
+  "ru": "Теперь подумай о том, что ты почти никогда не замечаешь, например о зрении или о том, что из крана идёт горячая вода.",
+  "ru_f": null,
+  "note": "'pause to appreciate' rendered as 'почти никогда не замечаешь'; hot water made concrete and spoken"
+ },
+ {
+  "en": "Close your eyes. Slow down for a second, and try to actually feel the gratitude towards that thing.",
+  "ru": "Закрой глаза. Притормози на секунду и попробуй правда почувствовать благодарность за это.",
+  "ru_f": null,
+  "note": "'притормози' is the spoken slow-down; 'правда почувствовать' carries the 'actually'"
+ },
+ {
+  "en": "Every time you do this exercise, try to come up with something new, instead of repeating the same thing each time. That's what gets the logical side of your brain involved.",
+  "ru": "Каждый раз, когда делаешь это упражнение, старайся находить что-то новое, а не повторять одно и то же. Именно это включает логическую часть мозга.",
+  "ru_f": null,
+  "note": "'именно это включает' keeps the mechanism beat without a calque"
+ },
+ {
+  "en": "Now think of someone who you are grateful for.",
+  "ru": "Теперь подумай о том, кому ты благодарен.",
+  "ru_f": "Теперь подумай о том, кому ты благодарна.",
+  "note": "verbatim from ru-final.json"
+ },
+ {
+  "en": "Close your eyes. See their face, hear their voice, and try to actually feel that gratitude sensation in your chest as you breathe.",
+  "ru": "Закрой глаза. Представь лицо этого человека, услышь голос и попробуй правда почувствовать благодарность в груди, пока дышишь.",
+  "ru_f": null,
+  "note": "'этого человека' keeps the other person ungendered; 'благодарность в груди' matches the existing chest line"
+ },
+ {
+  "en": "Now think of the one thing we all take for granted most of all. Our breath. You are breathing. You are alive.",
+  "ru": "Теперь подумай о том, что мы все принимаем как должное больше всего. О дыхании. Ты дышишь. Ты жив.",
+  "ru_f": "Теперь подумай о том, что мы все принимаем как должное больше всего. О дыхании. Ты дышишь. Ты жива.",
+  "note": "gendered: жив/жива; short sentences kept short"
+ },
+ {
+  "en": "Close your eyes. Feel the breath moving in you, and take a moment to appreciate that you are alive on this beautiful planet.",
+  "ru": "Закрой глаза. Почувствуй, как дыхание движется внутри, и порадуйся тому, что ты жив на этой красивой планете.",
+  "ru_f": "Закрой глаза. Почувствуй, как дыхание движется внутри, и порадуйся тому, что ты жива на этой красивой планете.",
+  "note": "gendered; 'порадуйся тому' is the warm spoken form of 'take a moment to appreciate'"
+ },
+ {
+  "en": "We did that exercise to remind your body what gratitude feels like. Now try to feel that same gratitude but without a logical reason behind it.",
+  "ru": "Это упражнение было нужно, чтобы напомнить телу, как чувствуется благодарность. Теперь попробуй почувствовать ту же благодарность, но без логической причины.",
+  "ru_f": null,
+  "note": "mirrors the opening line's 'как чувствуется благодарность'"
+ },
+ {
+  "en": "Put your hands on your heart if you like.",
+  "ru": "Если хочешь, положи ладони на сердце.",
+  "ru_f": null,
+  "note": "invitation moved to the front, the way it is said aloud"
+ },
+ {
+  "en": "If you don't feel anything, that's okay. You can't force it. This is a skill, and it builds every time you practice.",
+  "ru": "Если ничего не чувствуешь, ничего страшного. Заставить себя нельзя. Это навык, и он растёт с каждым разом.",
+  "ru_f": null,
+  "note": "'это навык... с каждым разом' matches the existing skill lines in ru-final.json"
+ },
+ {
+  "en": "Next time a dark thought starts, run this on the spot.",
+  "ru": "В следующий раз, когда полезет тёмная мысль, сделай это прямо на месте.",
+  "ru_f": null,
+  "note": "'полезет' is how a dark thought is described in speech; 'run this' = 'сделай это'"
+ },
+ {
+  "en": "Open your eyes when you're ready.",
+  "ru": "Открой глаза, когда будешь готов.",
+  "ru_f": "Открой глаза, когда будешь готова.",
+  "note": "gendered: готов/готова; matches the verdicted 'Когда будешь готов, медленно открой глаза.'"
+ }
+]

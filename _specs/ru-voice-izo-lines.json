@@ -5690,12 +5690,12 @@
  {
   "i": 1315,
   "en": "While you breathe, we'll bring up gratitude. Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.",
-  "ru": "Пока дышишь, вызовем чувство благодарности. Вспомни что-то небольшое, что случилось недавно и за что ты благодарен, например улыбку друга или солнце на коже.",
-  "status": "new-2026-09-21",
-  "ru_old": "Пока дышишь, поднимем благодарность. Вспомни что-то небольшое, что случилось недавно и за что ты благодарен, например улыбку друга или солнце на коже.",
+  "ru": "Пока дышишь, вызовем чувство благодарности. Вспомни какое-то маленькое событие из последних дней, за которое ты благодарен. Например улыбку друга или солнце на коже.",
+  "status": "david-2026-09-21",
+  "ru_old": "Пока дышишь, вызовем чувство благодарности. Вспомни что-то небольшое, что случилось недавно и за что ты благодарен, например улыбку друга или солнце на коже.",
   "why": "'поднимем благодарность' was a calque",
   "gender": "USER",
-  "ru_f": "Пока дышишь, вызовем чувство благодарности. Вспомни что-то небольшое, что случилось недавно и за что ты благодарна, например улыбку друга или солнце на коже.",
+  "ru_f": "Пока дышишь, вызовем чувство благодарности. Вспомни какое-то маленькое событие из последних дней, за которое ты благодарна. Например улыбку друга или солнце на коже.",
   "delivery": "warm"
  },
  {
@@ -5734,12 +5734,12 @@
  {
   "i": 1319,
   "en": "Now think of someone you are grateful for.",
-  "ru": "Теперь подумай о том, кому ты благодарен.",
-  "status": "new-2026-09-21",
-  "ru_old": null,
+  "ru": "Теперь подумай о человеке, которому ты благодарен.",
+  "status": "david-2026-09-21",
+  "ru_old": "Теперь подумай о том, кому ты благодарен.",
   "why": null,
   "gender": "USER",
-  "ru_f": "Теперь подумай о том, кому ты благодарна.",
+  "ru_f": "Теперь подумай о человеке, которому ты благодарна.",
   "delivery": "warm"
  },
  {
@@ -6412,5 +6412,181 @@
   "gender": "NEUTRAL",
   "ru_f": null,
   "delivery": "warm"
+ },
+ {
+  "i": 1381,
+  "en": "Rest there.",
+  "ru": "Побудь там.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "calm"
+ },
+ {
+  "i": 1382,
+  "en": "Now we're going to remind your brain and body how to feel gratitude.",
+  "ru": "Сейчас мы напомним твоему мозгу и телу, как чувствуется благодарность.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "Guide \"we\" is legitimate in a guided opening and is what a Russian teacher says aloud, so «мы» stays and is made explicit; «давай напомним» would turn a lead-in into a proposal. Also restores «твоему» — the draft dropped \"your\" (back_en read \"the brain and body\").",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "warm"
+ },
+ {
+  "i": 1383,
+  "en": "Think of something small that happened recently that you're grateful for, like a friend's smile or the sun on your skin.",
+  "ru": "Вспомни какое-то маленькое событие из последних дней, за которое ты благодарен. Например улыбку друга или солнце на коже.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "David: за что ты благодарен = schoolbook; event shape, his pick 3",
+  "gender": "USER",
+  "ru_f": "Вспомни какое-то маленькое событие из последних дней, за которое ты благодарна. Например улыбку друга или солнце на коже.",
+  "delivery": "warm"
+ },
+ {
+  "i": 1384,
+  "en": "Now close your eyes. Go back into that moment like you're there again, and feel grateful for it now.",
+  "ru": "Теперь закрой глаза. Вернись в тот момент, будто ты снова там, и почувствуй благодарность прямо сейчас.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "warm"
+ },
+ {
+  "i": 1385,
+  "en": "Now consider something you rarely pause to appreciate, like your eyesight or having access to hot water.",
+  "ru": "Теперь подумай о чём-то, что ты принимаешь как должное. Например о зрении или о горячей воде из крана.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "David: принимать как должное, pick 1",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "plain"
+ },
+ {
+  "i": 1386,
+  "en": "Close your eyes. Slow down for a second, and try to actually feel the gratitude towards that thing.",
+  "ru": "Закрой глаза. Притормози на секунду и постарайся по-настоящему почувствовать благодарность за это.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "«попробуй правда почувствовать» is a calque of \"try to actually feel\"; «постарайся по-настоящему почувствовать» is the natural spoken form. Same wording applied at i8.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "warm"
+ },
+ {
+  "i": 1387,
+  "en": "Every time you do this exercise, try to come up with something new, instead of repeating the same thing each time. That's what gets the logical side of your brain involved.",
+  "ru": "Каждый раз, когда делаешь это упражнение, старайся находить что-то новое, а не повторять одно и то же. Именно это включает логическую часть мозга.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "plain"
+ },
+ {
+  "i": 1388,
+  "en": "Now think of someone who you are grateful for.",
+  "ru": "Теперь подумай о человеке, которому ты благодарен.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "David verbatim",
+  "gender": "USER",
+  "ru_f": "Теперь подумай о человеке, которому ты благодарна.",
+  "delivery": "warm"
+ },
+ {
+  "i": 1389,
+  "en": "Close your eyes. See their face, hear their voice, and try to actually feel that gratitude sensation in your chest as you breathe.",
+  "ru": "Закрой глаза. Представь лицо этого человека, услышь его голос. И с каждым вдохом почувствуй благодарность в сердце.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "David: с каждым вдохом, в сердце",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "warm"
+ },
+ {
+  "i": 1390,
+  "en": "Now think of the one thing we all take for granted most of all. Our breath. You are breathing. You are alive.",
+  "ru": "Теперь подумай о самом главном, что мы замечаем реже всего. О дыхании. Ты сейчас дышишь. Ты жив.",
+  "status": "new-2026-09-21",
+  "ru_old": "Теперь подумай о том, что мы все принимаем как должное больше всего. О дыхании. Ты дышишь. Ты жив.",
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "USER",
+  "ru_f": "Теперь подумай о самом главном, что мы замечаем реже всего. О дыхании. Ты сейчас дышишь. Ты жива.",
+  "delivery": "plain"
+ },
+ {
+  "i": 1391,
+  "en": "Close your eyes. Feel the breath moving in you, and take a moment to appreciate that you are alive on this beautiful planet.",
+  "ru": "Закрой глаза. Почувствуй, как дыхание движется внутри, и порадуйся тому, что ты жив на этой прекрасной планете.",
+  "status": "new-2026-09-21",
+  "ru_old": "Закрой глаза. Почувствуй, как дыхание движется внутри, и порадуйся тому, что ты жив на этой красивой планете.",
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "USER",
+  "ru_f": "Закрой глаза. Почувствуй, как дыхание движется внутри, и порадуйся тому, что ты жива на этой прекрасной планете.",
+  "delivery": "plain"
+ },
+ {
+  "i": 1392,
+  "en": "We did that exercise to remind your body what gratitude feels like. Now try to feel that same gratitude but without a logical reason behind it.",
+  "ru": "Это упражнение было нужно, чтобы напомнить телу, как чувствуется благодарность. Теперь попробуй почувствовать ту же благодарность, но без логической причины.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "warm"
+ },
+ {
+  "i": 1393,
+  "en": "Put your hands on your heart if you like.",
+  "ru": "Если хочешь, положи ладони на сердце.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "plain"
+ },
+ {
+  "i": 1394,
+  "en": "If you don't feel anything, that's okay. You can't force it. This is a skill, and it builds every time you practice.",
+  "ru": "Если ничего не чувствуешь, ничего страшного. Заставить себя нельзя. Это навык, и он растёт с каждым разом.",
+  "status": "new-2026-09-21",
+  "ru_old": null,
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "plain"
+ },
+ {
+  "i": 1395,
+  "en": "Next time a dark thought starts, run this on the spot.",
+  "ru": "В следующий раз, когда полезет негатив, сделай эту практику прямо на месте.",
+  "status": "new-2026-09-21",
+  "ru_old": "В следующий раз, когда полезет тёмная мысль, сделай это прямо на месте.",
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "plain"
+ },
+ {
+  "i": 1396,
+  "en": "Now gently open your eyes.",
+  "ru": "Теперь медленно открой глаза.",
+  "status": "new-2026-09-21",
+  "ru_old": "Открой глаза, когда будешь готов.",
+  "why": "Back-translation matches the English in meaning and beat; ты-register, spoken, no calque.",
+  "gender": "NEUTRAL",
+  "ru_f": null,
+  "delivery": "plain"
  }
 ]
