@@ -16600,6 +16600,7 @@
   Object.assign(I18N.ru, { "untracked · tap to tell it": "не отмечено · нажми и расскажи", "Clock": "Часы", "12-hour": "12-часовые", "24-hour": "24-часовые", "am": "ДП", "pm": "ПП" }); // this round's strings, extended in place per the B4 law (the I18N seed lives at @SEC:I18N-CORE). "Undo" is already in the dictionary. ДП/ПП = до/после полудня — RU runs on a 24h clock, so these are the honest short forms; flagged for David's RU pass. The duration prefix comes from dur(), which still says "2h"/"45m" in every language (pre-existing, app-wide).
   function calendarView(L, k, showNow, noHead) {
     L.innerHTML = ""; nowLineEl = null;
+    if (noOverlapGuard(k)) { try { save(); } catch (e0) {} } // heal any day still carrying an overlap from before the NO-OVERLAP LAW (2026-09-23), before a single card is placed
     var bls = blocks(k).slice(), lgs = logs(k).slice();
     // streak chip removed from the timeline (David 2026-07-21: cleaner, the mockup has no day-separator clutter — streak lives elsewhere)
     if (!noHead) { var lh = add(L, "div", "lanehead"); add(lh, "span", "lhx plan", "PLAN"); add(lh, "span", "lhx real", "REAL"); } // continuous day view passes noHead — one shared header lives above (David 2026-06-24)
@@ -16788,14 +16789,15 @@
           else if (wasMoved) { b.time = pad(Math.floor(dragMin / 60)) + ":" + pad(dragMin % 60);
             // ORGAN D drag choke point REMOVED (David 2026-08-15, THE CULL): a same-day forward push ≥15min used to call notePostpone(b), which counted to 3 and then threw the Motivation Dial over the timeline 300ms after the drop. Dragging a block is not a request for a card.
             // FREE DRAG INTO THE FUTURE (David device 2026-07-03): the dropped block OWNS its window — any other undone block overlapping it (pin or not) gets pushed forward past its end, cascading via reflow. Past blocks never move backward; same-title neighbours then fuse in reflow's merge pass.
-            (function () { var ds = dragMin, de = dragMin + (b.mins || 30), arr = blocks(k), g3 = 0, moved3 = true;
+            var _frozenDrop = showNow && k === todayK() && pastDiverged(k) && dragMin + (b.mins || 30) <= logicalNowMin(); // dropped INSIDE a frozen past: nothing there may be shoved, so skip the push and let the dropped block give way in reflow (NO-OVERLAP LAW, 2026-09-23)
+            if (!_frozenDrop) (function () { var ds = dragMin, de = dragMin + (b.mins || 30), arr = blocks(k), g3 = 0, moved3 = true;
               while (moved3 && g3++ < 40) { moved3 = false;
                 for (var i = 0; i < arr.length; i++) { var o = arr[i]; if (o === b || o.done || !o.title) continue; var os = hm(o.time), oe = os + (o.mins || 30);
-                  if (os < de && oe > ds && os >= ds) { o.time = pad(Math.floor((de % 1440) / 60)) + ":" + pad(de % 60); moved3 = true; de = Math.max(de, hm(o.time) + (o.mins || 30)); } // starts inside the dropped window → push forward (cascade extends the frontier)
+                  if (os < de && oe > ds && os >= ds) { o.time = pad(Math.floor(de / 60)) + ":" + pad(de % 60); moved3 = true; de = Math.max(de, hm(o.time) + (o.mins || 30)); } // starts inside the dropped window → push forward (cascade extends the frontier). No % 1440 any more (2026-09-23): a push past midnight used to wrap the block to the top of the morning
                 }
               }
             })();
-            reflow(k); save(); renderToday(); }
+            reflow(k, { b: b, mode: "move" }); save(); renderToday(); }
           else if (!wasScroll && e && Math.abs(e.clientX - sx0) < 12 && Math.abs(e.clientY - sy0) < 12) { if (_fillable && (Date.now() - _downAt) < BLK_HOLD_EDIT_MS) fillLived(); else editBlk(b); } } // bin → delete · fling → convert · moved → reorder · only a near-STATIONARY press acts, and on a past undone plan a SHORT one fills it while a HELD one still edits (a swipe across the bubble pages the day instead) — David 2026-06-26 / 2026-08-16
         function cancel() { clean(); }
         document.addEventListener("pointermove", mv2, { passive: false }); document.addEventListener("pointerup", up2); document.addEventListener("pointercancel", cancel);
@@ -16804,14 +16806,15 @@
         card.classList.add("dragging"); pushUndo();
         var sy = startY, sm = b.mins || 30, ct = card.querySelector(".ct");
         function mv(e) { var v = Math.max(5, Math.min(720, Math.round((sm + (e.clientY - sy) / HP * 60) / 5) * 5)); b.mins = v; card.style.height = Math.max(18, v / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(hm(b.time)) + "-" + fmt(hm(b.time) + v); preview(card, hm(b.time), hm(b.time) + v); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); reflow(k); save(); renderToday(); } // past or future, growing a block reorders the neighbours (David 2026-06-25)
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); reflow(k, { b: b, mode: "end" }); save(); renderToday(); } // past or future, growing a block reorders the neighbours (David 2026-06-25); into a held block (live, pinned, frozen past) the stretch stops at its edge (2026-09-23)
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       }, function () { editBlk(b); }); });
       gripT.addEventListener("pointerdown", function (ev) { gripHold(ev, card, function (startY) {
         card.classList.add("dragging"); pushUndo();
         var sy = startY, sm = b.mins || 30, sStart = hm(b.time), endM = sStart + sm, ct = card.querySelector(".ct");
-        function mv(e) { var ns = Math.max(0, Math.min(endM - 5, sStart + Math.round(((e.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; b.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); b.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(18, nm / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(ns) + "-" + fmt(endM); preview(card, ns, endM); }
-        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); reflow(k); save(); renderToday(); }
+        var _minS = (showNow && k === todayK() && sStart >= logicalNowMin()) ? logicalNowMin() : 0; // a FUTURE block's top can't be pulled across the now-line into the past (regression contract #2; the top grip used to allow it, 2026-09-23)
+        function mv(e) { var ns = Math.max(_minS, Math.min(endM - 5, sStart + Math.round(((e.clientY - sy) / HP * 60) / 5) * 5)); var nm = endM - ns; b.time = pad(Math.floor(ns / 60)) + ":" + pad(ns % 60); b.mins = nm; card.style.top = topFor(ns) + "px"; card.style.height = Math.max(18, nm / 60 * HP - 4) + "px"; if (ct) ct.textContent = fmt(ns) + "-" + fmt(endM); preview(card, ns, endM); }
+        function up() { document.removeEventListener("pointermove", mv); document.removeEventListener("pointerup", up); card.classList.remove("dragging"); reflow(k, { b: b, mode: "start" }); save(); renderToday(); }
         document.addEventListener("pointermove", mv); document.addEventListener("pointerup", up);
       }, function () { editBlk(b); }); });
     });
@@ -17628,7 +17631,7 @@
   function blockPast(k, b) { return k < todayK() || (k === todayK() && hm(b.time) + (b.mins || 30) <= logicalNowMin()); } // a finished/past block: feels set-in-stone (longer hold to move) but still REORDERS on overlap (David 2026-06-25)
   function reflowLogs(k) { // REAL lane: editing a log so it overlaps the next one pushes the neighbours forward instead of stacking on top (David 2026-06-25)
     var L = logs(k).slice().sort(function (a, b) { return hm(a.time) - hm(b.time); }); var cur = -1, changed = false;
-    L.forEach(function (e) { var dur = e.mins || 15, s = cur < 0 ? hm(e.time) : Math.max(hm(e.time), cur); s = Math.min(1410, s); var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60); if (nt !== e.time) { e.time = nt; changed = true; } cur = s + dur; });
+    L.forEach(function (e) { var dur = e.mins || 15, s = cur < 0 ? hm(e.time) : Math.max(hm(e.time), cur); var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60); if (nt !== e.time) { e.time = nt; changed = true; } cur = s + dur; }); // no 23:30 cap (2026-09-23): the day runs to 4am and after-midnight times live as "24:xx+", so the old Math.min(1410, s) dragged every late log back onto 23:30 and stacked them
     if (changed) save(); return changed;
   }
   // PAST has DIVERGED from plan when, for TODAY, the plan and the real (tracked) lanes disagree in the past region: a missed plan, a partial match, or a drift log. When diverged the two are "disjoint timelines" — too messy to auto-reorder safely — so the past stays frozen (set-in-stone, the original contract). When the past is CLEAN (everything matched / on-plan), past blocks may reorder like the future. (David 2026-06-27: "reorder in the past just like the future UNLESS the plan mismatches — then pause.")
@@ -17641,7 +17644,7 @@
   }
   // module-scope bounding span of same-domain real coverage over a plan block (the in-render matchedSpan is closure-scoped; this mirrors it for pastDiverged) — David 2026-06-27
   function matchedSpanFor(k, b, dom) { var lgs = logs(k), s = null, e = null, bs = hm(b.time), be = bs + (b.mins || 30); for (var i = 0; i < lgs.length; i++) { var ls = hm(lgs[i].time), le = ls + (lgs[i].mins || 0); if (ls < be && le > bs && domainOf(lgs[i]) === dom) { var cs = Math.max(bs, ls), ce = Math.min(be, le); if (s === null || cs < s) s = cs; if (e === null || ce > e) e = ce; } } return s === null ? null : { start: s, end: e, cov: e - s }; }
-  function reflow(k) {
+  function reflow(k, mv) { // mv (optional) = { b, mode: "move" | "end" | "start" }: the block the user just dropped or stretched, so it can GIVE WAY where nothing else may move (the NO-OVERLAP LAW, David 2026-09-23)
     // SAME ACTIVITY = ONE BLOCK, everywhere (David device 2026-07-03: "timeline doesn't combine … even if it's the same activity"): two undone blocks of the same title that touch/overlap (≤1min gap) fuse into one — heals old truncate+twin splits and makes drag-past-onto-future-twin merge naturally.
     (function () { var arr = blocks(k), changed2 = true, guard2 = 0;
       while (changed2 && guard2++ < 20) { changed2 = false;
@@ -17653,25 +17656,69 @@
         }
       }
     })();
+    if (mv && blocks(k).indexOf(mv.b) < 0) mv = null; // the merge pass above may have fused the moved block into its twin
     var all = blocks(k).slice();
-    var pins = all.filter(function (b) { return b.pin; }).map(function (b) { return { s: hm(b.time), e: hm(b.time) + (b.mins || 30) }; }).sort(function (a, b) { return a.s - b.s; });
-    var flex = all.filter(function (b) { return !b.pin; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
     var changed = false, cur = -1;
     var _now = logicalNowMin(), _today = (k === todayK()), _pastFrozen = _today && pastDiverged(k); // when the past↔plan diverged, freeze the past (original set-in-stone behavior); when clean, the past reorders like the future (David 2026-06-27)
+    function _liveB(b) { var s = hm(b.time); return _today && s <= _now && s + (b.mins || 30) > _now; }
+    function _pastB(b) { return _today && hm(b.time) + (b.mins || 30) <= _now; }
+    function _heldB(b) { return b.pin || _liveB(b) || (_pastFrozen && _pastB(b)); } // may not be moved by anyone else: pinned, the LIVE straddling block (regression contract), a frozen past (David 2026-06-25)
+    // THE MOVED BLOCK GIVES WAY (2026-09-23). Inside a frozen past nothing may be shoved to make room (David 2026-06-27: "reorder in the past just like the future UNLESS the plan mismatches, then pause"), and a stretch may never run INTO a held block; so the block the user just dropped or stretched takes the nearest free room, or stops at the held block's edge. Before this, it simply stayed where it landed, on top of its neighbour: the "clamp together, hidden behind each other" bug.
+    if (mv) { var _against = (_pastFrozen && _pastB(mv.b)) ? all.filter(function (o) { return o !== mv.b; }) : all.filter(function (o) { return o !== mv.b && _heldB(o); }); // frozen past: give way to everything · anywhere else: give way only to what may not move (dropping ONTO the live block used to shove the live block itself)
+      if (_against.length && yieldMoved(mv, _against, _now)) changed = true; }
+    var held = all.filter(function (b) { return _heldB(b) && !(mv && b === mv.b && (mv.mode === "move" || (!b.pin && !_liveB(b)))); }); // the block just dragged never holds (the live block can't be dragged, so a dragged block straddling now only LANDED there); a live or pinned block being stretched stays held
+    var obst = held.map(function (b) { return { s: hm(b.time), e: hm(b.time) + (b.mins || 30) }; }).sort(function (a, b) { return a.s - b.s; });
+    var flex = all.filter(function (b) { return held.indexOf(b) < 0; }).sort(function (a, b) { return hm(a.time) - hm(b.time); });
     flex.forEach(function (b) {
       var dur = b.mins || 30;
-      var _bs = hm(b.time), _be = _bs + dur, _straddlesNow = _today && _bs <= _now && _be > _now, _isPast = _today && _be <= _now;
-      if (_today && _straddlesNow) { cur = Math.max(cur, _be); return; } // the LIVE straddling block never moves — set-in-stone (regression contract)
-      if (_isPast && _pastFrozen) { cur = Math.max(cur, _be); return; } // diverged past → frozen exactly as before (David 2026-06-25 contract)
+      var _bs = hm(b.time), _isPast = _pastB(b);
       var s = cur < 0 ? _bs : Math.max(_bs, cur), moved = true, guard = 0;
-      while (moved && guard++ < 60) { moved = false; for (var i = 0; i < pins.length; i++) { if (s < pins[i].e && s + dur > pins[i].s) { s = pins[i].e; moved = true; } } }
-      if (_isPast) s = Math.min(s, Math.max(_bs, _now - dur)); // a reordering PAST block can shift to close a gap/overlap but NEVER crosses the now-line into the future (regression contract #2) — David 2026-06-27
-      s = Math.min(1410, s);
-      var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60);
+      while (moved && guard++ < 60) { moved = false; for (var i = 0; i < obst.length; i++) { if (s < obst[i].e && s + dur > obst[i].s) { s = obst[i].e; moved = true; } } } // flow AROUND every held block. Before 2026-09-23 only pins were avoided, so a movable block could settle on the live block or on a frozen one and both drew in the same place.
+      if (_isPast) { var _cap = Math.max(_bs, _now - dur); if (_cap < s && _cap >= cur && !obst.some(function (o) { return _cap < o.e && _cap + dur > o.s; })) s = _cap; } // a reordering PAST block still never crosses the now-line into the future (regression contract #2, David 2026-06-27), but only where that spot is actually free: the old unconditional cap parked it ON its neighbour
+      var nt = pad(Math.floor(s / 60)) + ":" + pad(s % 60); // no 23:30 cap any more (2026-09-23): the day runs to 4am, after-midnight starts live as "24:xx+", and Math.min(1410, s) used to stack every late block on 23:30
       if (nt !== b.time) { b.time = nt; changed = true; }
       cur = s + dur;
     });
+    if (noOverlapGuard(k, mv ? mv.b : null)) changed = true; // the last line of the law: whatever path got here, no two plan blocks overlap when reflow returns
     if (changed) save();
+    return changed;
+  }
+  // The block the user just dropped or stretched gives way to `against` (see reflow). "end": the stretch stops at the next held block's top. "start": it stops at the previous one's bottom. "move": the nearest free room; dropped in the future, forward only (contract #2); dropped in the past, the past first, else the nearest anywhere (a past plan moved forward = replanning it, G3). Returns true when it changed anything.
+  function yieldMoved(mv, against, now) {
+    var b = mv.b, s0 = hm(b.time), d = b.mins || 30, e0 = s0 + d;
+    var ivs = against.map(function (o) { return { s: hm(o.time), e: hm(o.time) + (o.mins || 30) }; }).sort(function (a, c) { return a.s - c.s; });
+    if (!ivs.some(function (o) { return s0 < o.e && e0 > o.s; })) return false; // already clear: nothing to give
+    if (mv.mode === "end") { var nx = 1e9; ivs.forEach(function (o) { if (o.s >= s0 && o.s < nx) nx = o.s; }); if (nx - s0 >= 5 && nx < e0) { b.mins = nx - s0; return true; } return false; }
+    if (mv.mode === "start") { var pv = -1; ivs.forEach(function (o) { if (o.e <= e0 && o.e > pv) pv = o.e; }); if (pv > s0 && e0 - pv >= 5) { b.time = pad(Math.floor(pv / 60)) + ":" + pad(pv % 60); b.mins = e0 - pv; return true; } return false; }
+    var lo = dayWindow().startH * 60, s = null;
+    if (s0 >= now) { s = yieldSlot(s0, d, ivs, Math.max(lo, now), 1740); if (s == null) s = yieldSlot(s0, d, ivs, Math.max(lo, now), 2880); } // dropped in the future: it gives way forward only, never into the past (regression contract #2); past 28:00 only when the day is full
+    else { s = yieldSlot(s0, d, ivs, lo, now); if (s == null) s = yieldSlot(s0, d, ivs, lo, 1740); if (s == null) s = yieldSlot(s0, d, ivs, lo, 2880); }
+    if (s == null || s === s0) return false;
+    b.time = pad(Math.floor(s / 60)) + ":" + pad(s % 60); return true;
+  }
+  function yieldSlot(s0, d, ivs, lo, hi) { // the start nearest s0 inside [lo, hi - d] whose [s, s + d) touches none of ivs (sorted by start); null when no gap is long enough
+    var gaps = [], c = lo; ivs.forEach(function (o) { if (o.s > c) gaps.push([c, o.s]); c = Math.max(c, o.e); }); if (hi > c) gaps.push([c, hi]);
+    var best = null, bd = 1e9;
+    gaps.forEach(function (g) { if (g[1] - g[0] < d) return; var s = Math.max(g[0], Math.min(g[1] - d, s0)), dd = Math.abs(s - s0); if (dd < bd) { bd = dd; best = s; } });
+    return best;
+  }
+  // THE NO-OVERLAP LAW (David 2026-09-23: "planner bubbles NEVER overlap or hide behind each other ... avoid that at all costs"). The last line, run at the end of every reflow AND at every day render (so old saved days heal too): while any two plan blocks on day k overlap, the later one gives way, forward to the other's end, else back so it ends at the other's start, else forward anyway (the law outranks the zone). The live block and pinned blocks hold; a future block never lands in the past (contract #2); a past block crosses into the future only when nothing else fits. Returns true when it changed anything.
+  function noOverlapGuard(k, yielder) { // yielder (optional) = the block the user just touched: when it collides with another held block, IT gives way
+    var arr = blocks(k); if (arr.length < 2) return false;
+    var today = k === todayK(), now = logicalNowMin(), changed = false;
+    function S(b) { return hm(b.time); } function E(b) { return hm(b.time) + (b.mins || 30); }
+    var held = arr.filter(function (b) { return !!b.pin || (today && S(b) <= now && E(b) > now); }); // who holds is decided ONCE, on entry: a block the guard itself pushes across now must not turn "live" and start shoving the real live block
+    function holds(b) { return held.indexOf(b) >= 0; }
+    function clear(m, d, self) { for (var i = 0; i < arr.length; i++) { var o = arr[i]; if (o !== self && m < E(o) && m + d > S(o)) return false; } return true; }
+    for (var pass = 0; pass < arr.length * arr.length * 2 + 20; pass++) { // a long forced chain can need ~n² single moves; a clean day exits on the first pass
+      var srt = arr.slice().sort(function (a, c) { return S(a) - S(c) || ((holds(c) ? 1 : 0) - (holds(a) ? 1 : 0)); }), P = null, X = null;
+      for (var i = 1; i < srt.length && !X; i++) for (var j = 0; j < i; j++) if (S(srt[i]) < E(srt[j]) && E(srt[i]) > S(srt[j])) { P = srt[j]; X = srt[i]; break; }
+      if (!X) return changed;
+      if ((holds(X) && !holds(P)) || (yielder && P === yielder && holds(P) && holds(X))) { var t = P; P = X; X = t; } // the held one stays and the other gives way; between two held blocks, the one the user just touched gives way
+      var d = X.mins || 30, fwd = E(P), back = S(P) - d, xPast = today && E(X) <= now, xFut = today && S(X) >= now;
+      var m = (clear(fwd, d, X) && !(xPast && fwd + d > now)) ? fwd : (back >= 0 && clear(back, d, X) && !(xFut && back < now)) ? back : fwd;
+      X.time = pad(Math.floor(m / 60)) + ":" + pad(m % 60); changed = true;
+    }
     return changed;
   }
   // ADJACENCY MAGNET (David 2026-07-17): while dragging a plan block, if its start lands within THRESH minutes of a neighbour's END (sit flush after) or its end within THRESH of a neighbour's START (sit flush before), return the EXACT flush start-minute so blocks touch with no 15-grid gap and no forced reorder. Null = no catch (keep the coarse grid). Result is re-clamped to [floor,ceil] by the caller so the now-line invariant holds.
@@ -23171,6 +23218,45 @@
   // `player.swap.splice` is that seam's arithmetic in full — t (where we were inside the old recording), Dold, Dnew,
   // p (the proportional position in the new one) and start (p minus the rewind, clamped at 0). Audio FEEL — whether
   // that seam is inaudible — is still device-only. This proves the wiring and the numbers, never the sound.
+  // DEV.reflowProbe(n): THE NO-OVERLAP LAW proven on data (2026-09-23). Runs named scenarios plus n random days through the real reflow + noOverlapGuard on TODAY's key (so the live, past and frozen rules all apply), then puts the day back exactly as it was. Proves the logic only; drag FEEL stays device-only.
+  window.DEV.reflowProbe = function (n) {
+    n = n || 2000;
+    var k = todayK(), now = logicalNowMin(), keepB = JSON.stringify(S.blocks[k] || []), keepL = JSON.stringify(S.log[k] || []), out = { now: now, scenarios: [], fuzz: null };
+    function T(m) { m = Math.max(0, Math.round(m)); return pad(Math.floor(m / 60)) + ":" + pad(m % 60); }
+    function B(t, d, extra) { return Object.assign({ id: uid(), time: T(t), mins: d, title: "p" + Math.random().toString(36).slice(2, 7), prio: 2, done: false }, extra || {}); }
+    function overlaps() { var a = blocks(k).slice(), bad = []; for (var i = 0; i < a.length; i++) for (var j = i + 1; j < a.length; j++) { var s1 = hm(a[i].time), e1 = s1 + (a[i].mins || 30), s2 = hm(a[j].time), e2 = s2 + (a[j].mins || 30); if (s2 < e1 && e2 > s1) bad.push(a[i].time + "/" + a[j].time); } return bad; }
+    function set(bl, lg) { S.blocks[k] = bl; S.log[k] = lg || []; }
+    function run(name, bl, lg, act, check) { set(bl, lg); try { if (act) act(); else reflow(k); } catch (e) { out.scenarios.push({ name: name, ok: false, err: String(e) }); return; } var bad = overlaps(), extra = check ? check() : true; out.scenarios.push({ name: name, ok: !bad.length && extra === true, overlaps: bad, check: extra }); }
+    try {
+      (function () { var a = B(now - 200, 60), c = B(now - 120, 45), miss = B(now - 60, 20); run("frozen past: dropped block gives way, the other holds", [a, c, miss], [], function () { c.time = T(now - 180); reflow(k, { b: c, mode: "move" }); }, function () { return hm(a.time) === now - 200 ? true : "held block moved to " + a.time; }); })();
+      (function () { var a = B(now - 200, 60, { done: true }), c = B(now - 120, 45, { done: true }); run("clean past: drop reorders", [a, c], [{ id: uid(), time: a.time, mins: 60, title: a.title }, { id: uid(), time: c.time, mins: 45, title: c.title }], function () { c.time = T(now - 190); reflow(k, { b: c, mode: "move" }); }); })();
+      (function () { var a = B(now + 60, 60), c = B(now + 180, 60); run("future drop pushes the other forward", [a, c], [], function () { c.time = T(now + 90); reflow(k, { b: c, mode: "move" }); }, function () { return hm(a.time) >= now && hm(c.time) >= now ? true : "a future block crossed into the past"; }); })();
+      (function () { var p = B(now - 90, 60, { done: true }), live = B(now - 20, 60); run("stretch into the live block stops at its edge", [p, live], [{ id: uid(), time: p.time, mins: 60, title: p.title }], function () { p.mins = 90; reflow(k, { b: p, mode: "end" }); }, function () { return hm(live.time) === now - 20 ? true : "live moved to " + live.time; }); })();
+      (function () { var t = now + 120; run("old saved stack heals by itself", [B(t, 30), B(t, 30), B(t, 45)], [], function () { noOverlapGuard(k); }); })();
+      (function () { var t = Math.max(now + 30, 1350); run("a late push runs past midnight (no 23:30 pile, no wrap)", [B(t, 60), B(t + 30, 60), B(t + 60, 60)], [], null, function () { var m = blocks(k).map(function (x) { return hm(x.time); }); return m.every(function (x) { return x >= t; }) ? true : "wrapped or piled: " + m.join(","); }); })();
+      (function () { var p = B(now - 70, 60), live = B(now - 20, 60); run("a block overlapping the live block gives way, live holds", [p, live], [], null, function () { return hm(live.time) === now - 20 ? true : "live moved to " + live.time; }); })();
+      var fails = [], liveMoves = 0, futureIntoPast = 0, liveEx = [];
+      for (var it = 0; it < n; it++) {
+        var cnt = 2 + Math.floor(Math.random() * 10), bl = [], lg = [];
+        for (var q = 0; q < cnt; q++) { var st = now - 300 + Math.floor(Math.random() * 60) * 10, du = [5, 10, 15, 30, 45, 60, 90, 120][Math.floor(Math.random() * 8)], x = B(st, du, { done: Math.random() < 0.3, pin: Math.random() < 0.08 }); bl.push(x); if (x.done) lg.push({ id: uid(), time: x.time, mins: du, title: x.title }); }
+        set(bl, lg); var _snap = JSON.stringify(bl.map(function (x) { return [x.time, x.mins, x.done ? 1 : 0, x.pin ? 1 : 0]; }));
+        var held0 = bl.filter(function (x) { var s = hm(x.time); return x.pin || (s <= now && s + (x.mins || 30) > now); });
+        var soleLive = held0.length === 1 && !held0[0].pin ? [held0[0], held0[0].time] : null; // only a lone live block has a promise to keep (two held blocks overlapping each other: the law must move one)
+        var tgt = bl[Math.floor(Math.random() * bl.length)], mode = ["move", "move", "end", "start"][Math.floor(Math.random() * 4)], wasFuture = hm(tgt.time) >= now;
+        if (mode === "move") { var nm = hm(tgt.time) + (Math.floor(Math.random() * 25) - 12) * 15; if (wasFuture) nm = Math.max(now, nm); tgt.time = T(nm); }
+        else if (mode === "end") tgt.mins = Math.max(5, (tgt.mins || 30) + (Math.floor(Math.random() * 13) - 6) * 10);
+        else { var e1 = hm(tgt.time) + (tgt.mins || 30), ns = Math.min(e1 - 5, hm(tgt.time) + (Math.floor(Math.random() * 13) - 6) * 10); tgt.time = T(ns); tgt.mins = e1 - ns; }
+        try { reflow(k, { b: tgt, mode: mode }); } catch (e) { fails.push("threw: " + e); continue; }
+        var _how = { init: _snap, tgt: bl.indexOf(tgt), mode: mode, after: JSON.stringify(blocks(k).map(function (x) { return [x.time, x.mins]; })) };
+        var bad = overlaps(); if (bad.length) fails.push({ it: it, bad: bad.slice(0, 3), how: _how });
+        if (soleLive && soleLive[0] !== tgt && blocks(k).indexOf(soleLive[0]) >= 0 && soleLive[0].time !== soleLive[1]) { liveMoves++; if (liveEx.length < 3) liveEx.push({ live: soleLive[1] + " -> " + soleLive[0].time, how: _how }); }
+        if (wasFuture && mode === "move" && hm(tgt.time) < now) futureIntoPast++;
+      }
+      out.fuzz = { runs: n, overlapFails: fails.length, firstFails: fails.slice(0, 3), liveMoves: liveMoves, liveExamples: liveEx, futureIntoPast: futureIntoPast };
+    } finally { S.blocks[k] = JSON.parse(keepB); S.log[k] = JSON.parse(keepL); save(); }
+    out.allOk = out.scenarios.every(function (s) { return s.ok; }) && !!out.fuzz && !out.fuzz.overlapFails && !out.fuzz.liveMoves && !out.fuzz.futureIntoPast;
+    return out;
+  };
   window.DEV.voice = function (pick) {
     if (pick) { try { TTS.unlock(); if (pick === "izo" || pick === "aida") TTS.setRuVoice(pick); else TTS.setVoice(pick); } catch (e) { return "ERR " + e.message; } }
     return { bank: TTS.bank(), gen: TTS.voiceGen(), voiceOn: voiceOn(), audible: voiceSessionAudible(), player: _gpProbe ? _gpProbe() : null };

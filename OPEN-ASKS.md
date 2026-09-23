@@ -3,7 +3,9 @@
 *Born 2026-09-01 from David: "is there anything else I asked that was skipped or ignored?" — after the survey-system miss proved recorded ≠ done. RULE: any session that opens, closes, or moves an ask updates this file the same session. One line each + pointer. Sources: session audit + full sweep of verdicts ledger, handoff, fix specs, CANON, DECISIONS, LEDGER, TRIPWIRES, app.js.*
 
 ## DAVID'S MOVE (waiting on you)
+- **Day mode, Round A** — paste `_design-sync/day-mode-2026-09-13/PROMPT-A-palette-tournament.md` into Claude Design (upload the Monet references first), pick three worlds + lip vs soft shadow; then Round B. Plan: `GAMEPLAN.md`. (2026-09-13)
 - **Tools library, Round 33 iteration** — David's own six-folder design is the direction (round 1 rejected). Pick the home for the Stutz + mantra/rewire tools and the next iteration prompt from `_design-sync/tools-simplified-2026-09-07/FEEDBACK-round33.md`. (2026-09-07)
+- **Chapter-one copy, parts 2 and 3** — part 1 read + 8 kills taken 2026-09-21; the replacements are drafted and NOT verdicted; the pitch close is LOCKED. Next: read parts 2 and 3 (stone one's run, then the four dives).
 - **Story run Round 3** — verdict 4 new lines + 6 one-line conflicts in `_design-sync/journey-stones-2026-08-28/PROMPT-round3-story-run.md`, then paste it into Claude Design. (2026-09-05)
 - **Free-forever list** — which features are permanently free; the deal copy holds a placeholder. (`COPY-CH1-SPARK.md` §tour)
 - **v1412 device test** — deadband + shift fix + cards-close-on-leave shipped DEVICE-UNTESTED. (`TRACKER-HANDOFF-2026-07-19.md` v1412)
@@ -24,6 +26,8 @@
 - **Apple Developer $99 enrollment** — DECISIONS says start now (2026-07-19); LEDGER says not started; TRIPWIRES claims already open. Records contradict — one word from you settles it and I fix all three docs.
 
 ## MY MOVE (Claude owes these)
+- **PLANNER ROUND (David 2026-09-23, verdicts in `DECISIONS.md`)** — NO-OVERLAP LAW SHIPPED v1536 (2026-09-24, DEVICE-UNTESTED: drag feel on the phone; `DEV.reflowProbe()` = 7 scenarios + 60k random days clean). Still owed: kill the arrange screen; category-first bottom-sheet picker (FOUND: David's R21 sheet, `_design-sync/r21-picker-2026-08-17/`; verdicted 2026-08-16 as a BUILD); NO-OVERLAP law for bubbles; drag into the past + reorder past and future; fix the live 'printing into the past' flow. Regression-contract zone: spec first, Opus build, DEVICE-UNTESTED until David confirms.
+- **Chapter 1 card is not chapter 1** — its why-line + both dive rows come from the OLD eight-landmark arc (`JP_CHAPTERS[0]`, "Why You're Here"), only its title comes from the 36-chapter canon. Job: The Spark's own why-line, wire the four ALREADY-WRITTEN dives (`COPY-CH1-SPARK.md`), place the pitch as the first row. (2026-09-21 round 54)
 - **Planner first-open question** — ask "What's your life mostly about right now?" (QS key `stage`) the first time the planner opens; TODO note left in app.js by the 2026-09-05 build. (`ch1-profiling-engine-SPEC.md` §7 amendment)
 - ~~Tour re-port (round 46)~~ — SHIPPED v1414 (1:1 from Round 30/29, numeric diff at 430x932). Awaiting David's device verdict on motion + swipe feel.
 - **Day-2 triggers orphaned by the retired first-day trail** — `_litPastDay1` (the day-2 "Close the day" node) and `litGapDue()` (the Gap lesson + "tomorrow: the space between") both keyed off `S.guide.fd.done`, which no longer exists for new users; they need a day-count trigger instead. Flagged by the v1414 build. (`@SEC:JOURNEY-ENGINE`)
